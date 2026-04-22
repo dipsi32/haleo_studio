@@ -12,6 +12,12 @@ import {
   Image as ImageIcon,
   FileText,
   ChevronRight,
+  Video,
+  Map,
+  Ruler,
+  Camera,
+  Eye,
+  Lightbulb,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
