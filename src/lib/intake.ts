@@ -29,6 +29,10 @@ export type IntakeData = {
   additionLocation?: AdditionLocation;
   // photos
   hasPhotos?: boolean;
+  // manual measurements (alternative to floor plan)
+  measurements?: string;
+  // capture method chosen on the "Show your space" step
+  captureMethod?: "video" | "photos" | "floorplan" | "measurements";
   // vibe
   vibes: string[];
   hasInspiration?: boolean;

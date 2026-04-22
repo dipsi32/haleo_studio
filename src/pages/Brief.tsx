@@ -16,7 +16,12 @@ import {
   Camera,
   ArrowRight,
   Link as LinkIcon,
+  Ruler,
+  Map,
+  Check,
+  Wand2,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
@@ -82,11 +87,39 @@ const SkipButton = ({ onClick, label = "Skip for now" }: { onClick: () => void; 
   </button>
 );
 
+// ───── Step indicator (feedforward affordance) ─────
+const ThreeStepFeedforward = () => {
+  const items = [
+    { n: 1, label: "Pick a room" },
+    { n: 2, label: "Show your space" },
+    { n: 3, label: "Tell us the vibe" },
+  ];
+  return (
+    <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full border border-border bg-card/70 px-3 py-2 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur sm:gap-3 sm:px-4">
+      <span className="hidden items-center gap-1.5 text-accent sm:inline-flex">
+        <Wand2 className="h-3.5 w-3.5" />
+        <span className="uppercase tracking-[0.18em]">3 simple steps</span>
+      </span>
+      <span className="hidden h-3 w-px bg-border sm:inline-block" />
+      {items.map((it, idx) => (
+        <span key={it.n} className="flex items-center gap-2">
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-soft text-[10px] font-semibold text-accent">
+            {it.n}
+          </span>
+          <span className="whitespace-nowrap">{it.label}</span>
+          {idx < items.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground/50" />}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 // ───── Screen 1: Room ─────
 const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
   const rooms = Object.keys(ROOM_LABELS) as Room[];
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
+      <ThreeStepFeedforward />
       <ScreenTitle
         eyebrow="Step 1"
         title="Which room are we transforming?"
@@ -113,81 +146,157 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
   );
 };
 
-// ───── Screen 2: Media ─────
+// ───── Screen 2: Capture (intuitive multi-modal) ─────
+type CaptureMethod = "video" | "photos" | "floorplan" | "measurements";
+
+const CAPTURE_OPTIONS: {
+  value: CaptureMethod;
+  icon: typeof Video;
+  label: string;
+  hint: string;
+  best?: boolean;
+}[] = [
+  { value: "video", icon: Video, label: "Walkthrough video", hint: "Best — slow 30s pan", best: true },
+  { value: "photos", icon: Camera, label: "A few photos", hint: "Snap the trouble spots" },
+  { value: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or image" },
+  { value: "measurements", icon: Ruler, label: "Type measurements", hint: "Rough dimensions in words" },
+];
+
 const MediaScreen = ({
   onContinue,
-  state,
-  setState,
+  data,
+  update,
 }: {
   onContinue: () => void;
-  state: { hasWalkthrough?: boolean; hasFloorPlan?: boolean };
-  setState: (s: { hasWalkthrough?: boolean; hasFloorPlan?: boolean }) => void;
-}) => (
-  <div className="space-y-12">
-    <ScreenTitle
-      eyebrow="Step 2"
-      title="Show us your space."
-      sub="A slow 30-second walkthrough video works best — but anything helps."
-    />
-    <div className="mx-auto grid max-w-2xl gap-4 md:grid-cols-2">
-      <button
-        onClick={() => setState({ ...state, hasWalkthrough: true })}
-        className={`group flex flex-col items-start gap-3 rounded-2xl border bg-card p-6 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-          state.hasWalkthrough ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
-        }`}
-      >
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-accent">
-          <Video className="h-5 w-5" />
-        </div>
-        <p className="font-display text-lg font-medium">Record a walkthrough</p>
-        <p className="text-sm text-muted-foreground">Open on your phone, walk slowly through.</p>
-      </button>
-      <button
-        onClick={() => setState({ ...state, hasWalkthrough: true })}
-        className={`group flex flex-col items-start gap-3 rounded-2xl border bg-card p-6 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-          state.hasWalkthrough ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
-        }`}
-      >
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-accent">
-          <Upload className="h-5 w-5" />
-        </div>
-        <p className="font-display text-lg font-medium">Upload a video</p>
-        <p className="text-sm text-muted-foreground">MP4 or MOV from your camera roll.</p>
-      </button>
-    </div>
+  data: { captureMethod?: CaptureMethod; hasWalkthrough?: boolean; hasFloorPlan?: boolean; hasPhotos?: boolean; measurements?: string };
+  update: (s: Partial<{ captureMethod: CaptureMethod; hasWalkthrough: boolean; hasFloorPlan: boolean; hasPhotos: boolean; measurements: string }>) => void;
+}) => {
+  const method = data.captureMethod;
 
-    <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-card/60 p-6">
-      <div className="flex items-center gap-4">
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-foreground/70">
-          <ImageIcon className="h-5 w-5" />
-        </div>
-        <div className="flex-1">
-          <p className="font-display text-base font-medium">Got a floor plan?</p>
-          <p className="text-sm text-muted-foreground">Even a sketch on a napkin helps.</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setState({ ...state, hasFloorPlan: !state.hasFloorPlan })}
-          className="rounded-full"
-        >
-          {state.hasFloorPlan ? "Added ✓" : "Upload"}
+  const handlePick = (m: CaptureMethod) => {
+    update({ captureMethod: m });
+  };
+
+  const markCaptured = () => {
+    if (method === "video") update({ hasWalkthrough: true });
+    if (method === "photos") update({ hasPhotos: true });
+    if (method === "floorplan") update({ hasFloorPlan: true });
+  };
+
+  const captured =
+    (method === "video" && data.hasWalkthrough) ||
+    (method === "photos" && data.hasPhotos) ||
+    (method === "floorplan" && data.hasFloorPlan) ||
+    (method === "measurements" && (data.measurements?.trim().length ?? 0) > 4);
+
+  return (
+    <div className="space-y-10">
+      <ScreenTitle
+        eyebrow="Step 2"
+        title="Help us see your space."
+        sub="Pick whatever's easiest right now. A quick video says the most — but a photo, sketch, or even a few measurements works."
+      />
+
+      {/* Segmented capture options */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {CAPTURE_OPTIONS.map((opt) => {
+          const active = method === opt.value;
+          const Icon = opt.icon;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handlePick(opt.value)}
+              className={`group relative flex flex-col items-start gap-3 rounded-2xl border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
+                active ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
+              }`}
+            >
+              {opt.best && (
+                <span className="absolute right-3 top-3 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                  Best
+                </span>
+              )}
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent transition-smooth group-hover:bg-accent group-hover:text-accent-foreground">
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="font-display text-base font-medium leading-tight">{opt.label}</p>
+              <p className="text-xs text-muted-foreground">{opt.hint}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Dynamic action area */}
+      <AnimatePresence mode="wait">
+        {method && (
+          <motion.div
+            key={method}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto max-w-2xl"
+          >
+            {method === "measurements" ? (
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+                <label className="font-display text-sm font-medium">Rough measurements</label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Plain language is fine. e.g. "Kitchen ~12×14ft, ceiling 9ft, one window on the south wall."
+                </p>
+                <Textarea
+                  value={data.measurements ?? ""}
+                  onChange={(e) => update({ measurements: e.target.value })}
+                  rows={4}
+                  placeholder="Type a quick description with rough dimensions…"
+                  className="mt-4 rounded-xl border-border bg-background"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={markCaptured}
+                className={`flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-6 text-left transition-smooth ${
+                  captured ? "border-accent bg-accent-soft/30" : "border-border bg-card/60 hover:border-accent/60 hover:bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`grid h-11 w-11 place-items-center rounded-full ${captured ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground/70"}`}>
+                    {captured ? <Check className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="font-display text-base font-medium">
+                      {captured
+                        ? "Got it — added to your brief"
+                        : method === "video"
+                          ? "Tap to record or upload your walkthrough"
+                          : method === "photos"
+                            ? "Tap to add photos of the trouble spots"
+                            : "Tap to upload your floor plan"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {method === "video" && "MP4 or MOV. 30 seconds is plenty."}
+                      {method === "photos" && "Up to 10 photos. JPG, PNG, or HEIC."}
+                      {method === "floorplan" && "PDF, JPG, PNG — even a phone photo of a sketch."}
+                    </p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background">
+                  {captured ? "Replace" : "Choose"}
+                </span>
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col items-center gap-4">
+        <Button onClick={onContinue} size="lg" className="rounded-full px-8">
+          Continue
+          <ArrowRight className="h-4 w-4" />
         </Button>
+        <SkipButton onClick={onContinue} label="I'll add this later" />
       </div>
     </div>
-
-    <div className="flex flex-col items-center gap-4">
-      <Button
-        onClick={onContinue}
-        size="lg"
-        className="rounded-full px-8"
-      >
-        Continue
-        <ArrowRight className="h-4 w-4" />
-      </Button>
-      <SkipButton onClick={onContinue} />
-    </div>
-  </div>
-);
+  );
+};
 
 // ───── Screen 3: Pain ─────
 const PainScreen = ({
@@ -570,8 +679,8 @@ const Brief = () => {
         {step === 2 && (
           <MediaScreen
             key="media"
-            state={{ hasWalkthrough: data.hasWalkthrough, hasFloorPlan: data.hasFloorPlan }}
-            setState={(s) => update(s)}
+            data={data}
+            update={(s) => update(s)}
             onContinue={next}
           />
         )}

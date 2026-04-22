@@ -12,6 +12,12 @@ import {
   Image as ImageIcon,
   FileText,
   ChevronRight,
+  Video,
+  Map,
+  Ruler,
+  Camera,
+  Eye,
+  Lightbulb,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -91,6 +97,58 @@ const buildPermitFlag = (d: IntakeData): { likely: boolean; reason: string } => 
     : { likely: false, reason: "Mostly cosmetic — likely permit-exempt, but always verify with your contractor." };
 };
 
+const buildSpaceAnalysis = (d: IntakeData): string[] => {
+  const notes: string[] = [];
+  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
+
+  if (d.hasWalkthrough) {
+    notes.push(
+      `Walkthrough video gives your contractor a real read on flow, ceiling height, and natural light in the ${room} — far more useful than a static photo.`,
+    );
+  }
+  if (d.hasPhotos) {
+    notes.push(
+      `Photos pinpoint the exact finishes and trouble spots you flagged — no guessing on materials or condition.`,
+    );
+  }
+  if (d.hasFloorPlan) {
+    notes.push(
+      `Floor plan lets us validate dimensions against the scope. Layout changes can be priced confidently.`,
+    );
+  }
+  if (d.measurements && d.measurements.trim().length > 0) {
+    notes.push(
+      `Your measurements (“${d.measurements.trim().slice(0, 120)}${d.measurements.length > 120 ? "…" : ""}”) anchor the brief in real dimensions, even without a formal plan.`,
+    );
+  }
+
+  if (d.painPoints.includes("Too dark") || d.painPoints.includes("Poor lighting") || d.painPoints.includes("No natural light")) {
+    notes.push("Lighting is a recurring concern — expect any fair bid to include a lighting plan, not just a fixture count.");
+  }
+  if (d.painPoints.includes("Cramped") || d.painPoints.includes("Layout doesn't work") || d.painPoints.includes("Bad flow")) {
+    notes.push("Layout pain points usually mean wall removal or relocation — confirm a structural review is in scope.");
+  }
+  if (d.painPoints.includes("No storage") || d.painPoints.includes("Not enough storage") || d.painPoints.includes("No closet space")) {
+    notes.push("Storage is called out — built-ins and millwork should be itemized separately from cabinetry, not bundled.");
+  }
+
+  if (notes.length === 0) {
+    notes.push("Add a quick walkthrough video or a few photos and we'll sharpen this analysis with specific observations.");
+  }
+  return notes.slice(0, 4);
+};
+
+const captureSummary = (d: IntakeData) => {
+  const items: { icon: typeof Video; label: string; sub: string }[] = [];
+  if (d.hasWalkthrough) items.push({ icon: Video, label: "Walkthrough video", sub: "30s pan • ready for contractor" });
+  if (d.hasPhotos) items.push({ icon: Camera, label: "Reference photos", sub: "Trouble spots flagged" });
+  if (d.hasFloorPlan) items.push({ icon: Map, label: "Floor plan", sub: "Dimensions on file" });
+  if (d.measurements && d.measurements.trim().length > 0)
+    items.push({ icon: Ruler, label: "Measurements", sub: d.measurements.trim().slice(0, 60) + (d.measurements.length > 60 ? "…" : "") });
+  if (d.hasInspiration || d.inspirationLink) items.push({ icon: ImageIcon, label: "Inspiration", sub: d.inspirationLink ? "Link + images" : "Reference images" });
+  return items;
+};
+
 const Pill = ({ children }: { children: React.ReactNode }) => (
   <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">{children}</span>
 );
@@ -102,6 +160,8 @@ const BriefResult = () => {
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractor = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
+  const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
+  const captures = useMemo(() => captureSummary(data), [data]);
 
   const budgetLabel = data.budgetSkipped
     ? "Not shared"
@@ -255,33 +315,83 @@ const BriefResult = () => {
             </div>
           </div>
 
-          {/* Permit + thumbs */}
-          <div className="grid gap-6 border-t border-border bg-card px-6 py-6 md:grid-cols-2 md:px-10 md:py-8">
-            <div className="flex items-start gap-3">
-              <div className={`grid h-9 w-9 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
-                <ShieldCheck className="h-4 w-4" />
+          {/* Permit row */}
+          <div className="flex items-start gap-3 border-t border-border bg-card px-6 py-6 md:px-10 md:py-7">
+            <div className={`grid h-9 w-9 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-display text-sm font-medium">
+                {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+              </p>
+              <p className="text-xs text-muted-foreground">{permit.reason}</p>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Space snapshot — what we got from you */}
+        {captures.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
+                <Eye className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-display text-sm font-medium">
-                  {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
-                </p>
-                <p className="text-xs text-muted-foreground">{permit.reason}</p>
+                <p className="font-display text-base font-medium">Space snapshot</p>
+                <p className="text-xs text-muted-foreground">Everything you shared, attached to the brief.</p>
               </div>
             </div>
-            {(data.hasPhotos || data.hasFloorPlan || data.hasInspiration) && (
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-secondary">
-                  <ImageIcon className="h-4 w-4" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {data.hasWalkthrough && <Pill>Walkthrough video</Pill>}
-                  {data.hasFloorPlan && <Pill>Floor plan</Pill>}
-                  {data.hasPhotos && <Pill>Photos</Pill>}
-                  {data.hasInspiration && <Pill>Inspiration</Pill>}
-                </div>
-              </div>
-            )}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {captures.map((c, i) => {
+                const Icon = c.icon;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-medium">{c.label}</p>
+                      <p className="truncate text-xs text-muted-foreground">{c.sub}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Space analysis */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 rounded-3xl border border-border bg-secondary/30 p-6 md:p-8"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
+              <Lightbulb className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-display text-base font-medium">Space analysis</p>
+              <p className="text-xs text-muted-foreground">What your media tells us before any contractor walks in.</p>
+            </div>
           </div>
+          <ul className="mt-6 space-y-3">
+            {analysis.map((line, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground/85">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                {line}
+              </li>
+            ))}
+          </ul>
         </motion.section>
 
         {/* Actions */}
