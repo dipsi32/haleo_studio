@@ -302,94 +302,12 @@ const BriefResult = () => {
         </motion.div>
 
         {/* ───── Brief Readiness ───── */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
-        >
-          <div className="grid gap-6 p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8 md:p-8">
-            {/* Score ring */}
-            <div className="flex items-center gap-5">
-              <div className="relative grid h-24 w-24 shrink-0 place-items-center">
-                <svg viewBox="0 0 96 96" className="absolute inset-0 -rotate-90">
-                  <circle cx="48" cy="48" r="42" stroke="hsl(var(--secondary))" strokeWidth="6" fill="none" />
-                  <motion.circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke="hsl(var(--accent))"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 42}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - readiness.score / 100) }}
-                    transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-                  />
-                </svg>
-                <div className="text-center">
-                  <p className="font-display text-3xl font-medium leading-none tabular-nums">{readiness.score}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 100</p>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">Brief readiness</p>
-                <p className="mt-1 font-display text-2xl font-light leading-tight">
-                  {readinessText.headline}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{readinessText.sub}</p>
-              </div>
-            </div>
-
-            {/* Have / Missing checklist */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">In your brief</p>
-                <ul className="mt-2 space-y-1.5">
-                  {readiness.have.length === 0 && (
-                    <li className="text-sm text-muted-foreground">Nothing locked in yet.</li>
-                  )}
-                  {readiness.have.map((h) => (
-                    <li key={h.label} className="flex items-start gap-2 text-sm text-foreground/85">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage" />
-                      <span className="min-w-0">{h.label}</span>
-                      <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">+{h.weight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">Would sharpen this</p>
-                <ul className="mt-2 space-y-1.5">
-                  {readiness.missing.length === 0 && (
-                    <li className="flex items-center gap-2 text-sm text-sage">
-                      <Sparkles className="h-3.5 w-3.5" /> All set — nothing else to add.
-                    </li>
-                  )}
-                  {readiness.missing.map((m) => (
-                    <li key={m.label} className="flex items-start gap-2 text-sm text-foreground/70">
-                      <Plus_Icon />
-                      <span className="min-w-0">
-                        {m.label}
-                        <span className="ml-2 text-[10px] tabular-nums text-muted-foreground">+{m.weight}</span>
-                        <span className="block text-xs text-muted-foreground">{m.nudge}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {readiness.missing.length > 0 && (
-                  <button
-                    onClick={() => setEditOpen(true)}
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent underline-offset-4 hover:underline"
-                  >
-                    Add more <ArrowRight className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.section>
+        <ReadinessCard
+          readiness={readiness}
+          headline={readinessText.headline}
+          sub={readinessText.sub}
+          onAdd={() => setEditOpen(true)}
+        />
 
         {/* ───── Brief card with two layers ───── */}
         <motion.section
