@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Pencil,
   AlertCircle,
+  ChevronDown,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
