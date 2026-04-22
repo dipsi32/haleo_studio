@@ -1,5 +1,14 @@
 // Local intake state — backend wiring comes later.
+// Files live as in-memory object URLs for the session (don't try to JSON-stringify them).
 import { useEffect, useState } from "react";
+
+export type MediaAsset = {
+  id: string;
+  kind: "video" | "photo" | "floorplan" | "inspiration";
+  name: string;
+  url: string; // object URL
+  mime?: string;
+};
 
 export type Room =
   | "kitchen"
@@ -18,24 +27,20 @@ export type Timeline = "asap" | "1-3" | "3-6" | "exploring";
 
 export type IntakeData = {
   room?: Room;
-  // media
-  hasWalkthrough?: boolean;
-  hasFloorPlan?: boolean;
   // pain
   painPoints: string[];
   // addition
   additionType?: AdditionType;
   additionSize?: number;
   additionLocation?: AdditionLocation;
-  // photos
-  hasPhotos?: boolean;
+  // media (real file uploads + object URLs)
+  media: MediaAsset[];
+  // optional rough notes — vision doc explicitly mentions "rough notes"
+  notes?: string;
   // manual measurements (alternative to floor plan)
   measurements?: string;
-  // capture method chosen on the "Show your space" step
-  captureMethod?: "video" | "photos" | "floorplan" | "measurements";
   // vibe
   vibes: string[];
-  hasInspiration?: boolean;
   inspirationLink?: string;
   // budget
   budgetMin?: number;
@@ -50,7 +55,15 @@ const STORAGE_KEY = "haleo:intake";
 const empty: IntakeData = {
   painPoints: [],
   vibes: [],
+  media: [],
 };
+
+// Strip non-serializable bits before persisting.
+const serializable = (d: IntakeData) => ({
+  ...d,
+  // object URLs die on reload; persist metadata only so analysis still works
+  media: d.media.map((m) => ({ ...m, url: "" })),
+});
 
 export const useIntake = () => {
   const [data, setData] = useState<IntakeData>(() => {
@@ -65,7 +78,7 @@ export const useIntake = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable(data)));
     } catch {
       /* ignore */
     }
@@ -80,10 +93,26 @@ export const useIntake = () => {
         [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
       };
     });
+  const addMedia = (assets: MediaAsset[]) =>
+    setData((d) => ({ ...d, media: [...d.media, ...assets] }));
+  const removeMedia = (id: string) =>
+    setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) }));
   const reset = () => setData(empty);
 
-  return { data, update, togglePill, reset, setData };
+  return { data, update, togglePill, addMedia, removeMedia, reset, setData };
 };
+
+// Build MediaAssets from a FileList (creates object URLs).
+export const filesToAssets = (files: FileList | File[], kind: MediaAsset["kind"]): MediaAsset[] =>
+  Array.from(files).map((f) => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    kind,
+    name: f.name,
+    url: URL.createObjectURL(f),
+    mime: f.type,
+  }));
+
+export const hasKind = (d: IntakeData, k: MediaAsset["kind"]) => d.media.some((m) => m.kind === k);
 
 export const ROOM_LABELS: Record<Room, string> = {
   kitchen: "Kitchen",
