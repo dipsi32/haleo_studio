@@ -16,7 +16,12 @@ import {
   Camera,
   ArrowRight,
   Link as LinkIcon,
+  Ruler,
+  Map,
+  Check,
+  Wand2,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
