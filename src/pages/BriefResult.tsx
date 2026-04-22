@@ -97,9 +97,57 @@ const buildPermitFlag = (d: IntakeData): { likely: boolean; reason: string } => 
     : { likely: false, reason: "Mostly cosmetic — likely permit-exempt, but always verify with your contractor." };
 };
 
-const Pill = ({ children }: { children: React.ReactNode }) => (
-  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">{children}</span>
-);
+const buildSpaceAnalysis = (d: IntakeData): string[] => {
+  const notes: string[] = [];
+  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
+
+  if (d.hasWalkthrough) {
+    notes.push(
+      `Walkthrough video gives your contractor a real read on flow, ceiling height, and natural light in the ${room} — far more useful than a static photo.`,
+    );
+  }
+  if (d.hasPhotos) {
+    notes.push(
+      `Photos pinpoint the exact finishes and trouble spots you flagged — no guessing on materials or condition.`,
+    );
+  }
+  if (d.hasFloorPlan) {
+    notes.push(
+      `Floor plan lets us validate dimensions against the scope. Layout changes can be priced confidently.`,
+    );
+  }
+  if (d.measurements && d.measurements.trim().length > 0) {
+    notes.push(
+      `Your measurements (“${d.measurements.trim().slice(0, 120)}${d.measurements.length > 120 ? "…" : ""}”) anchor the brief in real dimensions, even without a formal plan.`,
+    );
+  }
+
+  if (d.painPoints.includes("Too dark") || d.painPoints.includes("Poor lighting") || d.painPoints.includes("No natural light")) {
+    notes.push("Lighting is a recurring concern — expect any fair bid to include a lighting plan, not just a fixture count.");
+  }
+  if (d.painPoints.includes("Cramped") || d.painPoints.includes("Layout doesn't work") || d.painPoints.includes("Bad flow")) {
+    notes.push("Layout pain points usually mean wall removal or relocation — confirm a structural review is in scope.");
+  }
+  if (d.painPoints.includes("No storage") || d.painPoints.includes("Not enough storage") || d.painPoints.includes("No closet space")) {
+    notes.push("Storage is called out — built-ins and millwork should be itemized separately from cabinetry, not bundled.");
+  }
+
+  if (notes.length === 0) {
+    notes.push("Add a quick walkthrough video or a few photos and we'll sharpen this analysis with specific observations.");
+  }
+  return notes.slice(0, 4);
+};
+
+const captureSummary = (d: IntakeData) => {
+  const items: { icon: typeof Video; label: string; sub: string }[] = [];
+  if (d.hasWalkthrough) items.push({ icon: Video, label: "Walkthrough video", sub: "30s pan • ready for contractor" });
+  if (d.hasPhotos) items.push({ icon: Camera, label: "Reference photos", sub: "Trouble spots flagged" });
+  if (d.hasFloorPlan) items.push({ icon: Map, label: "Floor plan", sub: "Dimensions on file" });
+  if (d.measurements && d.measurements.trim().length > 0)
+    items.push({ icon: Ruler, label: "Measurements", sub: d.measurements.trim().slice(0, 60) + (d.measurements.length > 60 ? "…" : "") });
+  if (d.hasInspiration || d.inspirationLink) items.push({ icon: ImageIcon, label: "Inspiration", sub: d.inspirationLink ? "Link + images" : "Reference images" });
+  return items;
+};
 
 const BriefResult = () => {
   const { data } = useIntake();
