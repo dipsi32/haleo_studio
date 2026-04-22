@@ -21,7 +21,7 @@ const Hero = () => (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.8, ease: EASE }}
         className="mx-auto max-w-3xl text-center"
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
@@ -61,7 +61,7 @@ const Hero = () => (
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 1, delay: 0.3, ease: EASE }}
         className="relative mx-auto mt-20 max-w-3xl"
       >
         <div className="rounded-3xl border border-border bg-card p-6 shadow-lift md:p-8">
