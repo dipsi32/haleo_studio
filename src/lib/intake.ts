@@ -1,5 +1,14 @@
 // Local intake state — backend wiring comes later.
+// Files live as in-memory object URLs for the session (don't try to JSON-stringify them).
 import { useEffect, useState } from "react";
+
+export type MediaAsset = {
+  id: string;
+  kind: "video" | "photo" | "floorplan" | "inspiration";
+  name: string;
+  url: string; // object URL
+  mime?: string;
+};
 
 export type Room =
   | "kitchen"
