@@ -146,6 +146,7 @@ const captureSummary = (d: IntakeData) => {
   if (d.measurements && d.measurements.trim().length > 0)
     items.push({ icon: Ruler, label: "Measurements", sub: d.measurements.trim().slice(0, 60) + (d.measurements.length > 60 ? "…" : "") });
   if (d.hasInspiration || d.inspirationLink) items.push({ icon: ImageIcon, label: "Inspiration", sub: d.inspirationLink ? "Link + images" : "Reference images" });
+  return items;
 };
 
 const Pill = ({ children }: { children: React.ReactNode }) => (
