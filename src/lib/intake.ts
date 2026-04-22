@@ -27,24 +27,20 @@ export type Timeline = "asap" | "1-3" | "3-6" | "exploring";
 
 export type IntakeData = {
   room?: Room;
-  // media
-  hasWalkthrough?: boolean;
-  hasFloorPlan?: boolean;
   // pain
   painPoints: string[];
   // addition
   additionType?: AdditionType;
   additionSize?: number;
   additionLocation?: AdditionLocation;
-  // photos
-  hasPhotos?: boolean;
+  // media (real file uploads + object URLs)
+  media: MediaAsset[];
+  // optional rough notes — vision doc explicitly mentions "rough notes"
+  notes?: string;
   // manual measurements (alternative to floor plan)
   measurements?: string;
-  // capture method chosen on the "Show your space" step
-  captureMethod?: "video" | "photos" | "floorplan" | "measurements";
   // vibe
   vibes: string[];
-  hasInspiration?: boolean;
   inspirationLink?: string;
   // budget
   budgetMin?: number;
@@ -59,7 +55,15 @@ const STORAGE_KEY = "haleo:intake";
 const empty: IntakeData = {
   painPoints: [],
   vibes: [],
+  media: [],
 };
+
+// Strip non-serializable bits before persisting.
+const serializable = (d: IntakeData) => ({
+  ...d,
+  // object URLs die on reload; persist metadata only so analysis still works
+  media: d.media.map((m) => ({ ...m, url: "" })),
+});
 
 export const useIntake = () => {
   const [data, setData] = useState<IntakeData>(() => {
