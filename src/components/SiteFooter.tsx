@@ -1,0 +1,26 @@
+import Logo from "./Logo";
+
+const SiteFooter = () => {
+  return (
+    <footer className="border-t border-border bg-secondary/40">
+      <div className="container flex flex-col gap-6 py-12 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-3">
+          <Logo />
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Haleo is the calm in the middle of your remodel.
+            <br />
+            Your unfair advantage from vision to final inspection.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground">
+          <a href="#how" className="transition-smooth hover:text-foreground">How it works</a>
+          <a href="#pricing" className="transition-smooth hover:text-foreground">Pricing</a>
+          <a href="mailto:hello@haleo.studio" className="transition-smooth hover:text-foreground">hello@haleo.studio</a>
+          <span>© {new Date().getFullYear()} Haleo Studio</span>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default SiteFooter;

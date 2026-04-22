@@ -2,95 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Haleo design system — warm-confident, editorial, calm.
+   All colors HSL. Soft natural palette: bone, ink, terracotta accent, sage support. */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces */
+    --background: 38 30% 96%;        /* warm bone */
+    --foreground: 20 14% 14%;        /* deep ink */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 38 40% 98%;
+    --card-foreground: 20 14% 14%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 38 40% 98%;
+    --popover-foreground: 20 14% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand */
+    --primary: 18 14% 18%;           /* near-black ink, slightly warm */
+    --primary-foreground: 38 30% 96%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 36 22% 90%;         /* warm linen */
+    --secondary-foreground: 20 14% 14%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 36 18% 92%;
+    --muted-foreground: 25 8% 42%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 14 55% 52%;            /* terracotta — the warm signature */
+    --accent-foreground: 38 30% 96%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent-soft: 14 60% 94%;       /* terracotta tint */
+    --accent-soft-foreground: 14 55% 32%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --sage: 95 14% 48%;              /* support color */
+    --sage-foreground: 38 30% 96%;
+    --sage-soft: 95 18% 92%;
 
-    --radius: 0.5rem;
+    --gold: 36 55% 52%;              /* permit/score accent */
 
-    --sidebar-background: 0 0% 98%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 38 30% 96%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --border: 30 14% 86%;
+    --input: 30 14% 86%;
+    --ring: 14 55% 52%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --radius: 0.875rem;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Gradients & shadows */
+    --gradient-warm: linear-gradient(180deg, hsl(38 35% 97%) 0%, hsl(36 28% 93%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(14 55% 52%) 0%, hsl(20 60% 58%) 100%);
+    --gradient-hero: radial-gradient(ellipse at 70% 0%, hsl(14 55% 52% / 0.10), transparent 55%),
+                     radial-gradient(ellipse at 0% 80%, hsl(95 18% 70% / 0.18), transparent 60%);
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --shadow-soft: 0 1px 2px hsl(20 14% 14% / 0.04), 0 8px 24px -12px hsl(20 14% 14% / 0.10);
+    --shadow-lift: 0 2px 4px hsl(20 14% 14% / 0.04), 0 24px 48px -20px hsl(20 14% 14% / 0.18);
+    --shadow-accent: 0 12px 32px -12px hsl(14 55% 52% / 0.45);
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 38 30% 96%;
+    --sidebar-foreground: 20 14% 14%;
+    --sidebar-primary: 18 14% 18%;
+    --sidebar-primary-foreground: 38 30% 96%;
+    --sidebar-accent: 36 22% 90%;
+    --sidebar-accent-foreground: 20 14% 14%;
+    --sidebar-border: 30 14% 86%;
+    --sidebar-ring: 14 55% 52%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 20 14% 8%;
+    --foreground: 38 30% 94%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 20 14% 11%;
+    --card-foreground: 38 30% 94%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 20 14% 11%;
+    --popover-foreground: 38 30% 94%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 38 30% 94%;
+    --primary-foreground: 20 14% 14%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 20 10% 18%;
+    --secondary-foreground: 38 30% 94%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 20 10% 16%;
+    --muted-foreground: 30 10% 62%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 14 60% 58%;
+    --accent-foreground: 20 14% 8%;
+    --accent-soft: 14 30% 20%;
+    --accent-soft-foreground: 14 55% 78%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --sage: 95 18% 56%;
+    --sage-foreground: 20 14% 8%;
+    --sage-soft: 95 14% 20%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --gold: 36 55% 60%;
+
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 38 30% 94%;
+
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 14 60% 58%;
   }
 }
 
@@ -99,7 +114,61 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-feature-settings: "ss01", "ss02", "cv11";
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+    font-feature-settings: "ss01";
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Fraunces", Georgia, serif;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .bg-gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+
+  .bg-gradient-warm {
+    background-image: var(--gradient-warm);
+  }
+
+  .bg-gradient-accent {
+    background-image: var(--gradient-accent);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
+  }
+
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+
+  .transition-smooth {
+    transition: all 0.4s var(--transition-smooth);
   }
 }
