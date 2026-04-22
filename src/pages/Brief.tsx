@@ -679,8 +679,8 @@ const Brief = () => {
         {step === 2 && (
           <MediaScreen
             key="media"
-            state={{ hasWalkthrough: data.hasWalkthrough, hasFloorPlan: data.hasFloorPlan }}
-            setState={(s) => update(s)}
+            data={data}
+            update={(s) => update(s)}
             onContinue={next}
           />
         )}
