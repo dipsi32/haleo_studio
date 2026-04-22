@@ -21,175 +21,37 @@ import {
   Sparkles,
   Play,
   StickyNote,
+  Lock,
+  Check,
+  HelpCircle,
+  Pencil,
+  AlertCircle,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { ROOM_LABELS, useIntake, hasKind, type IntakeData, type MediaAsset } from "@/lib/intake";
+import { Textarea } from "@/components/ui/textarea";
+import EditBriefDrawer from "@/components/EditBriefDrawer";
+import { ROOM_LABELS, useIntake, type MediaAsset } from "@/lib/intake";
+import {
+  buildHomeownerLayer,
+  buildContractorLayer,
+  buildPermitFlag,
+  buildSpaceAnalysis,
+  buildReadiness,
+  readinessCopy,
+  type ContractorLine,
+  type SpaceAnalysisBlock,
+} from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
 
-const buildHomeownerLayer = (d: IntakeData): string => {
-  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
-  const pains = d.painPoints.slice(0, 3).map((p) => p.toLowerCase());
-  const vibes = d.vibes.slice(0, 2).map((v) => v.toLowerCase());
-
-  const painsLine =
-    pains.length > 0
-      ? `It's ${pains.join(", ").replace(/, ([^,]*)$/, " and $1")}.`
-      : "It just hasn't worked the way we live.";
-  const vibeLine =
-    vibes.length > 0
-      ? `We want it to feel ${vibes.join(" and ")} — somewhere we actually want to spend time.`
-      : "We want it to feel like ours, finally.";
-
-  const opener =
-    d.room === "addition"
-      ? "We're adding on to our home."
-      : d.room === "full-home"
-        ? "We're remodeling our whole home."
-        : `We're remodeling the ${room}.`;
-
-  return `${opener} ${painsLine} ${vibeLine}`;
-};
-
-const buildContractorLayer = (d: IntakeData): string[] => {
-  const lines: string[] = [];
-  if (d.room === "kitchen") {
-    lines.push("Full kitchen gut renovation. Removal of non-load-bearing partition between kitchen and dining (verify framing).");
-    if (d.painPoints.includes("No island")) lines.push("New island addition with plumbing rough-in and electrical for prep zone.");
-    if (d.painPoints.includes("Too dark") || d.painPoints.includes("Poor lighting"))
-      lines.push("Recessed lighting redesign — estimated 12–15 cans across 2–3 zones, dimmer-controlled.");
-    if (d.painPoints.includes("Dated cabinets") || d.painPoints.includes("No storage"))
-      lines.push("Full cabinet replacement; countertop template post-install (stone or quartz TBD).");
-    if (d.painPoints.includes("Appliances need upgrading"))
-      lines.push("Appliance upgrade: 36\" range, built-in refrigerator, panel-ready dishwasher.");
-  } else if (d.room === "bathroom") {
-    lines.push("Full bathroom gut renovation. New waterproofing membrane, tile setting, fixture rough-ins.");
-    if (d.painPoints.includes("Tiny shower") || d.painPoints.includes("No bathtub"))
-      lines.push("Reconfigure wet area: enlarge shower footprint and/or add freestanding tub w/ supply lines.");
-    if (d.painPoints.includes("Single vanity")) lines.push("Double vanity install — verify min 60\" width, dual P-traps, GFCI to code.");
-    if (d.painPoints.includes("Bad ventilation")) lines.push("New 110+ CFM ducted exhaust fan, humidity-sensing.");
-  } else if (d.room === "addition") {
-    lines.push(
-      `New ${d.additionType ?? "structure"} addition, approximately ${d.additionSize ?? "TBD"} sq ft, on ${
-        d.additionLocation ?? "site"
-      } elevation.`,
-    );
-    lines.push("Foundation, framing, roof tie-in, MEP rough-in, insulation, and finishes — full scope.");
-    lines.push("Structural and energy compliance (Title 24) calcs required at permit submission.");
-  } else if (d.room === "full-home") {
-    lines.push("Whole-home renovation. Phased approach recommended to maintain habitability.");
-    lines.push("Full MEP review, insulation upgrade, finish replacement throughout.");
-  } else {
-    lines.push(`Full ${d.room ?? "room"} renovation. Surface and finish replacement, electrical and lighting upgrades as scoped.`);
-  }
-  if (d.painPoints.includes("Bad flow") || d.painPoints.includes("Layout doesn't work"))
-    lines.push("Layout reconfiguration — confirm load paths, headers may be required.");
-  return lines;
-};
-
-const buildPermitFlag = (d: IntakeData): { likely: boolean; reason: string } => {
-  const heavy =
-    d.room === "addition" ||
-    d.room === "full-home" ||
-    d.painPoints.includes("Layout doesn't work") ||
-    d.painPoints.includes("Bad flow") ||
-    d.painPoints.includes("No island");
-  return heavy
-    ? { likely: true, reason: "Structural or MEP changes typically require San Jose permits." }
-    : { likely: false, reason: "Mostly cosmetic — likely permit-exempt, but always verify with your contractor." };
-};
-
-const buildSpaceAnalysis = (d: IntakeData): string[] => {
-  const notes: string[] = [];
-  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
-
-  if (hasKind(d, "video")) {
-    notes.push(
-      `Walkthrough video gives your contractor a real read on flow, ceiling height, and natural light in the ${room} — far more useful than a static photo.`,
-    );
-  }
-  if (hasKind(d, "photo")) {
-    const n = d.media.filter((m) => m.kind === "photo").length;
-    notes.push(
-      `${n} reference photo${n > 1 ? "s" : ""} pin down the exact finishes and trouble spots you flagged — no guessing on materials or condition.`,
-    );
-  }
-  if (hasKind(d, "floorplan")) {
-    notes.push(
-      `Floor plan lets us validate dimensions against the scope. Layout changes can be priced confidently.`,
-    );
-  }
-  if (d.measurements && d.measurements.trim().length > 0) {
-    notes.push(
-      `Your measurements ("${d.measurements.trim().slice(0, 120)}${d.measurements.length > 120 ? "…" : ""}") anchor the brief in real dimensions, even without a formal plan.`,
-    );
-  }
-
-  if (d.painPoints.includes("Too dark") || d.painPoints.includes("Poor lighting") || d.painPoints.includes("No natural light")) {
-    notes.push("Lighting is a recurring concern — expect any fair bid to include a lighting plan, not just a fixture count.");
-  }
-  if (d.painPoints.includes("Cramped") || d.painPoints.includes("Layout doesn't work") || d.painPoints.includes("Bad flow")) {
-    notes.push("Layout pain points usually mean wall removal or relocation — confirm a structural review is in scope.");
-  }
-  if (d.painPoints.includes("No storage") || d.painPoints.includes("Not enough storage") || d.painPoints.includes("No closet space")) {
-    notes.push("Storage is called out — built-ins and millwork should be itemized separately from cabinetry, not bundled.");
-  }
-
-  if (notes.length === 0) {
-    notes.push("Add a quick walkthrough video or a few photos and we'll sharpen this analysis with specific observations.");
-  }
-  return notes.slice(0, 4);
-};
-
-// Haleo Confidence — what makes THIS brief strong, in vision-doc voice.
-const buildConfidence = (d: IntakeData): { score: number; reasons: string[] } => {
-  let score = 40;
-  const reasons: string[] = [];
-  if (d.room) {
-    score += 10;
-    reasons.push("Scope is room-specific");
-  }
-  if (hasKind(d, "video")) {
-    score += 18;
-    reasons.push("Walkthrough video on file");
-  }
-  if (hasKind(d, "photo")) {
-    score += 8;
-    reasons.push("Reference photos attached");
-  }
-  if (hasKind(d, "floorplan")) {
-    score += 10;
-    reasons.push("Floor plan validates dimensions");
-  }
-  if (d.measurements && d.measurements.trim().length > 0) {
-    score += 6;
-    reasons.push("Rough measurements captured");
-  }
-  if (d.painPoints.length >= 3) {
-    score += 6;
-    reasons.push("Pain points clearly named");
-  }
-  if (d.vibes.length >= 2) {
-    score += 6;
-    reasons.push("Vibe direction is concrete");
-  }
-  if (!d.budgetSkipped && d.budgetMin) {
-    score += 6;
-    reasons.push("Budget range set");
-  }
-  if (d.timeline) {
-    score += 4;
-    reasons.push("Timeline anchored");
-  }
-  return { score: Math.min(98, score), reasons: reasons.slice(0, 5) };
-};
-
 const Pill = ({ children }: { children: React.ReactNode }) => (
-  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">{children}</span>
+  <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">
+    {children}
+  </span>
 );
 
-// ───── Media gallery (real thumbnails) ─────
+// ───── Media gallery ─────
 const MediaTile = ({ m, onOpen }: { m: MediaAsset; onOpen: (m: MediaAsset) => void }) => {
   if (m.kind === "photo" || m.kind === "inspiration") {
     return (
@@ -223,7 +85,6 @@ const MediaTile = ({ m, onOpen }: { m: MediaAsset; onOpen: (m: MediaAsset) => vo
       </button>
     );
   }
-  // floorplan
   const isImage = m.mime?.startsWith("image/");
   return (
     <button
@@ -275,16 +136,96 @@ const MediaLightbox = ({ asset, onClose }: { asset: MediaAsset | null; onClose: 
   </AnimatePresence>
 );
 
+// ───── Basis chip on contractor lines ─────
+const BasisChip = ({ basis }: { basis: ContractorLine["basis"] }) => {
+  const cfg =
+    basis === "grounded"
+      ? { label: "From you", icon: Check, cls: "bg-sage-soft text-sage" }
+      : basis === "inferred"
+        ? { label: "Inferred", icon: AlertCircle, cls: "bg-accent-soft text-accent" }
+        : { label: "Open question", icon: HelpCircle, cls: "bg-secondary text-foreground/70" };
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${cfg.cls}`}>
+      <Icon className="h-3 w-3" /> {cfg.label}
+    </span>
+  );
+};
+
+// ───── Per-asset analysis card ─────
+const AnalysisCard = ({ block }: { block: SpaceAnalysisBlock }) => {
+  const ICONS: Record<SpaceAnalysisBlock["scope"], typeof Video> = {
+    video: Video,
+    photo: Camera,
+    floorplan: Map,
+    measurements: Ruler,
+    general: Lightbulb,
+  };
+  const Icon = ICONS[block.scope];
+  return (
+    <article className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+      <header className="flex items-start gap-3">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-display text-base font-medium leading-tight">{block.title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{block.body}</p>
+        </div>
+      </header>
+      {block.observations && block.observations.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">What a contractor sees</p>
+          <ul className="mt-2 space-y-1.5">
+            {block.observations.map((o, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-foreground/85">
+                <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-sage" />
+                {o}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {block.unknowns && block.unknowns.length > 0 && (
+        <div className="mt-4 rounded-xl bg-secondary/60 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">What we can't tell yet</p>
+          <ul className="mt-2 space-y-1.5">
+            {block.unknowns.map((u, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/75">
+                <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/50" />
+                {u}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </article>
+  );
+};
+
+// ───── Page ─────
 const BriefResult = () => {
-  const { data } = useIntake();
+  const { data, update, addMedia, removeMedia, togglePill } = useIntake();
   const [showContractor, setShowContractor] = useState(false);
   const [open, setOpen] = useState<MediaAsset | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [approved, setApproved] = useState(false);
+  // Per-line edits to the contractor translation, keyed by index
+  const [lineEdits, setLineEdits] = useState<Record<number, string>>({});
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
-  const contractor = useMemo(() => buildContractorLayer(data), [data]);
+  const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
   const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
-  const confidence = useMemo(() => buildConfidence(data), [data]);
+  const readiness = useMemo(() => buildReadiness(data), [data]);
+  const readinessText = readinessCopy(readiness.level);
+
+  // Reset approval whenever the underlying brief changes
+  useMemo(() => {
+    setApproved(false);
+    setLineEdits({});
+  }, [contractorLines]);
 
   const spaceMedia = data.media.filter((m) => m.kind !== "inspiration");
   const inspirationMedia = data.media.filter((m) => m.kind === "inspiration");
@@ -302,20 +243,28 @@ const BriefResult = () => {
         ? "1–3 months"
         : data.timeline === "3-6"
           ? "3–6 months"
-          : "Exploring";
+          : data.timeline === "exploring"
+            ? "Exploring"
+            : "—";
+
+  const lineText = (i: number) => lineEdits[i] ?? contractorLines[i].text;
 
   return (
     <div className="min-h-screen bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
-          <Link to="/brief" className="text-sm text-muted-foreground transition-smooth hover:text-foreground">
-            Edit brief
-          </Link>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
+          >
+            <Edit3 className="h-3.5 w-3.5" /> Edit brief
+          </button>
         </div>
       </header>
 
       <main className="container max-w-4xl py-12 md:py-20">
+        {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -352,12 +301,102 @@ const BriefResult = () => {
           </Pill>
         </motion.div>
 
-        {/* Brief card */}
+        {/* ───── Brief Readiness ───── */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
+        >
+          <div className="grid gap-6 p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8 md:p-8">
+            {/* Score ring */}
+            <div className="flex items-center gap-5">
+              <div className="relative grid h-24 w-24 shrink-0 place-items-center">
+                <svg viewBox="0 0 96 96" className="absolute inset-0 -rotate-90">
+                  <circle cx="48" cy="48" r="42" stroke="hsl(var(--secondary))" strokeWidth="6" fill="none" />
+                  <motion.circle
+                    cx="48"
+                    cy="48"
+                    r="42"
+                    stroke="hsl(var(--accent))"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 42}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - readiness.score / 100) }}
+                    transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+                  />
+                </svg>
+                <div className="text-center">
+                  <p className="font-display text-3xl font-medium leading-none tabular-nums">{readiness.score}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 100</p>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">Brief readiness</p>
+                <p className="mt-1 font-display text-2xl font-light leading-tight">
+                  {readinessText.headline}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{readinessText.sub}</p>
+              </div>
+            </div>
+
+            {/* Have / Missing checklist */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">In your brief</p>
+                <ul className="mt-2 space-y-1.5">
+                  {readiness.have.length === 0 && (
+                    <li className="text-sm text-muted-foreground">Nothing locked in yet.</li>
+                  )}
+                  {readiness.have.map((h) => (
+                    <li key={h.label} className="flex items-start gap-2 text-sm text-foreground/85">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage" />
+                      <span className="min-w-0">{h.label}</span>
+                      <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">+{h.weight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">Would sharpen this</p>
+                <ul className="mt-2 space-y-1.5">
+                  {readiness.missing.length === 0 && (
+                    <li className="flex items-center gap-2 text-sm text-sage">
+                      <Sparkles className="h-3.5 w-3.5" /> All set — nothing else to add.
+                    </li>
+                  )}
+                  {readiness.missing.map((m) => (
+                    <li key={m.label} className="flex items-start gap-2 text-sm text-foreground/70">
+                      <Plus_Icon />
+                      <span className="min-w-0">
+                        {m.label}
+                        <span className="ml-2 text-[10px] tabular-nums text-muted-foreground">+{m.weight}</span>
+                        <span className="block text-xs text-muted-foreground">{m.nudge}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {readiness.missing.length > 0 && (
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent underline-offset-4 hover:underline"
+                  >
+                    Add more <ArrowRight className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ───── Brief card with two layers ───── */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
+          transition={{ duration: 0.7, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
         >
           <div className="grid items-center gap-3 border-b border-border bg-secondary/30 px-6 py-4 sm:grid-cols-[1fr_auto] md:px-8">
             <div className="flex items-center gap-3">
@@ -366,21 +405,22 @@ const BriefResult = () => {
               </div>
               <div>
                 <p className="font-display text-base font-medium">Your brief</p>
-                <p className="text-xs text-muted-foreground">Both layers below — toggle the lens.</p>
+                <p className="text-xs text-muted-foreground">
+                  {showContractor ? "The contractor view — every line tagged for honesty." : "Your words. Toggle to see what a contractor reads."}
+                </p>
               </div>
             </div>
             <button
               onClick={() => setShowContractor((v) => !v)}
               className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-smooth hover:bg-accent"
             >
-              {showContractor ? "Show how you said it" : "See how contractors read this"}
-              <ChevronRight
-                className={`h-4 w-4 transition-smooth ${showContractor ? "rotate-180" : ""}`}
-              />
+              {showContractor ? "Show how you said it" : "See contractor view"}
+              <ChevronRight className={`h-4 w-4 transition-smooth ${showContractor ? "rotate-180" : ""}`} />
             </button>
           </div>
 
           <div className="grid gap-0 md:grid-cols-2">
+            {/* Homeowner column */}
             <div className="border-b border-border p-6 md:border-b-0 md:border-r md:p-10">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">In your words</p>
               <p className="mt-3 font-display text-2xl font-light leading-snug text-foreground/90">
@@ -394,31 +434,90 @@ const BriefResult = () => {
               )}
             </div>
 
+            {/* Contractor column */}
             <div className="relative bg-secondary/40 p-6 md:p-10">
-              <p className="text-[11px] uppercase tracking-wider text-accent">For your contractor</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-wider text-accent">For your contractor</p>
+                {showContractor && (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
+                    {approved ? <><Lock className="h-3 w-3" /> Approved</> : <><AlertCircle className="h-3 w-3" /> Draft</>}
+                  </span>
+                )}
+              </div>
               <AnimatePresence mode="wait">
                 {showContractor ? (
-                  <motion.ul
+                  <motion.div
                     key="reveal"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="mt-3 space-y-3"
+                    className="mt-3 space-y-2"
                   >
-                    {contractor.map((line, i) => (
-                      <motion.li
-                        key={i}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: i * 0.08 }}
-                        className="flex items-start gap-3 font-mono text-[13px] leading-relaxed text-foreground/85"
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Each line is tagged so you can see what's grounded in what you shared, what we inferred for you, and what's still an open question. Edit anything before you approve.
+                    </p>
+                    <ul className="mt-3 space-y-2.5">
+                      {contractorLines.map((line, i) => (
+                        <motion.li
+                          key={i}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.35, delay: i * 0.04 }}
+                          className="group rounded-xl border border-border bg-card p-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <BasisChip basis={line.basis} />
+                            {!approved && (
+                              <button
+                                onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                                className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
+                                aria-label="Edit line"
+                              >
+                                <Pencil className="h-3.5 w-3.5 text-foreground/50" />
+                              </button>
+                            )}
+                          </div>
+                          {editingIdx === i ? (
+                            <Textarea
+                              autoFocus
+                              value={lineText(i)}
+                              onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
+                              onBlur={() => setEditingIdx(null)}
+                              rows={2}
+                              className="mt-2 rounded-lg bg-background font-mono text-[13px]"
+                            />
+                          ) : (
+                            <p className="mt-1.5 font-mono text-[13px] leading-relaxed text-foreground/90">
+                              {lineText(i)}
+                            </p>
+                          )}
+                          {line.source && (
+                            <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Source: {line.source}
+                            </p>
+                          )}
+                        </motion.li>
+                      ))}
+                    </ul>
+
+                    {/* Approval bar */}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-foreground/5 p-3">
+                      <div className="flex items-center gap-3 text-xs text-foreground/70">
+                        <div className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sage" /> From you</div>
+                        <div className="flex items-center gap-1.5"><AlertCircle className="h-3 w-3 text-accent" /> Inferred</div>
+                        <div className="flex items-center gap-1.5"><HelpCircle className="h-3 w-3 text-foreground/60" /> Open</div>
+                      </div>
+                      <Button
+                        onClick={() => setApproved((v) => !v)}
+                        size="sm"
+                        variant={approved ? "outline" : "default"}
+                        className="rounded-full"
                       >
-                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" />
-                        {line}
-                      </motion.li>
-                    ))}
-                  </motion.ul>
+                        {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
+                      </Button>
+                    </div>
+                  </motion.div>
                 ) : (
                   <motion.div
                     key="hidden"
@@ -434,11 +533,9 @@ const BriefResult = () => {
                       <div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-accent-foreground transition-smooth group-hover:scale-110">
                         <ArrowRight className="h-4 w-4" />
                       </div>
-                      <p className="font-display text-base font-medium">
-                        Reveal the contractor translation
-                      </p>
+                      <p className="font-display text-base font-medium">Reveal the contractor translation</p>
                       <p className="max-w-xs text-xs text-muted-foreground">
-                        The same vision, in language they can bid on.
+                        The same vision, in language they can bid on — with sources you can verify.
                       </p>
                     </button>
                   </motion.div>
@@ -461,68 +558,30 @@ const BriefResult = () => {
           </div>
         </motion.section>
 
-        {/* Haleo Confidence strip */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 overflow-hidden rounded-3xl border border-border bg-foreground p-6 text-background md:p-8"
-        >
-          <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
-            <div className="flex items-center gap-5">
-              <div className="relative grid h-20 w-20 place-items-center rounded-full border border-background/20">
-                <svg viewBox="0 0 80 80" className="absolute inset-0 -rotate-90">
-                  <circle cx="40" cy="40" r="34" stroke="hsl(var(--background) / 0.2)" strokeWidth="4" fill="none" />
-                  <motion.circle
-                    cx="40"
-                    cy="40"
-                    r="34"
-                    stroke="hsl(var(--accent))"
-                    strokeWidth="4"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 34}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 34 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 34 * (1 - confidence.score / 100) }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-                  />
-                </svg>
-                <span className="font-display text-2xl font-medium tabular-nums">{confidence.score}</span>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-accent">Haleo Confidence</p>
-                <p className="mt-1 font-display text-xl font-light leading-snug">
-                  Strong enough for contractors to bid on the same scope.
-                </p>
-              </div>
-            </div>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {confidence.reasons.map((r) => (
-                <li key={r} className="flex items-start gap-2 text-sm text-background/85">
-                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </motion.section>
-
-        {/* Space snapshot — REAL thumbnails of everything shared */}
-        {(spaceMedia.length > 0 || data.measurements) && (
+        {/* ───── Space snapshot ───── */}
+        {(spaceMedia.length > 0 || data.measurements || data.notes) && (
           <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8"
           >
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
-                <Eye className="h-4 w-4" />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
+                  <Eye className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-display text-base font-medium">Space snapshot</p>
+                  <p className="text-xs text-muted-foreground">Everything you've shared, attached to the brief.</p>
+                </div>
               </div>
-              <div>
-                <p className="font-display text-base font-medium">Space snapshot</p>
-                <p className="text-xs text-muted-foreground">Everything you shared, attached to the brief.</p>
-              </div>
+              <button
+                onClick={() => setEditOpen(true)}
+                className="text-xs font-medium text-accent underline-offset-4 hover:underline"
+              >
+                Add more
+              </button>
             </div>
 
             {spaceMedia.length > 0 && (
@@ -533,21 +592,36 @@ const BriefResult = () => {
               </div>
             )}
 
-            {data.measurements && (
-              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                  <Ruler className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-display text-sm font-medium">Measurements</p>
-                  <p className="text-xs text-foreground/70">{data.measurements}</p>
-                </div>
+            {(data.measurements || data.notes) && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {data.measurements && (
+                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <Ruler className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-medium">Measurements</p>
+                      <p className="text-xs leading-relaxed text-foreground/70">{data.measurements}</p>
+                    </div>
+                  </div>
+                )}
+                {data.notes && (
+                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <StickyNote className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-medium">Rough notes</p>
+                      <p className="text-xs leading-relaxed text-foreground/70">{data.notes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </motion.section>
         )}
 
-        {/* Inspiration gallery */}
+        {/* ───── Inspiration ───── */}
         {(inspirationMedia.length > 0 || data.inspirationLink) && (
           <motion.section
             initial={{ opacity: 0, y: 14 }}
@@ -579,12 +653,12 @@ const BriefResult = () => {
           </motion.section>
         )}
 
-        {/* Space analysis */}
+        {/* ───── Space analysis (per-asset) ───── */}
         <motion.section
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 rounded-3xl border border-border bg-secondary/30 p-6 md:p-8"
+          className="mt-6"
         >
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
@@ -592,17 +666,16 @@ const BriefResult = () => {
             </div>
             <div>
               <p className="font-display text-base font-medium">Space analysis</p>
-              <p className="text-xs text-muted-foreground">What your media tells us before any contractor walks in.</p>
+              <p className="text-xs text-muted-foreground">
+                A read of each thing you shared — through the contractor's lens, before they walk in.
+              </p>
             </div>
           </div>
-          <ul className="mt-6 space-y-3">
-            {analysis.map((line, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground/85">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                {line}
-              </li>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {analysis.map((b) => (
+              <AnalysisCard key={b.id} block={b} />
             ))}
-          </ul>
+          </div>
         </motion.section>
 
         {/* Actions */}
@@ -612,24 +685,24 @@ const BriefResult = () => {
           transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="mt-10 grid gap-3 sm:grid-cols-3"
         >
-          <Button size="lg" className="rounded-full" disabled>
+          <Button size="lg" className="rounded-full" disabled={!approved}>
             <Send className="h-4 w-4" />
-            Send to contractor
+            {approved ? "Send to contractor" : "Approve to send"}
           </Button>
-          <Button size="lg" variant="outline" className="rounded-full" disabled>
+          <Button size="lg" variant="outline" className="rounded-full" disabled={!approved}>
             <Download className="h-4 w-4" />
             Download PDF
           </Button>
-          <Button size="lg" variant="outline" className="rounded-full" asChild>
-            <Link to="/brief">
-              <Edit3 className="h-4 w-4" />
-              Edit brief
-            </Link>
+          <Button size="lg" variant="outline" className="rounded-full" onClick={() => setEditOpen(true)}>
+            <Edit3 className="h-4 w-4" />
+            Edit brief
           </Button>
         </motion.div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Sending and PDF export come online when Lovable Cloud is enabled.
+          {approved
+            ? "Sending and PDF export come online when Lovable Cloud is enabled."
+            : "Reveal the contractor view above and approve it before sending."}
         </p>
 
         {/* Next step */}
@@ -658,8 +731,24 @@ const BriefResult = () => {
       </main>
 
       <MediaLightbox asset={open} onClose={() => setOpen(null)} />
+      <EditBriefDrawer
+        open={editOpen}
+        data={data}
+        onClose={() => setEditOpen(false)}
+        onPatch={update}
+        onAddMedia={addMedia}
+        onRemoveMedia={removeMedia}
+        onTogglePill={togglePill}
+      />
     </div>
   );
 };
+
+// Tiny inline plus icon — kept here to avoid pulling another lucide import twice.
+const Plus_Icon = () => (
+  <svg viewBox="0 0 24 24" className="mt-1 h-3.5 w-3.5 shrink-0 text-foreground/40" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
 
 export default BriefResult;
