@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Pencil,
   AlertCircle,
+  ChevronDown,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import {
   readinessCopy,
   type ContractorLine,
   type SpaceAnalysisBlock,
+  type BriefReadiness,
 } from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
@@ -302,94 +304,12 @@ const BriefResult = () => {
         </motion.div>
 
         {/* ───── Brief Readiness ───── */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
-        >
-          <div className="grid gap-6 p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8 md:p-8">
-            {/* Score ring */}
-            <div className="flex items-center gap-5">
-              <div className="relative grid h-24 w-24 shrink-0 place-items-center">
-                <svg viewBox="0 0 96 96" className="absolute inset-0 -rotate-90">
-                  <circle cx="48" cy="48" r="42" stroke="hsl(var(--secondary))" strokeWidth="6" fill="none" />
-                  <motion.circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke="hsl(var(--accent))"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 42}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - readiness.score / 100) }}
-                    transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-                  />
-                </svg>
-                <div className="text-center">
-                  <p className="font-display text-3xl font-medium leading-none tabular-nums">{readiness.score}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 100</p>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">Brief readiness</p>
-                <p className="mt-1 font-display text-2xl font-light leading-tight">
-                  {readinessText.headline}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{readinessText.sub}</p>
-              </div>
-            </div>
-
-            {/* Have / Missing checklist */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">In your brief</p>
-                <ul className="mt-2 space-y-1.5">
-                  {readiness.have.length === 0 && (
-                    <li className="text-sm text-muted-foreground">Nothing locked in yet.</li>
-                  )}
-                  {readiness.have.map((h) => (
-                    <li key={h.label} className="flex items-start gap-2 text-sm text-foreground/85">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage" />
-                      <span className="min-w-0">{h.label}</span>
-                      <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">+{h.weight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">Would sharpen this</p>
-                <ul className="mt-2 space-y-1.5">
-                  {readiness.missing.length === 0 && (
-                    <li className="flex items-center gap-2 text-sm text-sage">
-                      <Sparkles className="h-3.5 w-3.5" /> All set — nothing else to add.
-                    </li>
-                  )}
-                  {readiness.missing.map((m) => (
-                    <li key={m.label} className="flex items-start gap-2 text-sm text-foreground/70">
-                      <Plus_Icon />
-                      <span className="min-w-0">
-                        {m.label}
-                        <span className="ml-2 text-[10px] tabular-nums text-muted-foreground">+{m.weight}</span>
-                        <span className="block text-xs text-muted-foreground">{m.nudge}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {readiness.missing.length > 0 && (
-                  <button
-                    onClick={() => setEditOpen(true)}
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent underline-offset-4 hover:underline"
-                  >
-                    Add more <ArrowRight className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.section>
+        <ReadinessCard
+          readiness={readiness}
+          headline={readinessText.headline}
+          sub={readinessText.sub}
+          onAdd={() => setEditOpen(true)}
+        />
 
         {/* ───── Brief card with two layers ───── */}
         <motion.section
@@ -744,11 +664,150 @@ const BriefResult = () => {
   );
 };
 
-// Tiny inline plus icon — kept here to avoid pulling another lucide import twice.
-const Plus_Icon = () => (
-  <svg viewBox="0 0 24 24" className="mt-1 h-3.5 w-3.5 shrink-0 text-foreground/40" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
+// ───── Brief Readiness card ─────
+// Mental model: a 0–100 score across 8 things a great brief contains.
+// Three tiers: Draft (0–49) → Shareable (50–74) → Biddable (75–100).
+// Show: tier + score, progress to next tier, and the single highest-impact next add.
+// Full checklist is one tap away for power users.
+const TIER_META: Record<BriefReadiness["level"], { label: string; nextAt: number | null; nextLabel: string | null }> = {
+  draft: { label: "Draft", nextAt: 50, nextLabel: "Shareable" },
+  shareable: { label: "Shareable", nextAt: 75, nextLabel: "Biddable" },
+  biddable: { label: "Biddable", nextAt: null, nextLabel: null },
+};
+
+const ReadinessCard = ({
+  readiness,
+  headline,
+  sub,
+  onAdd,
+}: {
+  readiness: BriefReadiness;
+  headline: string;
+  sub: string;
+  onAdd: () => void;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const tier = TIER_META[readiness.level];
+  const topMissing = [...readiness.missing].sort((a, b) => b.weight - a.weight)[0];
+  const pointsToNext = tier.nextAt != null ? Math.max(0, tier.nextAt - readiness.score) : 0;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
+    >
+      <div className="p-6 md:p-8">
+        {/* Top row: label + score */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">Brief readiness</p>
+            <p className="mt-2 font-display text-2xl font-light leading-tight md:text-3xl">{headline}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="font-display text-4xl font-medium leading-none tabular-nums md:text-5xl">{readiness.score}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">out of 100</p>
+          </div>
+        </div>
+
+        {/* Tier track */}
+        <div className="mt-6">
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <motion.div
+              className="absolute left-0 top-0 h-full rounded-full bg-accent"
+              initial={{ width: 0 }}
+              animate={{ width: `${readiness.score}%` }}
+              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+            />
+            {/* Tier markers */}
+            <span className="absolute top-0 h-full w-px bg-background/80" style={{ left: "50%" }} aria-hidden />
+            <span className="absolute top-0 h-full w-px bg-background/80" style={{ left: "75%" }} aria-hidden />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span className={readiness.level === "draft" ? "text-foreground" : ""}>Draft</span>
+            <span className={readiness.level === "shareable" ? "text-foreground" : ""}>Shareable</span>
+            <span className={readiness.level === "biddable" ? "text-foreground" : ""}>Biddable</span>
+          </div>
+        </div>
+
+        {/* Next best step OR all-clear */}
+        {topMissing ? (
+          <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-secondary/50 p-4 sm:flex-row sm:items-center sm:gap-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/15 text-accent">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">
+                {tier.nextLabel ? `${pointsToNext} pts to ${tier.nextLabel}` : "Nice add"}
+              </p>
+              <p className="mt-0.5 text-sm text-foreground">
+                <span className="font-medium">{topMissing.label}.</span>{" "}
+                <span className="text-muted-foreground">{topMissing.nudge}</span>
+              </p>
+            </div>
+            <Button onClick={onAdd} size="sm" variant="default" className="shrink-0 self-start sm:self-auto">
+              Add now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-6 flex items-center gap-3 rounded-2xl bg-sage-soft/60 p-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage/15 text-sage">
+              <Check className="h-4 w-4" />
+            </div>
+            <p className="text-sm text-foreground">
+              <span className="font-medium">All eight signals captured.</span>{" "}
+              <span className="text-muted-foreground">Contractors can bid the same scope from this brief.</span>
+            </p>
+          </div>
+        )}
+
+        {/* Expandable full checklist */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-foreground/70 transition-smooth hover:text-foreground"
+        >
+          {expanded ? "Hide" : "See"} the 8-point checklist
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.ul
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-4 grid gap-1.5 overflow-hidden border-t border-border/60 pt-4 sm:grid-cols-2"
+            >
+              {[
+                ...readiness.have.map((h) => ({ ...h, have: true, nudge: "" })),
+                ...readiness.missing.map((m) => ({ ...m, have: false })),
+              ].map((item) => (
+                <li
+                  key={item.label}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
+                >
+                  {item.have ? (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-sage" />
+                  ) : (
+                    <span className="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border border-foreground/30" />
+                  )}
+                  <span className={`min-w-0 truncate ${item.have ? "text-foreground/85" : "text-foreground/60"}`}>
+                    {item.label}
+                  </span>
+                  <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                    {item.have ? `+${item.weight}` : `+${item.weight}`}
+                  </span>
+                </li>
+              ))}
+            </motion.ul>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.section>
+  );
+};
 
 export default BriefResult;
