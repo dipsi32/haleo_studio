@@ -78,7 +78,7 @@ export const useIntake = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable(data)));
     } catch {
       /* ignore */
     }
@@ -93,10 +93,26 @@ export const useIntake = () => {
         [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
       };
     });
+  const addMedia = (assets: MediaAsset[]) =>
+    setData((d) => ({ ...d, media: [...d.media, ...assets] }));
+  const removeMedia = (id: string) =>
+    setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) }));
   const reset = () => setData(empty);
 
-  return { data, update, togglePill, reset, setData };
+  return { data, update, togglePill, addMedia, removeMedia, reset, setData };
 };
+
+// Build MediaAssets from a FileList (creates object URLs).
+export const filesToAssets = (files: FileList | File[], kind: MediaAsset["kind"]): MediaAsset[] =>
+  Array.from(files).map((f) => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    kind,
+    name: f.name,
+    url: URL.createObjectURL(f),
+    mime: f.type,
+  }));
+
+export const hasKind = (d: IntakeData, k: MediaAsset["kind"]) => d.media.some((m) => m.kind === k);
 
 export const ROOM_LABELS: Record<Room, string> = {
   kitchen: "Kitchen",
