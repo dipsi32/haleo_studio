@@ -42,6 +42,7 @@ import {
   readinessCopy,
   type ContractorLine,
   type SpaceAnalysisBlock,
+  type BriefReadiness,
 } from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
