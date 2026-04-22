@@ -159,6 +159,8 @@ const BriefResult = () => {
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractor = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
+  const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
+  const captures = useMemo(() => captureSummary(data), [data]);
 
   const budgetLabel = data.budgetSkipped
     ? "Not shared"
