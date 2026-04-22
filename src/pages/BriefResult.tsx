@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -222,7 +222,7 @@ const BriefResult = () => {
   const readinessText = readinessCopy(readiness.level);
 
   // Reset approval whenever the underlying brief changes
-  useMemo(() => {
+  useEffect(() => {
     setApproved(false);
     setLineEdits({});
   }, [contractorLines]);
