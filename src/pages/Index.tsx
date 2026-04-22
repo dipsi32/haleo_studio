@@ -4,12 +4,14 @@ import { ArrowRight, FileText, Sparkles, Compass, ShieldCheck, CalendarCheck2, C
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
-};
+  transition: { duration: 0.7, ease: EASE },
+} as const;
 
 const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
