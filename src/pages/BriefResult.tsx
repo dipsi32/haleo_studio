@@ -314,33 +314,83 @@ const BriefResult = () => {
             </div>
           </div>
 
-          {/* Permit + thumbs */}
-          <div className="grid gap-6 border-t border-border bg-card px-6 py-6 md:grid-cols-2 md:px-10 md:py-8">
-            <div className="flex items-start gap-3">
-              <div className={`grid h-9 w-9 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
-                <ShieldCheck className="h-4 w-4" />
+          {/* Permit row */}
+          <div className="flex items-start gap-3 border-t border-border bg-card px-6 py-6 md:px-10 md:py-7">
+            <div className={`grid h-9 w-9 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-display text-sm font-medium">
+                {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+              </p>
+              <p className="text-xs text-muted-foreground">{permit.reason}</p>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Space snapshot — what we got from you */}
+        {captures.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
+                <Eye className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-display text-sm font-medium">
-                  {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
-                </p>
-                <p className="text-xs text-muted-foreground">{permit.reason}</p>
+                <p className="font-display text-base font-medium">Space snapshot</p>
+                <p className="text-xs text-muted-foreground">Everything you shared, attached to the brief.</p>
               </div>
             </div>
-            {(data.hasPhotos || data.hasFloorPlan || data.hasInspiration) && (
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-secondary">
-                  <ImageIcon className="h-4 w-4" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {data.hasWalkthrough && <Pill>Walkthrough video</Pill>}
-                  {data.hasFloorPlan && <Pill>Floor plan</Pill>}
-                  {data.hasPhotos && <Pill>Photos</Pill>}
-                  {data.hasInspiration && <Pill>Inspiration</Pill>}
-                </div>
-              </div>
-            )}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {captures.map((c, i) => {
+                const Icon = c.icon;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-sm font-medium">{c.label}</p>
+                      <p className="truncate text-xs text-muted-foreground">{c.sub}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Space analysis */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 rounded-3xl border border-border bg-secondary/30 p-6 md:p-8"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
+              <Lightbulb className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-display text-base font-medium">Space analysis</p>
+              <p className="text-xs text-muted-foreground">What your media tells us before any contractor walks in.</p>
+            </div>
           </div>
+          <ul className="mt-6 space-y-3">
+            {analysis.map((line, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground/85">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                {line}
+              </li>
+            ))}
+          </ul>
         </motion.section>
 
         {/* Actions */}
