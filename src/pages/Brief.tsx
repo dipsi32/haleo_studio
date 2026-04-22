@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,15 +11,15 @@ import {
   Layers,
   Sparkles,
   Video,
-  Upload,
-  Image as ImageIcon,
   Camera,
+  Map,
+  Ruler,
   ArrowRight,
   Link as LinkIcon,
-  Ruler,
-  Map,
   Check,
-  Wand2,
+  X,
+  Plus,
+  StickyNote,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
@@ -31,10 +31,13 @@ import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
   VIBES,
+  filesToAssets,
+  hasKind,
   type Room,
   type AdditionType,
   type AdditionLocation,
   type Timeline,
+  type MediaAsset,
   useIntake,
 } from "@/lib/intake";
 
@@ -49,14 +52,12 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-const TOTAL = 6;
+// 4 felt-steps (Addition route also folds into 4: room counts as step 1, addition mini-flow lives on step 2's place).
+const TOTAL = 4;
 
-const fmtMoney = (v: number) =>
-  v >= 500
-    ? "$500K+"
-    : v >= 1000
-      ? "$1M+"
-      : `$${v}K`;
+const STEP_LABELS = ["The room", "Show & tell", "The vibe", "When & how much"];
+
+const fmtMoney = (v: number) => (v >= 500 ? "$500K+" : `$${v}K`);
 
 const ScreenTitle = ({
   eyebrow,
@@ -78,7 +79,7 @@ const ScreenTitle = ({
   </div>
 );
 
-const SkipButton = ({ onClick, label = "Skip for now" }: { onClick: () => void; label?: string }) => (
+const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onClick: () => void; label?: string }) => (
   <button
     onClick={onClick}
     className="text-sm text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
@@ -87,43 +88,48 @@ const SkipButton = ({ onClick, label = "Skip for now" }: { onClick: () => void; 
   </button>
 );
 
-// ───── Step indicator (feedforward affordance) ─────
-const ThreeStepFeedforward = () => {
-  const items = [
-    { n: 1, label: "Pick a room" },
-    { n: 2, label: "Show your space" },
-    { n: 3, label: "Tell us the vibe" },
-  ];
-  return (
-    <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full border border-border bg-card/70 px-3 py-2 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur sm:gap-3 sm:px-4">
-      <span className="hidden items-center gap-1.5 text-accent sm:inline-flex">
-        <Wand2 className="h-3.5 w-3.5" />
-        <span className="uppercase tracking-[0.18em]">3 simple steps</span>
-      </span>
-      <span className="hidden h-3 w-px bg-border sm:inline-block" />
-      {items.map((it, idx) => (
-        <span key={it.n} className="flex items-center gap-2">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-soft text-[10px] font-semibold text-accent">
-            {it.n}
+// ───── Feedforward: live progress dots that mirror the wizard ─────
+const StepDots = ({ step }: { step: number }) => (
+  <div className="mx-auto flex max-w-2xl items-center justify-center gap-3 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
+    <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
+      4 quick steps
+    </span>
+    <span className="hidden h-3 w-px bg-border sm:inline-block" />
+    {STEP_LABELS.map((label, i) => {
+      const n = i + 1;
+      const isDone = step > n;
+      const isActive = step === n;
+      return (
+        <span key={label} className="flex items-center gap-2">
+          <span
+            className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-semibold transition-smooth ${
+              isDone
+                ? "bg-accent text-accent-foreground"
+                : isActive
+                  ? "bg-foreground text-background ring-4 ring-accent-soft"
+                  : "bg-secondary text-foreground/50"
+            }`}
+          >
+            {isDone ? <Check className="h-3 w-3" /> : n}
           </span>
-          <span className="whitespace-nowrap">{it.label}</span>
-          {idx < items.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground/50" />}
+          <span className={`whitespace-nowrap ${isActive ? "text-foreground" : ""}`}>{label}</span>
+          {n < STEP_LABELS.length && <span className="h-px w-3 bg-border md:w-4" />}
         </span>
-      ))}
-    </div>
-  );
-};
+      );
+    })}
+  </div>
+);
 
 // ───── Screen 1: Room ─────
 const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
   const rooms = Object.keys(ROOM_LABELS) as Room[];
   return (
     <div className="space-y-10">
-      <ThreeStepFeedforward />
+      <StepDots step={1} />
       <ScreenTitle
-        eyebrow="Step 1"
-        title="Which room are we transforming?"
-        sub="Tap one. Don't overthink it — you can change it later."
+        eyebrow="Step 1 of 4"
+        title="Where's the dream taking shape?"
+        sub="Tap one. Don't overthink it — you can swap rooms anytime."
       />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {rooms.map((r) => {
@@ -146,205 +152,210 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
   );
 };
 
-// ───── Screen 2: Capture (intuitive multi-modal) ─────
-type CaptureMethod = "video" | "photos" | "floorplan" | "measurements";
-
-const CAPTURE_OPTIONS: {
-  value: CaptureMethod;
-  icon: typeof Video;
-  label: string;
-  hint: string;
-  best?: boolean;
-}[] = [
-  { value: "video", icon: Video, label: "Walkthrough video", hint: "Best — slow 30s pan", best: true },
-  { value: "photos", icon: Camera, label: "A few photos", hint: "Snap the trouble spots" },
-  { value: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or image" },
-  { value: "measurements", icon: Ruler, label: "Type measurements", hint: "Rough dimensions in words" },
-];
-
-const MediaScreen = ({
-  onContinue,
-  data,
-  update,
-}: {
-  onContinue: () => void;
-  data: { captureMethod?: CaptureMethod; hasWalkthrough?: boolean; hasFloorPlan?: boolean; hasPhotos?: boolean; measurements?: string };
-  update: (s: Partial<{ captureMethod: CaptureMethod; hasWalkthrough: boolean; hasFloorPlan: boolean; hasPhotos: boolean; measurements: string }>) => void;
-}) => {
-  const method = data.captureMethod;
-
-  const handlePick = (m: CaptureMethod) => {
-    update({ captureMethod: m });
-  };
-
-  const markCaptured = () => {
-    if (method === "video") update({ hasWalkthrough: true });
-    if (method === "photos") update({ hasPhotos: true });
-    if (method === "floorplan") update({ hasFloorPlan: true });
-  };
-
-  const captured =
-    (method === "video" && data.hasWalkthrough) ||
-    (method === "photos" && data.hasPhotos) ||
-    (method === "floorplan" && data.hasFloorPlan) ||
-    (method === "measurements" && (data.measurements?.trim().length ?? 0) > 4);
-
-  return (
-    <div className="space-y-10">
-      <ScreenTitle
-        eyebrow="Step 2"
-        title="Help us see your space."
-        sub="Pick whatever's easiest right now. A quick video says the most — but a photo, sketch, or even a few measurements works."
-      />
-
-      {/* Segmented capture options */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {CAPTURE_OPTIONS.map((opt) => {
-          const active = method === opt.value;
-          const Icon = opt.icon;
-          return (
-            <button
-              key={opt.value}
-              onClick={() => handlePick(opt.value)}
-              className={`group relative flex flex-col items-start gap-3 rounded-2xl border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-                active ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
-              }`}
-            >
-              {opt.best && (
-                <span className="absolute right-3 top-3 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                  Best
-                </span>
-              )}
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-accent-soft text-accent transition-smooth group-hover:bg-accent group-hover:text-accent-foreground">
-                <Icon className="h-4 w-4" />
-              </div>
-              <p className="font-display text-base font-medium leading-tight">{opt.label}</p>
-              <p className="text-xs text-muted-foreground">{opt.hint}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Dynamic action area */}
-      <AnimatePresence mode="wait">
-        {method && (
-          <motion.div
-            key={method}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto max-w-2xl"
-          >
-            {method === "measurements" ? (
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-                <label className="font-display text-sm font-medium">Rough measurements</label>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Plain language is fine. e.g. "Kitchen ~12×14ft, ceiling 9ft, one window on the south wall."
-                </p>
-                <Textarea
-                  value={data.measurements ?? ""}
-                  onChange={(e) => update({ measurements: e.target.value })}
-                  rows={4}
-                  placeholder="Type a quick description with rough dimensions…"
-                  className="mt-4 rounded-xl border-border bg-background"
-                />
-              </div>
-            ) : (
-              <button
-                onClick={markCaptured}
-                className={`flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-6 text-left transition-smooth ${
-                  captured ? "border-accent bg-accent-soft/30" : "border-border bg-card/60 hover:border-accent/60 hover:bg-card"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`grid h-11 w-11 place-items-center rounded-full ${captured ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground/70"}`}>
-                    {captured ? <Check className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
-                  </div>
-                  <div>
-                    <p className="font-display text-base font-medium">
-                      {captured
-                        ? "Got it — added to your brief"
-                        : method === "video"
-                          ? "Tap to record or upload your walkthrough"
-                          : method === "photos"
-                            ? "Tap to add photos of the trouble spots"
-                            : "Tap to upload your floor plan"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {method === "video" && "MP4 or MOV. 30 seconds is plenty."}
-                      {method === "photos" && "Up to 10 photos. JPG, PNG, or HEIC."}
-                      {method === "floorplan" && "PDF, JPG, PNG — even a phone photo of a sketch."}
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background">
-                  {captured ? "Replace" : "Choose"}
-                </span>
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex flex-col items-center gap-4">
-        <Button onClick={onContinue} size="lg" className="rounded-full px-8">
-          Continue
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <SkipButton onClick={onContinue} label="I'll add this later" />
-      </div>
-    </div>
-  );
-};
-
-// ───── Screen 3: Pain ─────
-const PainScreen = ({
+// ───── Screen 2: Show & tell — combines media + pain in one calm screen ─────
+const ShowAndTellScreen = ({
   room,
   selected,
-  onToggle,
+  onTogglePain,
+  onAddMedia,
+  onRemoveMedia,
+  media,
+  notes,
+  measurements,
+  onUpdate,
   onContinue,
-  setHasPhotos,
-  hasPhotos,
 }: {
   room: Exclude<Room, "addition">;
   selected: string[];
-  onToggle: (v: string) => void;
+  onTogglePain: (v: string) => void;
+  onAddMedia: (a: MediaAsset[]) => void;
+  onRemoveMedia: (id: string) => void;
+  media: MediaAsset[];
+  notes?: string;
+  measurements?: string;
+  onUpdate: (p: { notes?: string; measurements?: string }) => void;
   onContinue: () => void;
-  setHasPhotos: (v: boolean) => void;
-  hasPhotos?: boolean;
 }) => {
+  const videoRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef<HTMLInputElement>(null);
+  const planRef = useRef<HTMLInputElement>(null);
+  const [showNotes, setShowNotes] = useState(Boolean(notes || measurements));
+
   const options = PAIN_BY_ROOM[room].map((p) => ({ value: p, label: p }));
+
+  const captures: {
+    kind: MediaAsset["kind"];
+    icon: typeof Video;
+    label: string;
+    hint: string;
+    accept: string;
+    multiple?: boolean;
+    ref: React.RefObject<HTMLInputElement>;
+    best?: boolean;
+  }[] = [
+    {
+      kind: "video",
+      icon: Video,
+      label: "Walkthrough video",
+      hint: "Best — a slow 30s pan",
+      accept: "video/*",
+      ref: videoRef,
+      best: true,
+    },
+    { kind: "photo", icon: Camera, label: "A few photos", hint: "Snap the trouble spots", accept: "image/*", multiple: true, ref: photosRef },
+    { kind: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or photo", accept: "image/*,application/pdf", ref: planRef },
+  ];
+
+  const handleFiles = (kind: MediaAsset["kind"]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    onAddMedia(filesToAssets(e.target.files, kind));
+    e.target.value = "";
+  };
+
   return (
     <div className="space-y-12">
+      <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 3"
-        title="What's bugging you about it?"
-        sub="Tap as many as ring true. Be honest — this is for your eyes only first."
+        eyebrow="Step 2 of 4"
+        title="Show us your space."
+        sub="Drop in whatever's easiest. Then tell us what's bugging you about it."
       />
-      <PillGroup options={options} selected={selected} onToggle={onToggle} />
 
-      <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-card/60 p-6">
-        <div className="flex items-center gap-4">
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-foreground/70">
-            <Camera className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p className="font-display text-base font-medium">Snap the parts you most want to change.</p>
-            <p className="text-sm text-muted-foreground">Photos help your contractor see exactly what you mean.</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setHasPhotos(!hasPhotos)}
-            className="rounded-full"
+      {/* Capture grid — real file inputs */}
+      <div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {captures.map((c) => {
+            const count = media.filter((m) => m.kind === c.kind).length;
+            const Icon = c.icon;
+            return (
+              <div key={c.kind} className="relative">
+                <input
+                  ref={c.ref}
+                  type="file"
+                  accept={c.accept}
+                  multiple={c.multiple}
+                  onChange={handleFiles(c.kind)}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => c.ref.current?.click()}
+                  className={`group relative flex w-full flex-col items-start gap-3 rounded-2xl border-2 border-dashed bg-card/60 p-5 text-left transition-smooth hover:-translate-y-0.5 hover:border-accent/60 hover:bg-card hover:shadow-lift ${
+                    count > 0 ? "border-accent bg-accent-soft/30" : "border-border"
+                  }`}
+                >
+                  {c.best && count === 0 && (
+                    <span className="absolute right-3 top-3 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                      Best
+                    </span>
+                  )}
+                  {count > 0 && (
+                    <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                      <Check className="h-3 w-3" /> {count}
+                    </span>
+                  )}
+                  <div className={`grid h-10 w-10 place-items-center rounded-full transition-smooth ${count > 0 ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <p className="font-display text-base font-medium leading-tight">{c.label}</p>
+                  <p className="text-xs text-muted-foreground">{c.hint}</p>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Thumbnails of what's been added */}
+        {media.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 flex flex-wrap gap-2"
           >
-            {hasPhotos ? "Added ✓" : "Upload"}
-          </Button>
+            {media.map((m) => (
+              <div
+                key={m.id}
+                className="group relative flex items-center gap-2 overflow-hidden rounded-xl border border-border bg-card p-1.5 pr-3 shadow-soft"
+              >
+                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-secondary">
+                  {m.kind === "photo" || m.kind === "inspiration" ? (
+                    <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
+                  ) : m.kind === "video" ? (
+                    <Video className="h-4 w-4 text-foreground/60" />
+                  ) : (
+                    <Map className="h-4 w-4 text-foreground/60" />
+                  )}
+                </div>
+                <span className="max-w-[140px] truncate text-xs text-foreground/80">{m.name}</span>
+                <button
+                  onClick={() => onRemoveMedia(m.id)}
+                  className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-secondary text-foreground/50 transition-smooth hover:bg-destructive hover:text-destructive-foreground"
+                  aria-label={`Remove ${m.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Inline secondary affordance: notes / measurements */}
+        {!showNotes ? (
+          <button
+            onClick={() => setShowNotes(true)}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-card/60 px-4 py-2 text-xs text-muted-foreground transition-smooth hover:border-accent/50 hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" />
+            Or jot rough notes / measurements
+          </button>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 grid gap-3 sm:grid-cols-2"
+          >
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <label className="flex items-center gap-2 font-display text-sm font-medium">
+                <StickyNote className="h-4 w-4 text-accent" /> Rough notes
+              </label>
+              <Textarea
+                value={notes ?? ""}
+                onChange={(e) => onUpdate({ notes: e.target.value })}
+                rows={3}
+                placeholder="Anything else worth knowing — quirks, neighbors, what you've already tried…"
+                className="mt-2 rounded-xl border-border bg-background text-sm"
+              />
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <label className="flex items-center gap-2 font-display text-sm font-medium">
+                <Ruler className="h-4 w-4 text-accent" /> Measurements
+              </label>
+              <Textarea
+                value={measurements ?? ""}
+                onChange={(e) => onUpdate({ measurements: e.target.value })}
+                rows={3}
+                placeholder='e.g. "Kitchen ~12×14ft, ceiling 9ft, window on south wall."'
+                className="mt-2 rounded-xl border-border bg-background text-sm"
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Pain pills */}
+      <div>
+        <p className="text-center font-display text-2xl font-light text-foreground/90">
+          What's bugging you about it?
+        </p>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Tap as many as ring true. This is for your eyes only first.
+        </p>
+        <div className="mt-6">
+          <PillGroup options={options} selected={selected} onToggle={onTogglePain} />
         </div>
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        <Button onClick={onContinue} size="lg" className="rounded-full px-8" disabled={selected.length === 0}>
+        <Button onClick={onContinue} size="lg" className="rounded-full px-8" disabled={selected.length === 0 && media.length === 0 && !notes && !measurements}>
           Continue
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -354,7 +365,7 @@ const PainScreen = ({
   );
 };
 
-// ───── Screen 3 (Addition variant) ─────
+// ───── Screen 2 (Addition variant) — three quick taps, auto-advancing ─────
 const AdditionScreen = ({
   data,
   onChange,
@@ -385,7 +396,8 @@ const AdditionScreen = ({
 
   if (sub === "type") {
     return (
-      <div className="space-y-12">
+      <div className="space-y-10">
+        <StepDots step={2} />
         <ScreenTitle eyebrow="Addition · 1 of 3" title="What are you adding?" />
         <div className="mx-auto grid max-w-2xl grid-cols-2 gap-3">
           {types.map((t) => (
@@ -410,7 +422,8 @@ const AdditionScreen = ({
   if (sub === "size") {
     const size = data.additionSize ?? 300;
     return (
-      <div className="space-y-12">
+      <div className="space-y-10">
+        <StepDots step={2} />
         <ScreenTitle eyebrow="Addition · 2 of 3" title="How big?" sub="Roughly. We'll pin it down with your contractor." />
         <div className="mx-auto max-w-xl space-y-8 rounded-3xl border border-border bg-card p-8 shadow-soft">
           <p className="text-center font-display text-5xl font-medium">
@@ -440,7 +453,8 @@ const AdditionScreen = ({
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
+      <StepDots step={2} />
       <ScreenTitle eyebrow="Addition · 3 of 3" title="Where?" />
       <div className="mx-auto grid max-w-2xl grid-cols-2 gap-3">
         {wheres.map((w) => (
@@ -462,52 +476,66 @@ const AdditionScreen = ({
   );
 };
 
-// ───── Screen 4: Vibe ─────
+// ───── Screen 3: Vibe (+ inline inspiration) ─────
 const VibeScreen = ({
   selected,
   onToggle,
   onContinue,
   inspirationLink,
   setInspirationLink,
-  hasInspiration,
-  setHasInspiration,
+  onAddInspiration,
+  inspirationCount,
 }: {
   selected: string[];
   onToggle: (v: string) => void;
   onContinue: () => void;
   inspirationLink?: string;
   setInspirationLink: (v: string) => void;
-  hasInspiration?: boolean;
-  setHasInspiration: (v: boolean) => void;
+  onAddInspiration: (a: MediaAsset[]) => void;
+  inspirationCount: number;
 }) => {
+  const inspoRef = useRef<HTMLInputElement>(null);
   const options = VIBES.map((v) => ({ value: v, label: v }));
   return (
     <div className="space-y-12">
+      <StepDots step={3} />
       <ScreenTitle
-        eyebrow="Step 4"
+        eyebrow="Step 3 of 4"
         title="What's the vibe?"
-        sub="Pick the words that feel right. Two or three is plenty."
+        sub="Pick a few words that feel right. Two or three is plenty."
       />
       <PillGroup options={options} selected={selected} onToggle={onToggle} />
 
       <div className="mx-auto max-w-2xl space-y-3">
-        <p className="text-center text-sm text-muted-foreground">Have images in mind?</p>
+        <p className="text-center text-sm text-muted-foreground">Have images in mind? (Pinterest, Instagram, neighborhood snaps…)</p>
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <div className="relative">
             <LinkIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Paste a Pinterest, Instagram, or Houzz link"
+              placeholder="Paste a link"
               value={inspirationLink ?? ""}
               onChange={(e) => setInspirationLink(e.target.value)}
               className="h-12 rounded-full border-border bg-card pl-11"
             />
           </div>
+          <input
+            ref={inspoRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              if (!e.target.files?.length) return;
+              onAddInspiration(filesToAssets(e.target.files, "inspiration"));
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
           <Button
             variant="outline"
-            onClick={() => setHasInspiration(!hasInspiration)}
+            onClick={() => inspoRef.current?.click()}
             className="h-12 rounded-full px-6"
           >
-            {hasInspiration ? "Added ✓" : "Upload images"}
+            {inspirationCount > 0 ? `Added ${inspirationCount} ✓` : "Upload images"}
           </Button>
         </div>
       </div>
@@ -523,63 +551,23 @@ const VibeScreen = ({
   );
 };
 
-// ───── Screen 5: Budget ─────
-const BudgetScreen = ({
+// ───── Screen 4: Budget + Timeline (combined, calm) ─────
+const BudgetTimelineScreen = ({
   min,
   max,
-  onChange,
-  onContinue,
-  onSkip,
+  budgetSkipped,
+  onBudgetChange,
+  onSkipBudget,
+  onPickTimeline,
+  selectedTimeline,
 }: {
   min: number;
   max: number;
-  onChange: (m: number, x: number) => void;
-  onContinue: () => void;
-  onSkip: () => void;
-}) => (
-  <div className="space-y-12">
-    <ScreenTitle
-      eyebrow="Step 5"
-      title="What's your budget range?"
-      sub="A range is fine. This is only ever shared with contractors you choose."
-    />
-    <div className="mx-auto max-w-xl space-y-10 rounded-3xl border border-border bg-card p-8 shadow-soft">
-      <p className="text-center font-display text-5xl font-medium tabular-nums">
-        {fmtMoney(min)} <span className="text-muted-foreground">–</span> {fmtMoney(max)}
-      </p>
-      <Slider
-        value={[min, max]}
-        min={5}
-        max={500}
-        step={5}
-        minStepsBetweenThumbs={1}
-        onValueChange={(v) => {
-          const [a, b] = v;
-          onChange(a, b);
-        }}
-      />
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>$5K</span>
-        <span>$500K+</span>
-      </div>
-    </div>
-    <div className="flex flex-col items-center gap-4">
-      <Button onClick={onContinue} size="lg" className="rounded-full px-8">
-        Continue
-        <ArrowRight className="h-4 w-4" />
-      </Button>
-      <SkipButton onClick={onSkip} label="I'd rather not say" />
-    </div>
-  </div>
-);
-
-// ───── Screen 6: Timeline ─────
-const TimelineScreen = ({
-  onPick,
-  selected,
-}: {
-  onPick: (t: Timeline) => void;
-  selected?: Timeline;
+  budgetSkipped: boolean;
+  onBudgetChange: (m: number, x: number) => void;
+  onSkipBudget: () => void;
+  onPickTimeline: (t: Timeline) => void;
+  selectedTimeline?: Timeline;
 }) => {
   const opts: { value: Timeline; label: string; sub: string }[] = [
     { value: "asap", label: "ASAP", sub: "Ready to move." },
@@ -587,26 +575,68 @@ const TimelineScreen = ({
     { value: "3-6", label: "3–6 months", sub: "Plenty of runway." },
     { value: "exploring", label: "Just exploring", sub: "Window-shopping ideas." },
   ];
+
   return (
     <div className="space-y-12">
+      <StepDots step={4} />
       <ScreenTitle
-        eyebrow="Step 6 · last one"
-        title="When do you want to start?"
-        sub="Tap one. We'll auto-advance from here."
+        eyebrow="Step 4 of 4 · last one"
+        title="Budget and timing?"
+        sub="Both stay private until you choose to share. We'll auto-translate when you tap a timeline."
       />
-      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-3">
-        {opts.map((o) => (
+
+      {/* Budget */}
+      <div className="mx-auto max-w-xl space-y-6 rounded-3xl border border-border bg-card p-8 shadow-soft">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Budget range</p>
           <button
-            key={o.value}
-            onClick={() => onPick(o.value)}
-            className={`rounded-2xl border bg-card p-6 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-              selected === o.value ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
-            }`}
+            onClick={onSkipBudget}
+            className="text-xs text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
           >
-            <p className="font-display text-xl font-medium">{o.label}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{o.sub}</p>
+            {budgetSkipped ? "Set a range instead" : "I'd rather not say"}
           </button>
-        ))}
+        </div>
+        {budgetSkipped ? (
+          <p className="py-6 text-center font-display text-3xl font-light text-muted-foreground">Skipped — that's fine.</p>
+        ) : (
+          <>
+            <p className="text-center font-display text-5xl font-medium tabular-nums">
+              {fmtMoney(min)} <span className="text-muted-foreground">–</span> {fmtMoney(max)}
+            </p>
+            <Slider
+              value={[min, max]}
+              min={5}
+              max={500}
+              step={5}
+              minStepsBetweenThumbs={1}
+              onValueChange={(v) => onBudgetChange(v[0], v[1])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>$5K</span>
+              <span>$500K+</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Timeline */}
+      <div className="mx-auto max-w-2xl space-y-4">
+        <p className="text-center font-display text-2xl font-light text-foreground/90">When do you want to start?</p>
+        <p className="text-center text-sm text-muted-foreground">Tap one — that's the last thing.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {opts.map((o) => (
+            <button
+              key={o.value}
+              onClick={() => onPickTimeline(o.value)}
+              className={`rounded-2xl border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
+                selectedTimeline === o.value ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
+              }`}
+            >
+              <p className="font-display text-xl font-medium">{o.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{o.sub}</p>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -648,7 +678,7 @@ const LoadingPage = () => {
 // ───── Main page ─────
 const Brief = () => {
   const navigate = useNavigate();
-  const { data, update, togglePill } = useIntake();
+  const { data, update, togglePill, addMedia, removeMedia } = useIntake();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -663,6 +693,7 @@ const Brief = () => {
   if (submitting) return <LoadingPage />;
 
   const isAddition = data.room === "addition";
+  const inspirationCount = data.media.filter((m) => m.kind === "inspiration").length;
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
@@ -676,26 +707,22 @@ const Brief = () => {
             }}
           />
         )}
-        {step === 2 && (
-          <MediaScreen
-            key="media"
-            data={data}
-            update={(s) => update(s)}
-            onContinue={next}
-          />
-        )}
-        {step === 3 && !isAddition && (
-          <PainScreen
-            key="pain"
+        {step === 2 && !isAddition && (
+          <ShowAndTellScreen
+            key="show-tell"
             room={data.room as Exclude<Room, "addition">}
             selected={data.painPoints}
-            onToggle={(v) => togglePill("painPoints", v)}
+            onTogglePain={(v) => togglePill("painPoints", v)}
+            media={data.media.filter((m) => m.kind !== "inspiration")}
+            onAddMedia={addMedia}
+            onRemoveMedia={removeMedia}
+            notes={data.notes}
+            measurements={data.measurements}
+            onUpdate={(p) => update(p)}
             onContinue={next}
-            setHasPhotos={(v) => update({ hasPhotos: v })}
-            hasPhotos={data.hasPhotos}
           />
         )}
-        {step === 3 && isAddition && (
+        {step === 2 && isAddition && (
           <AdditionScreen
             key="addition"
             data={{
@@ -707,7 +734,7 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 4 && (
+        {step === 3 && (
           <VibeScreen
             key="vibe"
             selected={data.vibes}
@@ -715,28 +742,26 @@ const Brief = () => {
             onContinue={next}
             inspirationLink={data.inspirationLink}
             setInspirationLink={(v) => update({ inspirationLink: v })}
-            hasInspiration={data.hasInspiration}
-            setHasInspiration={(v) => update({ hasInspiration: v })}
+            onAddInspiration={addMedia}
+            inspirationCount={inspirationCount}
           />
         )}
-        {step === 5 && (
-          <BudgetScreen
-            key="budget"
+        {step === 4 && (
+          <BudgetTimelineScreen
+            key="budget-timeline"
             min={data.budgetMin ?? 40}
             max={data.budgetMax ?? 70}
-            onChange={(m, x) => update({ budgetMin: m, budgetMax: x, budgetSkipped: false })}
-            onContinue={next}
-            onSkip={() => {
-              update({ budgetSkipped: true, budgetMin: undefined, budgetMax: undefined });
-              next();
-            }}
-          />
-        )}
-        {step === 6 && (
-          <TimelineScreen
-            key="timeline"
-            selected={data.timeline}
-            onPick={(t) => {
+            budgetSkipped={Boolean(data.budgetSkipped)}
+            onBudgetChange={(m, x) => update({ budgetMin: m, budgetMax: x, budgetSkipped: false })}
+            onSkipBudget={() =>
+              update({
+                budgetSkipped: !data.budgetSkipped,
+                budgetMin: data.budgetSkipped ? 40 : undefined,
+                budgetMax: data.budgetSkipped ? 70 : undefined,
+              })
+            }
+            selectedTimeline={data.timeline}
+            onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);
             }}
@@ -748,3 +773,5 @@ const Brief = () => {
 };
 
 export default Brief;
+// keep linter quiet about unused helper export in this file
+export const _hasKind = hasKind;
