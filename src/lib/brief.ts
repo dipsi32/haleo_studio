@@ -19,6 +19,35 @@ export type ContractorLine = {
    */
   basis: "grounded" | "inferred" | "question";
   source?: string; // short tag of where it came from, e.g. "Pain: Too dark" or "Room: Kitchen"
+  /**
+   * Trade bucket so the page can group lines like a scope-of-work doc:
+   * "Demo & structural", "Electrical", "Plumbing", "Cabinetry & finishes",
+   * "Lighting", "Project context".
+   */
+  trade?: BriefTrade;
+};
+
+export type BriefTrade =
+  | "structural"
+  | "electrical"
+  | "plumbing"
+  | "cabinetry"
+  | "lighting"
+  | "ventilation"
+  | "finishes"
+  | "appliances"
+  | "context";
+
+export const TRADE_META: Record<BriefTrade, { label: string; blurb: string }> = {
+  structural: { label: "Demo & structural", blurb: "Walls, headers, framing, anything load-path." },
+  electrical: { label: "Electrical", blurb: "Circuits, outlets, panel, switching." },
+  plumbing: { label: "Plumbing", blurb: "Supply, drain, fixtures, rough-in." },
+  cabinetry: { label: "Cabinetry & built-ins", blurb: "Cabinets, islands, storage millwork." },
+  lighting: { label: "Lighting", blurb: "Layered ambient, task, and accent." },
+  ventilation: { label: "Ventilation", blurb: "Exhaust, make-up air, code minimums." },
+  finishes: { label: "Finishes", blurb: "Tile, paint, flooring, hardware." },
+  appliances: { label: "Appliances", blurb: "Owner-supplied vs included." },
+  context: { label: "Project context", blurb: "Budget, timeline, jurisdiction, files on hand." },
 };
 
 export type BriefReadiness = {
@@ -29,6 +58,40 @@ export type BriefReadiness = {
 };
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
+
+// ───── Project title — "{Street} {Scope}: Project Brief" ─────
+// Falls back gracefully when the homeowner skipped the address.
+export const buildProjectTitle = (d: IntakeData): { title: string; sub: string } => {
+  const scope = scopeFor(d.scope);
+  // Pull just the first token of the street ("742 Lenora Ave" → "Lenora").
+  const street = (() => {
+    const raw = d.address?.street?.trim();
+    if (!raw || d.address?.skipped) return "";
+    const token = raw.replace(/^\d+\s*/, "").split(/\s+/)[0] ?? "";
+    return token.replace(/[^a-zA-Z]/g, "");
+  })();
+  const room = d.room === "addition"
+    ? "Addition"
+    : d.room === "full-home"
+      ? "Whole-home"
+      : d.room
+        ? ROOM_LABELS[d.room]
+        : "Project";
+  const action = scope?.value === "refresh"
+    ? "Refresh"
+    : scope?.value === "remodel"
+      ? "Remodel"
+      : scope?.value === "reconfigure"
+        ? "Reconfigure"
+        : scope?.value === "structural"
+          ? "Addition"
+          : "Brief";
+  const titleStem = street ? `${street} ${action}` : `${room} ${action}`;
+  const city = d.address?.city && !d.address.skipped
+    ? `${d.address.city}${d.address.state ? `, ${d.address.state}` : ""}`
+    : "Location pending";
+  return { title: `${titleStem}: Project Brief`, sub: city };
+};
 
 // ───── Homeowner layer ─────
 // First-person, only uses words/choices the user actually made.
