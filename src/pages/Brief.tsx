@@ -304,6 +304,9 @@ const InsideLookScreen = ({
           </motion.div>
         )}
 
+        {/* Haleo's read — appears as soon as media is uploaded */}
+        <HaleoSeesPreview intake={intake} />
+
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (
           <button
@@ -624,6 +627,7 @@ const Brief = () => {
             dimensions={data.dimensions}
             onUpdate={(p) => update(p)}
             onContinue={next}
+            intake={data}
           />
         )}
         {step === 2 && isAddition && (
