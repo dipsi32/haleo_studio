@@ -759,13 +759,287 @@ const BriefResult = () => {
 };
 
 // ───── Section heading (numbered, document-style) ─────
-const SectionHeading = ({ no, title, subtitle }: { no: string; title: string; subtitle?: string }) => (
-  <div>
-    <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{no}</p>
-    <p className="mt-1 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">{title}</p>
-    {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+const SectionHeading = ({
+  no,
+  title,
+  subtitle,
+  icon: Icon,
+  meta,
+}: {
+  no: string;
+  title: string;
+  subtitle?: string;
+  icon?: typeof FileText;
+  meta?: string;
+}) => (
+  <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="min-w-0">
+      <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{no}</p>
+      <div className="mt-1 flex items-center gap-2">
+        {Icon && (
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        )}
+        <p className="font-display text-xl font-medium leading-tight text-foreground md:text-2xl">{title}</p>
+      </div>
+      {subtitle && <p className="mt-1.5 text-xs text-muted-foreground">{subtitle}</p>}
+    </div>
+    {meta && (
+      <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-foreground/65">
+        {meta}
+      </span>
+    )}
   </div>
 );
+
+// ───── Executive Summary — the one-glance dashboard ─────
+// Sits above the document. Gives the user every critical detail in 5 seconds:
+// scope · location · budget · timeline · permit · readiness · what's on file · open questions.
+const ExecSummary = ({
+  data,
+  budgetLabel,
+  timelineLabel,
+  permit,
+  readiness,
+  spaceMediaCount,
+  inspirationCount,
+  openQuestions,
+  tradeCount,
+  approved,
+  onApprove,
+  onEdit,
+}: {
+  data: IntakeData;
+  budgetLabel: string;
+  timelineLabel: string;
+  permit: { likely: boolean; reason: string };
+  readiness: BriefReadiness;
+  spaceMediaCount: number;
+  inspirationCount: number;
+  openQuestions: number;
+  tradeCount: number;
+  approved: boolean;
+  onApprove: () => void;
+  onEdit: () => void;
+}) => {
+  const room = data.room ? ROOM_LABELS[data.room] : "Project";
+  const scopeLabel =
+    data.scope === "refresh"
+      ? "Design refresh"
+      : data.scope === "remodel"
+        ? "Full remodel"
+        : data.scope === "reconfigure"
+          ? "Reconfigure"
+          : data.scope === "structural"
+            ? "Add space"
+            : "Scope TBD";
+
+  const Stat = ({
+    icon: Icon,
+    label,
+    value,
+    tone = "default",
+  }: {
+    icon: typeof FileText;
+    label: string;
+    value: string;
+    tone?: "default" | "accent" | "sage";
+  }) => (
+    <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-3.5">
+      <span
+        className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${
+          tone === "accent"
+            ? "bg-accent-soft text-accent"
+            : tone === "sage"
+              ? "bg-sage-soft text-sage"
+              : "bg-secondary text-foreground/70"
+        }`}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-8 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card to-secondary/40 shadow-soft"
+      aria-label="Executive summary"
+    >
+      {/* Top row: marquee summary + actions */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 md:px-7">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Executive summary</p>
+          <p className="mt-2 font-display text-xl font-light leading-snug text-foreground md:text-2xl">
+            {scopeLabel} · {room.toLowerCase()} · {budgetLabel}
+            {data.address?.city && !data.address.skipped && (
+              <span className="text-foreground/60"> in {data.address.city}</span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            onClick={onApprove}
+            size="sm"
+            variant={approved ? "outline" : "default"}
+            className="rounded-full"
+          >
+            {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock</> : <><Lock className="h-3.5 w-3.5" /> Approve</>}
+          </Button>
+          <Button onClick={onEdit} size="sm" variant="ghost" className="rounded-full">
+            <Edit3 className="h-3.5 w-3.5" /> Edit
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat grid — every critical detail at a glance */}
+      <div className="grid gap-2.5 p-4 sm:grid-cols-2 md:grid-cols-4 md:p-5">
+        <Stat icon={HomeIcon} label="Room" value={room} />
+        <Stat icon={DollarSign} label="Budget" value={budgetLabel} tone="accent" />
+        <Stat icon={Calendar} label="Timeline" value={timelineLabel} />
+        <Stat
+          icon={ShieldCheck}
+          label="Permit"
+          value={permit.likely ? "Likely required" : "Likely exempt"}
+          tone={permit.likely ? "accent" : "sage"}
+        />
+        <Stat icon={Hammer} label="Trades" value={`${tradeCount} in scope`} />
+        <Stat
+          icon={ImageIcon}
+          label="On file"
+          value={`${spaceMediaCount} space${inspirationCount ? ` · ${inspirationCount} inspo` : ""}`}
+        />
+        <Stat
+          icon={HelpCircle}
+          label="Open questions"
+          value={openQuestions === 0 ? "None" : `${openQuestions} to clarify`}
+          tone={openQuestions > 0 ? "accent" : "sage"}
+        />
+        <Stat
+          icon={Sparkles}
+          label="Readiness"
+          value={`${readiness.score}/100 · ${readiness.level}`}
+          tone={readiness.level === "biddable" ? "sage" : "accent"}
+        />
+      </div>
+    </motion.section>
+  );
+};
+
+// ───── Brief table of contents — the feedforward nav ─────
+// Sticky on desktop, horizontal scroll on mobile. Tells the user what's coming
+// before they scroll, with live counts/state next to each section.
+type TOCItem = {
+  id: string;
+  no: string;
+  label: string;
+  icon: typeof FileText;
+  meta?: string;
+};
+
+const BriefTOC = ({ sections }: { sections: TOCItem[] }) => {
+  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
+
+  // Track which section is in view as the user scrolls.
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    sections.forEach((s) => {
+      const el = document.getElementById(`brief-${s.id}`);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActive(s.id);
+        },
+        { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [sections]);
+
+  const handleClick = (id: string) => {
+    document.getElementById(`brief-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <nav aria-label="Brief sections" className="md:sticky md:top-24 md:self-start">
+      {/* Mobile: horizontal pill scroll */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">
+        {sections.map((s) => {
+          const isActive = active === s.id;
+          const Icon = s.icon;
+          return (
+            <button
+              key={s.id}
+              onClick={() => handleClick(s.id)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-smooth ${
+                isActive
+                  ? "border-accent bg-accent text-accent-foreground"
+                  : "border-border bg-card text-foreground/70"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {s.label}
+              {s.meta && <span className="opacity-70">· {s.meta}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop: vertical TOC */}
+      <div className="hidden rounded-2xl border border-border bg-card/70 p-3 shadow-soft md:block">
+        <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          On this page
+        </p>
+        <ul className="space-y-0.5">
+          {sections.map((s) => {
+            const isActive = active === s.id;
+            const Icon = s.icon;
+            return (
+              <li key={s.id}>
+                <button
+                  onClick={() => handleClick(s.id)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-smooth ${
+                    isActive ? "bg-accent-soft" : "hover:bg-secondary/60"
+                  }`}
+                >
+                  <span
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-smooth ${
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-foreground/60 group-hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">{s.no}</p>
+                    <p className={`truncate text-[13px] font-medium ${isActive ? "text-foreground" : "text-foreground/80"}`}>
+                      {s.label}
+                    </p>
+                  </div>
+                  {s.meta && (
+                    <span className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground">
+                      {s.meta}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </nav>
+  );
+};
 
 // ───── Trade group — collapsible scope-of-work block, like a real GC bid sheet ─────
 const TradeGroupCard = ({
