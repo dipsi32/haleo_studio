@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import PillGroup from "@/components/PillGroup";
-import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
 import DimensionsInput from "@/components/intake/DimensionsInput";
 import {
   ROOM_LABELS,
@@ -269,13 +268,6 @@ const EditBriefDrawer = ({
                 </div>
               </Section>
 
-              {/* Vibes */}
-              <Section title="Vibe">
-                <VibeVisualGrid
-                  selected={data.vibes}
-                  onToggle={(v) => onTogglePill("vibes", v)}
-                />
-              </Section>
 
 
               {/* Budget */}

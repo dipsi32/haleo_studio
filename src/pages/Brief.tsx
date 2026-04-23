@@ -14,7 +14,6 @@ import {
   Camera,
   Map,
   ArrowRight,
-  Link as LinkIcon,
   Check,
   X,
   Plus,
@@ -24,9 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
@@ -57,10 +54,10 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-// Five felt-steps. Addition route folds its mini-flow into step 2.
-const TOTAL = 5;
+// Four felt-steps. Addition route folds its mini-flow into step 2.
+const TOTAL = 4;
 
-const STEP_LABELS = ["The room", "Inside look", "The vibe", "Address", "Scope & budget"];
+const STEP_LABELS = ["The room", "Inside look", "Address", "Scope & budget"];
 
 const ScreenTitle = ({
   eyebrow,
@@ -95,7 +92,7 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 const StepDots = ({ step }: { step: number }) => (
   <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
     <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      5 quick steps
+      4 quick steps
     </span>
     <span className="hidden h-3 w-px bg-border sm:inline-block" />
     {STEP_LABELS.map((label, i) => {
@@ -130,7 +127,7 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
     <div className="space-y-10">
       <StepDots step={1} />
       <ScreenTitle
-        eyebrow="Step 1 of 5"
+        eyebrow="Step 1 of 4"
         title="Where's the dream taking shape?"
         sub="Tap one. Don't overthink it — you can swap rooms anytime."
       />
@@ -202,7 +199,7 @@ const InsideLookScreen = ({
       kind: "video",
       icon: Video,
       label: "Walkthrough video",
-      hint: "Best — a slow 30s pan",
+      hint: "Best — a slow 30s pan · up to 90s, 150 MB",
       accept: "video/*",
       ref: videoRef,
       best: true,
@@ -221,7 +218,7 @@ const InsideLookScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 5"
+        eyebrow="Step 2 of 4"
         title="Take us inside — only what you're comfortable sharing."
         sub="A short walkthrough or a couple of photos goes a long way. Skip anything you'd rather not."
       />
@@ -470,81 +467,7 @@ const AdditionScreen = ({
   );
 };
 
-// ───── Screen 3: Vibe (visual + inline inspiration) ─────
-const VibeScreen = ({
-  selected,
-  onToggle,
-  onContinue,
-  inspirationLink,
-  setInspirationLink,
-  onAddInspiration,
-  inspirationCount,
-}: {
-  selected: string[];
-  onToggle: (v: string) => void;
-  onContinue: () => void;
-  inspirationLink?: string;
-  setInspirationLink: (v: string) => void;
-  onAddInspiration: (a: MediaAsset[]) => void;
-  inspirationCount: number;
-}) => {
-  const inspoRef = useRef<HTMLInputElement>(null);
-  return (
-    <div className="space-y-12">
-      <StepDots step={3} />
-      <ScreenTitle
-        eyebrow="Step 3 of 5"
-        title="What's the vibe you're going for?"
-        sub="Each tile is a tiny moodboard — the colors and textures hint at the feel. Tap two or three."
-      />
-      <VibeVisualGrid selected={selected} onToggle={onToggle} />
-
-      <div className="mx-auto max-w-2xl space-y-3">
-        <p className="text-center text-sm text-muted-foreground">Have images in mind? (Pinterest, Instagram, neighborhood snaps…)</p>
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <div className="relative">
-            <LinkIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Paste a link"
-              value={inspirationLink ?? ""}
-              onChange={(e) => setInspirationLink(e.target.value)}
-              className="h-12 rounded-full border-border bg-card pl-11"
-            />
-          </div>
-          <input
-            ref={inspoRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => {
-              if (!e.target.files?.length) return;
-              onAddInspiration(filesToAssets(e.target.files, "inspiration"));
-              e.target.value = "";
-            }}
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            onClick={() => inspoRef.current?.click()}
-            className="h-12 rounded-full px-6"
-          >
-            {inspirationCount > 0 ? `Added ${inspirationCount} ✓` : "Upload images"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center gap-4">
-        <Button onClick={onContinue} size="lg" className="rounded-full px-8" disabled={selected.length === 0}>
-          Continue
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <SkipButton onClick={onContinue} />
-      </div>
-    </div>
-  );
-};
-
-// ───── Screen 4: Address ─────
+// ───── Screen 3: Address ─────
 const AddressScreen = ({
   address,
   onSave,
@@ -558,9 +481,9 @@ const AddressScreen = ({
 }) => {
   return (
     <div className="space-y-10">
-      <StepDots step={4} />
+      <StepDots step={3} />
       <ScreenTitle
-        eyebrow="Step 4 of 5"
+        eyebrow="Step 3 of 4"
         title="Where's the project?"
         sub="The address unlocks real permit history and neighborhood cost intel for your brief."
       />
@@ -574,7 +497,7 @@ const AddressScreen = ({
   );
 };
 
-// ───── Screen 5: Scope + Budget + Timeline ─────
+// ───── Screen 4: Scope + Budget + Timeline ─────
 const ScopeAndBudgetScreen = ({
   scope,
   onScopeChange,
@@ -599,9 +522,9 @@ const ScopeAndBudgetScreen = ({
   address?: Address;
 }) => (
   <div className="space-y-10">
-    <StepDots step={5} />
+    <StepDots step={4} />
     <ScreenTitle
-      eyebrow="Step 5 of 5 · last one"
+      eyebrow="Step 4 of 4 · last one"
       title="Scope, budget, and timing."
       sub="Pick a scope tier so the budget anchors to something real. Tap a timeline to wrap up."
     />
@@ -671,7 +594,6 @@ const Brief = () => {
   if (submitting) return <LoadingPage />;
 
   const isAddition = data.room === "addition";
-  const inspirationCount = data.media.filter((m) => m.kind === "inspiration").length;
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
@@ -713,18 +635,6 @@ const Brief = () => {
           />
         )}
         {step === 3 && (
-          <VibeScreen
-            key="vibe"
-            selected={data.vibes}
-            onToggle={(v) => togglePill("vibes", v)}
-            onContinue={next}
-            inspirationLink={data.inspirationLink}
-            setInspirationLink={(v) => update({ inspirationLink: v })}
-            onAddInspiration={addMedia}
-            inspirationCount={inspirationCount}
-          />
-        )}
-        {step === 4 && (
           <AddressScreen
             key="address"
             address={data.address}
@@ -733,7 +643,7 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 5 && (
+        {step === 4 && (
           <ScopeAndBudgetScreen
             key="scope-budget"
             scope={data.scope}
