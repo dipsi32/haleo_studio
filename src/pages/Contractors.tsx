@@ -45,7 +45,7 @@ const ContractorCard = ({
   neighborhood: string;
 }) => {
   const navigate = useNavigate();
-  const { contractor, permits, license, score, matchCount, recentPermit } = rc;
+  const { contractor, permits, license, score, matchCount, recentPermit, verifying } = rc;
   const discipline = evaluateDiscipline(license);
   return (
     <motion.div
@@ -80,6 +80,7 @@ const ContractorCard = ({
           licenseNumber={contractor.license_number}
           permitDisplayName={contractor.company ?? contractor.name}
           variant="card"
+          verifying={verifying}
           onDisciplineClick={() => navigate(`/contractors/${contractor.id}`)}
         />
       </div>

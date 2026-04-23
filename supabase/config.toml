@@ -1,1 +1,7 @@
 project_id = "nfjipxgmwdlxqzzvqmsl"
+
+[functions.import-cslb-bulk]
+verify_jwt = false
+
+[functions.verify-cslb-license]
+verify_jwt = false
