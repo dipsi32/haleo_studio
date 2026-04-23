@@ -705,9 +705,15 @@ const BriefResult = () => {
           transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="mt-8 grid gap-3 sm:grid-cols-3"
         >
-          <Button size="lg" className="rounded-full" disabled={!approved}>
-            <Send className="h-4 w-4" />
-            {approved ? "Send to contractor" : "Approve to send"}
+          <Button size="lg" className="rounded-full" disabled={!approved} asChild={approved}>
+            {approved ? (
+              <Link to="/contractors">
+                <ShieldCheck className="h-4 w-4" />
+                Find verified contractors near you
+              </Link>
+            ) : (
+              <span><Send className="h-4 w-4" /> Approve to send</span>
+            )}
           </Button>
           <Button size="lg" variant="outline" className="rounded-full" disabled={!approved}>
             <Download className="h-4 w-4" />
