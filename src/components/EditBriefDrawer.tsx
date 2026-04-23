@@ -30,7 +30,7 @@ export type EditBriefDrawerProps = {
   onPatch: (p: Partial<IntakeData>) => void;
   onAddMedia: (a: MediaAsset[]) => void;
   onRemoveMedia: (id: string) => void;
-  onTogglePill: (key: "painPoints" | "vibes", value: string) => void;
+  onTogglePill: (key: "painPoints", value: string) => void;
 };
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
