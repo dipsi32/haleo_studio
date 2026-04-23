@@ -594,7 +594,6 @@ const Brief = () => {
   if (submitting) return <LoadingPage />;
 
   const isAddition = data.room === "addition";
-  const inspirationCount = data.media.filter((m) => m.kind === "inspiration").length;
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
