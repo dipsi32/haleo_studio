@@ -202,7 +202,7 @@ const InsideLookScreen = ({
       kind: "video",
       icon: Video,
       label: "Walkthrough video",
-      hint: "Best — a slow 30s pan",
+      hint: "Best — a slow 30s pan · up to 90s, 150 MB",
       accept: "video/*",
       ref: videoRef,
       best: true,
@@ -470,7 +470,7 @@ const AdditionScreen = ({
   );
 };
 
-// ───── Screen 3: Vibe (visual + inline inspiration) ─────
+// ───── Screen 3: Address ─────
 const VibeScreen = ({
   selected,
   onToggle,
