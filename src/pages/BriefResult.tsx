@@ -28,6 +28,11 @@ import {
   Plus,
   X,
   MessageSquarePlus,
+  Eye,
+  Hammer,
+  Quote,
+  Home as HomeIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -348,109 +353,116 @@ const BriefResult = () => {
         </div>
       </header>
 
-      <main className="container max-w-4xl py-10 md:py-14">
-        {/* Hero */}
+      <main className="container max-w-6xl py-8 md:py-12">
+        {/* ────────── HERO ────────── */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-3xl"
         >
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{projectTitle.sub}</p>
           <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
             {projectTitle.title}
           </h1>
-          <p className="mt-4 max-w-xl text-base text-muted-foreground">
-            Everything a contractor needs to bid — at a glance, with the details one tap away.
+          <p className="mt-3 max-w-xl text-base text-muted-foreground">
+            One page. Every detail a contractor needs to bid — at a glance, with the full read one tap away.
           </p>
-          <div className="mt-5">
-            <Button size="sm" className="rounded-full" disabled={!approved}>
-              <Send className="h-4 w-4" />
-              {approved ? "Share with contractor" : "Approve below to share"}
-            </Button>
-          </div>
         </motion.div>
 
-        {/* ───── Readiness action bar — distinct from the brief, framed as YOUR action ───── */}
+        {/* ────────── EXECUTIVE SUMMARY — the one-glance dashboard ────────── */}
+        <ExecSummary
+          data={data}
+          budgetLabel={budgetLabel}
+          timelineLabel={timelineLabel}
+          permit={permit}
+          readiness={readiness}
+          spaceMediaCount={spaceMedia.length}
+          inspirationCount={inspirationMedia.length}
+          openQuestions={contractorLines.filter((l) => l.basis === "question").length}
+          tradeCount={tradeGroups.length}
+          approved={approved}
+          onApprove={() => setApproved((v) => !v)}
+          onEdit={() => setEditOpen(true)}
+        />
+
+        {/* Readiness still useful — but tucked under the summary */}
         <ReadinessBar readiness={readiness} onAdd={() => setEditOpen(true)} />
 
-        {/* ═════════ THE 1-PAGER ═════════ */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
-        >
-          {/* Document header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
-                <FileText className="h-4 w-4" />
+        {/* ────────── TOC + DOCUMENT (two-col on desktop, stacked on mobile) ────────── */}
+        <div className="mt-8 grid gap-6 md:grid-cols-[220px_1fr] md:gap-8 lg:grid-cols-[240px_1fr]">
+          {/* Left: sticky table of contents — feedforward */}
+          <BriefTOC
+            sections={[
+              { id: "vision", no: "01", label: "The vision", icon: Quote, meta: data.notes ? "+ note" : undefined },
+              { id: "space", no: "02", label: "The space", icon: ImageIcon, meta: spaceMedia.length ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : "—" },
+              ...(inspirationMedia.length > 0
+                ? [{ id: "inspiration", no: "03", label: "Inspiration", icon: Sparkles, meta: `${inspirationMedia.length}` }]
+                : []),
+              { id: "scope", no: inspirationMedia.length > 0 ? "04" : "03", label: "Scope of work", icon: Hammer, meta: `${tradeGroups.length} trades` },
+              { id: "permit", no: inspirationMedia.length > 0 ? "05" : "04", label: "Permit", icon: ShieldCheck, meta: permit.likely ? "Likely" : "Exempt" },
+              { id: "deepread", no: inspirationMedia.length > 0 ? "06" : "05", label: "Deep read", icon: Eye, meta: useApproved ? "Saved" : analysisStatus === "ready" ? "Ready" : "Loading" },
+            ]}
+          />
+
+          {/* Right: the actual brief document */}
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
+          >
+            {/* Document header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
+              <div className="flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-display text-base font-medium leading-tight">Project brief</p>
+                  <p className="text-xs text-muted-foreground">
+                    {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
+                    Prepared by Haleo
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-display text-base font-medium leading-tight">Project brief</p>
-                <p className="text-xs text-muted-foreground">
-                  {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
-                  Prepared by Haleo
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
+                {approved ? <><Lock className="h-3 w-3" /> Approved</> : <><AlertCircle className="h-3 w-3" /> Draft</>}
+              </span>
+            </div>
+
+            {/* 1. THE VISION (homeowner's voice) */}
+            <section id="brief-vision" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading no="01" title="The vision" subtitle="The homeowner's words, unedited." icon={Quote} />
+              <blockquote className="mt-4 border-l-2 border-accent pl-5">
+                <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
+                  "{homeowner}"
                 </p>
-              </div>
-            </div>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
-              {approved ? <><Lock className="h-3 w-3" /> Approved by homeowner</> : <><AlertCircle className="h-3 w-3" /> Draft — pending approval</>}
-            </span>
-          </div>
-
-          {/* 1. AT-A-GLANCE */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="01" title="At a glance" />
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {data.room && <Pill>{ROOM_LABELS[data.room]}</Pill>}
-              {data.scope && (
-                <Pill>
-                  <Sparkles className="h-3 w-3" />
-                  {data.scope === "refresh" ? "Design refresh" : data.scope === "remodel" ? "Full remodel" : data.scope === "reconfigure" ? "Reconfigure" : "Add space"}
-                </Pill>
+              </blockquote>
+              {data.notes && (
+                <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
+                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                  <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
+                </div>
               )}
-              <Pill>
-                <DollarSign className="h-3 w-3" />
-                {budgetLabel}
-              </Pill>
-              <Pill>
-                <Calendar className="h-3 w-3" />
-                {timelineLabel}
-              </Pill>
-              <Pill>
-                <ShieldCheck className="h-3 w-3" />
-                {permit.likely ? "Permit likely" : "Likely permit-exempt"}
-              </Pill>
-            </div>
-          </section>
-
-          {/* 2. THE VISION (homeowner's voice) */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="02" title="The vision — in their words" />
-            <blockquote className="mt-4 border-l-2 border-accent pl-5">
-              <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
-                "{homeowner}"
-              </p>
-            </blockquote>
-            {data.notes && (
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
-                <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
-              </div>
-            )}
-            <AnnotationBlock
-              sectionId="vision"
+              <AnnotationBlock
+                sectionId="vision"
               value={annotations.vision}
               onSave={saveAnnotation}
               locked={approved}
             />
           </section>
 
-          {/* 3. WHAT THEY SHARED — the visual evidence, big and prominent */}
+          {/* 2. THE SPACE — the visual evidence */}
           {(spaceMedia.length > 0 || data.measurements) && (
-            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading no="03" title="What they shared" subtitle="The space, in their hands. Click any thumbnail to enlarge." />
+            <section id="brief-space" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading
+                no="02"
+                title="The space"
+                subtitle="Photos, walkthrough and measurements on file. Click any thumbnail to enlarge."
+                icon={ImageIcon}
+                meta={spaceMedia.length > 0 ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : undefined}
+              />
               {spaceMedia.length > 0 && (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {spaceMedia.map((m) => (
@@ -482,10 +494,16 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 4. INSPIRATION */}
+          {/* 3. INSPIRATION */}
           {inspirationMedia.length > 0 && (
-            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading no="04" title="Inspiration" subtitle="The look they're chasing." />
+            <section id="brief-inspiration" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading
+                no="03"
+                title="Inspiration"
+                subtitle="The look the homeowner is chasing."
+                icon={Sparkles}
+                meta={`${inspirationMedia.length} ref${inspirationMedia.length > 1 ? "s" : ""}`}
+              />
               <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {inspirationMedia.map((m) => (
                   <MediaTile key={m.id} m={m} onOpen={setOpen} />
@@ -500,12 +518,15 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 5. THE TRANSLATION (scope of work, grouped by trade like a real SOW) */}
-          <section className="border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
-            <div className="flex items-start justify-between gap-3">
-              <SectionHeading no="05" title="Scope of work" subtitle="Grouped by trade. Every line tagged so nothing is fabricated." />
-              <span className="hidden shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground sm:block">For the contractor</span>
-            </div>
+          {/* 4. SCOPE OF WORK */}
+          <section id="brief-scope" className="scroll-mt-24 border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading
+              no={inspirationMedia.length > 0 ? "04" : "03"}
+              title="Scope of work"
+              subtitle="Grouped by trade. Every line tagged so nothing is fabricated."
+              icon={Hammer}
+              meta={`${tradeGroups.length} trade${tradeGroups.length > 1 ? "s" : ""}`}
+            />
 
             {/* Legend up-front so the chips below make sense */}
             <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
@@ -538,9 +559,14 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 6. PERMIT FLAG */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="06" title="Permit & jurisdiction" />
+          {/* 5. PERMIT FLAG */}
+          <section id="brief-permit" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading
+              no={inspirationMedia.length > 0 ? "05" : "04"}
+              title="Permit & jurisdiction"
+              icon={ShieldCheck}
+              meta={permit.likely ? "Permit likely" : "Likely exempt"}
+            />
             <div className="mt-4 flex items-start gap-3">
               <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
                 <ShieldCheck className="h-4 w-4" />
@@ -560,8 +586,8 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 7. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
-          <section className="px-6 py-7 md:px-10 md:py-9">
+          {/* 6. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
+          <section id="brief-deepread" className="scroll-mt-24 px-6 py-7 md:px-10 md:py-9">
             <button
               onClick={() => setShowAnalysis((v) => !v)}
               className={`group flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-4 text-left transition-smooth md:p-5 ${
@@ -573,12 +599,12 @@ const BriefResult = () => {
             >
               <div className="flex min-w-0 items-center gap-4">
                 <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-smooth ${showAnalysis ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
-                  <FileText className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">07</p>
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{inspirationMedia.length > 0 ? "06" : "05"}</p>
                   <p className="font-display text-base font-medium leading-tight md:text-lg">
-                    {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
+                    {showAnalysis ? "Haleo's deep read" : "Open Haleo's deep read"}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {useApproved
@@ -669,7 +695,8 @@ const BriefResult = () => {
               {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
             </Button>
           </div>
-        </motion.article>
+          </motion.article>
+        </div>
 
         {/* Actions */}
         <motion.div
@@ -732,13 +759,287 @@ const BriefResult = () => {
 };
 
 // ───── Section heading (numbered, document-style) ─────
-const SectionHeading = ({ no, title, subtitle }: { no: string; title: string; subtitle?: string }) => (
-  <div>
-    <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{no}</p>
-    <p className="mt-1 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">{title}</p>
-    {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+const SectionHeading = ({
+  no,
+  title,
+  subtitle,
+  icon: Icon,
+  meta,
+}: {
+  no: string;
+  title: string;
+  subtitle?: string;
+  icon?: typeof FileText;
+  meta?: string;
+}) => (
+  <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="min-w-0">
+      <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{no}</p>
+      <div className="mt-1 flex items-center gap-2">
+        {Icon && (
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        )}
+        <p className="font-display text-xl font-medium leading-tight text-foreground md:text-2xl">{title}</p>
+      </div>
+      {subtitle && <p className="mt-1.5 text-xs text-muted-foreground">{subtitle}</p>}
+    </div>
+    {meta && (
+      <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-foreground/65">
+        {meta}
+      </span>
+    )}
   </div>
 );
+
+// ───── Executive Summary — the one-glance dashboard ─────
+// Sits above the document. Gives the user every critical detail in 5 seconds:
+// scope · location · budget · timeline · permit · readiness · what's on file · open questions.
+const ExecSummary = ({
+  data,
+  budgetLabel,
+  timelineLabel,
+  permit,
+  readiness,
+  spaceMediaCount,
+  inspirationCount,
+  openQuestions,
+  tradeCount,
+  approved,
+  onApprove,
+  onEdit,
+}: {
+  data: IntakeData;
+  budgetLabel: string;
+  timelineLabel: string;
+  permit: { likely: boolean; reason: string };
+  readiness: BriefReadiness;
+  spaceMediaCount: number;
+  inspirationCount: number;
+  openQuestions: number;
+  tradeCount: number;
+  approved: boolean;
+  onApprove: () => void;
+  onEdit: () => void;
+}) => {
+  const room = data.room ? ROOM_LABELS[data.room] : "Project";
+  const scopeLabel =
+    data.scope === "refresh"
+      ? "Design refresh"
+      : data.scope === "remodel"
+        ? "Full remodel"
+        : data.scope === "reconfigure"
+          ? "Reconfigure"
+          : data.scope === "structural"
+            ? "Add space"
+            : "Scope TBD";
+
+  const Stat = ({
+    icon: Icon,
+    label,
+    value,
+    tone = "default",
+  }: {
+    icon: typeof FileText;
+    label: string;
+    value: string;
+    tone?: "default" | "accent" | "sage";
+  }) => (
+    <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-3.5">
+      <span
+        className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${
+          tone === "accent"
+            ? "bg-accent-soft text-accent"
+            : tone === "sage"
+              ? "bg-sage-soft text-sage"
+              : "bg-secondary text-foreground/70"
+        }`}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-8 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card to-secondary/40 shadow-soft"
+      aria-label="Executive summary"
+    >
+      {/* Top row: marquee summary + actions */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 md:px-7">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Executive summary</p>
+          <p className="mt-2 font-display text-xl font-light leading-snug text-foreground md:text-2xl">
+            {scopeLabel} · {room.toLowerCase()} · {budgetLabel}
+            {data.address?.city && !data.address.skipped && (
+              <span className="text-foreground/60"> in {data.address.city}</span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            onClick={onApprove}
+            size="sm"
+            variant={approved ? "outline" : "default"}
+            className="rounded-full"
+          >
+            {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock</> : <><Lock className="h-3.5 w-3.5" /> Approve</>}
+          </Button>
+          <Button onClick={onEdit} size="sm" variant="ghost" className="rounded-full">
+            <Edit3 className="h-3.5 w-3.5" /> Edit
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat grid — every critical detail at a glance */}
+      <div className="grid gap-2.5 p-4 sm:grid-cols-2 md:grid-cols-4 md:p-5">
+        <Stat icon={HomeIcon} label="Room" value={room} />
+        <Stat icon={DollarSign} label="Budget" value={budgetLabel} tone="accent" />
+        <Stat icon={Calendar} label="Timeline" value={timelineLabel} />
+        <Stat
+          icon={ShieldCheck}
+          label="Permit"
+          value={permit.likely ? "Likely required" : "Likely exempt"}
+          tone={permit.likely ? "accent" : "sage"}
+        />
+        <Stat icon={Hammer} label="Trades" value={`${tradeCount} in scope`} />
+        <Stat
+          icon={ImageIcon}
+          label="On file"
+          value={`${spaceMediaCount} space${inspirationCount ? ` · ${inspirationCount} inspo` : ""}`}
+        />
+        <Stat
+          icon={HelpCircle}
+          label="Open questions"
+          value={openQuestions === 0 ? "None" : `${openQuestions} to clarify`}
+          tone={openQuestions > 0 ? "accent" : "sage"}
+        />
+        <Stat
+          icon={Sparkles}
+          label="Readiness"
+          value={`${readiness.score}/100 · ${readiness.level}`}
+          tone={readiness.level === "biddable" ? "sage" : "accent"}
+        />
+      </div>
+    </motion.section>
+  );
+};
+
+// ───── Brief table of contents — the feedforward nav ─────
+// Sticky on desktop, horizontal scroll on mobile. Tells the user what's coming
+// before they scroll, with live counts/state next to each section.
+type TOCItem = {
+  id: string;
+  no: string;
+  label: string;
+  icon: typeof FileText;
+  meta?: string;
+};
+
+const BriefTOC = ({ sections }: { sections: TOCItem[] }) => {
+  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
+
+  // Track which section is in view as the user scrolls.
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    sections.forEach((s) => {
+      const el = document.getElementById(`brief-${s.id}`);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActive(s.id);
+        },
+        { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [sections]);
+
+  const handleClick = (id: string) => {
+    document.getElementById(`brief-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <nav aria-label="Brief sections" className="md:sticky md:top-24 md:self-start">
+      {/* Mobile: horizontal pill scroll */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">
+        {sections.map((s) => {
+          const isActive = active === s.id;
+          const Icon = s.icon;
+          return (
+            <button
+              key={s.id}
+              onClick={() => handleClick(s.id)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-smooth ${
+                isActive
+                  ? "border-accent bg-accent text-accent-foreground"
+                  : "border-border bg-card text-foreground/70"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {s.label}
+              {s.meta && <span className="opacity-70">· {s.meta}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop: vertical TOC */}
+      <div className="hidden rounded-2xl border border-border bg-card/70 p-3 shadow-soft md:block">
+        <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          On this page
+        </p>
+        <ul className="space-y-0.5">
+          {sections.map((s) => {
+            const isActive = active === s.id;
+            const Icon = s.icon;
+            return (
+              <li key={s.id}>
+                <button
+                  onClick={() => handleClick(s.id)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-smooth ${
+                    isActive ? "bg-accent-soft" : "hover:bg-secondary/60"
+                  }`}
+                >
+                  <span
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-smooth ${
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-foreground/60 group-hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">{s.no}</p>
+                    <p className={`truncate text-[13px] font-medium ${isActive ? "text-foreground" : "text-foreground/80"}`}>
+                      {s.label}
+                    </p>
+                  </div>
+                  {s.meta && (
+                    <span className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground">
+                      {s.meta}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </nav>
+  );
+};
 
 // ───── Trade group — collapsible scope-of-work block, like a real GC bid sheet ─────
 const TradeGroupCard = ({
