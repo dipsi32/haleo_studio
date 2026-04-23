@@ -175,7 +175,7 @@ const InsideLookScreen = ({
   media: MediaAsset[];
   notes?: string;
   dimensions?: Dimensions;
-  onUpdate: (p: { notes?: string; dimensions?: Dimensions }) => void;
+  onUpdate: (p: Partial<import("@/lib/intake").IntakeData>) => void;
   onContinue: () => void;
   intake: import("@/lib/intake").IntakeData;
 }) => {
@@ -305,7 +305,10 @@ const InsideLookScreen = ({
         )}
 
         {/* Haleo's read — appears as soon as media is uploaded */}
-        <HaleoSeesPreview intake={intake} />
+        <HaleoSeesPreview
+          intake={intake}
+          onApprove={(snapshot) => onUpdate({ approvedAnalysis: snapshot })}
+        />
 
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (

@@ -34,10 +34,26 @@ const BASIS_META = {
 
 type Confirmation = "unset" | "ok" | "off";
 
-const HaleoSeesPreview = ({ intake }: { intake: IntakeData }) => {
+const HaleoSeesPreview = ({
+  intake,
+  onApprove,
+}: {
+  intake: IntakeData;
+  onApprove?: (snapshot: NonNullable<IntakeData["approvedAnalysis"]>) => void;
+}) => {
   const { status, analysis, error } = useSpaceAnalysis(intake);
   const [expanded, setExpanded] = useState(false);
-  const [confirmed, setConfirmed] = useState<Confirmation>("unset");
+  // Seed confirmation from persisted approval — so revisiting Step 2 reflects the saved state
+  // and we don't ask the user the same question twice.
+  const approvedKey = (intake.approvedAnalysis?.mediaIds ?? []).slice().sort().join(",");
+  const currentKey = intake.media
+    .filter((m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video")
+    .map((m) => m.id)
+    .sort()
+    .join(",");
+  const initialConfirmed: Confirmation =
+    intake.approvedAnalysis && approvedKey === currentKey ? "ok" : "unset";
+  const [confirmed, setConfirmed] = useState<Confirmation>(initialConfirmed);
 
   // Flatten all section items into one stream so we can show the most
   // confident reads first (grounded → inferred → question).
@@ -168,7 +184,17 @@ const HaleoSeesPreview = ({ intake }: { intake: IntakeData }) => {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setConfirmed("ok")}
+                        onClick={() => {
+                          setConfirmed("ok");
+                          if (analysis) {
+                            onApprove?.({
+                              summary: analysis.summary,
+                              sections: analysis.sections,
+                              approvedAt: new Date().toISOString(),
+                              mediaIds: currentKey ? currentKey.split(",") : [],
+                            });
+                          }
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-sm font-medium text-sage transition-smooth hover:bg-sage hover:text-background"
                       >
                         <ThumbsUp className="h-3.5 w-3.5" /> Looks right

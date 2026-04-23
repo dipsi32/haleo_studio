@@ -270,7 +270,31 @@ const BriefResult = () => {
   const tradeGroups = useMemo(() => groupContractorLinesByTrade(contractorLines), [contractorLines]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
   const heuristicSections = useMemo(() => buildAnalysisSections(data), [data]);
-  const { status: analysisStatus, analysis, error: analysisError } = useSpaceAnalysis(data);
+
+  // If the user already approved Haleo's read on the intake screen and the media
+  // hasn't changed since, reuse that snapshot — don't re-run analysis or wait again.
+  const currentMediaKey = useMemo(
+    () =>
+      data.media
+        .filter((m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video")
+        .map((m) => m.id)
+        .sort()
+        .join(","),
+    [data.media],
+  );
+  const approvedKey = (data.approvedAnalysis?.mediaIds ?? []).slice().sort().join(",");
+  const useApproved = Boolean(data.approvedAnalysis && approvedKey === currentMediaKey);
+
+  // Feed the hook an empty media set when we already have an approved snapshot,
+  // so it short-circuits to "idle" and never re-uploads or re-invokes the model.
+  const hookIntake = useApproved ? { ...data, media: [] } : data;
+  const { status: liveStatus, analysis: liveAnalysis, error: analysisError } = useSpaceAnalysis(hookIntake);
+
+  const analysisStatus = useApproved ? ("ready" as const) : liveStatus;
+  const analysis = useApproved
+    ? { summary: data.approvedAnalysis!.summary, sections: data.approvedAnalysis!.sections }
+    : liveAnalysis;
+
   // Prefer AI-grounded sections when ready; fall back to heuristic in the meantime.
   const sections = analysis?.sections?.length ? analysis.sections : heuristicSections;
   const readiness = useMemo(() => buildReadiness(data), [data]);
@@ -557,15 +581,17 @@ const BriefResult = () => {
                     {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {analysisStatus === "uploading"
-                      ? "Uploading your photos to analyze the space…"
-                      : analysisStatus === "analyzing"
-                        ? "AI is reading the space — usually 15–30 sec."
-                        : analysisStatus === "ready"
-                          ? "AI-grounded read of structure, finishes, constraints, opportunities, code."
-                          : analysisStatus === "error"
-                            ? "Couldn't run AI analysis — heuristic read shown instead."
-                            : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                    {useApproved
+                      ? "Saved from your earlier review. Approved & locked in."
+                      : analysisStatus === "uploading"
+                        ? "Uploading your photos to analyze the space…"
+                        : analysisStatus === "analyzing"
+                          ? "Reading the space — usually 15–30 sec."
+                          : analysisStatus === "ready"
+                            ? "Grounded read of structure, finishes, constraints, opportunities, code."
+                            : analysisStatus === "error"
+                              ? "Couldn't run analysis — heuristic read shown instead."
+                              : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
                   </p>
                 </div>
               </div>
