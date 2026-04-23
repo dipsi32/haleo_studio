@@ -69,9 +69,10 @@ const EditBriefDrawer = ({
   ];
 
   const addFiles =
-    (kind: MediaAsset["kind"]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    (kind: MediaAsset["kind"]) => async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files?.length) return;
-      onAddMedia(filesToAssets(e.target.files, kind));
+      const assets = await filesToAssets(e.target.files, kind);
+      onAddMedia(assets);
       e.target.value = "";
     };
 

@@ -208,9 +208,10 @@ const InsideLookScreen = ({
     { kind: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or photo", accept: "image/*,application/pdf", ref: planRef },
   ];
 
-  const handleFiles = (kind: MediaAsset["kind"]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFiles = (kind: MediaAsset["kind"]) => async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
-    onAddMedia(filesToAssets(e.target.files, kind));
+    const assets = await filesToAssets(e.target.files, kind);
+    onAddMedia(assets);
     e.target.value = "";
   };
 
