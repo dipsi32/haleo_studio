@@ -4,6 +4,7 @@
 // the brief read still works after a hard reload — we just lose the previews.
 // Rule: never ask the user for the same thing twice.
 import { useEffect, useState } from "react";
+import heic2any from "heic2any";
 
 // ───── Session file store — survives navigation, dies on full reload ─────
 // Keyed by asset id; holds the actual File so we can re-mint object URLs
@@ -17,6 +18,7 @@ export type MediaAsset = {
   url: string; // object URL (session-only)
   mime?: string;
   size?: number;
+  uploadedUrl?: string;
 };
 
 export type Room =
@@ -86,6 +88,8 @@ export type IntakeData = {
 
 const STORAGE_KEY = "haleo:intake:v2";
 const LEGACY_KEY = "haleo:intake";
+const UPLOADED_KEY = "haleo:uploaded:v1";
+const ANALYSIS_CACHE_KEY = "haleo:analysis:v1";
 
 const empty: IntakeData = {
   painPoints: [],
@@ -95,8 +99,10 @@ const empty: IntakeData = {
 // Strip non-serializable bits before persisting.
 const serializable = (d: IntakeData) => ({
   ...d,
-  // object URLs die on reload; persist metadata only so analysis still works
-  media: d.media.map((m) => ({ ...m, url: "" })),
+  media: d.media.map((m) => ({
+    ...m,
+    url: m.url.startsWith("blob:") ? m.uploadedUrl ?? "" : m.url,
+  })),
 });
 
 // Re-hydrate any media metadata from localStorage with live object URLs from
@@ -104,7 +110,18 @@ const serializable = (d: IntakeData) => ({
 const rehydrateMedia = (media: MediaAsset[]): MediaAsset[] =>
   media.map((m) => {
     const live = sessionFiles.get(m.id);
-    return live ? { ...m, url: live.url } : m;
+    if (live) return { ...m, url: live.url };
+    const uploaded = typeof window !== "undefined"
+      ? (() => {
+          try {
+            const stored = JSON.parse(localStorage.getItem(UPLOADED_KEY) ?? "{}") as Record<string, string>;
+            return stored[m.id];
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined;
+    return { ...m, uploadedUrl: m.uploadedUrl ?? uploaded, url: m.url || m.uploadedUrl || uploaded || "" };
   });
 
 const readStored = (): IntakeData => {
@@ -155,15 +172,95 @@ export const useIntake = () => {
       }
       return { ...d, media: d.media.filter((m) => m.id !== id) };
     });
-  const reset = () => setData(empty);
+  const reset = () => {
+    sessionFiles.forEach(({ url }) => URL.revokeObjectURL(url));
+    sessionFiles.clear();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_KEY);
+      localStorage.removeItem(UPLOADED_KEY);
+      localStorage.removeItem(ANALYSIS_CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setData(empty);
+  };
 
   return { data, update, togglePill, addMedia, removeMedia, reset, setData };
 };
 
 // Build MediaAssets from a FileList. Object URL goes both on the asset AND
 // into the session store so we can re-hydrate it after a route change.
-export const filesToAssets = (files: FileList | File[], kind: MediaAsset["kind"]): MediaAsset[] =>
-  Array.from(files).map((f) => {
+const isHeicLike = (file: File) =>
+  file.type === "image/heic" || file.type === "image/heif" || /\.(heic|heif)$/i.test(file.name);
+
+const renameWithExt = (name: string, ext: string) => name.replace(/\.[^.]+$/, "") + ext;
+
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not load image"));
+    img.src = src;
+  });
+
+const maybeConvertHeic = async (file: File): Promise<File> => {
+  if (!isHeicLike(file)) return file;
+  const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.86 });
+  const blob = Array.isArray(converted) ? converted[0] : converted;
+  return new File([blob], renameWithExt(file.name, ".jpg"), {
+    type: "image/jpeg",
+    lastModified: file.lastModified,
+  });
+};
+
+const maybeCompressImage = async (file: File): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.size <= 4 * 1024 * 1024) return file;
+  const src = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(src);
+    const maxDimension = 2200;
+    const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    let quality = 0.86;
+    let output: Blob | null = null;
+    while (quality >= 0.5) {
+      output = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (output && output.size <= 4 * 1024 * 1024) break;
+      quality -= 0.08;
+    }
+
+    if (!output) return file;
+    return new File([output], renameWithExt(file.name, ".jpg"), {
+      type: "image/jpeg",
+      lastModified: file.lastModified,
+    });
+  } finally {
+    URL.revokeObjectURL(src);
+  }
+};
+
+const normalizeFile = async (file: File, kind: MediaAsset["kind"]) => {
+  if (kind === "photo" || kind === "floorplan" || kind === "inspiration") {
+    const converted = await maybeConvertHeic(file);
+    return maybeCompressImage(converted);
+  }
+  return file;
+};
+
+export const filesToAssets = async (
+  files: FileList | File[],
+  kind: MediaAsset["kind"],
+): Promise<MediaAsset[]> => {
+  const normalized = await Promise.all(Array.from(files).map((file) => normalizeFile(file, kind)));
+
+  return normalized.map((f) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const url = URL.createObjectURL(f);
     sessionFiles.set(id, { file: f, url });
@@ -176,12 +273,13 @@ export const filesToAssets = (files: FileList | File[], kind: MediaAsset["kind"]
       size: f.size,
     };
   });
+};
 
 // File-size guidance shown in the UI (kept central so copy stays consistent).
 export const VIDEO_LIMITS = {
-  maxBytes: 150 * 1024 * 1024, // ~150 MB
-  maxSeconds: 90,
-  hint: "Up to 90 seconds, 150 MB. 1080p is plenty.",
+  maxBytes: 100 * 1024 * 1024,
+  maxSeconds: 30,
+  hint: "Up to 30 seconds, 100 MB. A slow 1080p walkthrough is ideal.",
 };
 
 export const hasKind = (d: IntakeData, k: MediaAsset["kind"]) => d.media.some((m) => m.kind === k);
