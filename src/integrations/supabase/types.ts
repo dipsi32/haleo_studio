@@ -14,6 +14,287 @@ export type Database = {
   }
   public: {
     Tables: {
+      contractor_license_cache: {
+        Row: {
+          bond_status: string | null
+          business_name: string | null
+          classifications: string[] | null
+          created_at: string
+          disciplinary_notes: string | null
+          expiration_date: string | null
+          has_disciplinary_action: boolean | null
+          id: string
+          issue_date: string | null
+          last_checked_at: string
+          license_number: string
+          raw_response: Json | null
+          scrape_succeeded: boolean
+          status: string | null
+          updated_at: string
+          workers_comp_status: string | null
+        }
+        Insert: {
+          bond_status?: string | null
+          business_name?: string | null
+          classifications?: string[] | null
+          created_at?: string
+          disciplinary_notes?: string | null
+          expiration_date?: string | null
+          has_disciplinary_action?: boolean | null
+          id?: string
+          issue_date?: string | null
+          last_checked_at?: string
+          license_number: string
+          raw_response?: Json | null
+          scrape_succeeded?: boolean
+          status?: string | null
+          updated_at?: string
+          workers_comp_status?: string | null
+        }
+        Update: {
+          bond_status?: string | null
+          business_name?: string | null
+          classifications?: string[] | null
+          created_at?: string
+          disciplinary_notes?: string | null
+          expiration_date?: string | null
+          has_disciplinary_action?: boolean | null
+          id?: string
+          issue_date?: string | null
+          last_checked_at?: string
+          license_number?: string
+          raw_response?: Json | null
+          scrape_succeeded?: boolean
+          status?: string | null
+          updated_at?: string
+          workers_comp_status?: string | null
+        }
+        Relationships: []
+      }
+      contractor_permits: {
+        Row: {
+          address: string | null
+          city: string | null
+          completed_date: string | null
+          contractor_id: string
+          created_at: string
+          description: string | null
+          id: string
+          issued_date: string | null
+          lat: number | null
+          lng: number | null
+          permit_number: string
+          raw_data: Json | null
+          source: string
+          status: string | null
+          valuation: number | null
+          work_type: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          completed_date?: string | null
+          contractor_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issued_date?: string | null
+          lat?: number | null
+          lng?: number | null
+          permit_number: string
+          raw_data?: Json | null
+          source?: string
+          status?: string | null
+          valuation?: number | null
+          work_type?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          completed_date?: string | null
+          contractor_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issued_date?: string | null
+          lat?: number | null
+          lng?: number | null
+          permit_number?: string
+          raw_data?: Json | null
+          source?: string
+          status?: string | null
+          valuation?: number | null
+          work_type?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_permits_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          city: string | null
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_permit_date: string | null
+          lat: number | null
+          license_number: string
+          lng: number | null
+          name: string
+          permit_count: number
+          phone: string | null
+          specialty: string | null
+          state: string | null
+          updated_at: string
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_permit_date?: string | null
+          lat?: number | null
+          license_number: string
+          lng?: number | null
+          name: string
+          permit_count?: number
+          phone?: string | null
+          specialty?: string | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_permit_date?: string | null
+          lat?: number | null
+          license_number?: string
+          lng?: number | null
+          name?: string
+          permit_count?: number
+          phone?: string | null
+          specialty?: string | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      outreach_batches: {
+        Row: {
+          brief_snapshot: Json
+          created_at: string
+          homeowner_email: string | null
+          homeowner_name: string | null
+          id: string
+          neighborhood: string | null
+          recipient_count: number
+          session_id: string
+        }
+        Insert: {
+          brief_snapshot: Json
+          created_at?: string
+          homeowner_email?: string | null
+          homeowner_name?: string | null
+          id?: string
+          neighborhood?: string | null
+          recipient_count?: number
+          session_id: string
+        }
+        Update: {
+          brief_snapshot?: Json
+          created_at?: string
+          homeowner_email?: string | null
+          homeowner_name?: string | null
+          id?: string
+          neighborhood?: string | null
+          recipient_count?: number
+          session_id?: string
+        }
+        Relationships: []
+      }
+      outreach_sends: {
+        Row: {
+          batch_id: string
+          contractor_email: string | null
+          contractor_id: string
+          contractor_name: string | null
+          created_at: string
+          id: string
+          is_simulated: boolean
+          opened_at: string | null
+          personal_note: string | null
+          responded_at: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          contractor_email?: string | null
+          contractor_id: string
+          contractor_name?: string | null
+          created_at?: string
+          id?: string
+          is_simulated?: boolean
+          opened_at?: string | null
+          personal_note?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          contractor_email?: string | null
+          contractor_id?: string
+          contractor_name?: string | null
+          created_at?: string
+          id?: string
+          is_simulated?: boolean
+          opened_at?: string | null
+          personal_note?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_sends_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sends_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_analyses: {
         Row: {
           created_at: string
