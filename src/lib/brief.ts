@@ -525,6 +525,27 @@ export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
   const pain = (p: string) => d.painPoints.includes(p);
   const scope = scopeFor(d.scope);
 
+  // 0. Walkthrough video read — what a contractor extracts from a 30–90s clip.
+  // Mirrors the ClearContract approach: detected scene objects, structural cues,
+  // light sources, condition flags. Honest about what the video CAN'T tell us.
+  if (hasKind(d, "video")) {
+    const videoItems: AnalysisItem[] = [
+      { text: "Flow & circulation read — adjacencies, sightlines, choke points.", basis: "inferred" },
+      { text: "Approximate ceiling height, soffits, and visible beams.", basis: "inferred" },
+      { text: "Natural light direction and time-of-day cues.", basis: "inferred" },
+      { text: "Existing finish condition at a glance — cabinets, tile, flooring.", basis: "inferred" },
+      { text: "Visible MEP cues — outlets, vents, light fixtures, plumbing access.", basis: "inferred" },
+      { text: "Sub-floor and behind-wall condition — verify on site.", basis: "question" },
+      { text: "Exact dimensions — video reads, doesn't measure.", basis: "question" },
+    ];
+    sections.push({
+      key: "video",
+      title: "Walkthrough video read",
+      description: "What a contractor extracts from the clip before the site visit. Best with a slow 30–90s pan in good daylight.",
+      items: videoItems,
+    });
+  }
+
   // 1. Structural read
   const structural: AnalysisItem[] = [];
   if (d.room === "addition" || d.room === "full-home" || d.scope === "structural" || d.scope === "reconfigure") {
