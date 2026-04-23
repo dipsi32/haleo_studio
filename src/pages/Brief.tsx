@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
+import HaleoSeesPreview from "@/components/intake/HaleoSeesPreview";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
