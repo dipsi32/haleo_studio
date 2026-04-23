@@ -45,6 +45,7 @@ import {
   groupContractorLinesByTrade,
   type ContractorLine,
   type BriefReadiness,
+  type TradeGroup,
 } from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
@@ -454,21 +455,14 @@ const BriefResult = () => {
           )}
 
           {/* 4. INSPIRATION */}
-          {(inspirationMedia.length > 0 || data.inspirationLink) && (
+          {inspirationMedia.length > 0 && (
             <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
               <SectionHeading no="04" title="Inspiration" subtitle="The look they're chasing." />
-              {inspirationMedia.length > 0 && (
-                <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {inspirationMedia.map((m) => (
-                    <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                  ))}
-                </div>
-              )}
-              {data.inspirationLink && (
-                <p className="mt-4 truncate text-xs text-muted-foreground">
-                  Link: <span className="text-foreground/80">{data.inspirationLink}</span>
-                </p>
-              )}
+              <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {inspirationMedia.map((m) => (
+                  <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                ))}
+              </div>
               <AnnotationBlock
                 sectionId="inspiration"
                 value={annotations.inspiration}
@@ -478,55 +472,36 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 5. THE TRANSLATION (scope of work, tagged) */}
+          {/* 5. THE TRANSLATION (scope of work, grouped by trade like a real SOW) */}
           <section className="border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
             <div className="flex items-start justify-between gap-3">
-              <SectionHeading no="05" title="Scope of work" subtitle="Every line tagged so nothing is fabricated." />
+              <SectionHeading no="05" title="Scope of work" subtitle="Grouped by trade. Every line tagged so nothing is fabricated." />
               <span className="hidden shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground sm:block">For the contractor</span>
             </div>
-            <ul className="mt-5 space-y-2">
-              {contractorLines.map((line, i) => (
-                <li key={i} className="group rounded-xl border border-border bg-card p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <BasisChip basis={line.basis} />
-                    {!approved && (
-                      <button
-                        onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                        className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
-                        aria-label="Edit line"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-foreground/50" />
-                      </button>
-                    )}
-                  </div>
-                  {editingIdx === i ? (
-                    <Textarea
-                      autoFocus
-                      value={lineText(i)}
-                      onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
-                      onBlur={() => setEditingIdx(null)}
-                      rows={2}
-                      className="mt-2 rounded-lg bg-background font-mono text-[13px]"
-                    />
-                  ) : (
-                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
-                      {lineText(i)}
-                    </p>
-                  )}
-                  {line.source && (
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Source: {line.source}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {/* Legend */}
+
+            {/* Legend up-front so the chips below make sense */}
             <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
               <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From the homeowner</span>
               <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Inferred — verify on site</span>
               <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
             </div>
+
+            <div className="mt-5 space-y-3">
+              {tradeGroups.map((group) => (
+                <TradeGroupCard
+                  key={group.trade}
+                  group={group}
+                  startIndex={contractorLines.indexOf(group.lines[0])}
+                  contractorLines={contractorLines}
+                  approved={approved}
+                  editingIdx={editingIdx}
+                  setEditingIdx={setEditingIdx}
+                  lineEdits={lineEdits}
+                  setLineEdits={setLineEdits}
+                />
+              ))}
+            </div>
+
             <AnnotationBlock
               sectionId="scope"
               value={annotations.scope}
@@ -557,17 +532,37 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 7. CONTRACTOR'S DEEP READ — collapsed by default to keep the 1-pager scannable */}
+          {/* 7. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
           <section className="px-6 py-7 md:px-10 md:py-9">
             <button
               onClick={() => setShowAnalysis((v) => !v)}
-              className="flex w-full items-center justify-between gap-4 text-left"
+              className={`group flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-4 text-left transition-smooth md:p-5 ${
+                showAnalysis
+                  ? "border-accent/40 bg-accent-soft/20"
+                  : "border-border bg-card/60 hover:border-accent/50 hover:bg-accent-soft/20"
+              }`}
               aria-expanded={showAnalysis}
             >
-              <div>
-                <SectionHeading no="07" title="Deep read for the contractor" subtitle="Structure, finishes, constraints, opportunities, code — the way a GC actually scans a project." />
+              <div className="flex min-w-0 items-center gap-4">
+                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-smooth ${showAnalysis ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">07</p>
+                  <p className="font-display text-base font-medium leading-tight md:text-lg">
+                    {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {showAnalysis
+                      ? "Structure, finishes, constraints, opportunities, code."
+                      : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                  </p>
+                </div>
               </div>
-              <ChevronDown className={`h-5 w-5 shrink-0 text-foreground/50 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground/80 shadow-soft">
+                {showAnalysis ? "Hide" : "Tap to expand"}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
+              </span>
             </button>
             <AnimatePresence initial={false}>
               {showAnalysis && (
@@ -687,6 +682,112 @@ const SectionHeading = ({ no, title, subtitle }: { no: string; title: string; su
     {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
   </div>
 );
+
+// ───── Trade group — collapsible scope-of-work block, like a real GC bid sheet ─────
+const TradeGroupCard = ({
+  group,
+  contractorLines,
+  approved,
+  editingIdx,
+  setEditingIdx,
+  lineEdits,
+  setLineEdits,
+}: {
+  group: TradeGroup;
+  startIndex: number; // unused, kept for caller symmetry
+  contractorLines: ContractorLine[];
+  approved: boolean;
+  editingIdx: number | null;
+  setEditingIdx: (n: number | null) => void;
+  lineEdits: Record<number, string>;
+  setLineEdits: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+}) => {
+  // Default open for trades that carry real scope; collapsed for "context".
+  const [open, setOpen] = useState(group.trade !== "context");
+  const count = group.lines.length;
+  const grounded = group.lines.filter((l) => l.basis === "grounded").length;
+  const inferred = group.lines.filter((l) => l.basis === "inferred").length;
+  const questions = group.lines.filter((l) => l.basis === "question").length;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-smooth hover:bg-secondary/40"
+        aria-expanded={open}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[11px] font-semibold tabular-nums text-accent">
+            {count}
+          </span>
+          <div className="min-w-0">
+            <p className="font-display text-sm font-semibold leading-tight text-foreground">
+              {group.meta.label}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">{group.meta.blurb}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-wider text-foreground/55 sm:inline-flex">
+            {grounded > 0 && <span className="inline-flex items-center gap-0.5"><Check className="h-3 w-3 text-sage" />{grounded}</span>}
+            {inferred > 0 && <span className="inline-flex items-center gap-0.5"><AlertCircle className="h-3 w-3 text-accent" />{inferred}</span>}
+            {questions > 0 && <span className="inline-flex items-center gap-0.5"><HelpCircle className="h-3 w-3 text-foreground/50" />{questions}</span>}
+          </span>
+          <ChevronDown className={`h-4 w-4 text-foreground/50 transition-transform ${open ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden border-t border-border"
+          >
+            {group.lines.map((line) => {
+              const i = contractorLines.indexOf(line);
+              const text = lineEdits[i] ?? line.text;
+              return (
+                <li key={i} className="group border-b border-border/60 px-4 py-3 last:border-b-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <BasisChip basis={line.basis} />
+                    {!approved && (
+                      <button
+                        onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                        className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
+                        aria-label="Edit line"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-foreground/50" />
+                      </button>
+                    )}
+                  </div>
+                  {editingIdx === i ? (
+                    <Textarea
+                      autoFocus
+                      value={text}
+                      onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
+                      onBlur={() => setEditingIdx(null)}
+                      rows={2}
+                      className="mt-2 rounded-lg bg-background font-mono text-[13px]"
+                    />
+                  ) : (
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{text}</p>
+                  )}
+                  {line.source && (
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Source: {line.source}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 // ───── Brief Readiness — slim ACTION bar (not a card competing with the brief) ─────
 // Visual language: horizontal, low-chrome, looks like a toolbar/affordance, not a document.

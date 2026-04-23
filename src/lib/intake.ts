@@ -70,9 +70,6 @@ export type IntakeData = {
   dimensions?: Dimensions;
   // legacy free-text — kept so older saved sessions still render
   measurements?: string;
-  // vibe
-  vibes: string[];
-  inspirationLink?: string;
   // address (for permit + neighborhood intel)
   address?: Address;
   // scope of work — orientates budget
@@ -92,7 +89,6 @@ const LEGACY_KEY = "haleo:intake";
 
 const empty: IntakeData = {
   painPoints: [],
-  vibes: [],
   media: [],
 };
 
@@ -140,7 +136,7 @@ export const useIntake = () => {
   }, [data]);
 
   const update = (patch: Partial<IntakeData>) => setData((d) => ({ ...d, ...patch }));
-  const togglePill = (key: "painPoints" | "vibes", value: string) =>
+  const togglePill = (key: "painPoints", value: string) =>
     setData((d) => {
       const arr = d[key] ?? [];
       return {
@@ -297,84 +293,6 @@ export const PAIN_BY_ROOM: Record<Exclude<Room, "addition">, string[]> = {
     "Poor lighting",
   ],
 };
-
-// ───── Vibes — now with visual metadata so the user can see the feel, not just read it ─────
-export type VibeOption = {
-  value: string;
-  label: string;
-  blurb: string;
-  swatch: string[]; // 3 HSL color tokens to render as a tiny moodboard
-  texture?: string; // a CSS gradient that hints at the material feel
-};
-
-export const VIBE_OPTIONS: VibeOption[] = [
-  {
-    value: "Light and airy",
-    label: "Light & airy",
-    blurb: "White oak, soft whites, lots of daylight.",
-    swatch: ["38 35% 96%", "30 14% 86%", "36 22% 82%"],
-    texture: "linear-gradient(135deg, hsl(38 35% 97%), hsl(36 22% 88%))",
-  },
-  {
-    value: "Warm and cozy",
-    label: "Warm & cozy",
-    blurb: "Walnut, brass, butter-colored linens.",
-    swatch: ["28 35% 28%", "36 55% 52%", "36 28% 78%"],
-    texture: "linear-gradient(135deg, hsl(36 55% 52%), hsl(28 35% 28%))",
-  },
-  {
-    value: "Clean and minimal",
-    label: "Clean & minimal",
-    blurb: "Quiet lines, plaster, no fuss.",
-    swatch: ["0 0% 96%", "0 0% 86%", "0 0% 22%"],
-    texture: "linear-gradient(135deg, hsl(0 0% 97%), hsl(0 0% 86%))",
-  },
-  {
-    value: "Bold and dramatic",
-    label: "Bold & dramatic",
-    blurb: "Deep tones, rich contrast, statement light.",
-    swatch: ["20 14% 14%", "14 55% 42%", "36 55% 52%"],
-    texture: "linear-gradient(135deg, hsl(20 14% 14%), hsl(14 55% 42%))",
-  },
-  {
-    value: "Natural and organic",
-    label: "Natural & organic",
-    blurb: "Stone, raw wood, planted edges.",
-    swatch: ["95 14% 38%", "30 28% 62%", "36 22% 82%"],
-    texture: "linear-gradient(135deg, hsl(95 18% 62%), hsl(30 28% 62%))",
-  },
-  {
-    value: "Modern and sleek",
-    label: "Modern & sleek",
-    blurb: "Matte black, slab fronts, hidden hardware.",
-    swatch: ["20 6% 14%", "20 6% 36%", "210 8% 70%"],
-    texture: "linear-gradient(135deg, hsl(20 6% 14%), hsl(210 8% 70%))",
-  },
-  {
-    value: "Classic and timeless",
-    label: "Classic & timeless",
-    blurb: "Shaker, marble, polished nickel.",
-    swatch: ["210 14% 96%", "30 14% 78%", "210 14% 26%"],
-    texture: "linear-gradient(135deg, hsl(210 14% 96%), hsl(30 14% 78%))",
-  },
-  {
-    value: "Calm and spa-like",
-    label: "Calm & spa-like",
-    blurb: "Limewash, pale stone, soft greens.",
-    swatch: ["95 22% 78%", "180 14% 82%", "30 14% 90%"],
-    texture: "linear-gradient(135deg, hsl(180 14% 86%), hsl(95 22% 78%))",
-  },
-  {
-    value: "Rustic and lived-in",
-    label: "Rustic & lived-in",
-    blurb: "Reclaimed wood, terracotta, patina brass.",
-    swatch: ["14 55% 42%", "28 35% 28%", "36 28% 62%"],
-    texture: "linear-gradient(135deg, hsl(14 55% 42%), hsl(28 35% 28%))",
-  },
-];
-
-// Backwards-compat — previous code imported VIBES (string[])
-export const VIBES = VIBE_OPTIONS.map((v) => v.value);
 
 // ───── Scope of work — anchors budget and helps the user calibrate ─────
 export type ScopeOption = {
