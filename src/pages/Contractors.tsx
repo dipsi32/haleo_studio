@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ShieldCheck, MapPin, Calendar, Hammer, Check,
-  ExternalLink, Send, X, Info, Sparkles, AlertCircle, Paperclip,
+  ArrowLeft, MapPin, Calendar, Hammer, Check,
+  Send, X, Info, Sparkles, AlertCircle, Paperclip,
   CheckCircle2, FileText, Clock, Wallet, Home,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
-import { projectTypeLabel, cslbDeepLink, buildBriefSnapshot, getSessionId } from "@/lib/contractors";
+import { projectTypeLabel, buildBriefSnapshot, getSessionId } from "@/lib/contractors";
+import CslbSignals from "@/components/CslbSignals";
+import { evaluateDiscipline } from "@/lib/cslbSignals";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -42,8 +44,9 @@ const ContractorCard = ({
   projectLabel: string;
   neighborhood: string;
 }) => {
+  const navigate = useNavigate();
   const { contractor, permits, license, score, matchCount, recentPermit } = rc;
-  const licenseActive = license?.status?.toLowerCase().includes("active") || license?.status?.toLowerCase().includes("current");
+  const discipline = evaluateDiscipline(license);
   return (
     <motion.div
       layout
@@ -61,36 +64,40 @@ const ContractorCard = ({
       <div className="flex items-start gap-4">
         <ScoreRing score={score.total} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <h3 className="font-display text-lg font-medium leading-tight text-foreground">
-              {contractor.company ?? contractor.name}
-            </h3>
-          </div>
+          <h3 className="font-display text-lg font-medium leading-tight text-foreground">
+            {contractor.company ?? contractor.name}
+          </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {contractor.specialty ?? "General"} · {contractor.city ?? "San Jose"}
           </p>
-          <div className="mt-3 space-y-1.5 text-sm text-foreground/80">
-            <div className="flex items-center gap-1.5">
-              <Hammer className="h-3.5 w-3.5 text-accent" />
-              <span><strong className="font-medium text-foreground">{matchCount || permits.length}</strong> {projectLabel} permit{(matchCount || permits.length) === 1 ? "" : "s"} in {neighborhood}</span>
-            </div>
-            {recentPermit && (
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5 text-accent" />
-                <span>Last job: {formatDate(recentPermit.issued_date)}{recentPermit.address ? ` · ${recentPermit.address}` : ""}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className={`h-3.5 w-3.5 ${licenseActive ? "text-sage" : "text-muted-foreground"}`} />
-              <span>
-                {license?.scrape_succeeded
-                  ? <>License {license.status ?? "on file"}{license.expiration_date ? ` · expires ${formatDate(license.expiration_date)}` : ""}</>
-                  : <>License on file — <a href={cslbDeepLink(contractor.license_number)} target="_blank" rel="noreferrer" className="text-accent underline-offset-4 hover:underline">verify on CSLB <ExternalLink className="inline h-3 w-3" /></a></>}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* CSLB signals — license, bond/WC, discipline, tenure, name match */}
+      <div className="mt-4">
+        <CslbSignals
+          license={license}
+          licenseNumber={contractor.license_number}
+          permitDisplayName={contractor.company ?? contractor.name}
+          variant="card"
+          onDisciplineClick={() => navigate(`/contractors/${contractor.id}`)}
+        />
+      </div>
+
+      {/* Permit history snippet */}
+      <div className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm text-foreground/80">
+        <div className="flex items-center gap-1.5">
+          <Hammer className="h-3.5 w-3.5 text-accent" />
+          <span><strong className="font-medium text-foreground">{matchCount || permits.length}</strong> {projectLabel} permit{(matchCount || permits.length) === 1 ? "" : "s"} in {neighborhood}</span>
+        </div>
+        {recentPermit && (
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-accent" />
+            <span>Last job: {formatDate(recentPermit.issued_date)}{recentPermit.address ? ` · ${recentPermit.address}` : ""}</span>
+          </div>
+        )}
+      </div>
+
       <div className="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
         <Link to={`/contractors/${contractor.id}`} className="text-sm font-medium text-accent underline-offset-4 hover:underline">
           View profile →
@@ -100,6 +107,7 @@ const ContractorCard = ({
           variant={selected ? "default" : "outline"}
           onClick={onToggle}
           className="rounded-full"
+          disabled={discipline.hasRecord && !selected ? false : false}
         >
           {selected ? <><Check className="h-3.5 w-3.5" /> Selected</> : "Select"}
         </Button>
