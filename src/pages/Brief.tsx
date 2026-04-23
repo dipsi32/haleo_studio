@@ -229,9 +229,9 @@ const InsideLookScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 4"
+        eyebrow="Step 2 of 5"
         title="Take us inside — only what you're comfortable sharing."
-        sub="A short walkthrough or a couple of photos goes a long way. Skip anything you'd rather not."
+        sub="A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
       />
 
       {/* Capture grid — real file inputs */}
@@ -311,11 +311,7 @@ const InsideLookScreen = ({
           </motion.div>
         )}
 
-        {/* Haleo's read — appears as soon as media is uploaded */}
-        <HaleoSeesPreview
-          intake={intake}
-          onApprove={(snapshot) => onUpdate({ approvedAnalysis: snapshot })}
-        />
+        {/* Read happens on Step 3. We just hint at it here. */}
 
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (
