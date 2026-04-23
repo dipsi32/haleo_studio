@@ -199,6 +199,138 @@ export type Database = {
         }
         Relationships: []
       }
+      cslb_import_runs: {
+        Row: {
+          errors: string | null
+          finished_at: string | null
+          id: string
+          records_inserted: number
+          records_seen: number
+          records_updated: number
+          source_url: string | null
+          started_at: string
+          status: string
+          status_changes: number
+        }
+        Insert: {
+          errors?: string | null
+          finished_at?: string | null
+          id?: string
+          records_inserted?: number
+          records_seen?: number
+          records_updated?: number
+          source_url?: string | null
+          started_at?: string
+          status?: string
+          status_changes?: number
+        }
+        Update: {
+          errors?: string | null
+          finished_at?: string | null
+          id?: string
+          records_inserted?: number
+          records_seen?: number
+          records_updated?: number
+          source_url?: string | null
+          started_at?: string
+          status?: string
+          status_changes?: number
+        }
+        Relationships: []
+      }
+      cslb_licenses: {
+        Row: {
+          bond_amount: number | null
+          bond_status: string | null
+          business_name: string | null
+          classifications: string[] | null
+          created_at: string
+          data_source: string
+          disciplinary_notes: string | null
+          expiration_date: string | null
+          has_disciplinary_action: boolean | null
+          issue_date: string | null
+          last_verified_at: string | null
+          license_number: string
+          license_status: string | null
+          licensee_name: string | null
+          raw_data: Json | null
+          updated_at: string
+          workers_comp_status: string | null
+        }
+        Insert: {
+          bond_amount?: number | null
+          bond_status?: string | null
+          business_name?: string | null
+          classifications?: string[] | null
+          created_at?: string
+          data_source?: string
+          disciplinary_notes?: string | null
+          expiration_date?: string | null
+          has_disciplinary_action?: boolean | null
+          issue_date?: string | null
+          last_verified_at?: string | null
+          license_number: string
+          license_status?: string | null
+          licensee_name?: string | null
+          raw_data?: Json | null
+          updated_at?: string
+          workers_comp_status?: string | null
+        }
+        Update: {
+          bond_amount?: number | null
+          bond_status?: string | null
+          business_name?: string | null
+          classifications?: string[] | null
+          created_at?: string
+          data_source?: string
+          disciplinary_notes?: string | null
+          expiration_date?: string | null
+          has_disciplinary_action?: boolean | null
+          issue_date?: string | null
+          last_verified_at?: string | null
+          license_number?: string
+          license_status?: string | null
+          licensee_name?: string | null
+          raw_data?: Json | null
+          updated_at?: string
+          workers_comp_status?: string | null
+        }
+        Relationships: []
+      }
+      cslb_status_alerts: {
+        Row: {
+          acknowledged: boolean
+          contractor_id: string | null
+          created_at: string
+          detected_via: string
+          id: string
+          license_number: string
+          new_status: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          acknowledged?: boolean
+          contractor_id?: string | null
+          created_at?: string
+          detected_via?: string
+          id?: string
+          license_number: string
+          new_status?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          acknowledged?: boolean
+          contractor_id?: string | null
+          created_at?: string
+          detected_via?: string
+          id?: string
+          license_number?: string
+          new_status?: string | null
+          previous_status?: string | null
+        }
+        Relationships: []
+      }
       outreach_batches: {
         Row: {
           brief_snapshot: Json
