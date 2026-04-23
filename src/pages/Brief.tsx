@@ -14,7 +14,6 @@ import {
   Camera,
   Map,
   ArrowRight,
-  Link as LinkIcon,
   Check,
   X,
   Plus,
@@ -24,9 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
