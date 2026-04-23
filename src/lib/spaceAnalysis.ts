@@ -109,7 +109,7 @@ export const runSpaceAnalysis = async (
 // Triggers an analysis whenever the intake "media set" changes. Caches the
 // result in localStorage so navigating away and back doesn't re-spend tokens.
 
-const RESULT_CACHE_KEY = "haleo:analysis:v1";
+const RESULT_CACHE_KEY = "haleo:analysis:v2";
 const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.";
 const readCachedResult = (key: string): SpaceAnalysis | null => {
   try {
