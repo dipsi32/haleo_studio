@@ -57,10 +57,10 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-// Five felt-steps. Addition route folds its mini-flow into step 2.
-const TOTAL = 5;
+// Four felt-steps. Addition route folds its mini-flow into step 2.
+const TOTAL = 4;
 
-const STEP_LABELS = ["The room", "Inside look", "The vibe", "Address", "Scope & budget"];
+const STEP_LABELS = ["The room", "Inside look", "Address", "Scope & budget"];
 
 const ScreenTitle = ({
   eyebrow,
@@ -95,7 +95,7 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 const StepDots = ({ step }: { step: number }) => (
   <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
     <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      5 quick steps
+      4 quick steps
     </span>
     <span className="hidden h-3 w-px bg-border sm:inline-block" />
     {STEP_LABELS.map((label, i) => {
@@ -130,7 +130,7 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
     <div className="space-y-10">
       <StepDots step={1} />
       <ScreenTitle
-        eyebrow="Step 1 of 5"
+        eyebrow="Step 1 of 4"
         title="Where's the dream taking shape?"
         sub="Tap one. Don't overthink it — you can swap rooms anytime."
       />
@@ -221,7 +221,7 @@ const InsideLookScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 5"
+        eyebrow="Step 2 of 4"
         title="Take us inside — only what you're comfortable sharing."
         sub="A short walkthrough or a couple of photos goes a long way. Skip anything you'd rather not."
       />
