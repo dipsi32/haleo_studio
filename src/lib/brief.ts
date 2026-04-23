@@ -115,26 +115,6 @@ export const buildHomeownerLayer = (d: IntakeData): string => {
 
   return [opener, painsLine].filter(Boolean).join(" ");
 };
-    d.room === "addition"
-      ? "We're adding on to our home."
-      : d.room === "full-home"
-        ? "We're remodeling our whole home."
-        : d.room
-          ? `We're remodeling the ${room}.`
-          : "We're planning a remodel.";
-
-  const painsLine =
-    pains.length > 0
-      ? `What's bugging us: ${pains.join(", ").replace(/, ([^,]*)$/, " and $1")}.`
-      : "";
-
-  const vibeLine =
-    vibes.length > 0
-      ? `We want it to feel ${vibes.join(" and ")}.`
-      : "";
-
-  return [opener, painsLine, vibeLine].filter(Boolean).join(" ");
-};
 
 // ───── Contractor layer (honest) ─────
 // Each line is tagged with basis + trade. The brief page groups by trade so a
