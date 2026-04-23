@@ -41,6 +41,8 @@ import {
   buildPermitFlag,
   buildAnalysisSections,
   buildReadiness,
+  buildProjectTitle,
+  groupContractorLinesByTrade,
   type ContractorLine,
   type BriefReadiness,
 } from "@/lib/brief";
@@ -263,9 +265,11 @@ const BriefResult = () => {
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
+  const tradeGroups = useMemo(() => groupContractorLinesByTrade(contractorLines), [contractorLines]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
   const sections = useMemo(() => buildAnalysisSections(data), [data]);
   const readiness = useMemo(() => buildReadiness(data), [data]);
+  const projectTitle = useMemo(() => buildProjectTitle(data), [data]);
 
   useEffect(() => {
     setApproved(false);
@@ -322,13 +326,19 @@ const BriefResult = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Your project brief</p>
-          <h1 className="mt-3 font-display text-5xl font-light leading-tight text-balance md:text-6xl">
-            One page. <em className="italic text-accent">Everything they need.</em>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{projectTitle.sub}</p>
+          <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+            {projectTitle.title}
           </h1>
-          <p className="mt-5 max-w-xl text-base text-muted-foreground">
-            This is exactly what your contractor will read — your vision, your photos, and a clear translation they can bid on.
+          <p className="mt-4 max-w-xl text-base text-muted-foreground">
+            Everything a contractor needs to bid — at a glance, with the details one tap away.
           </p>
+          <div className="mt-5">
+            <Button size="sm" className="rounded-full" disabled={!approved}>
+              <Send className="h-4 w-4" />
+              {approved ? "Share with contractor" : "Approve below to share"}
+            </Button>
+          </div>
         </motion.div>
 
         {/* ───── Readiness action bar — distinct from the brief, framed as YOUR action ───── */}
