@@ -13,7 +13,6 @@ import {
   Video,
   Camera,
   Map,
-  Ruler,
   ArrowRight,
   Link as LinkIcon,
   Check,
@@ -27,10 +26,13 @@ import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
+import AddressStep from "@/components/intake/AddressStep";
+import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
+import DimensionsInput from "@/components/intake/DimensionsInput";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
-  VIBES,
   filesToAssets,
   hasKind,
   type Room,
@@ -38,6 +40,9 @@ import {
   type AdditionLocation,
   type Timeline,
   type MediaAsset,
+  type Dimensions,
+  type Address,
+  type ScopeTier,
   useIntake,
 } from "@/lib/intake";
 
@@ -52,12 +57,10 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-// 4 felt-steps (Addition route also folds into 4: room counts as step 1, addition mini-flow lives on step 2's place).
-const TOTAL = 4;
+// Five felt-steps. Addition route folds its mini-flow into step 2.
+const TOTAL = 5;
 
-const STEP_LABELS = ["The room", "Show & tell", "The vibe", "When & how much"];
-
-const fmtMoney = (v: number) => (v >= 500 ? "$500K+" : `$${v}K`);
+const STEP_LABELS = ["The room", "Inside look", "The vibe", "Address", "Scope & budget"];
 
 const ScreenTitle = ({
   eyebrow,
@@ -90,9 +93,9 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 
 // ───── Feedforward: live progress dots that mirror the wizard ─────
 const StepDots = ({ step }: { step: number }) => (
-  <div className="mx-auto flex max-w-2xl items-center justify-center gap-3 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
+  <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
     <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      4 quick steps
+      5 quick steps
     </span>
     <span className="hidden h-3 w-px bg-border sm:inline-block" />
     {STEP_LABELS.map((label, i) => {
@@ -113,7 +116,7 @@ const StepDots = ({ step }: { step: number }) => (
             {isDone ? <Check className="h-3 w-3" /> : n}
           </span>
           <span className={`whitespace-nowrap ${isActive ? "text-foreground" : ""}`}>{label}</span>
-          {n < STEP_LABELS.length && <span className="h-px w-3 bg-border md:w-4" />}
+          {n < STEP_LABELS.length && <span className="hidden h-px w-3 bg-border sm:inline-block md:w-4" />}
         </span>
       );
     })}
@@ -127,7 +130,7 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
     <div className="space-y-10">
       <StepDots step={1} />
       <ScreenTitle
-        eyebrow="Step 1 of 4"
+        eyebrow="Step 1 of 5"
         title="Where's the dream taking shape?"
         sub="Tap one. Don't overthink it — you can swap rooms anytime."
       />
@@ -152,8 +155,8 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
   );
 };
 
-// ───── Screen 2: Show & tell — combines media + pain in one calm screen ─────
-const ShowAndTellScreen = ({
+// ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
+const InsideLookScreen = ({
   room,
   selected,
   onTogglePain,
@@ -161,7 +164,7 @@ const ShowAndTellScreen = ({
   onRemoveMedia,
   media,
   notes,
-  measurements,
+  dimensions,
   onUpdate,
   onContinue,
 }: {
@@ -172,14 +175,16 @@ const ShowAndTellScreen = ({
   onRemoveMedia: (id: string) => void;
   media: MediaAsset[];
   notes?: string;
-  measurements?: string;
-  onUpdate: (p: { notes?: string; measurements?: string }) => void;
+  dimensions?: Dimensions;
+  onUpdate: (p: { notes?: string; dimensions?: Dimensions }) => void;
   onContinue: () => void;
 }) => {
   const videoRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef<HTMLInputElement>(null);
   const planRef = useRef<HTMLInputElement>(null);
-  const [showNotes, setShowNotes] = useState(Boolean(notes || measurements));
+  const [extras, setExtras] = useState(
+    Boolean(notes || dimensions?.length || dimensions?.width || dimensions?.height),
+  );
 
   const options = PAIN_BY_ROOM[room].map((p) => ({ value: p, label: p }));
 
@@ -216,9 +221,9 @@ const ShowAndTellScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 4"
-        title="Show us your space."
-        sub="Drop in whatever's easiest. Then tell us what's bugging you about it."
+        eyebrow="Step 2 of 5"
+        title="Take us inside — only what you're comfortable sharing."
+        sub="A short walkthrough or a couple of photos goes a long way. Skip anything you'd rather not."
       />
 
       {/* Capture grid — real file inputs */}
@@ -264,7 +269,7 @@ const ShowAndTellScreen = ({
           })}
         </div>
 
-        {/* Thumbnails of what's been added */}
+        {/* Thumbnails */}
         {media.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -298,10 +303,10 @@ const ShowAndTellScreen = ({
           </motion.div>
         )}
 
-        {/* Inline secondary affordance: notes / measurements */}
-        {!showNotes ? (
+        {/* Inline secondary affordance: notes + structured dimensions */}
+        {!extras ? (
           <button
-            onClick={() => setShowNotes(true)}
+            onClick={() => setExtras(true)}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-card/60 px-4 py-2 text-xs text-muted-foreground transition-smooth hover:border-accent/50 hover:text-foreground"
           >
             <Plus className="h-3 w-3" />
@@ -311,7 +316,7 @@ const ShowAndTellScreen = ({
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 grid gap-3 sm:grid-cols-2"
+            className="mt-4 grid gap-3 md:grid-cols-2"
           >
             <div className="rounded-2xl border border-border bg-card p-4">
               <label className="flex items-center gap-2 font-display text-sm font-medium">
@@ -325,18 +330,7 @@ const ShowAndTellScreen = ({
                 className="mt-2 rounded-xl border-border bg-background text-sm"
               />
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4">
-              <label className="flex items-center gap-2 font-display text-sm font-medium">
-                <Ruler className="h-4 w-4 text-accent" /> Measurements
-              </label>
-              <Textarea
-                value={measurements ?? ""}
-                onChange={(e) => onUpdate({ measurements: e.target.value })}
-                rows={3}
-                placeholder='e.g. "Kitchen ~12×14ft, ceiling 9ft, window on south wall."'
-                className="mt-2 rounded-xl border-border bg-background text-sm"
-              />
-            </div>
+            <DimensionsInput value={dimensions} onChange={(d) => onUpdate({ dimensions: d })} />
           </motion.div>
         )}
       </div>
@@ -355,7 +349,7 @@ const ShowAndTellScreen = ({
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        <Button onClick={onContinue} size="lg" className="rounded-full px-8" disabled={selected.length === 0 && media.length === 0 && !notes && !measurements}>
+        <Button onClick={onContinue} size="lg" className="rounded-full px-8" disabled={selected.length === 0 && media.length === 0 && !notes && !dimensions?.length}>
           Continue
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -476,7 +470,7 @@ const AdditionScreen = ({
   );
 };
 
-// ───── Screen 3: Vibe (+ inline inspiration) ─────
+// ───── Screen 3: Vibe (visual + inline inspiration) ─────
 const VibeScreen = ({
   selected,
   onToggle,
@@ -495,16 +489,15 @@ const VibeScreen = ({
   inspirationCount: number;
 }) => {
   const inspoRef = useRef<HTMLInputElement>(null);
-  const options = VIBES.map((v) => ({ value: v, label: v }));
   return (
     <div className="space-y-12">
       <StepDots step={3} />
       <ScreenTitle
-        eyebrow="Step 3 of 4"
-        title="What's the vibe?"
-        sub="Pick a few words that feel right. Two or three is plenty."
+        eyebrow="Step 3 of 5"
+        title="What's the vibe you're going for?"
+        sub="Each tile is a tiny moodboard — the colors and textures hint at the feel. Tap two or three."
       />
-      <PillGroup options={options} selected={selected} onToggle={onToggle} />
+      <VibeVisualGrid selected={selected} onToggle={onToggle} />
 
       <div className="mx-auto max-w-2xl space-y-3">
         <p className="text-center text-sm text-muted-foreground">Have images in mind? (Pinterest, Instagram, neighborhood snaps…)</p>
@@ -551,8 +544,40 @@ const VibeScreen = ({
   );
 };
 
-// ───── Screen 4: Budget + Timeline (combined, calm) ─────
-const BudgetTimelineScreen = ({
+// ───── Screen 4: Address ─────
+const AddressScreen = ({
+  address,
+  onSave,
+  onSkip,
+  onContinue,
+}: {
+  address?: Address;
+  onSave: (a: Address) => void;
+  onSkip: () => void;
+  onContinue: () => void;
+}) => {
+  return (
+    <div className="space-y-10">
+      <StepDots step={4} />
+      <ScreenTitle
+        eyebrow="Step 4 of 5"
+        title="Where's the project?"
+        sub="The address unlocks real permit history and neighborhood cost intel for your brief."
+      />
+      <AddressStep
+        value={address}
+        onSave={onSave}
+        onSkip={onSkip}
+        onContinue={onContinue}
+      />
+    </div>
+  );
+};
+
+// ───── Screen 5: Scope + Budget + Timeline ─────
+const ScopeAndBudgetScreen = ({
+  scope,
+  onScopeChange,
   min,
   max,
   budgetSkipped,
@@ -560,87 +585,40 @@ const BudgetTimelineScreen = ({
   onSkipBudget,
   onPickTimeline,
   selectedTimeline,
+  address,
 }: {
-  min: number;
-  max: number;
+  scope?: ScopeTier;
+  onScopeChange: (s: ScopeTier) => void;
+  min?: number;
+  max?: number;
   budgetSkipped: boolean;
   onBudgetChange: (m: number, x: number) => void;
   onSkipBudget: () => void;
   onPickTimeline: (t: Timeline) => void;
   selectedTimeline?: Timeline;
-}) => {
-  const opts: { value: Timeline; label: string; sub: string }[] = [
-    { value: "asap", label: "ASAP", sub: "Ready to move." },
-    { value: "1-3", label: "1–3 months", sub: "Lining things up." },
-    { value: "3-6", label: "3–6 months", sub: "Plenty of runway." },
-    { value: "exploring", label: "Just exploring", sub: "Window-shopping ideas." },
-  ];
-
-  return (
-    <div className="space-y-12">
-      <StepDots step={4} />
-      <ScreenTitle
-        eyebrow="Step 4 of 4 · last one"
-        title="Budget and timing?"
-        sub="Both stay private until you choose to share. We'll auto-translate when you tap a timeline."
-      />
-
-      {/* Budget */}
-      <div className="mx-auto max-w-xl space-y-6 rounded-3xl border border-border bg-card p-8 shadow-soft">
-        <div className="flex items-baseline justify-between">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Budget range</p>
-          <button
-            onClick={onSkipBudget}
-            className="text-xs text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
-          >
-            {budgetSkipped ? "Set a range instead" : "I'd rather not say"}
-          </button>
-        </div>
-        {budgetSkipped ? (
-          <p className="py-6 text-center font-display text-3xl font-light text-muted-foreground">Skipped — that's fine.</p>
-        ) : (
-          <>
-            <p className="text-center font-display text-5xl font-medium tabular-nums">
-              {fmtMoney(min)} <span className="text-muted-foreground">–</span> {fmtMoney(max)}
-            </p>
-            <Slider
-              value={[min, max]}
-              min={5}
-              max={500}
-              step={5}
-              minStepsBetweenThumbs={1}
-              onValueChange={(v) => onBudgetChange(v[0], v[1])}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>$5K</span>
-              <span>$500K+</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Timeline */}
-      <div className="mx-auto max-w-2xl space-y-4">
-        <p className="text-center font-display text-2xl font-light text-foreground/90">When do you want to start?</p>
-        <p className="text-center text-sm text-muted-foreground">Tap one — that's the last thing.</p>
-        <div className="grid grid-cols-2 gap-3">
-          {opts.map((o) => (
-            <button
-              key={o.value}
-              onClick={() => onPickTimeline(o.value)}
-              className={`rounded-2xl border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-                selectedTimeline === o.value ? "border-accent ring-2 ring-accent/30" : "border-border hover:border-accent/40"
-              }`}
-            >
-              <p className="font-display text-xl font-medium">{o.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{o.sub}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+  address?: Address;
+}) => (
+  <div className="space-y-10">
+    <StepDots step={5} />
+    <ScreenTitle
+      eyebrow="Step 5 of 5 · last one"
+      title="Scope, budget, and timing."
+      sub="Pick a scope tier so the budget anchors to something real. Tap a timeline to wrap up."
+    />
+    <ScopeBudgetStep
+      scope={scope}
+      onScopeChange={onScopeChange}
+      budgetMin={min}
+      budgetMax={max}
+      budgetSkipped={budgetSkipped}
+      onBudgetChange={onBudgetChange}
+      onSkipBudget={onSkipBudget}
+      selectedTimeline={selectedTimeline}
+      onPickTimeline={onPickTimeline}
+      address={address}
+    />
+  </div>
+);
 
 // ───── Loading ─────
 const LoadingPage = () => {
@@ -708,8 +686,8 @@ const Brief = () => {
           />
         )}
         {step === 2 && !isAddition && (
-          <ShowAndTellScreen
-            key="show-tell"
+          <InsideLookScreen
+            key="inside-look"
             room={data.room as Exclude<Room, "addition">}
             selected={data.painPoints}
             onTogglePain={(v) => togglePill("painPoints", v)}
@@ -717,7 +695,7 @@ const Brief = () => {
             onAddMedia={addMedia}
             onRemoveMedia={removeMedia}
             notes={data.notes}
-            measurements={data.measurements}
+            dimensions={data.dimensions}
             onUpdate={(p) => update(p)}
             onContinue={next}
           />
@@ -747,10 +725,21 @@ const Brief = () => {
           />
         )}
         {step === 4 && (
-          <BudgetTimelineScreen
-            key="budget-timeline"
-            min={data.budgetMin ?? 40}
-            max={data.budgetMax ?? 70}
+          <AddressScreen
+            key="address"
+            address={data.address}
+            onSave={(a) => update({ address: a })}
+            onSkip={() => update({ address: { ...(data.address ?? {}), skipped: true } })}
+            onContinue={next}
+          />
+        )}
+        {step === 5 && (
+          <ScopeAndBudgetScreen
+            key="scope-budget"
+            scope={data.scope}
+            onScopeChange={(s) => update({ scope: s })}
+            min={data.budgetMin}
+            max={data.budgetMax}
             budgetSkipped={Boolean(data.budgetSkipped)}
             onBudgetChange={(m, x) => update({ budgetMin: m, budgetMax: x, budgetSkipped: false })}
             onSkipBudget={() =>
@@ -761,6 +750,7 @@ const Brief = () => {
               })
             }
             selectedTimeline={data.timeline}
+            address={data.address}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);
