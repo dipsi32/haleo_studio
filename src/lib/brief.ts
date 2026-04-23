@@ -123,7 +123,8 @@ export const buildHomeownerLayer = (d: IntakeData): string => {
 };
 
 // ───── Contractor layer (honest) ─────
-// Each line is tagged. Page renders the tag as a chip so the homeowner can see what's grounded vs inferred.
+// Each line is tagged with basis + trade. The brief page groups by trade so a
+// contractor reads it like a real scope-of-work document.
 export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
   const lines: ContractorLine[] = [];
 
@@ -136,23 +137,27 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: `New ${size}${type} addition${where}.`,
       basis: "grounded",
       source: "Addition: type / size / location",
+      trade: "structural",
     });
     lines.push({
       text: "Full scope: foundation, framing, roof tie-in, MEP rough-in, insulation, finishes.",
       basis: "inferred",
       source: "Standard for any addition — verify with structural & Title 24 review",
+      trade: "structural",
     });
   } else if (d.room === "full-home") {
     lines.push({
       text: "Whole-home renovation — phasing TBD.",
       basis: "grounded",
       source: "Room: Full home",
+      trade: "structural",
     });
   } else if (d.room) {
     lines.push({
       text: `${ROOM_LABELS[d.room]} renovation.`,
       basis: "grounded",
       source: `Room: ${ROOM_LABELS[d.room]}`,
+      trade: "context",
     });
   }
 
@@ -160,9 +165,10 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
   const scope = scopeFor(d.scope);
   if (scope) {
     lines.push({
-      text: `Scope: ${scope.label.toLowerCase()} — ${scope.oneLiner.toLowerCase()}`,
+      text: `Scope tier: ${scope.label.toLowerCase()} — ${scope.oneLiner.toLowerCase()}`,
       basis: "grounded",
       source: "Scope of work",
+      trade: "context",
     });
   }
 
@@ -174,6 +180,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Lighting plan in scope — fixture count, zoning, and dimming TBD on walkthrough.",
       basis: "inferred",
       source: `Pain: ${[pain("Too dark") && "Too dark", pain("Poor lighting") && "Poor lighting", pain("No natural light") && "No natural light"].filter(Boolean).join(", ")}`,
+      trade: "lighting",
     });
   }
   if (pain("Cramped") || pain("Bad layout") || pain("Layout doesn't work") || pain("Bad flow")) {
@@ -181,6 +188,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Layout reconfiguration on the table — load-path and header sizing to be confirmed.",
       basis: "inferred",
       source: "Pain: layout/flow",
+      trade: "structural",
     });
   }
   if (pain("No island")) {
@@ -188,6 +196,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Island addition — needs plumbing/electrical rough-in if relocating sink or prep zone.",
       basis: "inferred",
       source: "Pain: No island",
+      trade: "cabinetry",
     });
   }
   if (pain("Dated cabinets") || pain("No storage") || pain("Not enough storage") || pain("No closet space")) {
@@ -195,6 +204,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Cabinetry / built-in storage to be itemized separately from countertops.",
       basis: "inferred",
       source: "Pain: storage/cabinets",
+      trade: "cabinetry",
     });
   }
   if (pain("Appliances need upgrading")) {
@@ -202,6 +212,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Appliance package replacement — homeowner to spec models before final bid.",
       basis: "question",
       source: "Pain: Appliances need upgrading",
+      trade: "appliances",
     });
   }
   if (pain("Tiny shower") || pain("No bathtub")) {
@@ -209,6 +220,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Wet-area reconfiguration — waterproofing, drain relocation, supply lines.",
       basis: "inferred",
       source: "Pain: shower/tub",
+      trade: "plumbing",
     });
   }
   if (pain("Single vanity")) {
@@ -216,6 +228,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Double-vanity install — confirm minimum 60\" wall and dual P-traps.",
       basis: "inferred",
       source: "Pain: Single vanity",
+      trade: "plumbing",
     });
   }
   if (pain("Bad ventilation")) {
@@ -223,13 +236,15 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Exhaust ventilation upgrade — humidity-sensing fan recommended.",
       basis: "inferred",
       source: "Pain: Bad ventilation",
+      trade: "ventilation",
     });
   }
-  if (pain("Dated finishes") || pain("Dated cabinets") || pain("Ugly tile") || pain("Carpet needs to go")) {
+  if (pain("Dated finishes") || pain("Ugly tile") || pain("Carpet needs to go")) {
     lines.push({
       text: "Finish replacement — selections pending homeowner.",
       basis: "question",
       source: "Pain: dated finishes",
+      trade: "finishes",
     });
   }
   if (pain("Energy inefficient")) {
@@ -237,6 +252,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Insulation / envelope upgrade — Title 24 calcs likely required.",
       basis: "inferred",
       source: "Pain: Energy inefficient",
+      trade: "structural",
     });
   }
 
@@ -246,6 +262,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Walkthrough video on file — review before site visit for flow, ceiling, finishes.",
       basis: "grounded",
       source: "Walkthrough video",
+      trade: "context",
     });
   }
   if (hasKind(d, "floorplan")) {
@@ -253,6 +270,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: "Floor plan on file — dimensions to be field-verified.",
       basis: "grounded",
       source: "Floor plan",
+      trade: "context",
     });
   }
   // Structured dimensions
@@ -263,21 +281,24 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: `Homeowner-reported dimensions: ${dimText}${area ? ` (~${area} sq ft)` : ""}.`,
       basis: "grounded",
       source: "Measurements",
+      trade: "context",
     });
   } else if (d.measurements?.trim()) {
     lines.push({
       text: `Homeowner notes on size: "${d.measurements.trim().slice(0, 140)}${d.measurements.length > 140 ? "…" : ""}"`,
       basis: "grounded",
       source: "Measurements (notes)",
+      trade: "context",
     });
   }
 
-  // Address — surface only the city/state for the contractor view (PII rule).
+  // Address — city/state only for contractor view (PII rule).
   if (d.address?.city && !d.address.skipped) {
     lines.push({
       text: `Project location: ${d.address.city}${d.address.state ? `, ${d.address.state}` : ""}.`,
       basis: "grounded",
       source: "Address (PII redacted)",
+      trade: "context",
     });
   }
 
@@ -287,6 +308,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       text: `Target budget: ${fmtMoney(d.budgetMin)} – ${fmtMoney(d.budgetMax)}.`,
       basis: "grounded",
       source: "Budget",
+      trade: "context",
     });
   }
   if (d.timeline) {
@@ -298,24 +320,54 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
           : d.timeline === "3-6"
             ? "Start in 3–6 months"
             : "Exploring — no firm start";
-    lines.push({ text: `Timeline: ${t}.`, basis: "grounded", source: "Timeline" });
+    lines.push({ text: `Timeline: ${t}.`, basis: "grounded", source: "Timeline", trade: "context" });
   }
 
-  // Open questions — the things we genuinely don't know
+  // Open questions
   if (!hasKind(d, "video") && !hasKind(d, "floorplan") && !hasAnyMeasurements(d)) {
     lines.push({
       text: "No walkthrough, floor plan, or measurements on file — site visit required before any line-item bid.",
       basis: "question",
+      trade: "context",
     });
   }
   if (d.budgetSkipped || d.budgetMin == null) {
     lines.push({
       text: "Budget not shared — homeowner will share range after first conversation.",
       basis: "question",
+      trade: "context",
     });
   }
 
   return lines;
+};
+
+// ───── Trade grouping for the scope-of-work display ─────
+export type TradeGroup = { trade: BriefTrade; meta: typeof TRADE_META[BriefTrade]; lines: ContractorLine[] };
+
+const TRADE_ORDER: BriefTrade[] = [
+  "structural",
+  "electrical",
+  "plumbing",
+  "cabinetry",
+  "lighting",
+  "ventilation",
+  "finishes",
+  "appliances",
+  "context",
+];
+
+export const groupContractorLinesByTrade = (lines: ContractorLine[]): TradeGroup[] => {
+  const groups = new Map<BriefTrade, ContractorLine[]>();
+  for (const line of lines) {
+    const trade = line.trade ?? "context";
+    const arr = groups.get(trade) ?? [];
+    arr.push(line);
+    groups.set(trade, arr);
+  }
+  return TRADE_ORDER
+    .filter((t) => groups.has(t))
+    .map((trade) => ({ trade, meta: TRADE_META[trade], lines: groups.get(trade)! }));
 };
 
 // ───── Permit flag ─────
