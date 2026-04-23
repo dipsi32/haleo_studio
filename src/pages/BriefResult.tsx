@@ -695,7 +695,8 @@ const BriefResult = () => {
               {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
             </Button>
           </div>
-        </motion.article>
+          </motion.article>
+        </div>
 
         {/* Actions */}
         <motion.div
