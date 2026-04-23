@@ -113,26 +113,27 @@ Deno.serve(async (req) => {
     const queries = projectQueries(room)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Pull records for each project keyword and merge
-    const allRecords: SJRecord[] = []
-    let fetchOk = false
+    // Pull records for each project keyword in parallel
+    const perQuery = Math.ceil(limit / queries.length)
     let fetchError: string | null = null
 
-    for (const q of queries) {
-      try {
-        const apiUrl = `${SJ_API}?resource_id=${SJ_RESOURCE}&q=${encodeURIComponent(q)}&limit=${Math.ceil(limit / queries.length)}`
-        const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
-        if (resp.ok) {
-          const data = await resp.json()
-          if (data.success) {
-            allRecords.push(...(data.result?.records ?? []))
-            fetchOk = true
-          }
-        } else if (!fetchError) {
-          fetchError = `San Jose API ${resp.status} for "${q}"`
-        }
-      } catch (e) {
-        if (!fetchError) fetchError = `San Jose fetch failed: ${e instanceof Error ? e.message : String(e)}`
+    const results = await Promise.allSettled(queries.map(async (q) => {
+      const apiUrl = `${SJ_API}?resource_id=${SJ_RESOURCE}&q=${encodeURIComponent(q)}&limit=${perQuery}`
+      const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+      if (!resp.ok) throw new Error(`San Jose API ${resp.status} for "${q}"`)
+      const data = await resp.json()
+      if (!data.success) throw new Error(`San Jose API !success for "${q}"`)
+      return (data.result?.records ?? []) as SJRecord[]
+    }))
+
+    const allRecords: SJRecord[] = []
+    let fetchOk = false
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        allRecords.push(...r.value)
+        fetchOk = true
+      } else if (!fetchError) {
+        fetchError = r.reason instanceof Error ? r.reason.message : String(r.reason)
       }
     }
 
