@@ -144,7 +144,7 @@ const Contractors = () => {
     setSending(true);
     try {
       const sessionId = getSessionId();
-      const snapshot = buildBriefSnapshot(data);
+      const snapshot = briefSummary;
       const { data: batch, error: bErr } = await supabase
         .from("outreach_batches")
         .insert({
@@ -170,13 +170,16 @@ const Contractors = () => {
       const { error: sErr } = await supabase.from("outreach_sends").insert(sends);
       if (sErr) throw sErr;
 
+      const names = selectedList.map(rc => rc.contractor.company ?? rc.contractor.name);
+      setSentInfo({ count: selectedList.length, names });
+
       toast({
-        title: "Brief sent 😊",
-        description: `Your project brief is queued for ${selectedList.length} contractor${selectedList.length === 1 ? "" : "s"}. We'll let you know when they respond.`,
+        title: "Brief sent ✨",
+        description: `Delivered to ${selectedList.length} contractor${selectedList.length === 1 ? "" : "s"}. We'll notify you when they respond.`,
       });
       setSelected(new Set());
       setNotes({});
-      setOutreachOpen(false);
+      // Keep modal open to show success state — user closes it
     } catch (e) {
       toast({
         title: "Couldn't send brief",
@@ -186,6 +189,11 @@ const Contractors = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const closeOutreach = () => {
+    setOutreachOpen(false);
+    setSentInfo(null);
   };
 
   return (
