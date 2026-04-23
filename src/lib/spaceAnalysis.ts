@@ -117,7 +117,11 @@ const readCachedResult = (key: string): SpaceAnalysis | null => {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, SpaceAnalysis>;
     const cached = parsed[key] ?? null;
-    return cached?.summary === FALLBACK_SUMMARY ? null : cached;
+    if (!cached) return null;
+    if (cached.summary === FALLBACK_SUMMARY || cached.summary.startsWith("No analyzable ")) {
+      return null;
+    }
+    return cached;
   } catch {
     return null;
   }
