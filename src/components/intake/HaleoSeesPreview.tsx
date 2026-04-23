@@ -184,7 +184,17 @@ const HaleoSeesPreview = ({
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setConfirmed("ok")}
+                        onClick={() => {
+                          setConfirmed("ok");
+                          if (analysis) {
+                            onApprove?.({
+                              summary: analysis.summary,
+                              sections: analysis.sections,
+                              approvedAt: new Date().toISOString(),
+                              mediaIds: currentKey ? currentKey.split(",") : [],
+                            });
+                          }
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-full border border-sage/40 bg-sage-soft px-4 py-2 text-sm font-medium text-sage transition-smooth hover:bg-sage hover:text-background"
                       >
                         <ThumbsUp className="h-3.5 w-3.5" /> Looks right
