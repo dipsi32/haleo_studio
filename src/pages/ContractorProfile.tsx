@@ -160,19 +160,16 @@ const ContractorProfile = () => {
               {/* Right rail */}
               <aside className="space-y-4">
                 <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">License</p>
-                  <p className="mt-2 font-mono text-sm">{contractor.license_number}</p>
-                  {license?.scrape_succeeded ? (
-                    <div className="mt-3 space-y-1.5 text-sm">
-                      <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-sage" /> {license.status}</div>
-                      {license.expiration_date && <p className="text-xs text-muted-foreground">Expires {formatDate(license.expiration_date)}</p>}
-                      {license.classifications && license.classifications.length > 0 && (
-                        <p className="text-xs text-muted-foreground">Class: {license.classifications.join(", ")}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-xs text-muted-foreground">License on file — verify the latest status directly with CSLB.</p>
-                  )}
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">CSLB License</p>
+                  <p className="mt-1 font-mono text-sm">{contractor.license_number}</p>
+                  <div className="mt-4">
+                    <CslbSignals
+                      license={license}
+                      licenseNumber={contractor.license_number}
+                      permitDisplayName={contractor.company ?? contractor.name}
+                      variant="profile"
+                    />
+                  </div>
                   <a
                     href={cslbDeepLink(contractor.license_number)}
                     target="_blank"
