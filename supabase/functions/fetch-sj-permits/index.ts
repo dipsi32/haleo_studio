@@ -1,9 +1,13 @@
-// Fetches building permits from San Jose Open Data Socrata API,
-// filters to construction/remodel work, aggregates by contractor license,
+// Fetches building permits from San Jose CKAN datastore API,
+// filters to construction/remodel work, aggregates by contractor name,
 // upserts contractors + permits into our DB.
 //
-// Socrata endpoint: https://data.sanjoseca.gov/resource/<dataset>.json
-// Building permits dataset id: ygu7-d9hk (Building Permits)
+// CKAN endpoint: https://data.sanjoseca.gov/api/3/action/datastore_search
+// Active permits resource: 761b7ae8-3be1-4ad6-923d-c7af6404a904
+// Schema: Status, gx_location, ASSESSORS_PARCEL_NUMBER, APPLICANT, OWNERNAME,
+//   CONTRACTOR, FOLDERNUMBER, FOLDERDESC, FOLDERNAME, SUBTYPEDESCRIPTION,
+//   WORKDESCRIPTION, PERMITAPPROVALS, ISSUEDATE, FINALDATE, DWELLINGUNITS,
+//   PERMITVALUATION, SQUAREFOOTAGE, FOLDERRSN
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -14,61 +18,86 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// San Jose Open Data — Building Permits (Socrata SODA API)
-const SJ_PERMITS_DATASET = 'ygu7-d9hk'
-const SJ_BASE = `https://data.sanjoseca.gov/resource/${SJ_PERMITS_DATASET}.json`
+const SJ_RESOURCE = '761b7ae8-3be1-4ad6-923d-c7af6404a904'
+const SJ_API = 'https://data.sanjoseca.gov/api/3/action/datastore_search'
 
-// Project-type → permit work-type keyword mapping
-const projectTypeKeywords = (room?: string): string[] => {
-  if (!room) return ['remodel', 'addition', 'kitchen', 'bath']
+const projectQueries = (room?: string): string[] => {
+  if (!room) return ['kitchen', 'bath', 'addition', 'remodel']
   const r = room.toLowerCase()
-  if (r.includes('kitchen')) return ['kitchen', 'remodel']
-  if (r.includes('bath')) return ['bath', 'remodel']
-  if (r.includes('addition')) return ['addition', 'add', 'new']
-  if (r.includes('full')) return ['remodel', 'addition', 'alteration']
-  return ['remodel', 'alteration', 'addition']
+  if (r.includes('kitchen')) return ['kitchen']
+  if (r.includes('bath')) return ['bath']
+  if (r.includes('addition')) return ['addition']
+  if (r.includes('full')) return ['remodel', 'addition']
+  return ['remodel']
 }
 
-interface SJPermitRow {
-  permit_number?: string
-  permitnumber?: string
-  application_number?: string
-  permit_type?: string
-  work_description?: string
-  description?: string
-  valuation?: string
-  estimated_cost?: string
-  address?: string
-  street_address?: string
-  zip?: string
-  zip_code?: string
-  postal_code?: string
-  issued_date?: string
-  issue_date?: string
-  completion_date?: string
-  finaled_date?: string
-  status?: string
-  contractor_name?: string
-  contractor_license?: string
-  license_number?: string
-  contractor_company?: string
-  latitude?: string
-  longitude?: string
-  location_1?: { latitude?: string; longitude?: string }
+interface SJRecord {
+  _id?: number
+  Status?: string
+  gx_location?: string
+  ASSESSORS_PARCEL_NUMBER?: string | null
+  APPLICANT?: string
+  OWNERNAME?: string
+  CONTRACTOR?: string | null
+  FOLDERNUMBER?: string
+  FOLDERDESC?: string
+  FOLDERNAME?: string
+  SUBTYPEDESCRIPTION?: string
+  WORKDESCRIPTION?: string
+  ISSUEDATE?: string
+  FINALDATE?: string | null
+  PERMITVALUATION?: string
+  SQUAREFOOTAGE?: string
+  FOLDERRSN?: string
 }
 
-const safeNum = (v?: string) => {
+const safeNum = (v?: string | null) => {
   if (!v) return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
 
-const parseDate = (v?: string) => {
+const parseDate = (v?: string | null) => {
   if (!v) return null
-  try {
-    const d = new Date(v)
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
-  } catch { return null }
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
+}
+
+// gx_location format: "1234 SOMETHING ST  , SAN JOSE CA 95110-1234"
+const parseLocation = (loc?: string): { address: string | null; zip: string | null } => {
+  if (!loc) return { address: null, zip: null }
+  const trimmed = loc.trim()
+  if (!trimmed || trimmed === ',') return { address: null, zip: null }
+  const parts = trimmed.split(',').map(p => p.trim())
+  const address = parts[0] && parts[0] !== '' ? parts[0].replace(/\s+/g, ' ') : null
+  const last = parts[parts.length - 1] ?? ''
+  const zipMatch = last.match(/(\d{5})(?:-\d{4})?/)
+  return { address, zip: zipMatch ? zipMatch[1] : null }
+}
+
+// Contractor strings look like "K&E KITCHEN & BATH, INC.   " or
+// "ELEV8 DESIGN & BUILD  ANGELICA NGUYEN" — first chunk before double-space is company.
+const parseContractor = (raw?: string | null): { name: string; company: string } | null => {
+  if (!raw) return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  // Skip pseudo-records
+  if (/^APPLICANT\/CONTRACTOR/i.test(trimmed)) return null
+  if (/^OWNER[\s/]/i.test(trimmed)) return null
+  const parts = trimmed.split(/\s{2,}/).map(p => p.trim()).filter(Boolean)
+  const company = parts[0]
+  const personName = parts[1] ?? company
+  return { name: personName, company }
+}
+
+// Slugify company name for use as a stable license_number key when no real
+// license is in the dataset. CSLB deep-link will be a name search.
+const companyKey = (company: string) => {
+  return 'SJ-' + company
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
 }
 
 Deno.serve(async (req) => {
@@ -79,51 +108,32 @@ Deno.serve(async (req) => {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
     const zip = body.zip || url.searchParams.get('zip') || '95110'
     const room = body.room || url.searchParams.get('room') || undefined
-    const limit = Number(body.limit || url.searchParams.get('limit') || 200)
+    const limit = Number(body.limit || url.searchParams.get('limit') || 500)
 
-    const keywords = projectTypeKeywords(room)
+    const queries = projectQueries(room)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Try multiple Socrata field names — different cities use different schemas
-    const where = [
-      `(${keywords.map(k => `upper(permit_type) like upper('%${k}%') OR upper(work_description) like upper('%${k}%')`).join(' OR ')})`,
-    ].join(' AND ')
-
-    const sjUrl = new URL(SJ_BASE)
-    sjUrl.searchParams.set('$limit', String(limit))
-    sjUrl.searchParams.set('$where', where)
-    sjUrl.searchParams.set('$order', 'issued_date DESC')
-
-    let rows: SJPermitRow[] = []
+    // Pull records for each project keyword and merge
+    const allRecords: SJRecord[] = []
     let fetchOk = false
     let fetchError: string | null = null
 
-    try {
-      const resp = await fetch(sjUrl.toString(), {
-        headers: { 'Accept': 'application/json' },
-      })
-      if (resp.ok) {
-        rows = await resp.json()
-        fetchOk = true
-      } else {
-        fetchError = `San Jose API ${resp.status}`
-      }
-    } catch (e) {
-      fetchError = `San Jose fetch failed: ${e instanceof Error ? e.message : String(e)}`
-    }
-
-    // Fallback — try a simpler query without $where if filtered query fails
-    if (!fetchOk) {
+    for (const q of queries) {
       try {
-        const simple = new URL(SJ_BASE)
-        simple.searchParams.set('$limit', '50')
-        simple.searchParams.set('$order', 'issued_date DESC')
-        const resp = await fetch(simple.toString())
+        const apiUrl = `${SJ_API}?resource_id=${SJ_RESOURCE}&q=${encodeURIComponent(q)}&limit=${Math.ceil(limit / queries.length)}`
+        const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
         if (resp.ok) {
-          rows = await resp.json()
-          fetchOk = true
+          const data = await resp.json()
+          if (data.success) {
+            allRecords.push(...(data.result?.records ?? []))
+            fetchOk = true
+          }
+        } else if (!fetchError) {
+          fetchError = `San Jose API ${resp.status} for "${q}"`
         }
-      } catch { /* keep error */ }
+      } catch (e) {
+        if (!fetchError) fetchError = `San Jose fetch failed: ${e instanceof Error ? e.message : String(e)}`
+      }
     }
 
     if (!fetchOk) {
@@ -135,36 +145,39 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
     }
 
-    // Filter to rows in (or near) the requested zip if available
-    const zipFiltered = zip
-      ? rows.filter(r => {
-          const z = r.zip ?? r.zip_code ?? r.postal_code
-          return !z || String(z).startsWith(String(zip).slice(0, 3))
-        })
-      : rows
+    // Filter to records with a contractor
+    const withContractor = allRecords.filter(r => parseContractor(r.CONTRACTOR))
 
-    // Group by contractor license number
+    // Optional zip filter — match leading 3 digits to broaden the area
+    const zipPrefix = String(zip).slice(0, 3)
+    const zipFiltered = zip
+      ? withContractor.filter(r => {
+          const { zip: rz } = parseLocation(r.gx_location)
+          return !rz || rz.startsWith(zipPrefix)
+        })
+      : withContractor
+
+    // Group by contractor company
     const contractorMap = new Map<string, {
-      license: string
+      companyKey: string
       name: string
-      company?: string
-      permits: SJPermitRow[]
+      company: string
+      records: SJRecord[]
     }>()
 
-    for (const row of zipFiltered) {
-      const license = row.contractor_license || row.license_number
-      if (!license) continue
-      const key = String(license).trim().toUpperCase()
-      if (!key) continue
+    for (const r of zipFiltered) {
+      const c = parseContractor(r.CONTRACTOR)
+      if (!c) continue
+      const key = companyKey(c.company)
       const existing = contractorMap.get(key)
       if (existing) {
-        existing.permits.push(row)
+        existing.records.push(r)
       } else {
         contractorMap.set(key, {
-          license: key,
-          name: row.contractor_name ?? row.contractor_company ?? 'Unknown contractor',
-          company: row.contractor_company ?? row.contractor_name,
-          permits: [row],
+          companyKey: key,
+          name: c.name,
+          company: c.company,
+          records: [r],
         })
       }
     }
@@ -173,22 +186,49 @@ Deno.serve(async (req) => {
     let permitsUpserted = 0
 
     for (const c of contractorMap.values()) {
-      // Upsert contractor
-      const lastPermitDate = c.permits
-        .map(p => parseDate(p.issued_date ?? p.issue_date))
+      // Skip contractors with only one job — likely noise; keep ones with real volume
+      if (c.records.length < 1) continue
+
+      const lastPermitDate = c.records
+        .map(r => parseDate(r.ISSUEDATE))
         .filter(Boolean)
         .sort()
         .reverse()[0]
 
-      const firstPermit = c.permits[0]
+      // Pick a representative zip (most common)
+      const zipCounts = new Map<string, number>()
+      let representativeZip: string | null = null
+      for (const r of c.records) {
+        const { zip: rz } = parseLocation(r.gx_location)
+        if (rz) {
+          zipCounts.set(rz, (zipCounts.get(rz) ?? 0) + 1)
+        }
+      }
+      let maxZipCount = 0
+      for (const [z, n] of zipCounts.entries()) {
+        if (n > maxZipCount) { maxZipCount = n; representativeZip = z }
+      }
+
+      // Specialty inference from work descriptions
+      const allWork = c.records.map(r => `${r.SUBTYPEDESCRIPTION ?? ''} ${r.WORKDESCRIPTION ?? ''}`).join(' ').toLowerCase()
+      let specialty: string | null = null
+      if (/kitchen/.test(allWork)) specialty = 'Kitchen'
+      else if (/bath/.test(allWork)) specialty = 'Bathroom'
+      else if (/addition|new construction/.test(allWork)) specialty = 'Additions'
+      else if (/remodel|alteration/.test(allWork)) specialty = 'Remodel'
+      else if (/electric/.test(allWork)) specialty = 'Electrical'
+      else if (/plumb/.test(allWork)) specialty = 'Plumbing'
+      else specialty = 'General'
+
       const contractorRow = {
-        license_number: c.license,
-        name: c.name,
-        company: c.company ?? null,
+        license_number: c.companyKey,
+        name: c.company, // company-led; person name often blank
+        company: c.company,
+        specialty,
         city: 'San Jose',
         state: 'CA',
-        zip: firstPermit?.zip ?? firstPermit?.zip_code ?? firstPermit?.postal_code ?? null,
-        permit_count: c.permits.length,
+        zip: representativeZip,
+        permit_count: c.records.length,
         last_permit_date: lastPermitDate ?? null,
       }
 
@@ -203,30 +243,30 @@ Deno.serve(async (req) => {
 
       const contractorId = upserted.id
 
-      const permitRows = c.permits.map(p => {
-        const permitNumber = p.permit_number ?? p.permitnumber ?? p.application_number ?? `${c.license}-${Math.random().toString(36).slice(2, 8)}`
-        const lat = safeNum(p.latitude) ?? safeNum(p.location_1?.latitude)
-        const lng = safeNum(p.longitude) ?? safeNum(p.location_1?.longitude)
+      const permitRows = c.records.map(r => {
+        const { address, zip: pZip } = parseLocation(r.gx_location)
+        const folderNumber = r.FOLDERNUMBER ?? `SJ-${r.FOLDERRSN ?? Math.random().toString(36).slice(2, 8)}`
+        const valuation = safeNum(r.PERMITVALUATION)
+        const work = `${r.SUBTYPEDESCRIPTION ?? ''} — ${r.WORKDESCRIPTION ?? ''}`.replace(/^—\s*|\s*—\s*$/g, '').trim()
         return {
           contractor_id: contractorId,
-          permit_number: String(permitNumber),
-          work_type: p.permit_type ?? null,
-          description: p.work_description ?? p.description ?? null,
-          valuation: safeNum(p.valuation ?? p.estimated_cost),
-          address: p.address ?? p.street_address ?? null,
+          permit_number: folderNumber,
+          work_type: r.FOLDERDESC ?? null,
+          description: work || null,
+          valuation,
+          address,
           city: 'San Jose',
-          zip: p.zip ?? p.zip_code ?? p.postal_code ?? null,
-          lat,
-          lng,
-          issued_date: parseDate(p.issued_date ?? p.issue_date),
-          completed_date: parseDate(p.completion_date ?? p.finaled_date),
-          status: p.status ?? null,
+          zip: pZip,
+          lat: null,
+          lng: null,
+          issued_date: parseDate(r.ISSUEDATE),
+          completed_date: parseDate(r.FINALDATE),
+          status: r.Status ?? null,
           source: 'san_jose',
-          raw_data: p as unknown as Record<string, unknown>,
+          raw_data: r as unknown as Record<string, unknown>,
         }
       })
 
-      // Upsert permits one batch per contractor
       const { error: permErr } = await supabase
         .from('contractor_permits')
         .upsert(permitRows, { onConflict: 'source,permit_number', ignoreDuplicates: false })
@@ -238,7 +278,8 @@ Deno.serve(async (req) => {
       ok: true,
       zip,
       room,
-      raw_rows: rows.length,
+      raw_rows: allRecords.length,
+      with_contractor: withContractor.length,
       filtered_rows: zipFiltered.length,
       contractors_upserted: contractorsUpserted,
       permits_upserted: permitsUpserted,
