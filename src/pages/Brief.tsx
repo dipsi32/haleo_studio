@@ -305,7 +305,10 @@ const InsideLookScreen = ({
         )}
 
         {/* Haleo's read — appears as soon as media is uploaded */}
-        <HaleoSeesPreview intake={intake} />
+        <HaleoSeesPreview
+          intake={intake}
+          onApprove={(snapshot) => onUpdate({ approvedAnalysis: snapshot } as never)}
+        />
 
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (
