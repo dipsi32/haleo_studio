@@ -98,9 +98,23 @@ export const buildProjectTitle = (d: IntakeData): { title: string; sub: string }
 export const buildHomeownerLayer = (d: IntakeData): string => {
   const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
   const pains = d.painPoints.slice(0, 3).map((p) => p.toLowerCase());
-  const vibes = d.vibes.slice(0, 2).map((v) => v.toLowerCase());
 
   const opener =
+    d.room === "addition"
+      ? "We're adding on to our home."
+      : d.room === "full-home"
+        ? "We're remodeling our whole home."
+        : d.room
+          ? `We're remodeling the ${room}.`
+          : "We're planning a remodel.";
+
+  const painsLine =
+    pains.length > 0
+      ? `What's bugging us: ${pains.join(", ").replace(/, ([^,]*)$/, " and $1")}.`
+      : "";
+
+  return [opener, painsLine].filter(Boolean).join(" ");
+};
     d.room === "addition"
       ? "We're adding on to our home."
       : d.room === "full-home"
@@ -646,9 +660,6 @@ export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
 
   // 4. Design opportunities
   const opps: AnalysisItem[] = [];
-  d.vibes.slice(0, 3).forEach((v) =>
-    opps.push({ text: `Direction: ${v.toLowerCase()}.`, basis: "grounded" }),
-  );
   if (pain("Too dark") || pain("Poor lighting") || pain("No natural light")) {
     opps.push({ text: "Layered lighting plan — ambient, task, accent zones.", basis: "inferred" });
   }
@@ -658,7 +669,7 @@ export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
     opps.push({ text: "Built-in storage — itemize separately from base cabinetry.", basis: "inferred" });
   }
   if (opps.length === 0) {
-    opps.push({ text: "Vibe direction not set — pick a few in the brief.", basis: "question" });
+    opps.push({ text: "Design direction TBD — explore on first walkthrough.", basis: "question" });
   }
   sections.push({
     key: "opportunities",
