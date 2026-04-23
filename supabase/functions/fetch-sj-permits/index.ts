@@ -183,47 +183,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    let contractorsUpserted = 0
-    let permitsUpserted = 0
+    // Build all contractor rows in one shot
+    const contractorRows: Array<Record<string, unknown>> = []
+    const recordsByKey = new Map<string, SJRecord[]>()
 
     for (const c of contractorMap.values()) {
-      // Skip contractors with only one job — likely noise; keep ones with real volume
       if (c.records.length < 1) continue
-
-      const lastPermitDate = c.records
-        .map(r => parseDate(r.ISSUEDATE))
-        .filter(Boolean)
-        .sort()
-        .reverse()[0]
-
-      // Pick a representative zip (most common)
+      const lastPermitDate = c.records.map(r => parseDate(r.ISSUEDATE)).filter(Boolean).sort().reverse()[0]
       const zipCounts = new Map<string, number>()
-      let representativeZip: string | null = null
       for (const r of c.records) {
         const { zip: rz } = parseLocation(r.gx_location)
-        if (rz) {
-          zipCounts.set(rz, (zipCounts.get(rz) ?? 0) + 1)
-        }
+        if (rz) zipCounts.set(rz, (zipCounts.get(rz) ?? 0) + 1)
       }
+      let representativeZip: string | null = null
       let maxZipCount = 0
       for (const [z, n] of zipCounts.entries()) {
         if (n > maxZipCount) { maxZipCount = n; representativeZip = z }
       }
-
-      // Specialty inference from work descriptions
       const allWork = c.records.map(r => `${r.SUBTYPEDESCRIPTION ?? ''} ${r.WORKDESCRIPTION ?? ''}`).join(' ').toLowerCase()
-      let specialty: string | null = null
+      let specialty = 'General'
       if (/kitchen/.test(allWork)) specialty = 'Kitchen'
       else if (/bath/.test(allWork)) specialty = 'Bathroom'
       else if (/addition|new construction/.test(allWork)) specialty = 'Additions'
       else if (/remodel|alteration/.test(allWork)) specialty = 'Remodel'
       else if (/electric/.test(allWork)) specialty = 'Electrical'
       else if (/plumb/.test(allWork)) specialty = 'Plumbing'
-      else specialty = 'General'
 
-      const contractorRow = {
+      contractorRows.push({
         license_number: c.companyKey,
-        name: c.company, // company-led; person name often blank
+        name: c.company,
         company: c.company,
         specialty,
         city: 'San Jose',
@@ -231,49 +219,61 @@ Deno.serve(async (req) => {
         zip: representativeZip,
         permit_count: c.records.length,
         last_permit_date: lastPermitDate ?? null,
-      }
+      })
+      recordsByKey.set(c.companyKey, c.records)
+    }
 
-      const { data: upserted, error: upErr } = await supabase
-        .from('contractors')
-        .upsert(contractorRow, { onConflict: 'license_number' })
-        .select('id')
-        .single()
+    // Batch upsert contractors
+    const { data: upsertedContractors, error: cErr } = await supabase
+      .from('contractors')
+      .upsert(contractorRows, { onConflict: 'license_number' })
+      .select('id, license_number')
 
-      if (upErr || !upserted) continue
-      contractorsUpserted++
+    if (cErr) throw new Error(`Contractor upsert failed: ${cErr.message}`)
 
-      const contractorId = upserted.id
+    const idByKey = new Map<string, string>()
+    for (const c of upsertedContractors ?? []) {
+      idByKey.set(c.license_number, c.id)
+    }
 
-      const permitRows = c.records.map(r => {
+    // Build all permit rows
+    const permitRows: Array<Record<string, unknown>> = []
+    for (const [key, records] of recordsByKey.entries()) {
+      const contractorId = idByKey.get(key)
+      if (!contractorId) continue
+      for (const r of records) {
         const { address, zip: pZip } = parseLocation(r.gx_location)
         const folderNumber = r.FOLDERNUMBER ?? `SJ-${r.FOLDERRSN ?? Math.random().toString(36).slice(2, 8)}`
-        const valuation = safeNum(r.PERMITVALUATION)
         const work = `${r.SUBTYPEDESCRIPTION ?? ''} — ${r.WORKDESCRIPTION ?? ''}`.replace(/^—\s*|\s*—\s*$/g, '').trim()
-        return {
+        permitRows.push({
           contractor_id: contractorId,
           permit_number: folderNumber,
           work_type: r.FOLDERDESC ?? null,
           description: work || null,
-          valuation,
+          valuation: safeNum(r.PERMITVALUATION),
           address,
           city: 'San Jose',
           zip: pZip,
-          lat: null,
-          lng: null,
           issued_date: parseDate(r.ISSUEDATE),
           completed_date: parseDate(r.FINALDATE),
           status: r.Status ?? null,
           source: 'san_jose',
-          raw_data: r as unknown as Record<string, unknown>,
-        }
-      })
-
-      const { error: permErr } = await supabase
-        .from('contractor_permits')
-        .upsert(permitRows, { onConflict: 'source,permit_number', ignoreDuplicates: false })
-
-      if (!permErr) permitsUpserted += permitRows.length
+        })
+      }
     }
+
+    // Chunked upsert (avoid huge payloads)
+    let permitsUpserted = 0
+    const CHUNK = 500
+    for (let i = 0; i < permitRows.length; i += CHUNK) {
+      const chunk = permitRows.slice(i, i + CHUNK)
+      const { error: pErr } = await supabase
+        .from('contractor_permits')
+        .upsert(chunk, { onConflict: 'source,permit_number' })
+      if (!pErr) permitsUpserted += chunk.length
+    }
+
+    const contractorsUpserted = upsertedContractors?.length ?? 0
 
     return new Response(JSON.stringify({
       ok: true,
