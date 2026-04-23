@@ -197,14 +197,13 @@ const ScopeBudgetStep = ({
                 <MapPin className="h-3.5 w-3.5" />
               </span>
               <p>
-                <span className="font-medium">{address?.city} intel:</span>{" "}
-                comparable {active.label.toLowerCase()} projects on file in your zip have
-                averaged{" "}
+                <span className="font-medium">{address?.city} ballpark:</span>{" "}
+                a typical {active.label.toLowerCase()} in your zip lands around{" "}
                 <span className="font-medium text-foreground">
                   {fmtMoney(Math.round((active.range.min + active.range.max) / 2 - 5))}–
                   {fmtMoney(Math.round((active.range.min + active.range.max) / 2 + 15))}
-                </span>{" "}
-                over the last 18 months. Live data lights up once Lovable Cloud is wired in.
+                </span>
+                . We'll sharpen this with real local comps as more projects come in.
               </p>
             </motion.div>
           )}
