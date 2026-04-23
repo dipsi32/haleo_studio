@@ -33,11 +33,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
 import { ROOM_LABELS, useIntake, type MediaAsset } from "@/lib/intake";
+import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
   buildPermitFlag,
   buildSpaceAnalysis,
+  buildAnalysisSections,
   buildReadiness,
   readinessCopy,
   type ContractorLine,
@@ -220,6 +222,7 @@ const BriefResult = () => {
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
   const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
+  const sections = useMemo(() => buildAnalysisSections(data), [data]);
   const readiness = useMemo(() => buildReadiness(data), [data]);
   const readinessText = readinessCopy(readiness.level);
 
@@ -596,7 +599,24 @@ const BriefResult = () => {
               <AnalysisCard key={b.id} block={b} />
             ))}
           </div>
+
+          {/* ── Detailed sections — the contractor's structured read ── */}
+          <div className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-display text-base font-medium">The contractor's read</p>
+                <p className="text-xs text-muted-foreground">
+                  Same brief, organized the way a GC scans a project. Your street address stays private — only city is shared.
+                </p>
+              </div>
+            </div>
+            <DetailedSpaceAnalysis sections={sections} />
+          </div>
         </motion.section>
+
 
         {/* Actions */}
         <motion.div

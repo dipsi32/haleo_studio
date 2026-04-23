@@ -2,20 +2,24 @@
 // Saves go straight through useIntake (already persisted to localStorage), no navigation.
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Camera, Video, Map, Plus, Save, Ruler, StickyNote } from "lucide-react";
+import { X, Camera, Video, Map, Save, StickyNote, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import PillGroup from "@/components/PillGroup";
+import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
+import DimensionsInput from "@/components/intake/DimensionsInput";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
-  VIBES,
+  SCOPE_OPTIONS,
   filesToAssets,
   type IntakeData,
   type Room,
   type MediaAsset,
   type Timeline,
+  type ScopeTier,
 } from "@/lib/intake";
 
 const fmtMoney = (v: number) => (v >= 500 ? "$500K+" : `$${v}K`);
@@ -203,26 +207,76 @@ const EditBriefDrawer = ({
                   placeholder="Anything else worth knowing…"
                   className="mb-3 rounded-xl bg-card text-sm"
                 />
-                <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-foreground/70">
-                  <Ruler className="h-3.5 w-3.5 text-accent" /> Measurements
-                </label>
-                <Textarea
-                  value={data.measurements ?? ""}
-                  onChange={(e) => onPatch({ measurements: e.target.value })}
-                  rows={2}
-                  placeholder='e.g. "Kitchen ~12×14ft, ceiling 9ft."'
-                  className="rounded-xl bg-card text-sm"
+                <DimensionsInput
+                  value={data.dimensions}
+                  onChange={(d) => onPatch({ dimensions: d })}
                 />
+              </Section>
+
+              {/* Address */}
+              <Section title="Project address">
+                <div className="grid grid-cols-1 gap-2">
+                  <Input
+                    placeholder="Street"
+                    value={data.address?.street ?? ""}
+                    onChange={(e) => onPatch({ address: { ...(data.address ?? {}), street: e.target.value, skipped: false } })}
+                    className="rounded-xl bg-card text-sm"
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      placeholder="City"
+                      value={data.address?.city ?? ""}
+                      onChange={(e) => onPatch({ address: { ...(data.address ?? {}), city: e.target.value, skipped: false } })}
+                      className="col-span-2 rounded-xl bg-card text-sm"
+                    />
+                    <Input
+                      placeholder="State"
+                      maxLength={2}
+                      value={data.address?.state ?? ""}
+                      onChange={(e) => onPatch({ address: { ...(data.address ?? {}), state: e.target.value.toUpperCase(), skipped: false } })}
+                      className="rounded-xl bg-card text-sm uppercase"
+                    />
+                  </div>
+                  <Input
+                    placeholder="Zip"
+                    value={data.address?.zip ?? ""}
+                    onChange={(e) => onPatch({ address: { ...(data.address ?? {}), zip: e.target.value, skipped: false } })}
+                    className="rounded-xl bg-card text-sm"
+                  />
+                </div>
+                <p className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <MapPin className="h-3 w-3" /> Street stays private — only city is shared with contractors.
+                </p>
+              </Section>
+
+              {/* Scope */}
+              <Section title="Scope of work">
+                <div className="grid grid-cols-2 gap-2">
+                  {SCOPE_OPTIONS.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => onPatch({ scope: s.value as ScopeTier })}
+                      className={`rounded-xl border p-3 text-left text-xs transition-smooth ${
+                        data.scope === s.value
+                          ? "border-accent bg-accent-soft ring-1 ring-accent"
+                          : "border-border bg-card hover:border-accent/40"
+                      }`}
+                    >
+                      <p className="font-display text-sm font-medium">{s.label}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">{s.oneLiner}</p>
+                    </button>
+                  ))}
+                </div>
               </Section>
 
               {/* Vibes */}
               <Section title="Vibe">
-                <PillGroup
-                  options={VIBES.map((v) => ({ value: v, label: v }))}
+                <VibeVisualGrid
                   selected={data.vibes}
                   onToggle={(v) => onTogglePill("vibes", v)}
                 />
               </Section>
+
 
               {/* Budget */}
               <Section title="Budget">

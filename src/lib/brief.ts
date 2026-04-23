@@ -1,6 +1,14 @@
 // Pure brief generators — kept out of the page so they're testable and honest.
 // Rule: every line must be grounded in user input. Anything inferred is tagged.
-import { ROOM_LABELS, type IntakeData, hasKind } from "@/lib/intake";
+import {
+  ROOM_LABELS,
+  type IntakeData,
+  hasKind,
+  hasAnyMeasurements,
+  formatDimensions,
+  dimensionsArea,
+  scopeFor,
+} from "@/lib/intake";
 
 export type ContractorLine = {
   text: string;
@@ -85,8 +93,17 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
     });
   }
 
+  // Scope tier
+  const scope = scopeFor(d.scope);
+  if (scope) {
+    lines.push({
+      text: `Scope: ${scope.label.toLowerCase()} — ${scope.oneLiner.toLowerCase()}`,
+      basis: "grounded",
+      source: "Scope of work",
+    });
+  }
+
   // Pain → scope mapping. Only when the user explicitly ticked the pain.
-  // Each line phrased as "homeowner reports X → contractor should investigate Y"
   const pain = (p: string) => d.painPoints.includes(p);
 
   if (pain("Too dark") || pain("Poor lighting") || pain("No natural light")) {
@@ -175,11 +192,29 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
       source: "Floor plan",
     });
   }
-  if (d.measurements?.trim()) {
+  // Structured dimensions
+  const dimText = formatDimensions(d.dimensions);
+  if (dimText) {
+    const area = dimensionsArea(d.dimensions);
     lines.push({
-      text: `Homeowner measurements provided: "${d.measurements.trim().slice(0, 140)}${d.measurements.length > 140 ? "…" : ""}"`,
+      text: `Homeowner-reported dimensions: ${dimText}${area ? ` (~${area} sq ft)` : ""}.`,
       basis: "grounded",
       source: "Measurements",
+    });
+  } else if (d.measurements?.trim()) {
+    lines.push({
+      text: `Homeowner notes on size: "${d.measurements.trim().slice(0, 140)}${d.measurements.length > 140 ? "…" : ""}"`,
+      basis: "grounded",
+      source: "Measurements (notes)",
+    });
+  }
+
+  // Address — surface only the city/state for the contractor view (PII rule).
+  if (d.address?.city && !d.address.skipped) {
+    lines.push({
+      text: `Project location: ${d.address.city}${d.address.state ? `, ${d.address.state}` : ""}.`,
+      basis: "grounded",
+      source: "Address (PII redacted)",
     });
   }
 
@@ -204,7 +239,7 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
   }
 
   // Open questions — the things we genuinely don't know
-  if (!hasKind(d, "video") && !hasKind(d, "floorplan") && !d.measurements?.trim()) {
+  if (!hasKind(d, "video") && !hasKind(d, "floorplan") && !hasAnyMeasurements(d)) {
     lines.push({
       text: "No walkthrough, floor plan, or measurements on file — site visit required before any line-item bid.",
       basis: "question",
@@ -222,6 +257,21 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
 
 // ───── Permit flag ─────
 export const buildPermitFlag = (d: IntakeData): { likely: boolean; reason: string } => {
+  const scope = scopeFor(d.scope);
+  if (scope?.permitLikely) {
+    const city = d.address?.city && !d.address.skipped ? d.address.city : "your jurisdiction";
+    return {
+      likely: true,
+      reason: `${scope.label} typically requires permits in ${city}. We'll cross-check the records once your project is filed.`,
+    };
+  }
+  if (scope && !scope.permitLikely) {
+    return {
+      likely: false,
+      reason: "A design refresh stays inside finishes — usually permit-exempt. Always verify with your city.",
+    };
+  }
+  // Fallback to the old heuristic
   const heavy =
     d.room === "addition" ||
     d.room === "full-home" ||
@@ -229,7 +279,7 @@ export const buildPermitFlag = (d: IntakeData): { likely: boolean; reason: strin
     d.painPoints.includes("Bad flow") ||
     d.painPoints.includes("No island");
   return heavy
-    ? { likely: true, reason: "Structural or MEP changes typically require San Jose permits." }
+    ? { likely: true, reason: "Structural or MEP changes typically require city permits." }
     : { likely: false, reason: "Mostly cosmetic — likely permit-exempt, but always verify." };
 };
 
@@ -306,15 +356,26 @@ export const buildSpaceAnalysis = (d: IntakeData): SpaceAnalysisBlock[] => {
     });
   }
 
-  // Measurements
-  if (d.measurements?.trim()) {
+  // Measurements (structured first, fallback to free text)
+  const dimText = formatDimensions(d.dimensions);
+  if (dimText) {
+    const area = dimensionsArea(d.dimensions);
+    blocks.push({
+      id: "measurements",
+      scope: "measurements",
+      title: "Your measurements",
+      body: `${dimText}${area ? ` · ~${area} sq ft` : ""}`,
+      observations: ["Anchors the brief in real dimensions even without a formal plan."],
+      unknowns: ["Contractor will field-verify on the walkthrough."],
+    });
+  } else if (d.measurements?.trim()) {
     blocks.push({
       id: "measurements",
       scope: "measurements",
       title: "Your measurements",
       body: d.measurements.trim(),
       observations: ["Anchors the brief in real dimensions even without a formal plan."],
-      unknowns: ["Contractor will still field-verify on the walkthrough."],
+      unknowns: ["Contractor will field-verify on the walkthrough."],
     });
   }
 
@@ -331,18 +392,189 @@ export const buildSpaceAnalysis = (d: IntakeData): SpaceAnalysisBlock[] => {
   return blocks;
 };
 
+// ───── Detailed Space Analysis (ClearContract-style sections) ─────
+// This is the block that goes into the contractor's hands. Sections mirror
+// how a GC actually reads a project: structure → finishes → constraints →
+// opportunities → code. Items are derived deterministically from intake so
+// nothing is fabricated.
+export type AnalysisItem = { text: string; basis: "grounded" | "inferred" | "question" };
+export type AnalysisSection = {
+  key: string;
+  title: string;
+  description: string;
+  items: AnalysisItem[];
+};
+
+export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
+  const sections: AnalysisSection[] = [];
+  const pain = (p: string) => d.painPoints.includes(p);
+  const scope = scopeFor(d.scope);
+
+  // 1. Structural read
+  const structural: AnalysisItem[] = [];
+  if (d.room === "addition" || d.room === "full-home" || d.scope === "structural" || d.scope === "reconfigure") {
+    structural.push({
+      text: "Load-bearing assessment likely required — engage structural engineer before final bid.",
+      basis: "inferred",
+    });
+  }
+  if (pain("Cramped") || pain("Bad layout") || pain("Layout doesn't work") || pain("Bad flow")) {
+    structural.push({
+      text: "Possible wall removal — confirm header sizing and load path on site.",
+      basis: "inferred",
+    });
+  }
+  if (hasKind(d, "floorplan")) {
+    structural.push({
+      text: "Floor plan on file — use it as a baseline, then field-verify dimensions.",
+      basis: "grounded",
+    });
+  }
+  if (formatDimensions(d.dimensions)) {
+    const area = dimensionsArea(d.dimensions);
+    structural.push({
+      text: `Footprint declared by homeowner: ${formatDimensions(d.dimensions)}${area ? ` (~${area} sq ft)` : ""}.`,
+      basis: "grounded",
+    });
+  }
+  if (structural.length === 0) {
+    structural.push({
+      text: "No structural changes implied yet — confirm on walkthrough.",
+      basis: "question",
+    });
+  }
+  sections.push({
+    key: "structural",
+    title: "Structural read",
+    description: "What the bones of the project look like before you set foot inside.",
+    items: structural,
+  });
+
+  // 2. Visible items & finishes
+  const finishes: AnalysisItem[] = [];
+  if (hasKind(d, "photo")) {
+    finishes.push({
+      text: "Reference photos on file — assess existing cabinets, tile, flooring, fixtures.",
+      basis: "grounded",
+    });
+  }
+  if (pain("Dated cabinets")) finishes.push({ text: "Cabinetry: replace (homeowner flagged dated).", basis: "grounded" });
+  if (pain("Ugly tile")) finishes.push({ text: "Tile: full replacement, selections TBD.", basis: "grounded" });
+  if (pain("Carpet needs to go")) finishes.push({ text: "Flooring: remove carpet, new substrate evaluation.", basis: "grounded" });
+  if (pain("Dated finishes")) finishes.push({ text: "Hardware, fixtures, paint — refresh-level finishes pending homeowner spec.", basis: "inferred" });
+  if (pain("Appliances need upgrading")) finishes.push({ text: "Appliance package: homeowner to spec models before final bid.", basis: "question" });
+  if (finishes.length === 0) {
+    finishes.push({
+      text: "Existing finishes: condition unknown — request photos before bidding finish line items.",
+      basis: "question",
+    });
+  }
+  sections.push({
+    key: "finishes",
+    title: "Visible items & finishes",
+    description: "Materials and finishes the homeowner wants kept, swapped, or replaced.",
+    items: finishes,
+  });
+
+  // 3. Constraints
+  const constraints: AnalysisItem[] = [];
+  if (!d.budgetSkipped && d.budgetMin != null) {
+    constraints.push({
+      text: `Budget envelope: ${fmtMoney(d.budgetMin)} – ${fmtMoney(d.budgetMax)}.`,
+      basis: "grounded",
+    });
+  } else {
+    constraints.push({ text: "Budget not yet shared.", basis: "question" });
+  }
+  if (d.timeline) {
+    const t = d.timeline === "asap" ? "Ready to start" : d.timeline === "1-3" ? "1–3 months" : d.timeline === "3-6" ? "3–6 months" : "Exploring";
+    constraints.push({ text: `Timeline: ${t}.`, basis: "grounded" });
+  }
+  if (d.address?.city && !d.address.skipped) {
+    constraints.push({
+      text: `Jurisdiction: ${d.address.city}${d.address.state ? `, ${d.address.state}` : ""} — apply local permit rules and inspection cadence.`,
+      basis: "grounded",
+    });
+  } else {
+    constraints.push({
+      text: "Address withheld — permit calendar and county fees can't be projected yet.",
+      basis: "question",
+    });
+  }
+  sections.push({
+    key: "constraints",
+    title: "Constraints",
+    description: "What boxes the project must fit inside.",
+    items: constraints,
+  });
+
+  // 4. Design opportunities
+  const opps: AnalysisItem[] = [];
+  d.vibes.slice(0, 3).forEach((v) =>
+    opps.push({ text: `Direction: ${v.toLowerCase()}.`, basis: "grounded" }),
+  );
+  if (pain("Too dark") || pain("Poor lighting") || pain("No natural light")) {
+    opps.push({ text: "Layered lighting plan — ambient, task, accent zones.", basis: "inferred" });
+  }
+  if (pain("No island")) opps.push({ text: "Add island — define prep, seating, and rough-ins.", basis: "inferred" });
+  if (pain("No bathtub")) opps.push({ text: "Reintroduce tub — soaking vs alcove decision.", basis: "inferred" });
+  if (pain("No storage") || pain("Not enough storage") || pain("No closet space")) {
+    opps.push({ text: "Built-in storage — itemize separately from base cabinetry.", basis: "inferred" });
+  }
+  if (opps.length === 0) {
+    opps.push({ text: "Vibe direction not set — pick a few in the brief.", basis: "question" });
+  }
+  sections.push({
+    key: "opportunities",
+    title: "Design opportunities",
+    description: "Where this project earns its keep aesthetically.",
+    items: opps,
+  });
+
+  // 5. Code & permitting
+  const code: AnalysisItem[] = [];
+  if (scope?.permitLikely) {
+    code.push({
+      text: `${scope.label} typically requires city permits — plan submittal time into the schedule.`,
+      basis: "inferred",
+    });
+  }
+  if (d.room === "addition" || d.scope === "structural") {
+    code.push({ text: "Title 24 energy compliance applies to additions.", basis: "inferred" });
+  }
+  if (pain("Bad ventilation")) {
+    code.push({ text: "Code-compliant exhaust required for kitchens/baths.", basis: "inferred" });
+  }
+  if (pain("Energy inefficient")) {
+    code.push({ text: "Insulation upgrade triggers Title 24 verification.", basis: "inferred" });
+  }
+  if (code.length === 0) {
+    code.push({ text: "Likely permit-exempt — always verify locally.", basis: "inferred" });
+  }
+  sections.push({
+    key: "code",
+    title: "Code & permitting",
+    description: "What the city is going to ask about.",
+    items: code,
+  });
+
+  return sections;
+};
+
 // ───── Brief Readiness (the score) ─────
 // Honest checklist. The score IS the sum of weights. Total possible = 100.
 export const buildReadiness = (d: IntakeData): BriefReadiness => {
   const checks: { key: string; label: string; weight: number; have: boolean; nudge: string }[] = [
-    { key: "room", label: "Room or scope chosen", weight: 10, have: Boolean(d.room), nudge: "Pick a room to anchor the brief." },
-    { key: "video", label: "Walkthrough video", weight: 22, have: hasKind(d, "video"), nudge: "Add a 30s video — the single biggest signal for contractors." },
-    { key: "photo", label: "Reference photos", weight: 12, have: hasKind(d, "photo"), nudge: "Snap a few photos of the trouble spots." },
-    { key: "plan", label: "Floor plan or measurements", weight: 14, have: hasKind(d, "floorplan") || Boolean(d.measurements?.trim()), nudge: "Add a floor plan or rough measurements." },
-    { key: "pain", label: "Pain points named", weight: 12, have: d.painPoints.length >= 3, nudge: "Tag at least 3 things bugging you about the space." },
-    { key: "vibe", label: "Vibe direction", weight: 10, have: d.vibes.length >= 2, nudge: "Pick 2+ vibes so contractors get the feel." },
-    { key: "budget", label: "Budget range", weight: 10, have: !d.budgetSkipped && d.budgetMin != null, nudge: "A range — even rough — keeps bids realistic." },
-    { key: "timeline", label: "Timeline anchored", weight: 10, have: Boolean(d.timeline), nudge: "Even 'just exploring' counts." },
+    { key: "room", label: "Room or scope chosen", weight: 8, have: Boolean(d.room), nudge: "Pick a room to anchor the brief." },
+    { key: "video", label: "Walkthrough video", weight: 20, have: hasKind(d, "video"), nudge: "Add a 30s video — the single biggest signal for contractors." },
+    { key: "photo", label: "Reference photos", weight: 10, have: hasKind(d, "photo"), nudge: "Snap a few photos of the trouble spots." },
+    { key: "plan", label: "Floor plan or measurements", weight: 12, have: hasKind(d, "floorplan") || hasAnyMeasurements(d), nudge: "Add a floor plan or rough measurements." },
+    { key: "pain", label: "Pain points named", weight: 10, have: d.painPoints.length >= 3, nudge: "Tag at least 3 things bugging you about the space." },
+    { key: "vibe", label: "Vibe direction", weight: 8, have: d.vibes.length >= 2, nudge: "Pick 2+ vibes so contractors get the feel." },
+    { key: "scope", label: "Scope of work picked", weight: 10, have: Boolean(d.scope), nudge: "Choose a scope tier so budget is realistic." },
+    { key: "budget", label: "Budget range", weight: 8, have: !d.budgetSkipped && d.budgetMin != null, nudge: "A range — even rough — keeps bids realistic." },
+    { key: "timeline", label: "Timeline anchored", weight: 6, have: Boolean(d.timeline), nudge: "Even 'just exploring' counts." },
+    { key: "address", label: "Project address", weight: 8, have: Boolean(d.address?.city) && !d.address?.skipped, nudge: "Add the address to unlock permit & neighborhood intel." },
   ];
   const score = checks.reduce((s, c) => s + (c.have ? c.weight : 0), 0);
   const have = checks.filter((c) => c.have).map(({ label, weight }) => ({ label, weight }));
