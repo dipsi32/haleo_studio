@@ -639,18 +639,6 @@ const Brief = () => {
           />
         )}
         {step === 3 && (
-          <VibeScreen
-            key="vibe"
-            selected={data.vibes}
-            onToggle={(v) => togglePill("vibes", v)}
-            onContinue={next}
-            inspirationLink={data.inspirationLink}
-            setInspirationLink={(v) => update({ inspirationLink: v })}
-            onAddInspiration={addMedia}
-            inspirationCount={inspirationCount}
-          />
-        )}
-        {step === 4 && (
           <AddressScreen
             key="address"
             address={data.address}
@@ -659,7 +647,7 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 5 && (
+        {step === 4 && (
           <ScopeAndBudgetScreen
             key="scope-budget"
             scope={data.scope}
