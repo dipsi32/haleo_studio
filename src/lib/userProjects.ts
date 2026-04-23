@@ -1,6 +1,7 @@
 // Per-user persistent storage of intakes + briefs.
 // One row per "room" the user is working on, scoped via RLS to user_id.
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { ROOM_LABELS, type IntakeData, type Room } from "@/lib/intake";
 
 export interface UserProject {
@@ -53,7 +54,7 @@ export async function saveDraft(intake: IntakeData, existingId?: string): Promis
     user_id: user.id,
     title: titleFor(intake),
     room: intake.room ?? null,
-    intake: sanitizeIntake(intake) as unknown as Record<string, unknown>,
+    intake: sanitizeIntake(intake) as unknown as Json,
     status: "draft" as const,
   };
 
