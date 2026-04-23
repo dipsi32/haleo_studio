@@ -1,6 +1,6 @@
 // CSLB signal display — license badge, bond/WC pills, disciplinary flag,
 // and tenure + name-match. Every signal has a plain-language tooltip.
-import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, ExternalLink, HelpCircle } from "lucide-react";
+import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, ExternalLink, HelpCircle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LicenseStatus } from "@/lib/contractors";
 import { cslbDeepLink } from "@/lib/contractors";
@@ -88,6 +88,8 @@ export type CslbSignalsProps = {
   licenseNumber: string;
   permitDisplayName: string | null;
   variant?: "card" | "profile";
+  /** True while a Firecrawl verification is in flight — shows a loading state. */
+  verifying?: boolean;
   onDisciplineClick?: () => void;
 };
 
@@ -96,8 +98,21 @@ const CslbSignals = ({
   licenseNumber,
   permitDisplayName,
   variant = "card",
+  verifying = false,
   onDisciplineClick,
 }: CslbSignalsProps) => {
+  // Loading state — shown when we have no license data yet AND a verify call is in flight.
+  if (verifying && !license) {
+    return (
+      <div className={variant === "card" ? "space-y-2.5" : "space-y-4"}>
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Verifying license with CSLB…
+        </span>
+      </div>
+    );
+  }
+
   const lic = evaluateLicense(license);
   const bond = evaluateBond(license);
   const wc = evaluateWorkersComp(license);
