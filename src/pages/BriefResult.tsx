@@ -9,14 +9,12 @@ import {
   ShieldCheck,
   Calendar,
   DollarSign,
-  Image as ImageIcon,
   FileText,
   ChevronRight,
   Video,
   Map,
   Ruler,
   Camera,
-  Eye,
   Lightbulb,
   Sparkles,
   Play,
@@ -27,47 +25,57 @@ import {
   Pencil,
   AlertCircle,
   ChevronDown,
+  Plus,
+  X,
+  MessageSquarePlus,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
-import { ROOM_LABELS, useIntake, type MediaAsset } from "@/lib/intake";
+import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
   buildPermitFlag,
-  buildSpaceAnalysis,
   buildAnalysisSections,
   buildReadiness,
-  readinessCopy,
   type ContractorLine,
-  type SpaceAnalysisBlock,
   type BriefReadiness,
 } from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
 
 const Pill = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">
+  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground/80">
     {children}
   </span>
 );
 
-// ───── Media gallery ─────
+// ───── Media tile ─────
 const MediaTile = ({ m, onOpen }: { m: MediaAsset; onOpen: (m: MediaAsset) => void }) => {
+  const Badge = ({ icon: Icon, label }: { icon: typeof Camera; label: string }) => (
+    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80 backdrop-blur">
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
+
   if (m.kind === "photo" || m.kind === "inspiration") {
     return (
       <button
         onClick={() => onOpen(m)}
         className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-secondary shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
       >
-        <img src={m.url} alt={m.name} className="h-full w-full object-cover transition-smooth group-hover:scale-[1.03]" />
-        <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80 backdrop-blur">
-          {m.kind === "photo" ? <Camera className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-          {m.kind === "photo" ? "Photo" : "Inspo"}
-        </span>
+        {m.url ? (
+          <img src={m.url} alt={m.name} className="h-full w-full object-cover transition-smooth group-hover:scale-[1.03]" />
+        ) : (
+          <div className="grid h-full w-full place-items-center bg-card text-foreground/30">
+            <Camera className="h-8 w-8" />
+          </div>
+        )}
+        <Badge icon={m.kind === "photo" ? Camera : Sparkles} label={m.kind === "photo" ? "Photo" : "Inspo"} />
       </button>
     );
   }
@@ -77,34 +85,35 @@ const MediaTile = ({ m, onOpen }: { m: MediaAsset; onOpen: (m: MediaAsset) => vo
         onClick={() => onOpen(m)}
         className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-foreground/90 shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
       >
-        <video src={m.url} className="h-full w-full object-cover opacity-90" muted playsInline />
+        {m.url ? (
+          <video src={m.url} className="h-full w-full object-cover opacity-90" muted playsInline />
+        ) : (
+          <div className="h-full w-full bg-foreground/80" />
+        )}
         <div className="absolute inset-0 grid place-items-center bg-foreground/20">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-background/90 text-foreground shadow-lift transition-smooth group-hover:scale-110">
             <Play className="h-5 w-5 translate-x-0.5 fill-current" />
           </span>
         </div>
-        <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80 backdrop-blur">
-          <Video className="h-3 w-3" /> Walkthrough
-        </span>
+        <Badge icon={Video} label="Walkthrough" />
       </button>
     );
   }
+  // floorplan
   const isImage = m.mime?.startsWith("image/");
   return (
     <button
       onClick={() => onOpen(m)}
       className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-secondary shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
     >
-      {isImage ? (
+      {isImage && m.url ? (
         <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
       ) : (
-        <div className="grid h-full w-full place-items-center bg-card">
-          <Map className="h-10 w-10 text-foreground/40" />
+        <div className="grid h-full w-full place-items-center bg-card text-foreground/40">
+          <Map className="h-10 w-10" />
         </div>
       )}
-      <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80 backdrop-blur">
-        <Map className="h-3 w-3" /> Floor plan
-      </span>
+      <Badge icon={Map} label="Floor plan" />
     </button>
   );
 };
@@ -156,77 +165,108 @@ const BasisChip = ({ basis }: { basis: ContractorLine["basis"] }) => {
   );
 };
 
-// ───── Per-asset analysis card ─────
-const AnalysisCard = ({ block }: { block: SpaceAnalysisBlock }) => {
-  const ICONS: Record<SpaceAnalysisBlock["scope"], typeof Video> = {
-    video: Video,
-    photo: Camera,
-    floorplan: Map,
-    measurements: Ruler,
-    general: Lightbulb,
-  };
-  const Icon = ICONS[block.scope];
+// ───── Annotation affordance ─────
+// Sits on every section. Lets the homeowner add a margin note the contractor sees.
+const AnnotationBlock = ({
+  sectionId,
+  value,
+  onSave,
+  locked,
+}: {
+  sectionId: string;
+  value?: string;
+  onSave: (id: string, text: string) => void;
+  locked: boolean;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => setDraft(value ?? ""), [value]);
+
+  if (value && !open) {
+    return (
+      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-accent/20 bg-accent-soft/40 p-3">
+        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Your note</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-foreground/85">{value}</p>
+        </div>
+        {!locked && (
+          <button
+            onClick={() => setOpen(true)}
+            className="text-xs text-accent underline-offset-4 hover:underline"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (open) {
+    return (
+      <div className="mt-4 rounded-2xl border border-accent/30 bg-accent-soft/30 p-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Add a note for your contractor</p>
+          <button onClick={() => { setOpen(false); setDraft(value ?? ""); }} aria-label="Close">
+            <X className="h-3.5 w-3.5 text-foreground/50 hover:text-foreground" />
+          </button>
+        </div>
+        <Textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={2}
+          placeholder="e.g. The lighting matters most to me here…"
+          className="mt-2 rounded-lg bg-background text-sm"
+        />
+        <div className="mt-2 flex justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={() => { setOpen(false); setDraft(value ?? ""); }}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onSave(sectionId, draft.trim());
+              setOpen(false);
+            }}
+          >
+            Save note
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (locked) return null;
+
   return (
-    <article className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-      <header className="flex items-start gap-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="font-display text-base font-medium leading-tight">{block.title}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{block.body}</p>
-        </div>
-      </header>
-      {block.observations && block.observations.length > 0 && (
-        <div className="mt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">What a contractor sees</p>
-          <ul className="mt-2 space-y-1.5">
-            {block.observations.map((o, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-foreground/85">
-                <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-sage" />
-                {o}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {block.unknowns && block.unknowns.length > 0 && (
-        <div className="mt-4 rounded-xl bg-secondary/60 p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">What we can't tell yet</p>
-          <ul className="mt-2 space-y-1.5">
-            {block.unknowns.map((u, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/75">
-                <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/50" />
-                {u}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </article>
+    <button
+      onClick={() => setOpen(true)}
+      className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-foreground/55 transition-smooth hover:text-accent"
+    >
+      <MessageSquarePlus className="h-3.5 w-3.5" />
+      Add a note for your contractor
+    </button>
   );
 };
 
 // ───── Page ─────
 const BriefResult = () => {
   const { data, update, addMedia, removeMedia, togglePill } = useIntake();
-  const [showContractor, setShowContractor] = useState(false);
   const [open, setOpen] = useState<MediaAsset | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [approved, setApproved] = useState(false);
-  // Per-line edits to the contractor translation, keyed by index
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [lineEdits, setLineEdits] = useState<Record<number, string>>({});
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
-  const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
   const sections = useMemo(() => buildAnalysisSections(data), [data]);
   const readiness = useMemo(() => buildReadiness(data), [data]);
-  const readinessText = readinessCopy(readiness.level);
 
-  // Reset approval whenever the underlying brief changes
   useEffect(() => {
     setApproved(false);
     setLineEdits({});
@@ -234,6 +274,13 @@ const BriefResult = () => {
 
   const spaceMedia = data.media.filter((m) => m.kind !== "inspiration");
   const inspirationMedia = data.media.filter((m) => m.kind === "inspiration");
+  const annotations = data.annotations ?? {};
+  const saveAnnotation = (id: string, text: string) => {
+    const next = { ...annotations };
+    if (text) next[id] = text;
+    else delete next[id];
+    update({ annotations: next });
+  };
 
   const budgetLabel = data.budgetSkipped
     ? "Not shared"
@@ -268,7 +315,7 @@ const BriefResult = () => {
         </div>
       </header>
 
-      <main className="container max-w-4xl py-12 md:py-20">
+      <main className="container max-w-4xl py-10 md:py-14">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -277,353 +324,297 @@ const BriefResult = () => {
         >
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Your project brief</p>
           <h1 className="mt-3 font-display text-5xl font-light leading-tight text-balance md:text-6xl">
-            We translated your <em className="italic text-accent">vision.</em>
+            One page. <em className="italic text-accent">Everything they need.</em>
           </h1>
           <p className="mt-5 max-w-xl text-base text-muted-foreground">
-            Here's your project — in your words, and in language any contractor can bid on.
+            This is exactly what your contractor will read — your vision, your photos, and a clear translation they can bid on.
           </p>
         </motion.div>
 
-        {/* Quick facts */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 flex flex-wrap items-center gap-3"
-        >
-          {data.room && <Pill>{ROOM_LABELS[data.room]}</Pill>}
-          <Pill>
-            <DollarSign className="mr-1 inline h-3 w-3" />
-            {budgetLabel}
-          </Pill>
-          <Pill>
-            <Calendar className="mr-1 inline h-3 w-3" />
-            {timelineLabel}
-          </Pill>
-          <Pill>
-            <ShieldCheck className="mr-1 inline h-3 w-3" />
-            {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
-          </Pill>
-        </motion.div>
+        {/* ───── Readiness action bar — distinct from the brief, framed as YOUR action ───── */}
+        <ReadinessBar readiness={readiness} onAdd={() => setEditOpen(true)} />
 
-        {/* ───── Brief Readiness ───── */}
-        <ReadinessCard
-          readiness={readiness}
-          headline={readinessText.headline}
-          sub={readinessText.sub}
-          onAdd={() => setEditOpen(true)}
-        />
-
-        {/* ───── Brief card with two layers ───── */}
-        <motion.section
+        {/* ═════════ THE 1-PAGER ═════════ */}
+        <motion.article
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
         >
-          <div className="grid items-center gap-3 border-b border-border bg-secondary/30 px-6 py-4 sm:grid-cols-[1fr_auto] md:px-8">
+          {/* Document header */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
             <div className="flex items-center gap-3">
               <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
                 <FileText className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-display text-base font-medium">Your brief</p>
+                <p className="font-display text-base font-medium leading-tight">Project brief</p>
                 <p className="text-xs text-muted-foreground">
-                  {showContractor ? "The contractor view — every line tagged for honesty." : "Your words. Toggle to see what a contractor reads."}
+                  {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
+                  Prepared by Haleo
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowContractor((v) => !v)}
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-smooth hover:bg-accent"
-            >
-              {showContractor ? "Show how you said it" : "See contractor view"}
-              <ChevronRight className={`h-4 w-4 transition-smooth ${showContractor ? "rotate-180" : ""}`} />
-            </button>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
+              {approved ? <><Lock className="h-3 w-3" /> Approved by homeowner</> : <><AlertCircle className="h-3 w-3" /> Draft — pending approval</>}
+            </span>
           </div>
 
-          <div className="grid gap-0 md:grid-cols-2">
-            {/* Homeowner column */}
-            <div className="border-b border-border p-6 md:border-b-0 md:border-r md:p-10">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">In your words</p>
-              <p className="mt-3 font-display text-2xl font-light leading-snug text-foreground/90">
+          {/* 1. AT-A-GLANCE */}
+          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading no="01" title="At a glance" />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {data.room && <Pill>{ROOM_LABELS[data.room]}</Pill>}
+              {data.scope && (
+                <Pill>
+                  <Sparkles className="h-3 w-3" />
+                  {data.scope === "refresh" ? "Design refresh" : data.scope === "remodel" ? "Full remodel" : data.scope === "reconfigure" ? "Reconfigure" : "Add space"}
+                </Pill>
+              )}
+              <Pill>
+                <DollarSign className="h-3 w-3" />
+                {budgetLabel}
+              </Pill>
+              <Pill>
+                <Calendar className="h-3 w-3" />
+                {timelineLabel}
+              </Pill>
+              <Pill>
+                <ShieldCheck className="h-3 w-3" />
+                {permit.likely ? "Permit likely" : "Likely permit-exempt"}
+              </Pill>
+            </div>
+          </section>
+
+          {/* 2. THE VISION (homeowner's voice) */}
+          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading no="02" title="The vision — in their words" />
+            <blockquote className="mt-4 border-l-2 border-accent pl-5">
+              <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
                 "{homeowner}"
               </p>
-              {data.notes && (
-                <div className="mt-6 flex items-start gap-3 rounded-2xl bg-secondary/50 p-4">
-                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                  <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
+            </blockquote>
+            {data.notes && (
+              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
+                <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
+              </div>
+            )}
+            <AnnotationBlock
+              sectionId="vision"
+              value={annotations.vision}
+              onSave={saveAnnotation}
+              locked={approved}
+            />
+          </section>
+
+          {/* 3. WHAT THEY SHARED — the visual evidence, big and prominent */}
+          {(spaceMedia.length > 0 || data.measurements) && (
+            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading no="03" title="What they shared" subtitle="The space, in their hands. Click any thumbnail to enlarge." />
+              {spaceMedia.length > 0 && (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {spaceMedia.map((m) => (
+                    <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                  ))}
                 </div>
               )}
-            </div>
-
-            {/* Contractor column */}
-            <div className="relative bg-secondary/40 p-6 md:p-10">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] uppercase tracking-wider text-accent">For your contractor</p>
-                {showContractor && (
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
-                    {approved ? <><Lock className="h-3 w-3" /> Approved</> : <><AlertCircle className="h-3 w-3" /> Draft</>}
-                  </span>
-                )}
-              </div>
-              <AnimatePresence mode="wait">
-                {showContractor ? (
-                  <motion.div
-                    key="reveal"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="mt-3 space-y-2"
-                  >
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      Each line is tagged so you can see what's grounded in what you shared, what we inferred for you, and what's still an open question. Edit anything before you approve.
+              {(data.measurements || data.dimensions) && (
+                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                    <Ruler className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-sm font-medium">Measurements</p>
+                    <p className="text-xs leading-relaxed text-foreground/70">
+                      {data.dimensions
+                        ? `${data.dimensions.length ?? "?"} × ${data.dimensions.width ?? "?"} ${data.dimensions.unit}${data.dimensions.height ? ` · ${data.dimensions.height} ${data.dimensions.unit} ceiling` : ""}`
+                        : data.measurements}
                     </p>
-                    <ul className="mt-3 space-y-2.5">
-                      {contractorLines.map((line, i) => (
-                        <motion.li
-                          key={i}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.35, delay: i * 0.04 }}
-                          className="group rounded-xl border border-border bg-card p-3"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <BasisChip basis={line.basis} />
-                            {!approved && (
-                              <button
-                                onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                                className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
-                                aria-label="Edit line"
-                              >
-                                <Pencil className="h-3.5 w-3.5 text-foreground/50" />
-                              </button>
-                            )}
-                          </div>
-                          {editingIdx === i ? (
-                            <Textarea
-                              autoFocus
-                              value={lineText(i)}
-                              onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
-                              onBlur={() => setEditingIdx(null)}
-                              rows={2}
-                              className="mt-2 rounded-lg bg-background font-mono text-[13px]"
-                            />
-                          ) : (
-                            <p className="mt-1.5 font-mono text-[13px] leading-relaxed text-foreground/90">
-                              {lineText(i)}
-                            </p>
-                          )}
-                          {line.source && (
-                            <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                              Source: {line.source}
-                            </p>
-                          )}
-                        </motion.li>
-                      ))}
-                    </ul>
+                  </div>
+                </div>
+              )}
+              <AnnotationBlock
+                sectionId="evidence"
+                value={annotations.evidence}
+                onSave={saveAnnotation}
+                locked={approved}
+              />
+            </section>
+          )}
 
-                    {/* Approval bar */}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-foreground/5 p-3">
-                      <div className="flex items-center gap-3 text-xs text-foreground/70">
-                        <div className="flex items-center gap-1.5"><Check className="h-3 w-3 text-sage" /> From you</div>
-                        <div className="flex items-center gap-1.5"><AlertCircle className="h-3 w-3 text-accent" /> Inferred</div>
-                        <div className="flex items-center gap-1.5"><HelpCircle className="h-3 w-3 text-foreground/60" /> Open</div>
-                      </div>
-                      <Button
-                        onClick={() => setApproved((v) => !v)}
-                        size="sm"
-                        variant={approved ? "outline" : "default"}
-                        className="rounded-full"
+          {/* 4. INSPIRATION */}
+          {(inspirationMedia.length > 0 || data.inspirationLink) && (
+            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading no="04" title="Inspiration" subtitle="The look they're chasing." />
+              {inspirationMedia.length > 0 && (
+                <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {inspirationMedia.map((m) => (
+                    <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                  ))}
+                </div>
+              )}
+              {data.inspirationLink && (
+                <p className="mt-4 truncate text-xs text-muted-foreground">
+                  Link: <span className="text-foreground/80">{data.inspirationLink}</span>
+                </p>
+              )}
+              <AnnotationBlock
+                sectionId="inspiration"
+                value={annotations.inspiration}
+                onSave={saveAnnotation}
+                locked={approved}
+              />
+            </section>
+          )}
+
+          {/* 5. THE TRANSLATION (scope of work, tagged) */}
+          <section className="border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
+            <div className="flex items-start justify-between gap-3">
+              <SectionHeading no="05" title="Scope of work" subtitle="Every line tagged so nothing is fabricated." />
+              <span className="hidden shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground sm:block">For the contractor</span>
+            </div>
+            <ul className="mt-5 space-y-2">
+              {contractorLines.map((line, i) => (
+                <li key={i} className="group rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <BasisChip basis={line.basis} />
+                    {!approved && (
+                      <button
+                        onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                        className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
+                        aria-label="Edit line"
                       >
-                        {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
-                      </Button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-6 grid place-items-center"
-                  >
-                    <button
-                      onClick={() => setShowContractor(true)}
-                      className="group flex flex-col items-center gap-3 rounded-2xl border border-dashed border-accent/40 bg-card/40 px-8 py-10 text-center transition-smooth hover:border-accent hover:bg-card"
-                    >
-                      <div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-accent-foreground transition-smooth group-hover:scale-110">
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
-                      <p className="font-display text-base font-medium">Reveal the contractor translation</p>
-                      <p className="max-w-xs text-xs text-muted-foreground">
-                        The same vision, in language they can bid on — with sources you can verify.
-                      </p>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Permit row */}
-          <div className="flex items-start gap-3 border-t border-border bg-card px-6 py-6 md:px-10 md:py-7">
-            <div className={`grid h-9 w-9 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="font-display text-sm font-medium">
-                {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
-              </p>
-              <p className="text-xs text-muted-foreground">{permit.reason}</p>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* ───── Space snapshot ───── */}
-        {(spaceMedia.length > 0 || data.measurements || data.notes) && (
-          <motion.section
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
-                  <Eye className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="font-display text-base font-medium">Space snapshot</p>
-                  <p className="text-xs text-muted-foreground">Everything you've shared, attached to the brief.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setEditOpen(true)}
-                className="text-xs font-medium text-accent underline-offset-4 hover:underline"
-              >
-                Add more
-              </button>
-            </div>
-
-            {spaceMedia.length > 0 && (
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {spaceMedia.map((m) => (
-                  <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                ))}
-              </div>
-            )}
-
-            {(data.measurements || data.notes) && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {data.measurements && (
-                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                      <Ruler className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-display text-sm font-medium">Measurements</p>
-                      <p className="text-xs leading-relaxed text-foreground/70">{data.measurements}</p>
-                    </div>
+                        <Pencil className="h-3.5 w-3.5 text-foreground/50" />
+                      </button>
+                    )}
                   </div>
-                )}
-                {data.notes && (
-                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                      <StickyNote className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-display text-sm font-medium">Rough notes</p>
-                      <p className="text-xs leading-relaxed text-foreground/70">{data.notes}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </motion.section>
-        )}
+                  {editingIdx === i ? (
+                    <Textarea
+                      autoFocus
+                      value={lineText(i)}
+                      onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
+                      onBlur={() => setEditingIdx(null)}
+                      rows={2}
+                      className="mt-2 rounded-lg bg-background font-mono text-[13px]"
+                    />
+                  ) : (
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
+                      {lineText(i)}
+                    </p>
+                  )}
+                  {line.source && (
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Source: {line.source}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {/* Legend */}
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
+              <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From the homeowner</span>
+              <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Inferred — verify on site</span>
+              <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
+            </div>
+            <AnnotationBlock
+              sectionId="scope"
+              value={annotations.scope}
+              onSave={saveAnnotation}
+              locked={approved}
+            />
+          </section>
 
-        {/* ───── Inspiration ───── */}
-        {(inspirationMedia.length > 0 || data.inspirationLink) && (
-          <motion.section
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-accent">
-                <ImageIcon className="h-4 w-4" />
+          {/* 6. PERMIT FLAG */}
+          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading no="06" title="Permit & jurisdiction" />
+            <div className="mt-4 flex items-start gap-3">
+              <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-base font-medium">
+                  {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{permit.reason}</p>
+              </div>
+            </div>
+            <AnnotationBlock
+              sectionId="permit"
+              value={annotations.permit}
+              onSave={saveAnnotation}
+              locked={approved}
+            />
+          </section>
+
+          {/* 7. CONTRACTOR'S DEEP READ — collapsed by default to keep the 1-pager scannable */}
+          <section className="px-6 py-7 md:px-10 md:py-9">
+            <button
+              onClick={() => setShowAnalysis((v) => !v)}
+              className="flex w-full items-center justify-between gap-4 text-left"
+              aria-expanded={showAnalysis}
+            >
+              <div>
+                <SectionHeading no="07" title="Deep read for the contractor" subtitle="Structure, finishes, constraints, opportunities, code — the way a GC actually scans a project." />
+              </div>
+              <ChevronDown className={`h-5 w-5 shrink-0 text-foreground/50 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence initial={false}>
+              {showAnalysis && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5">
+                    <DetailedSpaceAnalysis sections={sections} />
+                  </div>
+                  <AnnotationBlock
+                    sectionId="analysis"
+                    value={annotations.analysis}
+                    onSave={saveAnnotation}
+                    locked={approved}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+
+          {/* Document footer — approve & lock */}
+          <div className="flex flex-col gap-4 border-t border-border bg-secondary/30 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
+            <div className="flex items-start gap-3">
+              <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${approved ? "bg-sage text-background" : "bg-accent text-accent-foreground"}`}>
+                {approved ? <Lock className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
               </div>
               <div>
-                <p className="font-display text-base font-medium">Inspiration</p>
-                <p className="text-xs text-muted-foreground">The look you're chasing.</p>
-              </div>
-            </div>
-            {inspirationMedia.length > 0 && (
-              <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {inspirationMedia.map((m) => (
-                  <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                ))}
-              </div>
-            )}
-            {data.inspirationLink && (
-              <p className="mt-4 truncate text-xs text-muted-foreground">
-                Link: <span className="text-foreground/80">{data.inspirationLink}</span>
-              </p>
-            )}
-          </motion.section>
-        )}
-
-        {/* ───── Space analysis (per-asset) ───── */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6"
-        >
-          <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
-              <Lightbulb className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="font-display text-base font-medium">Space analysis</p>
-              <p className="text-xs text-muted-foreground">
-                A read of each thing you shared — through the contractor's lens, before they walk in.
-              </p>
-            </div>
-          </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {analysis.map((b) => (
-              <AnalysisCard key={b.id} block={b} />
-            ))}
-          </div>
-
-          {/* ── Detailed sections — the contractor's structured read ── */}
-          <div className="mt-8">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-display text-base font-medium">The contractor's read</p>
+                <p className="font-display text-sm font-medium">
+                  {approved ? "Brief approved" : "Approve before sending"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Same brief, organized the way a GC scans a project. Your street address stays private — only city is shared.
+                  {approved
+                    ? "Locked. Unlock above to make edits."
+                    : "Read every line, edit anything you want, then approve."}
                 </p>
               </div>
             </div>
-            <DetailedSpaceAnalysis sections={sections} />
+            <Button
+              onClick={() => setApproved((v) => !v)}
+              variant={approved ? "outline" : "default"}
+              className="rounded-full"
+            >
+              {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
+            </Button>
           </div>
-        </motion.section>
-
+        </motion.article>
 
         {/* Actions */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 grid gap-3 sm:grid-cols-3"
+          className="mt-8 grid gap-3 sm:grid-cols-3"
         >
           <Button size="lg" className="rounded-full" disabled={!approved}>
             <Send className="h-4 w-4" />
@@ -638,12 +629,6 @@ const BriefResult = () => {
             Edit brief
           </Button>
         </motion.div>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          {approved
-            ? "Sending and PDF export come online when Lovable Cloud is enabled."
-            : "Reveal the contractor view above and approve it before sending."}
-        </p>
 
         {/* Next step */}
         <motion.section
@@ -684,26 +669,28 @@ const BriefResult = () => {
   );
 };
 
-// ───── Brief Readiness card ─────
-// Mental model: a 0–100 score across 8 things a great brief contains.
-// Three tiers: Draft (0–49) → Shareable (50–74) → Biddable (75–100).
-// Show: tier + score, progress to next tier, and the single highest-impact next add.
-// Full checklist is one tap away for power users.
-const TIER_META: Record<BriefReadiness["level"], { label: string; nextAt: number | null; nextLabel: string | null }> = {
-  draft: { label: "Draft", nextAt: 50, nextLabel: "Shareable" },
-  shareable: { label: "Shareable", nextAt: 75, nextLabel: "Biddable" },
-  biddable: { label: "Biddable", nextAt: null, nextLabel: null },
+// ───── Section heading (numbered, document-style) ─────
+const SectionHeading = ({ no, title, subtitle }: { no: string; title: string; subtitle?: string }) => (
+  <div>
+    <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{no}</p>
+    <p className="mt-1 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">{title}</p>
+    {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+  </div>
+);
+
+// ───── Brief Readiness — slim ACTION bar (not a card competing with the brief) ─────
+// Visual language: horizontal, low-chrome, looks like a toolbar/affordance, not a document.
+const TIER_META: Record<BriefReadiness["level"], { label: string; nextAt: number | null; nextLabel: string | null; toneCls: string }> = {
+  draft: { label: "Draft", nextAt: 50, nextLabel: "Shareable", toneCls: "text-foreground/70" },
+  shareable: { label: "Shareable", nextAt: 75, nextLabel: "Biddable", toneCls: "text-accent" },
+  biddable: { label: "Biddable", nextAt: null, nextLabel: null, toneCls: "text-sage" },
 };
 
-const ReadinessCard = ({
+const ReadinessBar = ({
   readiness,
-  headline,
-  sub,
   onAdd,
 }: {
   readiness: BriefReadiness;
-  headline: string;
-  sub: string;
   onAdd: () => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -712,121 +699,102 @@ const ReadinessCard = ({
   const pointsToNext = tier.nextAt != null ? Math.max(0, tier.nextAt - readiness.score) : 0;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 14 }}
+    <motion.aside
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
+      transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-8 rounded-2xl border border-dashed border-foreground/15 bg-background/60 p-4"
+      aria-label="Brief readiness — your action area"
     >
-      <div className="p-6 md:p-8">
-        {/* Top row: label + score */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">Brief readiness</p>
-            <p className="mt-2 font-display text-2xl font-light leading-tight md:text-3xl">{headline}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        {/* Status */}
+        <div className="flex items-center gap-3">
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-foreground/5">
+            <Sparkles className={`h-3.5 w-3.5 ${tier.toneCls}`} />
           </div>
-          <div className="shrink-0 text-right">
-            <p className="font-display text-4xl font-medium leading-none tabular-nums md:text-5xl">{readiness.score}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">out of 100</p>
+          <div className="leading-tight">
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Brief readiness</p>
+            <p className="text-sm font-medium">
+              <span className={tier.toneCls}>{tier.label}</span>
+              <span className="text-muted-foreground"> · {readiness.score}/100</span>
+            </p>
           </div>
         </div>
 
-        {/* Tier track */}
-        <div className="mt-6">
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+        {/* Track */}
+        <div className="min-w-[140px] flex-1">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
             <motion.div
               className="absolute left-0 top-0 h-full rounded-full bg-accent"
               initial={{ width: 0 }}
               animate={{ width: `${readiness.score}%` }}
-              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
             />
-            {/* Tier markers */}
-            <span className="absolute top-0 h-full w-px bg-background/80" style={{ left: "50%" }} aria-hidden />
-            <span className="absolute top-0 h-full w-px bg-background/80" style={{ left: "75%" }} aria-hidden />
+            <span className="absolute top-0 h-full w-px bg-background" style={{ left: "50%" }} aria-hidden />
+            <span className="absolute top-0 h-full w-px bg-background" style={{ left: "75%" }} aria-hidden />
           </div>
-          <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            <span className={readiness.level === "draft" ? "text-foreground" : ""}>Draft</span>
-            <span className={readiness.level === "shareable" ? "text-foreground" : ""}>Shareable</span>
-            <span className={readiness.level === "biddable" ? "text-foreground" : ""}>Biddable</span>
+          <div className="mt-1 flex justify-between text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span>Draft</span>
+            <span>Shareable</span>
+            <span>Biddable</span>
           </div>
         </div>
 
-        {/* Next best step OR all-clear */}
+        {/* CTA */}
         {topMissing ? (
-          <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-secondary/50 p-4 sm:flex-row sm:items-center sm:gap-4">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/15 text-accent">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/60">
-                {tier.nextLabel ? `${pointsToNext} pts to ${tier.nextLabel}` : "Nice add"}
-              </p>
-              <p className="mt-0.5 text-sm text-foreground">
-                <span className="font-medium">{topMissing.label}.</span>{" "}
-                <span className="text-muted-foreground">{topMissing.nudge}</span>
-              </p>
-            </div>
-            <Button onClick={onAdd} size="sm" variant="default" className="shrink-0 self-start sm:self-auto">
-              Add now <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <Button
+            onClick={onAdd}
+            size="sm"
+            className="shrink-0 rounded-full"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add {topMissing.label.toLowerCase()}
+            {tier.nextLabel && <span className="ml-1 text-[10px] opacity-80">+{topMissing.weight} → {tier.nextLabel}</span>}
+          </Button>
         ) : (
-          <div className="mt-6 flex items-center gap-3 rounded-2xl bg-sage-soft/60 p-4">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage/15 text-sage">
-              <Check className="h-4 w-4" />
-            </div>
-            <p className="text-sm text-foreground">
-              <span className="font-medium">All eight signals captured.</span>{" "}
-              <span className="text-muted-foreground">Contractors can bid the same scope from this brief.</span>
-            </p>
-          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sage-soft px-3 py-1.5 text-xs font-medium text-sage">
+            <Check className="h-3.5 w-3.5" /> Fully bid-ready
+          </span>
         )}
 
-        {/* Expandable full checklist */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-foreground/70 transition-smooth hover:text-foreground"
+          className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-smooth hover:text-foreground"
         >
-          {expanded ? "Hide" : "See"} the 8-point checklist
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          {expanded ? "Hide" : "What counts?"}
+          <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
-
-        <AnimatePresence initial={false}>
-          {expanded && (
-            <motion.ul
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-4 grid gap-1.5 overflow-hidden border-t border-border/60 pt-4 sm:grid-cols-2"
-            >
-              {[
-                ...readiness.have.map((h) => ({ ...h, have: true, nudge: "" })),
-                ...readiness.missing.map((m) => ({ ...m, have: false })),
-              ].map((item) => (
-                <li
-                  key={item.label}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
-                >
-                  {item.have ? (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-sage" />
-                  ) : (
-                    <span className="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border border-foreground/30" />
-                  )}
-                  <span className={`min-w-0 truncate ${item.have ? "text-foreground/85" : "text-foreground/60"}`}>
-                    {item.label}
-                  </span>
-                  <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">
-                    {item.have ? `+${item.weight}` : `+${item.weight}`}
-                  </span>
-                </li>
-              ))}
-            </motion.ul>
-          )}
-        </AnimatePresence>
       </div>
-    </motion.section>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-4 grid gap-1 overflow-hidden border-t border-foreground/10 pt-3 sm:grid-cols-2"
+          >
+            {[
+              ...readiness.have.map((h) => ({ ...h, have: true, nudge: "" })),
+              ...readiness.missing.map((m) => ({ ...m, have: false })),
+            ].map((item) => (
+              <li key={item.label} className="flex items-center gap-2 px-1 py-1 text-xs">
+                {item.have ? (
+                  <Check className="h-3 w-3 shrink-0 text-sage" />
+                ) : (
+                  <span className="grid h-3 w-3 shrink-0 place-items-center rounded-full border border-foreground/30" />
+                )}
+                <span className={`min-w-0 truncate ${item.have ? "text-foreground/80" : "text-foreground/55"}`}>
+                  {item.label}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">+{item.weight}</span>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </motion.aside>
   );
 };
 

@@ -76,6 +76,8 @@ export type IntakeData = {
   budgetSkipped?: boolean;
   // timeline
   timeline?: Timeline;
+  // homeowner annotations on the brief, keyed by section id (vision, evidence, scope, structural, finishes, constraints, opportunities, code)
+  annotations?: Record<string, string>;
 };
 
 const STORAGE_KEY = "haleo:intake:v2";
