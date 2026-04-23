@@ -45,6 +45,7 @@ import {
   groupContractorLinesByTrade,
   type ContractorLine,
   type BriefReadiness,
+  type TradeGroup,
 } from "@/lib/brief";
 
 const fmtMoney = (v?: number) => (v == null ? "" : v >= 500 ? "$500K+" : `$${v}K`);
@@ -531,17 +532,37 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 7. CONTRACTOR'S DEEP READ — collapsed by default to keep the 1-pager scannable */}
+          {/* 7. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
           <section className="px-6 py-7 md:px-10 md:py-9">
             <button
               onClick={() => setShowAnalysis((v) => !v)}
-              className="flex w-full items-center justify-between gap-4 text-left"
+              className={`group flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-4 text-left transition-smooth md:p-5 ${
+                showAnalysis
+                  ? "border-accent/40 bg-accent-soft/20"
+                  : "border-border bg-card/60 hover:border-accent/50 hover:bg-accent-soft/20"
+              }`}
               aria-expanded={showAnalysis}
             >
-              <div>
-                <SectionHeading no="07" title="Deep read for the contractor" subtitle="Structure, finishes, constraints, opportunities, code — the way a GC actually scans a project." />
+              <div className="flex min-w-0 items-center gap-4">
+                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-smooth ${showAnalysis ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">07</p>
+                  <p className="font-display text-base font-medium leading-tight md:text-lg">
+                    {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {showAnalysis
+                      ? "Structure, finishes, constraints, opportunities, code."
+                      : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                  </p>
+                </div>
               </div>
-              <ChevronDown className={`h-5 w-5 shrink-0 text-foreground/50 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground/80 shadow-soft">
+                {showAnalysis ? "Hide" : "Tap to expand"}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
+              </span>
             </button>
             <AnimatePresence initial={false}>
               {showAnalysis && (
