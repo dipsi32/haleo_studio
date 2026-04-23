@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
+import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
@@ -268,7 +269,10 @@ const BriefResult = () => {
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
   const tradeGroups = useMemo(() => groupContractorLinesByTrade(contractorLines), [contractorLines]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
-  const sections = useMemo(() => buildAnalysisSections(data), [data]);
+  const heuristicSections = useMemo(() => buildAnalysisSections(data), [data]);
+  const { status: analysisStatus, analysis, error: analysisError } = useSpaceAnalysis(data);
+  // Prefer AI-grounded sections when ready; fall back to heuristic in the meantime.
+  const sections = analysis?.sections?.length ? analysis.sections : heuristicSections;
   const readiness = useMemo(() => buildReadiness(data), [data]);
   const projectTitle = useMemo(() => buildProjectTitle(data), [data]);
 
