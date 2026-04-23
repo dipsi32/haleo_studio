@@ -586,8 +586,8 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 7. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
-          <section className="px-6 py-7 md:px-10 md:py-9">
+          {/* 6. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
+          <section id="brief-deepread" className="scroll-mt-24 px-6 py-7 md:px-10 md:py-9">
             <button
               onClick={() => setShowAnalysis((v) => !v)}
               className={`group flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-4 text-left transition-smooth md:p-5 ${
@@ -599,12 +599,12 @@ const BriefResult = () => {
             >
               <div className="flex min-w-0 items-center gap-4">
                 <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-smooth ${showAnalysis ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
-                  <FileText className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">07</p>
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{inspirationMedia.length > 0 ? "06" : "05"}</p>
                   <p className="font-display text-base font-medium leading-tight md:text-lg">
-                    {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
+                    {showAnalysis ? "Haleo's deep read" : "Open Haleo's deep read"}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {useApproved
