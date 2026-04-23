@@ -557,9 +557,15 @@ const BriefResult = () => {
                     {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {showAnalysis
-                      ? "Structure, finishes, constraints, opportunities, code."
-                      : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                    {analysisStatus === "uploading"
+                      ? "Uploading your photos to analyze the space…"
+                      : analysisStatus === "analyzing"
+                        ? "AI is reading the space — usually 15–30 sec."
+                        : analysisStatus === "ready"
+                          ? "AI-grounded read of structure, finishes, constraints, opportunities, code."
+                          : analysisStatus === "error"
+                            ? "Couldn't run AI analysis — heuristic read shown instead."
+                            : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
                   </p>
                 </div>
               </div>
@@ -577,6 +583,27 @@ const BriefResult = () => {
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
+                  {(analysisStatus === "uploading" || analysisStatus === "analyzing") && (
+                    <div className="mt-5 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/30 px-4 py-3 text-xs text-foreground/80">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+                      {analysisStatus === "uploading"
+                        ? "Uploading media…"
+                        : "Reading the space with AI vision…"}
+                    </div>
+                  )}
+                  {analysisStatus === "error" && analysisError && (
+                    <div className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+                      AI analysis failed: {analysisError}. Showing the heuristic read below.
+                    </div>
+                  )}
+                  {analysis?.summary && analysisStatus === "ready" && (
+                    <div className="mt-5 rounded-2xl border border-sage/30 bg-sage-soft/40 px-4 py-3 text-sm leading-relaxed text-foreground/90">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-sage">
+                        GC summary
+                      </p>
+                      {analysis.summary}
+                    </div>
+                  )}
                   <div className="mt-5">
                     <DetailedSpaceAnalysis sections={sections} />
                   </div>
