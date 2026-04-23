@@ -565,12 +565,11 @@ export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
 // Honest checklist. The score IS the sum of weights. Total possible = 100.
 export const buildReadiness = (d: IntakeData): BriefReadiness => {
   const checks: { key: string; label: string; weight: number; have: boolean; nudge: string }[] = [
-    { key: "room", label: "Room or scope chosen", weight: 8, have: Boolean(d.room), nudge: "Pick a room to anchor the brief." },
-    { key: "video", label: "Walkthrough video", weight: 20, have: hasKind(d, "video"), nudge: "Add a 30s video — the single biggest signal for contractors." },
-    { key: "photo", label: "Reference photos", weight: 10, have: hasKind(d, "photo"), nudge: "Snap a few photos of the trouble spots." },
-    { key: "plan", label: "Floor plan or measurements", weight: 12, have: hasKind(d, "floorplan") || hasAnyMeasurements(d), nudge: "Add a floor plan or rough measurements." },
+    { key: "room", label: "Room or scope chosen", weight: 10, have: Boolean(d.room), nudge: "Pick a room to anchor the brief." },
+    { key: "video", label: "Walkthrough video", weight: 22, have: hasKind(d, "video"), nudge: "Add a 30s video — the single biggest signal for contractors." },
+    { key: "photo", label: "Reference photos", weight: 12, have: hasKind(d, "photo"), nudge: "Snap a few photos of the trouble spots." },
+    { key: "plan", label: "Floor plan or measurements", weight: 14, have: hasKind(d, "floorplan") || hasAnyMeasurements(d), nudge: "Add a floor plan or rough measurements." },
     { key: "pain", label: "Pain points named", weight: 10, have: d.painPoints.length >= 3, nudge: "Tag at least 3 things bugging you about the space." },
-    { key: "vibe", label: "Vibe direction", weight: 8, have: d.vibes.length >= 2, nudge: "Pick 2+ vibes so contractors get the feel." },
     { key: "scope", label: "Scope of work picked", weight: 10, have: Boolean(d.scope), nudge: "Choose a scope tier so budget is realistic." },
     { key: "budget", label: "Budget range", weight: 8, have: !d.budgetSkipped && d.budgetMin != null, nudge: "A range — even rough — keeps bids realistic." },
     { key: "timeline", label: "Timeline anchored", weight: 6, have: Boolean(d.timeline), nudge: "Even 'just exploring' counts." },
