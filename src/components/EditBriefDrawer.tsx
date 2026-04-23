@@ -2,20 +2,24 @@
 // Saves go straight through useIntake (already persisted to localStorage), no navigation.
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Camera, Video, Map, Plus, Save, Ruler, StickyNote } from "lucide-react";
+import { X, Camera, Video, Map, Save, StickyNote, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import PillGroup from "@/components/PillGroup";
+import VibeVisualGrid from "@/components/intake/VibeVisualGrid";
+import DimensionsInput from "@/components/intake/DimensionsInput";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
-  VIBES,
+  SCOPE_OPTIONS,
   filesToAssets,
   type IntakeData,
   type Room,
   type MediaAsset,
   type Timeline,
+  type ScopeTier,
 } from "@/lib/intake";
 
 const fmtMoney = (v: number) => (v >= 500 ? "$500K+" : `$${v}K`);
