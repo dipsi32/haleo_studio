@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
+import HaleoSeesPreview from "@/components/intake/HaleoSeesPreview";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
@@ -164,6 +165,7 @@ const InsideLookScreen = ({
   dimensions,
   onUpdate,
   onContinue,
+  intake,
 }: {
   room: Exclude<Room, "addition">;
   selected: string[];
@@ -175,6 +177,7 @@ const InsideLookScreen = ({
   dimensions?: Dimensions;
   onUpdate: (p: { notes?: string; dimensions?: Dimensions }) => void;
   onContinue: () => void;
+  intake: import("@/lib/intake").IntakeData;
 }) => {
   const videoRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef<HTMLInputElement>(null);
@@ -300,6 +303,9 @@ const InsideLookScreen = ({
             ))}
           </motion.div>
         )}
+
+        {/* Haleo's read — appears as soon as media is uploaded */}
+        <HaleoSeesPreview intake={intake} />
 
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (
@@ -621,6 +627,7 @@ const Brief = () => {
             dimensions={data.dimensions}
             onUpdate={(p) => update(p)}
             onContinue={next}
+            intake={data}
           />
         )}
         {step === 2 && isAddition && (
