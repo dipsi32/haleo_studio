@@ -353,99 +353,100 @@ const BriefResult = () => {
         </div>
       </header>
 
-      <main className="container max-w-4xl py-10 md:py-14">
-        {/* Hero */}
+      <main className="container max-w-6xl py-8 md:py-12">
+        {/* ────────── HERO ────────── */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-3xl"
         >
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{projectTitle.sub}</p>
           <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
             {projectTitle.title}
           </h1>
-          <p className="mt-4 max-w-xl text-base text-muted-foreground">
-            Everything a contractor needs to bid — at a glance, with the details one tap away.
+          <p className="mt-3 max-w-xl text-base text-muted-foreground">
+            One page. Every detail a contractor needs to bid — at a glance, with the full read one tap away.
           </p>
-          <div className="mt-5">
-            <Button size="sm" className="rounded-full" disabled={!approved}>
-              <Send className="h-4 w-4" />
-              {approved ? "Share with contractor" : "Approve below to share"}
-            </Button>
-          </div>
         </motion.div>
 
-        {/* ───── Readiness action bar — distinct from the brief, framed as YOUR action ───── */}
+        {/* ────────── EXECUTIVE SUMMARY — the one-glance dashboard ────────── */}
+        <ExecSummary
+          data={data}
+          budgetLabel={budgetLabel}
+          timelineLabel={timelineLabel}
+          permit={permit}
+          readiness={readiness}
+          spaceMediaCount={spaceMedia.length}
+          inspirationCount={inspirationMedia.length}
+          openQuestions={contractorLines.filter((l) => l.basis === "question").length}
+          tradeCount={tradeGroups.length}
+          approved={approved}
+          onApprove={() => setApproved((v) => !v)}
+          onEdit={() => setEditOpen(true)}
+        />
+
+        {/* Readiness still useful — but tucked under the summary */}
         <ReadinessBar readiness={readiness} onAdd={() => setEditOpen(true)} />
 
-        {/* ═════════ THE 1-PAGER ═════════ */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
-        >
-          {/* Document header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
-                <FileText className="h-4 w-4" />
+        {/* ────────── TOC + DOCUMENT (two-col on desktop, stacked on mobile) ────────── */}
+        <div className="mt-8 grid gap-6 md:grid-cols-[220px_1fr] md:gap-8 lg:grid-cols-[240px_1fr]">
+          {/* Left: sticky table of contents — feedforward */}
+          <BriefTOC
+            sections={[
+              { id: "vision", no: "01", label: "The vision", icon: Quote, meta: data.notes ? "+ note" : undefined },
+              { id: "space", no: "02", label: "The space", icon: ImageIcon, meta: spaceMedia.length ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : "—" },
+              ...(inspirationMedia.length > 0
+                ? [{ id: "inspiration", no: "03", label: "Inspiration", icon: Sparkles, meta: `${inspirationMedia.length}` }]
+                : []),
+              { id: "scope", no: inspirationMedia.length > 0 ? "04" : "03", label: "Scope of work", icon: Hammer, meta: `${tradeGroups.length} trades` },
+              { id: "permit", no: inspirationMedia.length > 0 ? "05" : "04", label: "Permit", icon: ShieldCheck, meta: permit.likely ? "Likely" : "Exempt" },
+              { id: "deepread", no: inspirationMedia.length > 0 ? "06" : "05", label: "Deep read", icon: Eye, meta: useApproved ? "Saved" : analysisStatus === "ready" ? "Ready" : "Loading" },
+            ]}
+          />
+
+          {/* Right: the actual brief document */}
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
+          >
+            {/* Document header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
+              <div className="flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-display text-base font-medium leading-tight">Project brief</p>
+                  <p className="text-xs text-muted-foreground">
+                    {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
+                    Prepared by Haleo
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-display text-base font-medium leading-tight">Project brief</p>
-                <p className="text-xs text-muted-foreground">
-                  {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
-                  Prepared by Haleo
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
+                {approved ? <><Lock className="h-3 w-3" /> Approved</> : <><AlertCircle className="h-3 w-3" /> Draft</>}
+              </span>
+            </div>
+
+            {/* 1. THE VISION (homeowner's voice) */}
+            <section id="brief-vision" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading no="01" title="The vision" subtitle="The homeowner's words, unedited." icon={Quote} />
+              <blockquote className="mt-4 border-l-2 border-accent pl-5">
+                <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
+                  "{homeowner}"
                 </p>
-              </div>
-            </div>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
-              {approved ? <><Lock className="h-3 w-3" /> Approved by homeowner</> : <><AlertCircle className="h-3 w-3" /> Draft — pending approval</>}
-            </span>
-          </div>
-
-          {/* 1. AT-A-GLANCE */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="01" title="At a glance" />
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {data.room && <Pill>{ROOM_LABELS[data.room]}</Pill>}
-              {data.scope && (
-                <Pill>
-                  <Sparkles className="h-3 w-3" />
-                  {data.scope === "refresh" ? "Design refresh" : data.scope === "remodel" ? "Full remodel" : data.scope === "reconfigure" ? "Reconfigure" : "Add space"}
-                </Pill>
+              </blockquote>
+              {data.notes && (
+                <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
+                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                  <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
+                </div>
               )}
-              <Pill>
-                <DollarSign className="h-3 w-3" />
-                {budgetLabel}
-              </Pill>
-              <Pill>
-                <Calendar className="h-3 w-3" />
-                {timelineLabel}
-              </Pill>
-              <Pill>
-                <ShieldCheck className="h-3 w-3" />
-                {permit.likely ? "Permit likely" : "Likely permit-exempt"}
-              </Pill>
-            </div>
-          </section>
-
-          {/* 2. THE VISION (homeowner's voice) */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="02" title="The vision — in their words" />
-            <blockquote className="mt-4 border-l-2 border-accent pl-5">
-              <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
-                "{homeowner}"
-              </p>
-            </blockquote>
-            {data.notes && (
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
-                <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
-              </div>
-            )}
-            <AnnotationBlock
-              sectionId="vision"
+              <AnnotationBlock
+                sectionId="vision"
               value={annotations.vision}
               onSave={saveAnnotation}
               locked={approved}
