@@ -1,7 +1,16 @@
-// Verifies a CSLB license number by scraping the public CSLB lookup page.
-// Caches results for 24h. Returns deep-link fallback shape on scrape failure.
+// Layer 1 of Haleo's hybrid CSLB verification.
 //
-// CSLB lookup URL: https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/LicenseDetail.aspx?LicNum=<num>
+// Flow per request:
+//   1. Cache check  → cslb_licenses row with last_verified_at < 24h → return.
+//   2. Bulk import  → cslb_licenses row from bulk_import (any age) → return,
+//                     but kick off a background Firecrawl refresh.
+//   3. Firecrawl    → render the CSLB license-detail page (handles ASP.NET
+//                     ViewState / cookies / JS), then ask Lovable AI to extract
+//                     a clean JSON record. Up to 2 attempts.
+//   4. Fallback     → record `data_source = 'fallback'` and return a deep link.
+//
+// Always returns the canonical row shape so the client can render the same
+// CslbSignals component regardless of which layer answered.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -11,65 +20,243 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY')
+
+const CACHE_HOURS = 24
+const FIRECRAWL_MAX_ATTEMPTS = 2
 
 const CSLB_DETAIL = (num: string) =>
   `https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/LicenseDetail.aspx?LicNum=${encodeURIComponent(num)}`
 
-const CACHE_HOURS = 24
-
-interface ParsedLicense {
-  status?: string
-  business_name?: string
-  classifications?: string[]
-  issue_date?: string
-  expiration_date?: string
-  has_disciplinary_action?: boolean
-  disciplinary_notes?: string
-  workers_comp_status?: string
-  bond_status?: string
+interface CslbRecord {
+  license_number: string
+  business_name: string | null
+  licensee_name: string | null
+  license_status: string | null
+  classifications: string[] | null
+  issue_date: string | null
+  expiration_date: string | null
+  bond_status: string | null
+  bond_amount: number | null
+  workers_comp_status: string | null
+  has_disciplinary_action: boolean
+  disciplinary_notes: string | null
+  data_source: 'firecrawl' | 'bulk_import' | 'fallback'
+  raw_data: Record<string, unknown> | null
+  last_verified_at: string | null
+  deep_link: string
 }
 
-// CSLB renders license info in a table with predictable label patterns.
-// We extract using regex against the HTML — fragile by design (their HTML can change).
-const extractAfter = (html: string, label: string, max = 200): string | undefined => {
-  const re = new RegExp(`${label}\\s*</[^>]+>\\s*<[^>]+>([^<]{1,${max}})`, 'i')
-  const m = html.match(re)
-  return m ? m[1].replace(/\s+/g, ' ').trim() : undefined
-}
-
-const parseDate = (v?: string) => {
-  if (!v) return undefined
-  const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10)
-}
-
-const parseCslbHtml = (html: string): ParsedLicense | null => {
-  // Quick sanity check the page actually returned license data
-  if (!/License\s*Number/i.test(html) && !/LicNum/i.test(html)) return null
-
-  const status = extractAfter(html, 'Primary Status') ?? extractAfter(html, 'License Status')
-  const businessName = extractAfter(html, 'Business Information') ?? extractAfter(html, 'Business Name')
-  const issueRaw = extractAfter(html, 'Issue Date')
-  const expRaw = extractAfter(html, 'Expire Date') ?? extractAfter(html, 'Expiration Date')
-
-  const classMatches = [...html.matchAll(/Class[:\s]*<[^>]+>\s*([A-Z]\d?[\w\-]*)/gi)]
-  const classifications = Array.from(new Set(classMatches.map(m => m[1]))).slice(0, 8)
-
-  const hasDiscipline = /disciplinary action/i.test(html) && !/no disciplinary action/i.test(html)
-  const wcStatus = extractAfter(html, "Workers' Compensation") ?? extractAfter(html, 'Workers Compensation')
-  const bondStatus = extractAfter(html, 'Contractor.{0,5}s Bond') ?? extractAfter(html, 'Bond')
-
-  return {
+const toResponse = (row: CslbRecord, extra: Record<string, unknown> = {}, status = 200) =>
+  new Response(JSON.stringify({ ok: true, ...extra, ...row }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     status,
-    business_name: businessName,
-    classifications: classifications.length ? classifications : undefined,
-    issue_date: parseDate(issueRaw),
-    expiration_date: parseDate(expRaw),
-    has_disciplinary_action: hasDiscipline,
-    disciplinary_notes: hasDiscipline ? 'See CSLB record for details' : undefined,
-    workers_comp_status: wcStatus,
-    bond_status: bondStatus,
+  })
+
+const toFallbackRow = (license: string): CslbRecord => ({
+  license_number: license,
+  business_name: null,
+  licensee_name: null,
+  license_status: null,
+  classifications: null,
+  issue_date: null,
+  expiration_date: null,
+  bond_status: null,
+  bond_amount: null,
+  workers_comp_status: null,
+  has_disciplinary_action: false,
+  disciplinary_notes: null,
+  data_source: 'fallback',
+  raw_data: null,
+  last_verified_at: null,
+  deep_link: CSLB_DETAIL(license),
+})
+
+const rowFromDb = (row: Record<string, unknown>): CslbRecord => ({
+  license_number: row.license_number as string,
+  business_name: (row.business_name as string) ?? null,
+  licensee_name: (row.licensee_name as string) ?? null,
+  license_status: (row.license_status as string) ?? null,
+  classifications: (row.classifications as string[]) ?? null,
+  issue_date: (row.issue_date as string) ?? null,
+  expiration_date: (row.expiration_date as string) ?? null,
+  bond_status: (row.bond_status as string) ?? null,
+  bond_amount: (row.bond_amount as number) ?? null,
+  workers_comp_status: (row.workers_comp_status as string) ?? null,
+  has_disciplinary_action: Boolean(row.has_disciplinary_action),
+  disciplinary_notes: (row.disciplinary_notes as string) ?? null,
+  data_source: ((row.data_source as string) ?? 'fallback') as CslbRecord['data_source'],
+  raw_data: (row.raw_data as Record<string, unknown>) ?? null,
+  last_verified_at: (row.last_verified_at as string) ?? null,
+  deep_link: CSLB_DETAIL(row.license_number as string),
+})
+
+// ─── Firecrawl scrape ─────────────────────────────────────────────────────────
+const firecrawlScrape = async (license: string): Promise<{ markdown: string | null; html: string | null; error?: string }> => {
+  if (!FIRECRAWL_API_KEY) return { markdown: null, html: null, error: 'FIRECRAWL_API_KEY missing' }
+  try {
+    const resp = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: CSLB_DETAIL(license),
+        formats: ['markdown', 'html'],
+        onlyMainContent: true,
+        waitFor: 1500,
+      }),
+    })
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      return { markdown: null, html: null, error: `Firecrawl ${resp.status}: ${text.slice(0, 200)}` }
+    }
+    const data = await resp.json()
+    // v2 puts content at the top level; older shapes nest under `data`.
+    const markdown = data.markdown ?? data.data?.markdown ?? null
+    const html = data.html ?? data.data?.html ?? null
+    if (!markdown && !html) return { markdown: null, html: null, error: 'Firecrawl returned no content' }
+    return { markdown, html }
+  } catch (e) {
+    return { markdown: null, html: null, error: e instanceof Error ? e.message : String(e) }
   }
+}
+
+// ─── Lovable AI extraction (tool-calling for structured JSON) ────────────────
+const extractWithAi = async (license: string, rendered: string): Promise<Partial<CslbRecord> | null> => {
+  if (!LOVABLE_API_KEY) return null
+  // Trim long pages — CSLB detail page is small but be safe
+  const content = rendered.length > 18000 ? rendered.slice(0, 18000) : rendered
+
+  const tool = {
+    type: 'function',
+    function: {
+      name: 'extract_cslb_license',
+      description: 'Extract structured CSLB license details from a rendered license-detail page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          license_status: {
+            type: ['string', 'null'],
+            description: 'Plain English status: Active, Suspended, Expired, Inactive, or null if unknown.',
+          },
+          business_name: { type: ['string', 'null'] },
+          licensee_name: { type: ['string', 'null'] },
+          classifications: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'CSLB class codes exactly as shown (e.g. "B", "C-10", "C-36").',
+          },
+          issue_date: { type: ['string', 'null'], description: 'ISO date YYYY-MM-DD if present.' },
+          expiration_date: { type: ['string', 'null'], description: 'ISO date YYYY-MM-DD if present.' },
+          bond_status: {
+            type: ['string', 'null'],
+            description: 'Plain English: Active, Cancelled, Exempt, or null. Include bond company if shown.',
+          },
+          bond_amount: { type: ['number', 'null'], description: 'Bond amount in USD if shown.' },
+          workers_comp_status: {
+            type: ['string', 'null'],
+            description: 'Plain English: Active, Exempt, Expired, or null.',
+          },
+          has_disciplinary_action: {
+            type: 'boolean',
+            description: 'True if the page lists ANY citation, complaint, suspension, revocation, or disciplinary action.',
+          },
+          disciplinary_notes: { type: ['string', 'null'], description: 'Brief plain-English summary of any actions.' },
+        },
+        required: [
+          'license_status', 'business_name', 'licensee_name', 'classifications',
+          'issue_date', 'expiration_date', 'bond_status', 'bond_amount',
+          'workers_comp_status', 'has_disciplinary_action', 'disciplinary_notes',
+        ],
+        additionalProperties: false,
+      },
+    },
+  }
+
+  try {
+    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You extract California CSLB contractor license details from rendered license-detail pages. ' +
+              'Be conservative: if a field is not clearly present, return null. ' +
+              'Only mark has_disciplinary_action=true when the page explicitly references a citation, complaint, ' +
+              'suspension, revocation, or other action — never on phrases like "no disciplinary action".',
+          },
+          {
+            role: 'user',
+            content: `License number: ${license}\n\nRendered page:\n${content}`,
+          },
+        ],
+        tools: [tool],
+        tool_choice: { type: 'function', function: { name: 'extract_cslb_license' } },
+      }),
+    })
+    if (!resp.ok) {
+      console.warn('Lovable AI extract failed', resp.status, await resp.text().catch(() => ''))
+      return null
+    }
+    const data = await resp.json()
+    const call = data?.choices?.[0]?.message?.tool_calls?.[0]
+    if (!call?.function?.arguments) return null
+    const parsed = JSON.parse(call.function.arguments)
+    return {
+      license_status: parsed.license_status ?? null,
+      business_name: parsed.business_name ?? null,
+      licensee_name: parsed.licensee_name ?? null,
+      classifications: Array.isArray(parsed.classifications) ? parsed.classifications.filter(Boolean) : null,
+      issue_date: parsed.issue_date ?? null,
+      expiration_date: parsed.expiration_date ?? null,
+      bond_status: parsed.bond_status ?? null,
+      bond_amount: typeof parsed.bond_amount === 'number' ? parsed.bond_amount : null,
+      workers_comp_status: parsed.workers_comp_status ?? null,
+      has_disciplinary_action: Boolean(parsed.has_disciplinary_action),
+      disciplinary_notes: parsed.disciplinary_notes ?? null,
+    }
+  } catch (e) {
+    console.warn('Lovable AI extract error', e)
+    return null
+  }
+}
+
+// ─── Status-change detection ─────────────────────────────────────────────────
+const recordStatusChange = async (
+  supabase: ReturnType<typeof createClient>,
+  license: string,
+  previous: string | null,
+  next: string | null,
+  via: 'firecrawl' | 'bulk_import',
+) => {
+  const norm = (s: string | null) => (s ?? '').trim().toLowerCase()
+  if (!previous || norm(previous) === norm(next)) return
+  // Only alert on degradations or movement away from "active"
+  const wasActive = norm(previous).includes('active') || norm(previous).includes('current')
+  const isActive = norm(next).includes('active') || norm(next).includes('current')
+  if (!wasActive || isActive) return
+  // Find any contractor we surface for this license number
+  const { data: contractor } = await supabase
+    .from('contractors')
+    .select('id')
+    .eq('license_number', license)
+    .maybeSingle()
+  await supabase.from('cslb_status_alerts').insert({
+    license_number: license,
+    contractor_id: contractor?.id ?? null,
+    previous_status: previous,
+    new_status: next,
+    detected_via: via,
+  })
 }
 
 Deno.serve(async (req) => {
@@ -79,85 +266,118 @@ Deno.serve(async (req) => {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
     const url = new URL(req.url)
     const license = String(body.license || url.searchParams.get('license') || '').trim().toUpperCase()
+    const force = Boolean(body.force ?? url.searchParams.get('force'))
     if (!license) {
-      return new Response(JSON.stringify({ ok: false, error: 'license required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
+      return new Response(JSON.stringify({ ok: false, error: 'license required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      })
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Check cache
-    const { data: cached } = await supabase
-      .from('contractor_license_cache')
+    // 1. Cache check + bulk fallback in one query
+    const { data: existing } = await supabase
+      .from('cslb_licenses')
       .select('*')
       .eq('license_number', license)
       .maybeSingle()
 
-    if (cached) {
-      const ageMs = Date.now() - new Date(cached.last_checked_at).getTime()
-      if (ageMs < CACHE_HOURS * 3600 * 1000) {
-        return new Response(JSON.stringify({
-          ok: true,
-          cached: true,
-          deep_link: CSLB_DETAIL(license),
-          ...cached,
-        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+    const previousStatus = (existing?.license_status as string) ?? null
+
+    if (!force && existing && existing.last_verified_at) {
+      const ageMs = Date.now() - new Date(existing.last_verified_at as string).getTime()
+      if (existing.data_source === 'firecrawl' && ageMs < CACHE_HOURS * 3600 * 1000) {
+        return toResponse(rowFromDb(existing), { source: 'cache' })
       }
     }
 
-    // Try scrape
-    let parsed: ParsedLicense | null = null
-    let scrapeOk = false
-    let scrapeErr: string | null = null
-
-    try {
-      const resp = await fetch(CSLB_DETAIL(license), {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; HaleoBot/1.0; +https://haleo.studio/bot)',
-          'Accept': 'text/html,application/xhtml+xml',
-        },
-      })
-      if (resp.ok) {
-        const html = await resp.text()
-        parsed = parseCslbHtml(html)
-        scrapeOk = !!parsed
-      } else {
-        scrapeErr = `CSLB returned ${resp.status}`
-      }
-    } catch (e) {
-      scrapeErr = `CSLB unreachable: ${e instanceof Error ? e.message : String(e)}`
+    // 2. If we have bulk-import data, return it immediately and refresh in background
+    if (!force && existing && existing.data_source === 'bulk_import') {
+      // Best-effort background refresh — fire-and-forget
+      const refresh = (async () => {
+        try {
+          for (let i = 0; i < FIRECRAWL_MAX_ATTEMPTS; i++) {
+            const { markdown, html } = await firecrawlScrape(license)
+            const rendered = markdown ?? html
+            if (!rendered) continue
+            const fields = await extractWithAi(license, rendered)
+            if (!fields) continue
+            await supabase
+              .from('cslb_licenses')
+              .upsert({
+                license_number: license,
+                ...fields,
+                data_source: 'firecrawl',
+                raw_data: { rendered_excerpt: rendered.slice(0, 4000) },
+                last_verified_at: new Date().toISOString(),
+              })
+            await recordStatusChange(supabase, license, previousStatus, fields.license_status ?? null, 'firecrawl')
+            return
+          }
+        } catch (e) {
+          console.warn('background refresh failed', license, e)
+        }
+      })()
+      // EdgeRuntime is provided by Supabase
+      try {
+        // @ts-expect-error EdgeRuntime is a Supabase global
+        if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(refresh)
+      } catch { /* ignore */ }
+      return toResponse(rowFromDb(existing), { source: 'bulk_import' })
     }
 
-    const cacheRow = {
+    // 3. Firecrawl with up to 2 attempts
+    let lastError: string | undefined
+    for (let attempt = 1; attempt <= FIRECRAWL_MAX_ATTEMPTS; attempt++) {
+      const scrape = await firecrawlScrape(license)
+      if (scrape.error) {
+        lastError = scrape.error
+        continue
+      }
+      const rendered = scrape.markdown ?? scrape.html
+      if (!rendered) {
+        lastError = 'Empty rendering'
+        continue
+      }
+      const fields = await extractWithAi(license, rendered)
+      if (!fields) {
+        lastError = 'AI extraction failed'
+        continue
+      }
+      const verified_at = new Date().toISOString()
+      const upsert = {
+        license_number: license,
+        ...fields,
+        data_source: 'firecrawl' as const,
+        raw_data: { rendered_excerpt: rendered.slice(0, 4000) },
+        last_verified_at: verified_at,
+      }
+      await supabase.from('cslb_licenses').upsert(upsert)
+      await recordStatusChange(supabase, license, previousStatus, fields.license_status ?? null, 'firecrawl')
+      return toResponse(
+        { ...toFallbackRow(license), ...upsert, deep_link: CSLB_DETAIL(license) } as CslbRecord,
+        { source: 'firecrawl', attempts: attempt },
+      )
+    }
+
+    // 4. Fallback — never invent data
+    if (existing) {
+      // We have stale data; return it but flag low confidence
+      return toResponse(rowFromDb(existing), { source: 'stale', firecrawl_error: lastError })
+    }
+    // Persist a fallback row so the UI can show "unverified" with a deep link
+    await supabase.from('cslb_licenses').upsert({
       license_number: license,
-      status: parsed?.status ?? null,
-      business_name: parsed?.business_name ?? null,
-      classifications: parsed?.classifications ?? null,
-      issue_date: parsed?.issue_date ?? null,
-      expiration_date: parsed?.expiration_date ?? null,
-      has_disciplinary_action: parsed?.has_disciplinary_action ?? false,
-      disciplinary_notes: parsed?.disciplinary_notes ?? null,
-      workers_comp_status: parsed?.workers_comp_status ?? null,
-      bond_status: parsed?.bond_status ?? null,
-      raw_response: parsed ? (parsed as unknown as Record<string, unknown>) : null,
-      scrape_succeeded: scrapeOk,
-      last_checked_at: new Date().toISOString(),
-    }
-
-    await supabase
-      .from('contractor_license_cache')
-      .upsert(cacheRow, { onConflict: 'license_number' })
-
-    return new Response(JSON.stringify({
-      ok: true,
-      cached: false,
-      scrape_succeeded: scrapeOk,
-      scrape_error: scrapeErr,
-      deep_link: CSLB_DETAIL(license),
-      ...cacheRow,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      data_source: 'fallback',
+      last_verified_at: null,
+    })
+    return toResponse(toFallbackRow(license), { source: 'fallback', firecrawl_error: lastError })
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
+    console.error('verify-cslb-license error', e)
+    return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
 })
