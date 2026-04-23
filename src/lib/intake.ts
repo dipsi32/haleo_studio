@@ -84,6 +84,14 @@ export type IntakeData = {
   timeline?: Timeline;
   // homeowner annotations on the brief, keyed by section id (vision, evidence, scope, structural, finishes, constraints, opportunities, code)
   annotations?: Record<string, string>;
+  // Snapshot of Haleo's space read once the user has confirmed it's accurate.
+  // Persisted so the brief screen doesn't re-run analysis or wait again.
+  approvedAnalysis?: {
+    summary: string;
+    sections: import("@/lib/brief").AnalysisSection[];
+    approvedAt: string; // ISO timestamp
+    mediaIds: string[]; // ids covered by this approval — invalidates if media changes
+  };
 };
 
 const STORAGE_KEY = "haleo:intake:v2";
