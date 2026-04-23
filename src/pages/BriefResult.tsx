@@ -471,55 +471,36 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 5. THE TRANSLATION (scope of work, tagged) */}
+          {/* 5. THE TRANSLATION (scope of work, grouped by trade like a real SOW) */}
           <section className="border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
             <div className="flex items-start justify-between gap-3">
-              <SectionHeading no="05" title="Scope of work" subtitle="Every line tagged so nothing is fabricated." />
+              <SectionHeading no="05" title="Scope of work" subtitle="Grouped by trade. Every line tagged so nothing is fabricated." />
               <span className="hidden shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground sm:block">For the contractor</span>
             </div>
-            <ul className="mt-5 space-y-2">
-              {contractorLines.map((line, i) => (
-                <li key={i} className="group rounded-xl border border-border bg-card p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <BasisChip basis={line.basis} />
-                    {!approved && (
-                      <button
-                        onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                        className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
-                        aria-label="Edit line"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-foreground/50" />
-                      </button>
-                    )}
-                  </div>
-                  {editingIdx === i ? (
-                    <Textarea
-                      autoFocus
-                      value={lineText(i)}
-                      onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
-                      onBlur={() => setEditingIdx(null)}
-                      rows={2}
-                      className="mt-2 rounded-lg bg-background font-mono text-[13px]"
-                    />
-                  ) : (
-                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
-                      {lineText(i)}
-                    </p>
-                  )}
-                  {line.source && (
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Source: {line.source}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {/* Legend */}
+
+            {/* Legend up-front so the chips below make sense */}
             <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
               <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From the homeowner</span>
               <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Inferred — verify on site</span>
               <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
             </div>
+
+            <div className="mt-5 space-y-3">
+              {tradeGroups.map((group) => (
+                <TradeGroupCard
+                  key={group.trade}
+                  group={group}
+                  startIndex={contractorLines.indexOf(group.lines[0])}
+                  contractorLines={contractorLines}
+                  approved={approved}
+                  editingIdx={editingIdx}
+                  setEditingIdx={setEditingIdx}
+                  lineEdits={lineEdits}
+                  setLineEdits={setLineEdits}
+                />
+              ))}
+            </div>
+
             <AnnotationBlock
               sectionId="scope"
               value={annotations.scope}
