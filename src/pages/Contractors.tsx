@@ -5,7 +5,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ShieldCheck, MapPin, Calendar, Hammer, Check,
-  ExternalLink, Send, X, Info, Sparkles, AlertCircle,
+  ExternalLink, Send, X, Info, Sparkles, AlertCircle, Paperclip,
+  CheckCircle2, FileText, Clock, Wallet, Home,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
