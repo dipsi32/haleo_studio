@@ -120,11 +120,15 @@ const Contractors = () => {
   const [outreachOpen, setOutreachOpen] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
+  const [sentInfo, setSentInfo] = useState<{ count: number; names: string[] } | null>(null);
 
   const selectedList = useMemo(
     () => ranked.filter(r => selected.has(r.contractor.id)),
     [ranked, selected]
   );
+
+  // Build the high-level brief summary that goes into the email
+  const briefSummary = useMemo(() => buildBriefSnapshot(data), [data]);
 
   const toggle = (id: string) => {
     setSelected(prev => {
