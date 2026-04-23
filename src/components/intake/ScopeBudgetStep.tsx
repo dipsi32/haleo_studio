@@ -203,7 +203,7 @@ const ScopeBudgetStep = ({
                   {fmtMoney(Math.round((active.range.min + active.range.max) / 2 - 5))}–
                   {fmtMoney(Math.round((active.range.min + active.range.max) / 2 + 15))}
                 </span>
-                . We'll sharpen this with real local comps as more projects come in.
+                .
               </p>
             </motion.div>
           )}
