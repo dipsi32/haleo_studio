@@ -28,6 +28,11 @@ import {
   Plus,
   X,
   MessageSquarePlus,
+  Eye,
+  Hammer,
+  Quote,
+  Home as HomeIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
