@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
-import HaleoSeesPreview from "@/components/intake/HaleoSeesPreview";
+import ConfirmReadScreen from "@/components/intake/ConfirmReadScreen";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
@@ -55,10 +55,17 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-// Four felt-steps. Addition route folds its mini-flow into step 2.
-const TOTAL = 4;
+// Five felt-steps. Step 3 ("What Haleo sees") is auto-skipped when there's
+// no analyzable media — keeping the flow short for users who skip uploads.
+const TOTAL = 5;
 
-const STEP_LABELS = ["The room", "Inside look", "Address", "Scope & budget"];
+const STEP_LABELS = [
+  "The room",
+  "Inside look",
+  "What Haleo sees",
+  "Address",
+  "Scope & budget",
+];
 
 const ScreenTitle = ({
   eyebrow,
@@ -93,7 +100,7 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 const StepDots = ({ step }: { step: number }) => (
   <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
     <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      4 quick steps
+      5 quick steps
     </span>
     <span className="hidden h-3 w-px bg-border sm:inline-block" />
     {STEP_LABELS.map((label, i) => {
