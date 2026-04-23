@@ -683,6 +683,112 @@ const SectionHeading = ({ no, title, subtitle }: { no: string; title: string; su
   </div>
 );
 
+// ───── Trade group — collapsible scope-of-work block, like a real GC bid sheet ─────
+const TradeGroupCard = ({
+  group,
+  contractorLines,
+  approved,
+  editingIdx,
+  setEditingIdx,
+  lineEdits,
+  setLineEdits,
+}: {
+  group: TradeGroup;
+  startIndex: number; // unused, kept for caller symmetry
+  contractorLines: ContractorLine[];
+  approved: boolean;
+  editingIdx: number | null;
+  setEditingIdx: (n: number | null) => void;
+  lineEdits: Record<number, string>;
+  setLineEdits: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+}) => {
+  // Default open for trades that carry real scope; collapsed for "context".
+  const [open, setOpen] = useState(group.trade !== "context");
+  const count = group.lines.length;
+  const grounded = group.lines.filter((l) => l.basis === "grounded").length;
+  const inferred = group.lines.filter((l) => l.basis === "inferred").length;
+  const questions = group.lines.filter((l) => l.basis === "question").length;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-smooth hover:bg-secondary/40"
+        aria-expanded={open}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[11px] font-semibold tabular-nums text-accent">
+            {count}
+          </span>
+          <div className="min-w-0">
+            <p className="font-display text-sm font-semibold leading-tight text-foreground">
+              {group.meta.label}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">{group.meta.blurb}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-wider text-foreground/55 sm:inline-flex">
+            {grounded > 0 && <span className="inline-flex items-center gap-0.5"><Check className="h-3 w-3 text-sage" />{grounded}</span>}
+            {inferred > 0 && <span className="inline-flex items-center gap-0.5"><AlertCircle className="h-3 w-3 text-accent" />{inferred}</span>}
+            {questions > 0 && <span className="inline-flex items-center gap-0.5"><HelpCircle className="h-3 w-3 text-foreground/50" />{questions}</span>}
+          </span>
+          <ChevronDown className={`h-4 w-4 text-foreground/50 transition-transform ${open ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden border-t border-border"
+          >
+            {group.lines.map((line) => {
+              const i = contractorLines.indexOf(line);
+              const text = lineEdits[i] ?? line.text;
+              return (
+                <li key={i} className="group border-b border-border/60 px-4 py-3 last:border-b-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <BasisChip basis={line.basis} />
+                    {!approved && (
+                      <button
+                        onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                        className="opacity-0 transition-smooth hover:text-accent group-hover:opacity-100"
+                        aria-label="Edit line"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-foreground/50" />
+                      </button>
+                    )}
+                  </div>
+                  {editingIdx === i ? (
+                    <Textarea
+                      autoFocus
+                      value={text}
+                      onChange={(e) => setLineEdits((s) => ({ ...s, [i]: e.target.value }))}
+                      onBlur={() => setEditingIdx(null)}
+                      rows={2}
+                      className="mt-2 rounded-lg bg-background font-mono text-[13px]"
+                    />
+                  ) : (
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{text}</p>
+                  )}
+                  {line.source && (
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Source: {line.source}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ───── Brief Readiness — slim ACTION bar (not a card competing with the brief) ─────
 // Visual language: horizontal, low-chrome, looks like a toolbar/affordance, not a document.
 const TIER_META: Record<BriefReadiness["level"], { label: string; nextAt: number | null; nextLabel: string | null; toneCls: string }> = {
