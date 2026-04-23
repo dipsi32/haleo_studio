@@ -1,7 +1,14 @@
-// Local intake state — backend wiring (Lovable Cloud) is the next step.
-// Files live as in-memory object URLs for the session (don't try to JSON-stringify them).
-// Everything else IS persisted, so we never ask the user the same question twice.
+// Local intake state.
+// Files live in a module-level Map (session-scoped) so object URLs survive
+// route changes within the SPA. Metadata is also persisted to localStorage so
+// the brief read still works after a hard reload — we just lose the previews.
+// Rule: never ask the user for the same thing twice.
 import { useEffect, useState } from "react";
+
+// ───── Session file store — survives navigation, dies on full reload ─────
+// Keyed by asset id; holds the actual File so we can re-mint object URLs
+// whenever a fresh component instance reads from localStorage.
+const sessionFiles: Map<string, { file: File; url: string }> = new Map();
 
 export type MediaAsset = {
   id: string;
@@ -96,6 +103,14 @@ const serializable = (d: IntakeData) => ({
   media: d.media.map((m) => ({ ...m, url: "" })),
 });
 
+// Re-hydrate any media metadata from localStorage with live object URLs from
+// the session store (so thumbnails keep working when navigating between pages).
+const rehydrateMedia = (media: MediaAsset[]): MediaAsset[] =>
+  media.map((m) => {
+    const live = sessionFiles.get(m.id);
+    return live ? { ...m, url: live.url } : m;
+  });
+
 const readStored = (): IntakeData => {
   if (typeof window === "undefined") return empty;
   try {
@@ -103,7 +118,11 @@ const readStored = (): IntakeData => {
       localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return empty;
     const parsed = JSON.parse(raw);
-    return { ...empty, ...parsed };
+    return {
+      ...empty,
+      ...parsed,
+      media: rehydrateMedia(parsed.media ?? []),
+    };
   } catch {
     return empty;
   }
@@ -132,22 +151,42 @@ export const useIntake = () => {
   const addMedia = (assets: MediaAsset[]) =>
     setData((d) => ({ ...d, media: [...d.media, ...assets] }));
   const removeMedia = (id: string) =>
-    setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) }));
+    setData((d) => {
+      const live = sessionFiles.get(id);
+      if (live) {
+        URL.revokeObjectURL(live.url);
+        sessionFiles.delete(id);
+      }
+      return { ...d, media: d.media.filter((m) => m.id !== id) };
+    });
   const reset = () => setData(empty);
 
   return { data, update, togglePill, addMedia, removeMedia, reset, setData };
 };
 
-// Build MediaAssets from a FileList (creates object URLs).
+// Build MediaAssets from a FileList. Object URL goes both on the asset AND
+// into the session store so we can re-hydrate it after a route change.
 export const filesToAssets = (files: FileList | File[], kind: MediaAsset["kind"]): MediaAsset[] =>
-  Array.from(files).map((f) => ({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    kind,
-    name: f.name,
-    url: URL.createObjectURL(f),
-    mime: f.type,
-    size: f.size,
-  }));
+  Array.from(files).map((f) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const url = URL.createObjectURL(f);
+    sessionFiles.set(id, { file: f, url });
+    return {
+      id,
+      kind,
+      name: f.name,
+      url,
+      mime: f.type,
+      size: f.size,
+    };
+  });
+
+// File-size guidance shown in the UI (kept central so copy stays consistent).
+export const VIDEO_LIMITS = {
+  maxBytes: 150 * 1024 * 1024, // ~150 MB
+  maxSeconds: 90,
+  hint: "Up to 90 seconds, 150 MB. 1080p is plenty.",
+};
 
 export const hasKind = (d: IntakeData, k: MediaAsset["kind"]) => d.media.some((m) => m.kind === k);
 
