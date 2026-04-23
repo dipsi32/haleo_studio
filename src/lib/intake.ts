@@ -89,7 +89,7 @@ export type IntakeData = {
 const STORAGE_KEY = "haleo:intake:v2";
 const LEGACY_KEY = "haleo:intake";
 const UPLOADED_KEY = "haleo:uploaded:v1";
-const ANALYSIS_CACHE_KEY = "haleo:analysis:v1";
+const ANALYSIS_CACHE_KEY = "haleo:analysis:v2";
 
 const empty: IntakeData = {
   painPoints: [],

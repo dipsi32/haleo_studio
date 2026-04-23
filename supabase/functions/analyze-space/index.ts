@@ -9,6 +9,7 @@
 // Input: { sessionId, intake, mediaUrls: [{ kind, url, mime }] }
 // Output: { sections: [{ key, title, description, items: [{ text, basis }] }], summary, raw }
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -157,7 +158,7 @@ async function fetchImageAsDataUrl(url: string, mime?: string): Promise<string |
       console.warn(`Skipping oversize image (${buf.byteLength} bytes): ${url}`);
       return null;
     }
-    const base64 = btoa(String.fromCharCode(...buf));
+    const base64 = encodeBase64(buf);
     const finalMime = mime || res.headers.get("content-type") || "image/jpeg";
     return `data:${finalMime};base64,${base64}`;
   } catch (err) {
@@ -169,7 +170,7 @@ async function fetchImageAsDataUrl(url: string, mime?: string): Promise<string |
 function fallbackSections(intake: Record<string, unknown>): AnalysisResult {
   return {
     summary:
-      "No analyzable media yet. Upload at least one photo or a 30s video for a grounded read; the contractor needs eyes on the space before they can bid with confidence.",
+      "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.",
     sections: [
       {
         key: "structural",
