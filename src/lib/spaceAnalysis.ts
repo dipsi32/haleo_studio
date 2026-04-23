@@ -110,12 +110,14 @@ export const runSpaceAnalysis = async (
 // result in localStorage so navigating away and back doesn't re-spend tokens.
 
 const RESULT_CACHE_KEY = "haleo:analysis:v1";
+const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.";
 const readCachedResult = (key: string): SpaceAnalysis | null => {
   try {
     const raw = localStorage.getItem(RESULT_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, SpaceAnalysis>;
-    return parsed[key] ?? null;
+    const cached = parsed[key] ?? null;
+    return cached?.summary === FALLBACK_SUMMARY ? null : cached;
   } catch {
     return null;
   }
