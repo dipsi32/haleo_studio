@@ -581,15 +581,17 @@ const BriefResult = () => {
                     {showAnalysis ? "Deep read for the contractor" : "Open the deep read"}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {analysisStatus === "uploading"
-                      ? "Uploading your photos to analyze the space…"
-                      : analysisStatus === "analyzing"
-                        ? "AI is reading the space — usually 15–30 sec."
-                        : analysisStatus === "ready"
-                          ? "AI-grounded read of structure, finishes, constraints, opportunities, code."
-                          : analysisStatus === "error"
-                            ? "Couldn't run AI analysis — heuristic read shown instead."
-                            : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                    {useApproved
+                      ? "Saved from your earlier review. Approved & locked in."
+                      : analysisStatus === "uploading"
+                        ? "Uploading your photos to analyze the space…"
+                        : analysisStatus === "analyzing"
+                          ? "Reading the space — usually 15–30 sec."
+                          : analysisStatus === "ready"
+                            ? "Grounded read of structure, finishes, constraints, opportunities, code."
+                            : analysisStatus === "error"
+                              ? "Couldn't run analysis — heuristic read shown instead."
+                              : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
                   </p>
                 </div>
               </div>
