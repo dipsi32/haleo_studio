@@ -596,8 +596,28 @@ const Brief = () => {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  const back = () => setStep((s) => Math.max(1, s - 1));
-  const next = () => setStep((s) => s + 1);
+  const isAddition = data.room === "addition";
+
+  // Auto-skip Step 3 (Haleo's read) in either direction when there's no
+  // analyzable media OR when the route doesn't surface media (Addition).
+  // Without this, users who skip uploads would land on a stalled "reading…" screen.
+  const hasAnalyzableMedia = data.media.some(
+    (m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video",
+  );
+  const shouldShowConfirmRead = hasAnalyzableMedia && !isAddition;
+
+  const next = () =>
+    setStep((s) => {
+      const n = s + 1;
+      if (n === 3 && !shouldShowConfirmRead) return 4;
+      return n;
+    });
+  const back = () =>
+    setStep((s) => {
+      const n = Math.max(1, s - 1);
+      if (n === 3 && !shouldShowConfirmRead) return 2;
+      return n;
+    });
 
   const submit = () => {
     setSubmitting(true);
@@ -605,8 +625,6 @@ const Brief = () => {
   };
 
   if (submitting) return <LoadingPage />;
-
-  const isAddition = data.room === "addition";
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
@@ -648,7 +666,17 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 3 && (
+        {step === 3 && shouldShowConfirmRead && (
+          <ConfirmReadScreen
+            key="confirm-read"
+            intake={data}
+            onApprove={(snapshot) => update({ approvedAnalysis: snapshot })}
+            onContinue={() => setStep(4)}
+            onBack={() => setStep(2)}
+            stepDots={<StepDots step={3} />}
+          />
+        )}
+        {step === 4 && (
           <AddressScreen
             key="address"
             address={data.address}
@@ -657,7 +685,7 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 4 && (
+        {step === 5 && (
           <ScopeAndBudgetScreen
             key="scope-budget"
             scope={data.scope}
