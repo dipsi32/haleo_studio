@@ -132,8 +132,12 @@ export const useContractors = (data: IntakeData) => {
           return { contractor: c, permits: cPermits, license, score, matchCount, recentPermit };
         });
 
-        // Default sort: best match (project type weighted, then score)
+        // Default sort: contractors with disciplinary actions go LAST (transparency,
+        // never removal). Otherwise: best project-type match, then trust score.
         out.sort((a, b) => {
+          const aBad = a.license?.scrape_succeeded && a.license.has_disciplinary_action ? 1 : 0;
+          const bBad = b.license?.scrape_succeeded && b.license.has_disciplinary_action ? 1 : 0;
+          if (aBad !== bBad) return aBad - bBad;
           if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
           return b.score.total - a.score.total;
         });
