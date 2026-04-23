@@ -165,6 +165,7 @@ const InsideLookScreen = ({
   dimensions,
   onUpdate,
   onContinue,
+  intake,
 }: {
   room: Exclude<Room, "addition">;
   selected: string[];
@@ -176,6 +177,7 @@ const InsideLookScreen = ({
   dimensions?: Dimensions;
   onUpdate: (p: { notes?: string; dimensions?: Dimensions }) => void;
   onContinue: () => void;
+  intake: import("@/lib/intake").IntakeData;
 }) => {
   const videoRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef<HTMLInputElement>(null);
