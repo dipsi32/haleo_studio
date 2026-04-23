@@ -494,9 +494,9 @@ const AddressScreen = ({
 }) => {
   return (
     <div className="space-y-10">
-      <StepDots step={3} />
+      <StepDots step={4} />
       <ScreenTitle
-        eyebrow="Step 3 of 4"
+        eyebrow="Step 4 of 5"
         title="Where's the project?"
         sub="The address unlocks real permit history and neighborhood cost intel for your brief."
       />
@@ -535,9 +535,9 @@ const ScopeAndBudgetScreen = ({
   address?: Address;
 }) => (
   <div className="space-y-10">
-    <StepDots step={4} />
+    <StepDots step={5} />
     <ScreenTitle
-      eyebrow="Step 4 of 4 · last one"
+      eyebrow="Step 5 of 5 · last one"
       title="Scope, budget, and timing."
       sub="Pick a scope tier so the budget anchors to something real. Tap a timeline to wrap up."
     />
