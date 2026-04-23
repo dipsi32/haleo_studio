@@ -599,7 +599,24 @@ const BriefResult = () => {
               <AnalysisCard key={b.id} block={b} />
             ))}
           </div>
+
+          {/* ── Detailed sections — the contractor's structured read ── */}
+          <div className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-display text-base font-medium">The contractor's read</p>
+                <p className="text-xs text-muted-foreground">
+                  Same brief, organized the way a GC scans a project. Your street address stays private — only city is shared.
+                </p>
+              </div>
+            </div>
+            <DetailedSpaceAnalysis sections={sections} />
+          </div>
         </motion.section>
+
 
         {/* Actions */}
         <motion.div
