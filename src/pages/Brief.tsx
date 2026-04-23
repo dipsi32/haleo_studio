@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
-import HaleoSeesPreview from "@/components/intake/HaleoSeesPreview";
+import ConfirmReadScreen from "@/components/intake/ConfirmReadScreen";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
@@ -55,10 +55,17 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
   other: Sparkles,
 };
 
-// Four felt-steps. Addition route folds its mini-flow into step 2.
-const TOTAL = 4;
+// Five felt-steps. Step 3 ("What Haleo sees") is auto-skipped when there's
+// no analyzable media — keeping the flow short for users who skip uploads.
+const TOTAL = 5;
 
-const STEP_LABELS = ["The room", "Inside look", "Address", "Scope & budget"];
+const STEP_LABELS = [
+  "The room",
+  "Inside look",
+  "What Haleo sees",
+  "Address",
+  "Scope & budget",
+];
 
 const ScreenTitle = ({
   eyebrow,
@@ -93,7 +100,7 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 const StepDots = ({ step }: { step: number }) => (
   <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
     <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      4 quick steps
+      5 quick steps
     </span>
     <span className="hidden h-3 w-px bg-border sm:inline-block" />
     {STEP_LABELS.map((label, i) => {
@@ -222,9 +229,9 @@ const InsideLookScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 4"
+        eyebrow="Step 2 of 5"
         title="Take us inside — only what you're comfortable sharing."
-        sub="A short walkthrough or a couple of photos goes a long way. Skip anything you'd rather not."
+        sub="A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
       />
 
       {/* Capture grid — real file inputs */}
@@ -304,11 +311,7 @@ const InsideLookScreen = ({
           </motion.div>
         )}
 
-        {/* Haleo's read — appears as soon as media is uploaded */}
-        <HaleoSeesPreview
-          intake={intake}
-          onApprove={(snapshot) => onUpdate({ approvedAnalysis: snapshot })}
-        />
+        {/* Read happens on Step 3. We just hint at it here. */}
 
         {/* Inline secondary affordance: notes + structured dimensions */}
         {!extras ? (
@@ -491,9 +494,9 @@ const AddressScreen = ({
 }) => {
   return (
     <div className="space-y-10">
-      <StepDots step={3} />
+      <StepDots step={4} />
       <ScreenTitle
-        eyebrow="Step 3 of 4"
+        eyebrow="Step 4 of 5"
         title="Where's the project?"
         sub="The address unlocks real permit history and neighborhood cost intel for your brief."
       />
@@ -532,9 +535,9 @@ const ScopeAndBudgetScreen = ({
   address?: Address;
 }) => (
   <div className="space-y-10">
-    <StepDots step={4} />
+    <StepDots step={5} />
     <ScreenTitle
-      eyebrow="Step 4 of 4 · last one"
+      eyebrow="Step 5 of 5 · last one"
       title="Scope, budget, and timing."
       sub="Pick a scope tier so the budget anchors to something real. Tap a timeline to wrap up."
     />
@@ -593,8 +596,28 @@ const Brief = () => {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  const back = () => setStep((s) => Math.max(1, s - 1));
-  const next = () => setStep((s) => s + 1);
+  const isAddition = data.room === "addition";
+
+  // Auto-skip Step 3 (Haleo's read) in either direction when there's no
+  // analyzable media OR when the route doesn't surface media (Addition).
+  // Without this, users who skip uploads would land on a stalled "reading…" screen.
+  const hasAnalyzableMedia = data.media.some(
+    (m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video",
+  );
+  const shouldShowConfirmRead = hasAnalyzableMedia && !isAddition;
+
+  const next = () =>
+    setStep((s) => {
+      const n = s + 1;
+      if (n === 3 && !shouldShowConfirmRead) return 4;
+      return n;
+    });
+  const back = () =>
+    setStep((s) => {
+      const n = Math.max(1, s - 1);
+      if (n === 3 && !shouldShowConfirmRead) return 2;
+      return n;
+    });
 
   const submit = () => {
     setSubmitting(true);
@@ -602,8 +625,6 @@ const Brief = () => {
   };
 
   if (submitting) return <LoadingPage />;
-
-  const isAddition = data.room === "addition";
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
@@ -645,7 +666,17 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 3 && (
+        {step === 3 && shouldShowConfirmRead && (
+          <ConfirmReadScreen
+            key="confirm-read"
+            intake={data}
+            onApprove={(snapshot) => update({ approvedAnalysis: snapshot })}
+            onContinue={() => setStep(4)}
+            onBack={() => setStep(2)}
+            stepDots={<StepDots step={3} />}
+          />
+        )}
+        {step === 4 && (
           <AddressScreen
             key="address"
             address={data.address}
@@ -654,7 +685,7 @@ const Brief = () => {
             onContinue={next}
           />
         )}
-        {step === 4 && (
+        {step === 5 && (
           <ScopeAndBudgetScreen
             key="scope-budget"
             scope={data.scope}
