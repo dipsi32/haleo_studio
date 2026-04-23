@@ -454,21 +454,14 @@ const BriefResult = () => {
           )}
 
           {/* 4. INSPIRATION */}
-          {(inspirationMedia.length > 0 || data.inspirationLink) && (
+          {inspirationMedia.length > 0 && (
             <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
               <SectionHeading no="04" title="Inspiration" subtitle="The look they're chasing." />
-              {inspirationMedia.length > 0 && (
-                <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {inspirationMedia.map((m) => (
-                    <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                  ))}
-                </div>
-              )}
-              {data.inspirationLink && (
-                <p className="mt-4 truncate text-xs text-muted-foreground">
-                  Link: <span className="text-foreground/80">{data.inspirationLink}</span>
-                </p>
-              )}
+              <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {inspirationMedia.map((m) => (
+                  <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                ))}
+              </div>
               <AnnotationBlock
                 sectionId="inspiration"
                 value={annotations.inspiration}
