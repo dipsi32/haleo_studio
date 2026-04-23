@@ -453,10 +453,16 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 3. WHAT THEY SHARED — the visual evidence, big and prominent */}
+          {/* 2. THE SPACE — the visual evidence */}
           {(spaceMedia.length > 0 || data.measurements) && (
-            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading no="03" title="What they shared" subtitle="The space, in their hands. Click any thumbnail to enlarge." />
+            <section id="brief-space" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading
+                no="02"
+                title="The space"
+                subtitle="Photos, walkthrough and measurements on file. Click any thumbnail to enlarge."
+                icon={ImageIcon}
+                meta={spaceMedia.length > 0 ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : undefined}
+              />
               {spaceMedia.length > 0 && (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {spaceMedia.map((m) => (
@@ -488,10 +494,16 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 4. INSPIRATION */}
+          {/* 3. INSPIRATION */}
           {inspirationMedia.length > 0 && (
-            <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading no="04" title="Inspiration" subtitle="The look they're chasing." />
+            <section id="brief-inspiration" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+              <SectionHeading
+                no="03"
+                title="Inspiration"
+                subtitle="The look the homeowner is chasing."
+                icon={Sparkles}
+                meta={`${inspirationMedia.length} ref${inspirationMedia.length > 1 ? "s" : ""}`}
+              />
               <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {inspirationMedia.map((m) => (
                   <MediaTile key={m.id} m={m} onOpen={setOpen} />
@@ -506,12 +518,15 @@ const BriefResult = () => {
             </section>
           )}
 
-          {/* 5. THE TRANSLATION (scope of work, grouped by trade like a real SOW) */}
-          <section className="border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
-            <div className="flex items-start justify-between gap-3">
-              <SectionHeading no="05" title="Scope of work" subtitle="Grouped by trade. Every line tagged so nothing is fabricated." />
-              <span className="hidden shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground sm:block">For the contractor</span>
-            </div>
+          {/* 4. SCOPE OF WORK */}
+          <section id="brief-scope" className="scroll-mt-24 border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading
+              no={inspirationMedia.length > 0 ? "04" : "03"}
+              title="Scope of work"
+              subtitle="Grouped by trade. Every line tagged so nothing is fabricated."
+              icon={Hammer}
+              meta={`${tradeGroups.length} trade${tradeGroups.length > 1 ? "s" : ""}`}
+            />
 
             {/* Legend up-front so the chips below make sense */}
             <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
@@ -544,9 +559,14 @@ const BriefResult = () => {
             />
           </section>
 
-          {/* 6. PERMIT FLAG */}
-          <section className="border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading no="06" title="Permit & jurisdiction" />
+          {/* 5. PERMIT FLAG */}
+          <section id="brief-permit" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
+            <SectionHeading
+              no={inspirationMedia.length > 0 ? "05" : "04"}
+              title="Permit & jurisdiction"
+              icon={ShieldCheck}
+              meta={permit.likely ? "Permit likely" : "Likely exempt"}
+            />
             <div className="mt-4 flex items-start gap-3">
               <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
                 <ShieldCheck className="h-4 w-4" />
