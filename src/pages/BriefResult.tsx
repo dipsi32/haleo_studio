@@ -33,11 +33,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
 import { ROOM_LABELS, useIntake, type MediaAsset } from "@/lib/intake";
+import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
   buildPermitFlag,
   buildSpaceAnalysis,
+  buildAnalysisSections,
   buildReadiness,
   readinessCopy,
   type ContractorLine,
@@ -220,6 +222,7 @@ const BriefResult = () => {
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
   const permit = useMemo(() => buildPermitFlag(data), [data]);
   const analysis = useMemo(() => buildSpaceAnalysis(data), [data]);
+  const sections = useMemo(() => buildAnalysisSections(data), [data]);
   const readiness = useMemo(() => buildReadiness(data), [data]);
   const readinessText = readinessCopy(readiness.level);
 
