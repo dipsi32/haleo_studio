@@ -165,7 +165,6 @@ const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
     <div className="space-y-10">
       <StepDots step={1} />
       <ScreenTitle
-        eyebrow="Step 1 of 4"
         title="Where's the dream taking shape?"
         sub="Tap one. Don't overthink it — you can swap rooms anytime."
       />
