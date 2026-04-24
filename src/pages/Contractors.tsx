@@ -1,7 +1,7 @@
 // Contractor Discovery — surfaces real San Jose contractors who pulled
 // permits matching the homeowner's project type, ranked by Trust Score.
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, MapPin, Calendar, Hammer, Check,
