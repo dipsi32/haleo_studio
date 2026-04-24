@@ -655,6 +655,23 @@ const BriefResult = () => {
         onRemoveMedia={removeMedia}
         onTogglePill={togglePill}
       />
+      <AddressPromptDialog
+        open={addressPromptOpen}
+        initial={data.address}
+        onClose={() => setAddressPromptOpen(false)}
+        onSave={(addr) => {
+          update({ address: { ...addr, skipped: false } });
+          setAddressPromptOpen(false);
+          setApproved(true);
+          navigate("/contractors");
+        }}
+        onSkip={() => {
+          update({ address: { ...(data.address ?? {}), skipped: true } });
+          setAddressPromptOpen(false);
+          setApproved(true);
+          navigate("/contractors");
+        }}
+      />
     </div>
   );
 };
