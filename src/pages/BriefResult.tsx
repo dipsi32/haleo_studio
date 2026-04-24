@@ -353,8 +353,8 @@ const BriefResult = () => {
         </div>
       </header>
 
-      <main className="container max-w-6xl py-8 md:py-12">
-        {/* ────────── HERO ────────── */}
+      <main className="container max-w-5xl py-8 md:py-12">
+        {/* ────────── HERO — quick, warm, oriented ────────── */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -362,339 +362,299 @@ const BriefResult = () => {
           className="max-w-3xl"
         >
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{projectTitle.sub}</p>
-          <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+          <h1 className="mt-3 font-display text-3xl font-light leading-tight text-balance md:text-4xl">
             {projectTitle.title}
           </h1>
-          <p className="mt-3 max-w-xl text-base text-muted-foreground">
-            One page. Every detail a contractor needs to bid — at a glance, with the full read one tap away.
+          <p className="mt-3 text-sm text-muted-foreground md:text-base">
+            Here's everything in one place. Skim it, tweak anything, then share.
           </p>
         </motion.div>
 
-        {/* ────────── EXECUTIVE SUMMARY — the one-glance dashboard ────────── */}
+        {/* ────────── AT-A-GLANCE STRIP — the only summary you need ────────── */}
         <ExecSummary
           data={data}
           budgetLabel={budgetLabel}
           timelineLabel={timelineLabel}
           permit={permit}
-          readiness={readiness}
           spaceMediaCount={spaceMedia.length}
           inspirationCount={inspirationMedia.length}
-          openQuestions={contractorLines.filter((l) => l.basis === "question").length}
           tradeCount={tradeGroups.length}
           approved={approved}
           onApprove={() => setApproved((v) => !v)}
           onEdit={() => setEditOpen(true)}
         />
 
-        {/* Readiness still useful — but tucked under the summary */}
+        {/* Friendly readiness — tucked under summary */}
         <ReadinessBar readiness={readiness} onAdd={() => setEditOpen(true)} />
 
-        {/* ────────── TOC + DOCUMENT (two-col on desktop, stacked on mobile) ────────── */}
-        <div className="mt-8 grid gap-6 md:grid-cols-[220px_1fr] md:gap-8 lg:grid-cols-[240px_1fr]">
-          {/* Left: sticky table of contents — feedforward */}
+        {/* ────────── TWO CLEAR LAYERS ──────────
+            LAYER 1 → "What you shared" (homeowner intake — vision, space, inspiration)
+            LAYER 2 → "What contractors see" (scope of work + permit) */}
+        <div className="mt-10 grid gap-6 md:grid-cols-[200px_1fr] md:gap-8 lg:grid-cols-[220px_1fr]">
+          {/* Sticky two-tab nav */}
           <BriefTOC
             sections={[
-              { id: "vision", no: "01", label: "The vision", icon: Quote, meta: data.notes ? "+ note" : undefined },
-              { id: "space", no: "02", label: "The space", icon: ImageIcon, meta: spaceMedia.length ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : "—" },
-              ...(inspirationMedia.length > 0
-                ? [{ id: "inspiration", no: "03", label: "Inspiration", icon: Sparkles, meta: `${inspirationMedia.length}` }]
-                : []),
-              { id: "scope", no: inspirationMedia.length > 0 ? "04" : "03", label: "Scope of work", icon: Hammer, meta: `${tradeGroups.length} trades` },
-              { id: "permit", no: inspirationMedia.length > 0 ? "05" : "04", label: "Permit", icon: ShieldCheck, meta: permit.likely ? "Likely" : "Exempt" },
-              { id: "deepread", no: inspirationMedia.length > 0 ? "06" : "05", label: "Deep read", icon: Eye, meta: useApproved ? "Saved" : analysisStatus === "ready" ? "Ready" : "Loading" },
+              { id: "yours", no: "01", label: "What you shared", icon: HomeIcon, meta: `${spaceMedia.length + inspirationMedia.length} file${spaceMedia.length + inspirationMedia.length === 1 ? "" : "s"}` },
+              { id: "contractor", no: "02", label: "For your contractor", icon: Hammer, meta: `${tradeGroups.length} trade${tradeGroups.length === 1 ? "" : "s"}` },
             ]}
           />
 
-          {/* Right: the actual brief document */}
+          {/* Right column: the actual brief */}
           <motion.article
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
           >
-            {/* Document header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-6 py-4 md:px-10">
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-foreground">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="font-display text-base font-medium leading-tight">Project brief</p>
-                  <p className="text-xs text-muted-foreground">
-                    {data.address?.city && !data.address.skipped ? `${data.address.city} · ` : ""}
-                    Prepared by Haleo
+            {/* ════════════ LAYER 1: WHAT YOU SHARED ════════════ */}
+            <section id="brief-yours" className="scroll-mt-24">
+              <LayerHeader
+                eyebrow="What you shared"
+                title="Your project, in your words"
+                sub="Everything you told us during intake — collected in one place."
+              />
+
+              {/* Vision — warm callout, not a giant pull-quote */}
+              <div className="border-b border-border px-6 py-6 md:px-10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">In your words</p>
+                <div className="mt-3 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                  <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
+                    "{homeowner}"
                   </p>
                 </div>
-              </div>
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${approved ? "bg-sage-soft text-sage" : "bg-accent-soft text-accent"}`}>
-                {approved ? <><Lock className="h-3 w-3" /> Approved</> : <><AlertCircle className="h-3 w-3" /> Draft</>}
-              </span>
-            </div>
-
-            {/* 1. THE VISION (homeowner's voice) */}
-            <section id="brief-vision" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading no="01" title="The vision" subtitle="The homeowner's words, unedited." icon={Quote} />
-              <blockquote className="mt-4 border-l-2 border-accent pl-5">
-                <p className="font-display text-2xl font-light italic leading-snug text-foreground/90 md:text-3xl">
-                  "{homeowner}"
-                </p>
-              </blockquote>
-              {data.notes && (
-                <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/40 p-4">
-                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                  <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
-                </div>
-              )}
-              <AnnotationBlock
-                sectionId="vision"
-              value={annotations.vision}
-              onSave={saveAnnotation}
-              locked={approved}
-            />
-          </section>
-
-          {/* 2. THE SPACE — the visual evidence */}
-          {(spaceMedia.length > 0 || data.measurements) && (
-            <section id="brief-space" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading
-                no="02"
-                title="The space"
-                subtitle="Photos, walkthrough and measurements on file. Click any thumbnail to enlarge."
-                icon={ImageIcon}
-                meta={spaceMedia.length > 0 ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : undefined}
-              />
-              {spaceMedia.length > 0 && (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {spaceMedia.map((m) => (
-                    <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                  ))}
-                </div>
-              )}
-              {(data.measurements || data.dimensions) && (
-                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                    <Ruler className="h-4 w-4" />
+                {data.notes && (
+                  <div className="mt-4 flex items-start gap-3 rounded-xl bg-secondary/50 p-3">
+                    <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                    <p className="text-sm leading-relaxed text-foreground/80">{data.notes}</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-display text-sm font-medium">Measurements</p>
-                    <p className="text-xs leading-relaxed text-foreground/70">
+                )}
+              </div>
+
+              {/* Photos / video / measurements */}
+              {(spaceMedia.length > 0 || data.measurements || data.dimensions) && (
+                <div className="border-b border-border px-6 py-6 md:px-10">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-display text-base font-medium">Photos &amp; walkthrough</p>
+                    {spaceMedia.length > 0 && (
+                      <span className="text-xs text-muted-foreground">{spaceMedia.length} file{spaceMedia.length > 1 ? "s" : ""} · tap to enlarge</span>
+                    )}
+                  </div>
+                  {spaceMedia.length > 0 && (
+                    <div className="mt-3 grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                      {spaceMedia.map((m) => (
+                        <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                      ))}
+                    </div>
+                  )}
+                  {(data.measurements || data.dimensions) && (
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs text-foreground/75">
+                      <Ruler className="h-3.5 w-3.5 text-accent" />
                       {data.dimensions
                         ? `${data.dimensions.length ?? "?"} × ${data.dimensions.width ?? "?"} ${data.dimensions.unit}${data.dimensions.height ? ` · ${data.dimensions.height} ${data.dimensions.unit} ceiling` : ""}`
                         : data.measurements}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Inspiration */}
+              {inspirationMedia.length > 0 && (
+                <div className="border-b border-border px-6 py-6 md:px-10">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-display text-base font-medium">The look you're after</p>
+                    <span className="text-xs text-muted-foreground">{inspirationMedia.length} ref{inspirationMedia.length > 1 ? "s" : ""}</span>
+                  </div>
+                  <div className="mt-3 grid gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+                    {inspirationMedia.map((m) => (
+                      <MediaTile key={m.id} m={m} onOpen={setOpen} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Project details — compact key/value */}
+              <div className="px-6 py-6 md:px-10">
+                <p className="font-display text-base font-medium">Project details</p>
+                <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                  <KV label="Room" value={data.room ? ROOM_LABELS[data.room] : "—"} />
+                  <KV label="Project type" value={
+                    data.scope === "refresh" ? "Design refresh"
+                    : data.scope === "remodel" ? "Full remodel"
+                    : data.scope === "reconfigure" ? "Reconfigure"
+                    : data.scope === "structural" ? "Add space"
+                    : "—"
+                  } />
+                  <KV label="Budget" value={budgetLabel} />
+                  <KV label="Timeline" value={timelineLabel} />
+                  <KV
+                    label="Address"
+                    value={
+                      data.address?.skipped || !data.address?.city
+                        ? "Not shared"
+                        : [data.address.city, data.address.state].filter(Boolean).join(", ")
+                    }
+                  />
+                  <KV
+                    label="Things bugging you"
+                    value={data.painPoints.length > 0 ? data.painPoints.join(" · ") : "—"}
+                  />
+                </dl>
+                <AnnotationBlock
+                  sectionId="vision"
+                  value={annotations.vision}
+                  onSave={saveAnnotation}
+                  locked={approved}
+                />
+              </div>
+            </section>
+
+            {/* ════════════ LAYER 2: FOR YOUR CONTRACTOR ════════════ */}
+            <section id="brief-contractor" className="scroll-mt-24 border-t-8 border-secondary/60 bg-secondary/15">
+              <LayerHeader
+                eyebrow="For your contractor"
+                title="What they need to bid"
+                sub="Scope of work grouped by trade, plus permit signals — every line tagged so nothing is fabricated."
+              />
+
+              {/* Scope of work */}
+              <div className="border-b border-border px-6 py-6 md:px-10">
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <p className="font-display text-base font-medium">Scope of work</p>
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
+                    <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From you</span>
+                    <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Verify on site</span>
+                    <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {tradeGroups.map((group) => (
+                    <TradeGroupCard
+                      key={group.trade}
+                      group={group}
+                      startIndex={contractorLines.indexOf(group.lines[0])}
+                      contractorLines={contractorLines}
+                      approved={approved}
+                      editingIdx={editingIdx}
+                      setEditingIdx={setEditingIdx}
+                      lineEdits={lineEdits}
+                      setLineEdits={setLineEdits}
+                    />
+                  ))}
+                </div>
+                <AnnotationBlock
+                  sectionId="scope"
+                  value={annotations.scope}
+                  onSave={saveAnnotation}
+                  locked={approved}
+                />
+              </div>
+
+              {/* Permit */}
+              <div className="border-b border-border px-6 py-6 md:px-10">
+                <p className="font-display text-base font-medium">Permit &amp; jurisdiction</p>
+                <div className="mt-3 flex items-start gap-3">
+                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{permit.reason}</p>
+                  </div>
+                </div>
+                <AnnotationBlock
+                  sectionId="permit"
+                  value={annotations.permit}
+                  onSave={saveAnnotation}
+                  locked={approved}
+                />
+              </div>
+
+              {/* Deep read — NOT shown inline. Just a quiet note that it's attached. */}
+              <div className="px-6 py-6 md:px-10">
+                <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border bg-background/60 p-4">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">Details about the space — attached for your contractor</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      Haleo's read of structure, finishes, constraints and code triggers — sent along automatically. You can review or edit it any time.
                     </p>
                   </div>
+                  <button
+                    onClick={() => setShowAnalysis((v) => !v)}
+                    className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
+                  >
+                    {showAnalysis ? "Hide" : "Preview"}
+                  </button>
                 </div>
-              )}
-              <AnnotationBlock
-                sectionId="evidence"
-                value={annotations.evidence}
-                onSave={saveAnnotation}
-                locked={approved}
-              />
+                <AnimatePresence initial={false}>
+                  {showAnalysis && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      {(analysisStatus === "uploading" || analysisStatus === "analyzing") && (
+                        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/30 px-4 py-3 text-xs text-foreground/80">
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+                          {analysisStatus === "uploading" ? "Uploading…" : "Reading the space…"}
+                        </div>
+                      )}
+                      {analysisStatus === "error" && analysisError && (
+                        <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+                          Couldn't run the read: {analysisError}
+                        </div>
+                      )}
+                      {analysis?.summary && analysisStatus === "ready" && (
+                        <div className="mt-4 rounded-2xl border border-sage/30 bg-sage-soft/40 px-4 py-3 text-sm leading-relaxed text-foreground/90">
+                          {analysis.summary}
+                        </div>
+                      )}
+                      <div className="mt-4">
+                        <DetailedSpaceAnalysis sections={sections} />
+                      </div>
+                      <AnnotationBlock
+                        sectionId="analysis"
+                        value={annotations.analysis}
+                        onSave={saveAnnotation}
+                        locked={approved}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </section>
-          )}
 
-          {/* 3. INSPIRATION */}
-          {inspirationMedia.length > 0 && (
-            <section id="brief-inspiration" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
-              <SectionHeading
-                no="03"
-                title="Inspiration"
-                subtitle="The look the homeowner is chasing."
-                icon={Sparkles}
-                meta={`${inspirationMedia.length} ref${inspirationMedia.length > 1 ? "s" : ""}`}
-              />
-              <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {inspirationMedia.map((m) => (
-                  <MediaTile key={m.id} m={m} onOpen={setOpen} />
-                ))}
-              </div>
-              <AnnotationBlock
-                sectionId="inspiration"
-                value={annotations.inspiration}
-                onSave={saveAnnotation}
-                locked={approved}
-              />
-            </section>
-          )}
-
-          {/* 4. SCOPE OF WORK */}
-          <section id="brief-scope" className="scroll-mt-24 border-b border-border bg-secondary/20 px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading
-              no={inspirationMedia.length > 0 ? "04" : "03"}
-              title="Scope of work"
-              subtitle="Grouped by trade. Every line tagged so nothing is fabricated."
-              icon={Hammer}
-              meta={`${tradeGroups.length} trade${tradeGroups.length > 1 ? "s" : ""}`}
-            />
-
-            {/* Legend up-front so the chips below make sense */}
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
-              <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From the homeowner</span>
-              <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Inferred — verify on site</span>
-              <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {tradeGroups.map((group) => (
-                <TradeGroupCard
-                  key={group.trade}
-                  group={group}
-                  startIndex={contractorLines.indexOf(group.lines[0])}
-                  contractorLines={contractorLines}
-                  approved={approved}
-                  editingIdx={editingIdx}
-                  setEditingIdx={setEditingIdx}
-                  lineEdits={lineEdits}
-                  setLineEdits={setLineEdits}
-                />
-              ))}
-            </div>
-
-            <AnnotationBlock
-              sectionId="scope"
-              value={annotations.scope}
-              onSave={saveAnnotation}
-              locked={approved}
-            />
-          </section>
-
-          {/* 5. PERMIT FLAG */}
-          <section id="brief-permit" className="scroll-mt-24 border-b border-border px-6 py-7 md:px-10 md:py-9">
-            <SectionHeading
-              no={inspirationMedia.length > 0 ? "05" : "04"}
-              title="Permit & jurisdiction"
-              icon={ShieldCheck}
-              meta={permit.likely ? "Permit likely" : "Likely exempt"}
-            />
-            <div className="mt-4 flex items-start gap-3">
-              <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-display text-base font-medium">
-                  {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
-                </p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{permit.reason}</p>
-              </div>
-            </div>
-            <AnnotationBlock
-              sectionId="permit"
-              value={annotations.permit}
-              onSave={saveAnnotation}
-              locked={approved}
-            />
-          </section>
-
-          {/* 6. CONTRACTOR'S DEEP READ — collapsed, with a clear "tap to expand" affordance */}
-          <section id="brief-deepread" className="scroll-mt-24 px-6 py-7 md:px-10 md:py-9">
-            <button
-              onClick={() => setShowAnalysis((v) => !v)}
-              className={`group flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed p-4 text-left transition-smooth md:p-5 ${
-                showAnalysis
-                  ? "border-accent/40 bg-accent-soft/20"
-                  : "border-border bg-card/60 hover:border-accent/50 hover:bg-accent-soft/20"
-              }`}
-              aria-expanded={showAnalysis}
-            >
-              <div className="flex min-w-0 items-center gap-4">
-                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-smooth ${showAnalysis ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent group-hover:bg-accent group-hover:text-accent-foreground"}`}>
-                  <Eye className="h-4 w-4" />
+            {/* Document footer — approve & lock */}
+            <div className="flex flex-col gap-4 border-t border-border bg-secondary/30 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
+              <div className="flex items-start gap-3">
+                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${approved ? "bg-sage text-background" : "bg-accent text-accent-foreground"}`}>
+                  {approved ? <Lock className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-mono text-[10px] tracking-[0.2em] text-accent">{inspirationMedia.length > 0 ? "06" : "05"}</p>
-                  <p className="font-display text-base font-medium leading-tight md:text-lg">
-                    {showAnalysis ? "Haleo's deep read" : "Open Haleo's deep read"}
+                <div>
+                  <p className="font-display text-sm font-medium">
+                    {approved ? "All set — ready to send" : "Looks right? Lock it in."}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {useApproved
-                      ? "Saved from your earlier review. Approved & locked in."
-                      : analysisStatus === "uploading"
-                        ? "Uploading your photos to analyze the space…"
-                        : analysisStatus === "analyzing"
-                          ? "Reading the space — usually 15–30 sec."
-                          : analysisStatus === "ready"
-                            ? "Grounded read of structure, finishes, constraints, opportunities, code."
-                            : analysisStatus === "error"
-                              ? "Couldn't run analysis — heuristic read shown instead."
-                              : `${sections.length} sections · structure, finishes, constraints, opportunities, code.`}
+                  <p className="text-xs text-muted-foreground">
+                    {approved
+                      ? "Locked. Unlock if you want to change something."
+                      : "Skim once more, edit anything, then approve to send."}
                   </p>
                 </div>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground/80 shadow-soft">
-                {showAnalysis ? "Hide" : "Tap to expand"}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAnalysis ? "rotate-180" : ""}`} />
-              </span>
-            </button>
-            <AnimatePresence initial={false}>
-              {showAnalysis && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  {(analysisStatus === "uploading" || analysisStatus === "analyzing") && (
-                    <div className="mt-5 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/30 px-4 py-3 text-xs text-foreground/80">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                      {analysisStatus === "uploading"
-                        ? "Uploading media…"
-                        : "Reading the space with AI vision…"}
-                    </div>
-                  )}
-                  {analysisStatus === "error" && analysisError && (
-                    <div className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive">
-                      AI analysis failed: {analysisError}. Showing the heuristic read below.
-                    </div>
-                  )}
-                  {analysis?.summary && analysisStatus === "ready" && (
-                    <div className="mt-5 rounded-2xl border border-sage/30 bg-sage-soft/40 px-4 py-3 text-sm leading-relaxed text-foreground/90">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-sage">
-                        GC summary
-                      </p>
-                      {analysis.summary}
-                    </div>
-                  )}
-                  <div className="mt-5">
-                    <DetailedSpaceAnalysis sections={sections} />
-                  </div>
-                  <AnnotationBlock
-                    sectionId="analysis"
-                    value={annotations.analysis}
-                    onSave={saveAnnotation}
-                    locked={approved}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </section>
-
-          {/* Document footer — approve & lock */}
-          <div className="flex flex-col gap-4 border-t border-border bg-secondary/30 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
-            <div className="flex items-start gap-3">
-              <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${approved ? "bg-sage text-background" : "bg-accent text-accent-foreground"}`}>
-                {approved ? <Lock className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-              </div>
-              <div>
-                <p className="font-display text-sm font-medium">
-                  {approved ? "Brief approved" : "Approve before sending"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {approved
-                    ? "Locked. Unlock above to make edits."
-                    : "Read every line, edit anything you want, then approve."}
-                </p>
-              </div>
+              <Button
+                onClick={() => setApproved((v) => !v)}
+                variant={approved ? "outline" : "default"}
+                className="rounded-full"
+              >
+                {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve &amp; lock</>}
+              </Button>
             </div>
-            <Button
-              onClick={() => setApproved((v) => !v)}
-              variant={approved ? "outline" : "default"}
-              className="rounded-full"
-            >
-              {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve & lock</>}
-            </Button>
-          </div>
           </motion.article>
         </div>
 
