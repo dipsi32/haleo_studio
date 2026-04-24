@@ -759,27 +759,14 @@ const ExecSummary = ({
       className="mt-8 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
       aria-label="At a glance"
     >
-      {/* One-line headline + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4 md:px-6">
+      {/* One-line headline */}
+      <div className="border-b border-border/70 px-5 py-4 md:px-6">
         <p className="font-display text-base font-medium leading-snug text-foreground md:text-lg">
           {scopeLabel} · {room.toLowerCase()}
           {data.address?.city && !data.address.skipped && (
             <span className="text-muted-foreground"> · {data.address.city}</span>
           )}
         </p>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            onClick={onApprove}
-            size="sm"
-            variant={approved ? "outline" : "default"}
-            className="rounded-full"
-          >
-            {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock</> : <><Lock className="h-3.5 w-3.5" /> Approve</>}
-          </Button>
-          <Button onClick={onEdit} size="sm" variant="ghost" className="rounded-full">
-            <Edit3 className="h-3.5 w-3.5" /> Edit
-          </Button>
-        </div>
       </div>
 
       {/* Five quiet facts in a row */}
