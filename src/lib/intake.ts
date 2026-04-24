@@ -415,6 +415,8 @@ export type ScopeOption = {
   includes: string[];
   // Default budget range (USD, in $K) — used as a sensible starting slider position.
   range: { min: number; max: number };
+  // Typical time on site, end to end. Shown to the user instead of a price.
+  typicalDuration: string;
   permitLikely: boolean;
 };
 
@@ -427,6 +429,7 @@ export const SCOPE_OPTIONS: ScopeOption[] = [
     oneLiner: "Same layout. New look.",
     includes: ["Paint, fixtures, hardware", "New countertops or tile", "Lighting swap-out"],
     range: { min: 15, max: 40 },
+    typicalDuration: "2–4 weeks",
     permitLikely: false,
   },
   {
@@ -435,6 +438,7 @@ export const SCOPE_OPTIONS: ScopeOption[] = [
     oneLiner: "Same footprint. Everything new.",
     includes: ["New cabinets & finishes", "Appliance package", "Plumbing & electrical updates"],
     range: { min: 60, max: 140 },
+    typicalDuration: "6–10 weeks",
     permitLikely: true,
   },
   {
@@ -443,6 +447,7 @@ export const SCOPE_OPTIONS: ScopeOption[] = [
     oneLiner: "Move walls, doors, or wet areas.",
     includes: ["Wall removal / openings", "Plumbing relocation", "Structural review"],
     range: { min: 120, max: 250 },
+    typicalDuration: "10–16 weeks",
     permitLikely: true,
   },
   {
@@ -451,6 +456,7 @@ export const SCOPE_OPTIONS: ScopeOption[] = [
     oneLiner: "Build out — addition, ADU, second storey.",
     includes: ["Foundation & framing", "Roof tie-in & MEP rough-in", "Title 24 + full permitting"],
     range: { min: 200, max: 500 },
+    typicalDuration: "4–8 months",
     permitLikely: true,
   },
 ];
