@@ -676,6 +676,125 @@ const BriefResult = () => {
   );
 };
 
+// ───── Address prompt — gates "send to contractors" so we can pull real city data ─────
+// Triggered when the homeowner skipped or never entered their address. Frames the
+// ask around what they get back (real permit pulls, neighborhood comps), and still
+// lets them send without sharing if they really want to.
+const AddressPromptDialog = ({
+  open,
+  initial,
+  onClose,
+  onSave,
+  onSkip,
+}: {
+  open: boolean;
+  initial?: { street?: string; city?: string; state?: string; zip?: string };
+  onClose: () => void;
+  onSave: (a: { street: string; city: string; state: string; zip: string }) => void;
+  onSkip: () => void;
+}) => {
+  const [street, setStreet] = useState(initial?.street ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [state, setState] = useState(initial?.state ?? "");
+  const [zip, setZip] = useState(initial?.zip ?? "");
+
+  // Reset whenever the dialog opens, so it reflects the latest stored value.
+  useEffect(() => {
+    if (open) {
+      setStreet(initial?.street ?? "");
+      setCity(initial?.city ?? "");
+      setState(initial?.state ?? "");
+      setZip(initial?.zip ?? "");
+    }
+  }, [open, initial?.street, initial?.city, initial?.state, initial?.zip]);
+
+  const canSave = street.trim() && city.trim() && state.trim() && zip.trim();
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md rounded-3xl">
+        <DialogHeader>
+          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <DialogTitle className="font-display text-xl font-medium leading-tight">
+            One last thing — your address
+          </DialogTitle>
+          <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+            We use it to pull <span className="font-medium text-foreground">real permit history on your block</span> and
+            check bids against actual project costs in your neighborhood. Contractors only ever see your city.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="mt-2 space-y-3">
+          <div>
+            <Label htmlFor="prompt-street" className="text-xs text-muted-foreground">Street</Label>
+            <Input
+              id="prompt-street"
+              value={street}
+              onChange={(e) => setStreet(e.target.value.slice(0, 120))}
+              placeholder="123 Main St"
+              autoFocus
+              className="mt-1"
+            />
+          </div>
+          <div className="grid grid-cols-[1fr_80px_120px] gap-2">
+            <div>
+              <Label htmlFor="prompt-city" className="text-xs text-muted-foreground">City</Label>
+              <Input
+                id="prompt-city"
+                value={city}
+                onChange={(e) => setCity(e.target.value.slice(0, 60))}
+                placeholder="San Jose"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prompt-state" className="text-xs text-muted-foreground">State</Label>
+              <Input
+                id="prompt-state"
+                value={state}
+                onChange={(e) => setState(e.target.value.slice(0, 4).toUpperCase())}
+                placeholder="CA"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prompt-zip" className="text-xs text-muted-foreground">ZIP</Label>
+              <Input
+                id="prompt-zip"
+                value={zip}
+                onChange={(e) => setZip(e.target.value.replace(/[^\d-]/g, "").slice(0, 10))}
+                placeholder="95110"
+                inputMode="numeric"
+                className="mt-1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2">
+          <Button
+            className="w-full rounded-full"
+            disabled={!canSave}
+            onClick={() => onSave({ street: street.trim(), city: city.trim(), state: state.trim(), zip: zip.trim() })}
+          >
+            <Send className="h-4 w-4" />
+            Save and send to contractors
+          </Button>
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Send without sharing my address
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ───── Section heading (numbered, document-style) ─────
 const SectionHeading = ({
   no,
