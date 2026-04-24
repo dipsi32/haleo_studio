@@ -113,12 +113,19 @@ const ConfirmReadScreen = ({
 }) => {
   const { status, analysis, error } = useSpaceAnalysis(intake);
   const [expanded, setExpanded] = useState(false);
-  const [phase, setPhase] = useState(0);
+  const [progress, setProgress] = useState(8);
 
-  // Cycle the narration every 2.2s while loading.
+  // Smoothly ramp progress while loading — eases toward 95% so it never
+  // claims to be done before the analysis actually returns.
   useEffect(() => {
-    if (status !== "uploading" && status !== "analyzing") return;
-    const id = setInterval(() => setPhase((p) => p + 1), 2200);
+    if (status !== "uploading" && status !== "analyzing" && status !== "idle") {
+      setProgress(100);
+      return;
+    }
+    setProgress(8);
+    const id = setInterval(() => {
+      setProgress((p) => (p >= 95 ? 95 : p + Math.max(0.5, (95 - p) * 0.06)));
+    }, 350);
     return () => clearInterval(id);
   }, [status]);
 
