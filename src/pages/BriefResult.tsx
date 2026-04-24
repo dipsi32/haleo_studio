@@ -666,10 +666,7 @@ const BriefResult = () => {
           navigate("/contractors");
         }}
         onSkip={() => {
-          update({ address: { ...(data.address ?? {}), skipped: true } });
           setAddressPromptOpen(false);
-          setApproved(true);
-          navigate("/contractors");
         }}
       />
     </div>
