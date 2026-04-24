@@ -310,9 +310,7 @@ const BriefResult = () => {
     setLineEdits({});
   }, [contractorLines]);
 
-  // Walkthrough videos stay private to the homeowner — contractors see them
-  // when they log into the bid portal, not in the brief itself.
-  const spaceMedia = data.media.filter((m) => m.kind !== "inspiration" && m.kind !== "video");
+  const spaceMedia = data.media.filter((m) => m.kind !== "inspiration");
   const inspirationMedia = data.media.filter((m) => m.kind === "inspiration");
   const annotations = data.annotations ?? {};
   const saveAnnotation = (id: string, text: string) => {
