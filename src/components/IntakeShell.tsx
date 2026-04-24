@@ -11,9 +11,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const IntakeShell = ({ step, total, onBack, exitTo = "/", children }: Props) => {
-  const progress = Math.max(0, Math.min(100, (step / total) * 100));
-
+const IntakeShell = ({ step, onBack, exitTo = "/", children }: Props) => {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
