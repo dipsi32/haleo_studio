@@ -345,6 +345,18 @@ const BriefResult = () => {
 
   const lineText = (i: number) => lineEdits[i] ?? contractorLines[i].text;
 
+  // Address is required to pull permit + neighborhood intel for contractors.
+  // If the homeowner skipped or never entered it, prompt before sending.
+  const hasAddress = Boolean(data.address?.city && !data.address?.skipped);
+  const handleApproveAndSend = () => {
+    if (!hasAddress) {
+      setAddressPromptOpen(true);
+      return;
+    }
+    setApproved(true);
+    navigate("/contractors");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
