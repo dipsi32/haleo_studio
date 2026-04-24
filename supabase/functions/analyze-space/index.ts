@@ -294,15 +294,22 @@ serve(async (req) => {
     if (insertErr || !inserted) throw new Error(`DB insert failed: ${insertErr?.message}`);
     analysisId = inserted.id;
 
-    // 2. Build vision payload — photos first, then floor plans
+    // 2. Build vision payload — photos, floor plans, then video frames
     const photos = mediaUrls.filter((m: { kind: string }) => m.kind === "photo").slice(0, MAX_PHOTOS);
     const plans = mediaUrls.filter((m: { kind: string }) => m.kind === "floorplan").slice(0, MAX_FLOORPLANS);
-    // NB: video frames aren't natively supported by chat-completions vision yet
-    // for many providers; we describe the video metadata textually so the
-    // model knows to hedge on dimensions but still reads the static photos.
+    // Video walkthroughs are sampled into stills client-side and arrive here
+    // as kind="video_frame". Treat as time-anchored snapshots — usable for
+    // finishes/lighting/MEP cues, but the model must hedge on dimensions.
+    const videoFrames = mediaUrls
+      .filter((m: { kind: string }) => m.kind === "video_frame")
+      .slice(0, MAX_VIDEO_FRAMES);
     const videos = mediaUrls.filter((m: { kind: string }) => m.kind === "video");
 
-    const imageInputs: Array<{ url: string; mime?: string }> = [...photos, ...plans];
+    const imageInputs: Array<{ url: string; mime?: string }> = [
+      ...photos,
+      ...plans,
+      ...videoFrames,
+    ];
     const dataUrls: string[] = [];
     for (const img of imageInputs) {
       const url = await fetchImageAsDataUrl(img.url, img.mime);
@@ -322,7 +329,7 @@ serve(async (req) => {
       );
     }
 
-    const userText = `HOMEOWNER INTAKE:\n${buildIntakeBrief(intake)}\n\nMEDIA PROVIDED:\n- Photos attached: ${photos.length}\n- Floor plans attached: ${plans.length}\n- Video walkthroughs (metadata only, no frames): ${videos.length}\n\nProduce the structured contractor-readable space analysis now.`;
+    const userText = `HOMEOWNER INTAKE:\n${buildIntakeBrief(intake)}\n\nMEDIA PROVIDED:\n- Photos attached: ${photos.length}\n- Floor plans attached: ${plans.length}\n- Video walkthroughs sampled into ${videoFrames.length} still frame(s) (treat as time-anchored snapshots; do not estimate exact dimensions from them).\n\nThe images below appear in this order: photos first, then floor plans, then video frames.\n\nProduce the structured contractor-readable space analysis now.`;
 
     const userContent: Array<Record<string, unknown>> = [{ type: "text", text: userText }];
     for (const url of dataUrls) {
