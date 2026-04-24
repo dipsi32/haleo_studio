@@ -604,20 +604,10 @@ const BriefResult = () => {
           <Button
             size="lg"
             className="rounded-full sm:flex-1"
-            onClick={() => setApproved(true)}
-            asChild={approved}
+            onClick={handleApproveAndSend}
           >
-            {approved ? (
-              <Link to="/contractors">
-                <ShieldCheck className="h-4 w-4" />
-                Approve and send to contractors
-              </Link>
-            ) : (
-              <span>
-                <Send className="h-4 w-4" />
-                Approve and send to contractors
-              </span>
-            )}
+            {approved ? <ShieldCheck className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+            Approve and send to contractors
           </Button>
           <Button
             size="lg"
