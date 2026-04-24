@@ -134,6 +134,7 @@ const ContractorCard = ({
 const Contractors = () => {
   const { data } = useIntake();
   const navigate = useNavigate();
+  const location = useLocation();
   const { status, ranked, backfillNote, error } = useContractors(data);
   const projectLabel = projectTypeLabel(data);
   const neighborhood = data.address?.city || "your area";
