@@ -143,7 +143,7 @@ const buildParser = (header: string[]) => {
 // Stream the CSV line-by-line and upsert in batches of 500.
 const streamImport = async (
   url: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   runId: string,
   licensesWeShow: Set<string>,
   previousStatuses: Map<string, string | null>,

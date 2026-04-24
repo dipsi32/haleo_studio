@@ -232,7 +232,7 @@ const extractWithAi = async (license: string, rendered: string): Promise<Partial
 
 // ─── Status-change detection ─────────────────────────────────────────────────
 const recordStatusChange = async (
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   license: string,
   previous: string | null,
   next: string | null,
