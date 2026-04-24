@@ -154,6 +154,25 @@ const Contractors = () => {
   // Build the high-level brief summary that goes into the email
   const briefSummary = useMemo(() => buildBriefSnapshot(data), [data]);
 
+  // Honor pre-selection coming from a contractor profile "Send project brief" CTA.
+  const navState = location.state as { preselectId?: string; openOutreach?: boolean } | null;
+  useEffect(() => {
+    if (!navState?.preselectId) return;
+    if (status !== "ready") return;
+    const exists = ranked.some(r => r.contractor.id === navState.preselectId);
+    if (!exists) return;
+    setSelected(prev => {
+      if (prev.has(navState.preselectId!)) return prev;
+      const next = new Set(prev);
+      next.add(navState.preselectId!);
+      return next;
+    });
+    if (navState.openOutreach) setOutreachOpen(true);
+    // Clear nav state so back/forward doesn't re-trigger.
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, ranked, navState?.preselectId]);
+
   const toggle = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
