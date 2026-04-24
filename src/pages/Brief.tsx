@@ -258,7 +258,6 @@ const InsideLookScreen = ({
     <div className="space-y-12">
       <StepDots step={2} />
       <ScreenTitle
-        eyebrow="Step 2 of 5"
         title="Take us inside — only what you're comfortable sharing."
         sub="A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
       />
