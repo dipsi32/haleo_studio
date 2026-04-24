@@ -210,7 +210,7 @@ const ConfirmReadScreen = ({
         {/* Body */}
         <div className="px-5 py-5 md:px-6 md:py-6">
           {(status === "uploading" || status === "analyzing" || status === "idle") && (
-            <SkeletonRead phase={phase} />
+            <SkeletonRead progress={progress} />
           )}
 
           {status === "error" && (
