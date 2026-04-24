@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, FileText, Sparkles, Compass, ShieldCheck, CalendarCheck2, Check } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { useAuth } from "@/context/AuthContext";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -276,14 +277,20 @@ const Closing = () => (
   </section>
 );
 
-const Index = () => (
-  <main>
-    <Hero />
-    <HowItWorks />
-    <Pricing />
-    <Closing />
-    <SiteFooter />
-  </main>
-);
+const Index = () => {
+  const { user, loading } = useAuth();
+  // Returning users land straight in their account — marketing page is for visitors.
+  if (loading) return <div className="grid min-h-screen place-items-center bg-gradient-warm text-sm text-muted-foreground">Loading…</div>;
+  if (user) return <Navigate to="/account" replace />;
+  return (
+    <main>
+      <Hero />
+      <HowItWorks />
+      <Pricing />
+      <Closing />
+      <SiteFooter />
+    </main>
+  );
+};
 
 export default Index;
