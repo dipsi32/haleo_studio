@@ -38,14 +38,11 @@ const BASIS_META = {
   question: { label: "Open", icon: HelpCircle, cls: "text-foreground/60" },
 } as const;
 
-const NARRATION = [
-  "Looking at surfaces and finishes…",
-  "Reading the light and layout…",
-  "Spotting constraints and quirks…",
-  "Pulling it together for your contractor…",
-];
+// A single, calm message — no looping phrases. The progress bar carries
+// the sense of motion so we don't have to chatter at the user.
+const NARRATION_MESSAGE = "Haleo is taking a careful look at your space.";
 
-const SkeletonRead = ({ phase }: { phase: number }) => (
+const SkeletonRead = ({ progress }: { progress: number }) => (
   <div aria-busy="true" aria-live="polite">
     {/* Summary skeleton */}
     <div className="space-y-3">
@@ -53,26 +50,26 @@ const SkeletonRead = ({ phase }: { phase: number }) => (
       <div className="h-5 w-1/2 animate-pulse rounded-full bg-secondary" />
     </div>
 
-    {/* Narration */}
-    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-accent/20 bg-accent-soft/40 px-4 py-3">
-      <span className="relative grid h-7 w-7 shrink-0 place-items-center">
-        <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" />
-        <span className="relative grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-foreground">
-          <Eye className="h-3.5 w-3.5" />
+    {/* Calm status — one warm line + a quiet progress bar */}
+    <div className="mt-6 rounded-2xl border border-accent/20 bg-accent-soft/40 px-4 py-4">
+      <div className="flex items-center gap-3">
+        <span className="relative grid h-7 w-7 shrink-0 place-items-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" />
+          <span className="relative grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-foreground">
+            <Eye className="h-3.5 w-3.5" />
+          </span>
         </span>
-      </span>
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={phase}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.35 }}
-          className="text-sm font-medium text-foreground/85"
-        >
-          {NARRATION[phase % NARRATION.length]}
-        </motion.p>
-      </AnimatePresence>
+        <p className="text-sm font-medium text-foreground/85">{NARRATION_MESSAGE}</p>
+      </div>
+      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-accent/15">
+        <motion.div
+          className="h-full rounded-full bg-accent"
+          initial={{ width: "8%" }}
+          animate={{ width: `${Math.min(95, progress)}%` }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">Usually about 10–15 seconds.</p>
     </div>
 
     {/* Bullets skeleton */}
@@ -116,12 +113,19 @@ const ConfirmReadScreen = ({
 }) => {
   const { status, analysis, error } = useSpaceAnalysis(intake);
   const [expanded, setExpanded] = useState(false);
-  const [phase, setPhase] = useState(0);
+  const [progress, setProgress] = useState(8);
 
-  // Cycle the narration every 2.2s while loading.
+  // Smoothly ramp progress while loading — eases toward 95% so it never
+  // claims to be done before the analysis actually returns.
   useEffect(() => {
-    if (status !== "uploading" && status !== "analyzing") return;
-    const id = setInterval(() => setPhase((p) => p + 1), 2200);
+    if (status !== "uploading" && status !== "analyzing" && status !== "idle") {
+      setProgress(100);
+      return;
+    }
+    setProgress(8);
+    const id = setInterval(() => {
+      setProgress((p) => (p >= 95 ? 95 : p + Math.max(0.5, (95 - p) * 0.06)));
+    }, 350);
     return () => clearInterval(id);
   }, [status]);
 
@@ -206,7 +210,7 @@ const ConfirmReadScreen = ({
         {/* Body */}
         <div className="px-5 py-5 md:px-6 md:py-6">
           {(status === "uploading" || status === "analyzing" || status === "idle") && (
-            <SkeletonRead phase={phase} />
+            <SkeletonRead progress={progress} />
           )}
 
           {status === "error" && (
