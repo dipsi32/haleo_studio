@@ -58,7 +58,7 @@ const AddressStep = ({ value, onSave, onSkip, onContinue }: Props) => {
             Why we ask
           </p>
           <p className="mt-3 font-display text-2xl font-light leading-tight">
-            Your address helps us find what's actually happening near you.
+            We pull real info from your area — not generic guides.
           </p>
           <ul className="mt-5 space-y-4">
             {PERKS.map((p) => {
