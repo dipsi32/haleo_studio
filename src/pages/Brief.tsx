@@ -706,6 +706,7 @@ const Brief = () => {
             key="confirm-read"
             intake={data}
             onApprove={(snapshot) => update({ approvedAnalysis: snapshot })}
+            onSaveFeedback={(feedback) => update({ readFeedback: feedback })}
             onContinue={() => setStep(4)}
             onBack={() => setStep(2)}
             stepDots={<StepDots step={3} />}
