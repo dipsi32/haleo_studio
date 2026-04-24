@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { saveDraft } from "@/lib/userProjects";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChefHat,
@@ -592,9 +593,43 @@ const LoadingPage = () => {
 // ───── Main page ─────
 const Brief = () => {
   const navigate = useNavigate();
-  const { data, update, togglePill, addMedia, removeMedia } = useIntake();
+  const [params, setParams] = useSearchParams();
+  const { data, update, togglePill, addMedia, removeMedia, reset } = useIntake();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const projectIdRef = useRef<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem("haleo:active_project_id") : null,
+  );
+
+  // Fresh room: nuke ALL prior intake state (measurements, media, scope, etc.)
+  // BEFORE the first paint so we never reuse another room's selections.
+  // Pattern: ?fresh=1 from Account → "Start a new room".
+  const didFresh = useRef(false);
+  if (params.get("fresh") === "1" && !didFresh.current) {
+    didFresh.current = true;
+    reset();
+    sessionStorage.removeItem("haleo:active_project_id");
+    projectIdRef.current = null;
+    // Strip the flag so a refresh doesn't keep wiping the user's progress.
+    const next = new URLSearchParams(params);
+    next.delete("fresh");
+    setParams(next, { replace: true });
+  }
+
+  // Auto-save the user's draft as they progress (debounced). Only kicks in
+  // once they've picked a room — no point persisting empty shells.
+  useEffect(() => {
+    if (!data.room) return;
+    const t = setTimeout(() => {
+      saveDraft(data, projectIdRef.current ?? undefined)
+        .then((row) => {
+          projectIdRef.current = row.id;
+          sessionStorage.setItem("haleo:active_project_id", row.id);
+        })
+        .catch(() => {/* not signed in or RLS — ignore silently */});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [data]);
 
   const isAddition = data.room === "addition";
 
