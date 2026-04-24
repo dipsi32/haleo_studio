@@ -714,15 +714,17 @@ const AddressPromptDialog = ({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md rounded-3xl">
         <DialogHeader>
-          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent">
-            <ShieldCheck className="h-5 w-5" />
+          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sage-soft text-sage">
+            <Lock className="h-5 w-5" />
           </div>
           <DialogTitle className="font-display text-xl font-medium leading-tight">
             One last thing — your address
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
-            We use it to pull <span className="font-medium text-foreground">real permit history on your block</span> and
-            check bids against actual project costs in your neighborhood. Contractors only ever see your city.
+            <span className="font-medium text-foreground">Your address is never shared with contractors.</span>{" "}
+            We only use it to pull verified permit history and real project costs
+            from your neighborhood — so we can match you with contractors who have
+            actually worked nearby.
           </DialogDescription>
         </DialogHeader>
 
@@ -780,14 +782,14 @@ const AddressPromptDialog = ({
             onClick={() => onSave({ street: street.trim(), city: city.trim(), state: state.trim(), zip: zip.trim() })}
           >
             <Send className="h-4 w-4" />
-            Save and send to contractors
+            Show me contractors who have worked in my area
           </Button>
           <button
             type="button"
             onClick={onSkip}
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className="text-xs text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
           >
-            Send without sharing my address
+            I&apos;m not looking for contractors right now
           </button>
         </div>
       </DialogContent>
