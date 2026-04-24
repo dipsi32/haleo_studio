@@ -310,7 +310,9 @@ const BriefResult = () => {
     setLineEdits({});
   }, [contractorLines]);
 
-  const spaceMedia = data.media.filter((m) => m.kind !== "inspiration");
+  // Walkthrough videos stay private to the homeowner — contractors see them
+  // when they log into the bid portal, not in the brief itself.
+  const spaceMedia = data.media.filter((m) => m.kind !== "inspiration" && m.kind !== "video");
   const inspirationMedia = data.media.filter((m) => m.kind === "inspiration");
   const annotations = data.annotations ?? {};
   const saveAnnotation = (id: string, text: string) => {
@@ -571,115 +573,42 @@ const BriefResult = () => {
                 />
               </div>
 
-              {/* Deep read — NOT shown inline. Just a quiet note that it's attached. */}
-              <div className="px-6 py-6 md:px-10">
-                <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border bg-background/60 p-4">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-                    <Eye className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">Details about the space — attached for your contractor</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      Haleo's read of structure, finishes, constraints and code triggers — sent along automatically. You can review or edit it any time.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowAnalysis((v) => !v)}
-                    className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
-                  >
-                    {showAnalysis ? "Hide" : "Preview"}
-                  </button>
-                </div>
-                <AnimatePresence initial={false}>
-                  {showAnalysis && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden"
-                    >
-                      {(analysisStatus === "uploading" || analysisStatus === "analyzing") && (
-                        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/30 px-4 py-3 text-xs text-foreground/80">
-                          <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                          {analysisStatus === "uploading" ? "Uploading…" : "Reading the space…"}
-                        </div>
-                      )}
-                      {analysisStatus === "error" && analysisError && (
-                        <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive">
-                          Couldn't run the read: {analysisError}
-                        </div>
-                      )}
-                      {analysis?.summary && analysisStatus === "ready" && (
-                        <div className="mt-4 rounded-2xl border border-sage/30 bg-sage-soft/40 px-4 py-3 text-sm leading-relaxed text-foreground/90">
-                          {analysis.summary}
-                        </div>
-                      )}
-                      <div className="mt-4">
-                        <DetailedSpaceAnalysis sections={sections} />
-                      </div>
-                      <AnnotationBlock
-                        sectionId="analysis"
-                        value={annotations.analysis}
-                        onSave={saveAnnotation}
-                        locked={approved}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             </section>
 
-            {/* Document footer — approve & lock */}
-            <div className="flex flex-col gap-4 border-t border-border bg-secondary/30 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
-              <div className="flex items-start gap-3">
-                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${approved ? "bg-sage text-background" : "bg-accent text-accent-foreground"}`}>
-                  {approved ? <Lock className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                </div>
-                <div>
-                  <p className="font-display text-sm font-medium">
-                    {approved ? "All set — ready to send" : "Looks right? Lock it in."}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {approved
-                      ? "Locked. Unlock if you want to change something."
-                      : "Skim once more, edit anything, then approve to send."}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setApproved((v) => !v)}
-                variant={approved ? "outline" : "default"}
-                className="rounded-full"
-              >
-                {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock to edit</> : <><Lock className="h-3.5 w-3.5" /> Approve &amp; lock</>}
-              </Button>
-            </div>
           </motion.article>
         </div>
 
-        {/* Actions */}
+        {/* Actions — one primary path, one quiet escape hatch */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 grid gap-3 sm:grid-cols-3"
+          className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
         >
-          <Button size="lg" className="rounded-full" disabled={!approved} asChild={approved}>
+          <Button
+            size="lg"
+            className="rounded-full sm:flex-1"
+            onClick={() => setApproved(true)}
+            asChild={approved}
+          >
             {approved ? (
               <Link to="/contractors">
                 <ShieldCheck className="h-4 w-4" />
-                Find verified contractors near you
+                Approve and send to contractors
               </Link>
             ) : (
-              <span><Send className="h-4 w-4" /> Approve to send</span>
+              <span>
+                <Send className="h-4 w-4" />
+                Approve and send to contractors
+              </span>
             )}
           </Button>
-          <Button size="lg" variant="outline" className="rounded-full" disabled={!approved}>
-            <Download className="h-4 w-4" />
-            Download PDF
-          </Button>
-          <Button size="lg" variant="outline" className="rounded-full" onClick={() => setEditOpen(true)}>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-full sm:w-auto"
+            onClick={() => setEditOpen(true)}
+          >
             <Edit3 className="h-4 w-4" />
             Edit brief
           </Button>
@@ -830,27 +759,14 @@ const ExecSummary = ({
       className="mt-8 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
       aria-label="At a glance"
     >
-      {/* One-line headline + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4 md:px-6">
+      {/* One-line headline */}
+      <div className="border-b border-border/70 px-5 py-4 md:px-6">
         <p className="font-display text-base font-medium leading-snug text-foreground md:text-lg">
           {scopeLabel} · {room.toLowerCase()}
           {data.address?.city && !data.address.skipped && (
             <span className="text-muted-foreground"> · {data.address.city}</span>
           )}
         </p>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            onClick={onApprove}
-            size="sm"
-            variant={approved ? "outline" : "default"}
-            className="rounded-full"
-          >
-            {approved ? <><Pencil className="h-3.5 w-3.5" /> Unlock</> : <><Lock className="h-3.5 w-3.5" /> Approve</>}
-          </Button>
-          <Button onClick={onEdit} size="sm" variant="ghost" className="rounded-full">
-            <Edit3 className="h-3.5 w-3.5" /> Edit
-          </Button>
-        </div>
       </div>
 
       {/* Five quiet facts in a row */}
