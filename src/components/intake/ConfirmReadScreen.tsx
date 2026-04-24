@@ -321,23 +321,75 @@ const ConfirmReadScreen = ({
               </p>
             )}
             {confirmed === "off" && (
-              <div className="max-w-lg text-center">
-                <p className="text-sm text-foreground/80">
-                  Got it — go back and add a closer photo or a quick note. Haleo will refresh the read with the new context.
-                </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  <Button onClick={onBack} size="lg" variant="outline" className="rounded-full px-6">
-                    <ArrowLeft className="h-4 w-4" /> Add more context
+              <div className="w-full max-w-lg space-y-4 text-left">
+                <div>
+                  <p className="text-center text-sm text-foreground/80">
+                    Tell Haleo what's off — we'll fold this into the brief so the contractor sees the correction.
+                  </p>
+                </div>
+                <Textarea
+                  value={feedbackNote}
+                  onChange={(e) => {
+                    setFeedbackNote(e.target.value);
+                    if (feedbackSaved) setFeedbackSaved(false);
+                  }}
+                  placeholder="e.g. The cabinets are oak, not maple. The window above the sink is fixed, not operable."
+                  rows={4}
+                  className="rounded-2xl bg-background"
+                />
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    onClick={() => {
+                      const note = feedbackNote.trim();
+                      if (!note) return;
+                      onSaveFeedback?.({
+                        note,
+                        submittedAt: new Date().toISOString(),
+                        mediaIds: currentKey ? currentKey.split(",") : [],
+                      });
+                      setFeedbackSaved(true);
+                    }}
+                    size="lg"
+                    disabled={!feedbackNote.trim()}
+                    className="rounded-full px-6"
+                  >
+                    {feedbackSaved ? (
+                      <>
+                        <Check className="h-4 w-4" /> Saved
+                      </>
+                    ) : (
+                      <>Save note</>
+                    )}
                   </Button>
                   <Button
-                    onClick={onContinue}
+                    onClick={onBack}
                     size="lg"
-                    variant="ghost"
-                    className="rounded-full px-6 text-muted-foreground hover:text-foreground"
+                    variant="outline"
+                    className="rounded-full px-6"
                   >
-                    Continue anyway
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4" /> Add more photos
                   </Button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                  <Button
+                    onClick={() => setConfirmed("unset")}
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-muted-foreground hover:text-foreground"
+                  >
+                    Back to confirm
+                  </Button>
+                  {feedbackSaved && (
+                    <Button
+                      onClick={onContinue}
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full text-muted-foreground hover:text-foreground"
+                    >
+                      Continue with note
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
