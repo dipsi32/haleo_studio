@@ -58,7 +58,7 @@ const AddressStep = ({ value, onSave, onSkip, onContinue }: Props) => {
             Why we ask
           </p>
           <p className="mt-3 font-display text-2xl font-light leading-tight">
-            We use your address to surface insights that actually matter for your neighborhood.
+            What works on your block — not a national average.
           </p>
           <ul className="mt-5 space-y-4">
             {PERKS.map((p) => {
