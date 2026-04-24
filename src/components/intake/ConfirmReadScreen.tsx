@@ -38,12 +38,9 @@ const BASIS_META = {
   question: { label: "Open", icon: HelpCircle, cls: "text-foreground/60" },
 } as const;
 
-const NARRATION = [
-  "Looking at surfaces and finishes…",
-  "Reading the light and layout…",
-  "Spotting constraints and quirks…",
-  "Pulling it together for your contractor…",
-];
+// A single, calm message — no looping phrases. The progress bar carries
+// the sense of motion so we don't have to chatter at the user.
+const NARRATION_MESSAGE = "Haleo is taking a careful look at your space.";
 
 const SkeletonRead = ({ phase }: { phase: number }) => (
   <div aria-busy="true" aria-live="polite">
