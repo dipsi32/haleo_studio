@@ -540,7 +540,7 @@ const ScopeAndBudgetScreen = ({
     <ScreenTitle
       eyebrow="Step 5 of 5 · last one"
       title="Scope, budget, and timing."
-      sub="Pick a scope tier so the budget anchors to something real. Tap a timeline to wrap up."
+      sub="Pick the type of project that fits. Budget is optional — share if you have one in mind."
     />
     <ScopeBudgetStep
       scope={scope}

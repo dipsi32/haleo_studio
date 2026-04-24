@@ -1,11 +1,11 @@
-// Scope-of-work + budget — anchors the user's number to a real tier.
-// Tooltips explain what each tier includes; an info strip nudges neighborhood
-// intel once the user has shared an address.
+// Scope-of-work + (optional) budget. The scope cards lead with what's
+// included and a typical duration — no dollar amounts. Budget is fully
+// optional: the user can type a number in mind, or tap a big "I'd rather
+// not say" button and move on.
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Info, MapPin, Sparkles, ArrowRight } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
+import { Info, Clock, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/tooltip";
 import { SCOPE_OPTIONS, scopeFor, type Address, type ScopeTier, type Timeline } from "@/lib/intake";
 import { cn } from "@/lib/utils";
-
-const fmtMoney = (v: number) => (v >= 500 ? "$500K+" : `$${v}K`);
 
 type Props = {
   scope?: ScopeTier;
@@ -30,11 +28,22 @@ type Props = {
   address?: Address;
 };
 
+// Parse loose budget input like "120k", "$80,000", "200" → number in $K.
+const parseBudgetK = (raw: string): number | null => {
+  if (!raw) return null;
+  const cleaned = raw.toLowerCase().replace(/[$,\s]/g, "");
+  const isK = /k\b|k$/.test(cleaned);
+  const n = parseFloat(cleaned.replace(/k/g, ""));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  // If user typed "80000" assume dollars; "80" or "80k" assume thousands.
+  const inK = isK || n < 1000 ? n : n / 1000;
+  return Math.round(inK);
+};
+
 const ScopeBudgetStep = ({
   scope,
   onScopeChange,
   budgetMin,
-  budgetMax,
   budgetSkipped,
   onBudgetChange,
   onSkipBudget,
@@ -43,19 +52,27 @@ const ScopeBudgetStep = ({
   address,
 }: Props) => {
   const active = scopeFor(scope);
-  const min = budgetMin ?? active?.range.min ?? 40;
-  const max = budgetMax ?? active?.range.max ?? 80;
 
-  // Whenever scope changes, snap budget to that tier's range — but only once,
-  // so the user can still drag away.
-  const [snappedScope, setSnappedScope] = useState<ScopeTier | undefined>(scope);
+  // Local input state — converts to a single-point "range" on blur/enter.
+  const [budgetText, setBudgetText] = useState<string>(
+    budgetMin && !budgetSkipped ? String(budgetMin) : "",
+  );
+
   useEffect(() => {
-    if (scope && scope !== snappedScope && !budgetSkipped) {
-      const opt = scopeFor(scope);
-      if (opt) onBudgetChange(opt.range.min, opt.range.max);
-      setSnappedScope(scope);
-    }
-  }, [scope, snappedScope, budgetSkipped, onBudgetChange]);
+    // If parent clears or skips, reflect it locally.
+    if (budgetSkipped) setBudgetText("");
+    else if (budgetMin && !budgetText) setBudgetText(String(budgetMin));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgetSkipped, budgetMin]);
+
+  const commitBudget = () => {
+    const k = parseBudgetK(budgetText);
+    if (k == null) return;
+    // Store as a tight band around the user's number so downstream code keeps working.
+    const lo = Math.max(5, Math.round(k * 0.85));
+    const hi = Math.round(k * 1.15);
+    onBudgetChange(lo, hi);
+  };
 
   const timelines: { value: Timeline; label: string; sub: string }[] = [
     { value: "asap", label: "ASAP", sub: "Ready to move." },
@@ -74,15 +91,13 @@ const ScopeBudgetStep = ({
       <div className="space-y-10">
         {/* ── Scope ── */}
         <section>
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <p className="font-display text-2xl font-light leading-tight">
-                What kind of project is this?
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Pick the closest match. Each tier shows what's typically included and a starting cost band.
-              </p>
-            </div>
+          <div className="mb-4">
+            <p className="font-display text-2xl font-light leading-tight">
+              What kind of project is this?
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pick the closest match. Each one shows what's typically involved and how long it usually takes.
+            </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -125,14 +140,19 @@ const ScopeBudgetStep = ({
                     </Tooltip>
                   </div>
 
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-display text-2xl font-medium tabular-nums">
-                      {fmtMoney(o.range.min)}
-                      <span className="text-muted-foreground"> – </span>
-                      {fmtMoney(o.range.max)}
-                    </p>
-                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                      typical
+                  <ul className="space-y-1 text-xs text-foreground/75">
+                    {o.includes.slice(0, 3).map((i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" />
+                        <span>{i}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-accent" />
+                    <span>
+                      Typically <span className="font-medium text-foreground">{o.typicalDuration}</span>
                     </span>
                   </div>
                 </button>
@@ -141,52 +161,68 @@ const ScopeBudgetStep = ({
           </div>
         </section>
 
-        {/* ── Budget ── */}
+        {/* ── Budget (optional) ── */}
         <section className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
-          <div className="flex items-baseline justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                Budget range
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {active
-                  ? `Anchored to ${active.label.toLowerCase()} — drag to fit your situation.`
-                  : "Pick a scope above and we'll suggest a starting band."}
-              </p>
-            </div>
-            <button
-              onClick={onSkipBudget}
-              className="text-xs text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
-            >
-              {budgetSkipped ? "Set a range instead" : "I'd rather not say"}
-            </button>
+          <div>
+            <p className="font-display text-xl font-light leading-tight">
+              Have a budget in mind?
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Totally optional. Sharing one helps tailor recommendations — skipping it is just as fine.
+            </p>
           </div>
 
           {budgetSkipped ? (
-            <p className="py-6 text-center font-display text-3xl font-light text-muted-foreground">
-              Skipped — that's fine.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-5">
-              <p className="text-center font-display text-5xl font-medium tabular-nums">
-                {fmtMoney(min)} <span className="text-muted-foreground">–</span> {fmtMoney(max)}
+            <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-foreground/80">
+                Skipped — we'll keep things open.
               </p>
-              <Slider
-                value={[min, max]}
-                min={5}
-                max={500}
-                step={5}
-                minStepsBetweenThumbs={1}
-                onValueChange={(v) => onBudgetChange(v[0], v[1])}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>$5K</span>
-                <span>$500K+</span>
+              <button
+                onClick={() => {
+                  setBudgetText("");
+                  // Re-enable the input by clearing the skipped flag via a 0,0 reset.
+                  onBudgetChange(0, 0);
+                }}
+                className="text-xs font-medium text-accent underline-offset-4 hover:underline"
+              >
+                Change my mind
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-4">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg text-muted-foreground">
+                  $
+                </span>
+                <Input
+                  inputMode="numeric"
+                  placeholder="e.g. 80,000 or 120k"
+                  value={budgetText}
+                  onChange={(e) => setBudgetText(e.target.value)}
+                  onBlur={commitBudget}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitBudget();
+                    }
+                  }}
+                  className="h-14 pl-9 font-display text-xl"
+                />
               </div>
+
+              <button
+                onClick={() => {
+                  setBudgetText("");
+                  onSkipBudget();
+                }}
+                className="w-full rounded-2xl border-2 border-dashed border-border bg-secondary/40 px-5 py-4 text-center font-display text-base font-medium text-foreground/80 transition-smooth hover:border-accent/60 hover:bg-accent-soft/40 hover:text-foreground"
+              >
+                I'd rather not say
+              </button>
             </div>
           )}
 
-          {/* Neighborhood intel strip */}
+          {/* Neighborhood intel strip — describes nearby projects, no dollars. */}
           {showHood && active && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
@@ -197,23 +233,10 @@ const ScopeBudgetStep = ({
                 <MapPin className="h-3.5 w-3.5" />
               </span>
               <p>
-                <span className="font-medium">{address?.city} ballpark:</span>{" "}
-                a typical {active.label.toLowerCase()} in your zip lands around{" "}
-                <span className="font-medium text-foreground">
-                  {fmtMoney(Math.round((active.range.min + active.range.max) / 2 - 5))}–
-                  {fmtMoney(Math.round((active.range.min + active.range.max) / 2 + 15))}
-                </span>
-                .
+                <span className="font-medium">{address?.city}:</span>{" "}
+                we'll surface what neighbors recently did for this kind of project.
               </p>
             </motion.div>
-          )}
-          {!showHood && (
-            <div className="mt-5 flex items-start gap-3 rounded-2xl bg-secondary/60 p-3 text-xs text-muted-foreground">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-              <p>
-                Add your address (previous step) to see what neighbors paid for the same kind of project.
-              </p>
-            </div>
           )}
         </section>
 
@@ -223,7 +246,7 @@ const ScopeBudgetStep = ({
             When do you want to start?
           </p>
           <p className="text-center text-sm text-muted-foreground">
-            Tap one — that's the last thing.
+            Pick the one that fits — last step.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {timelines.map((o) => (
