@@ -13,9 +13,11 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 import type { AnalysisSection } from "@/lib/brief";
+import { extractVideoFrames } from "@/lib/videoFrames";
 
 const SESSION_KEY = "haleo:session:v1";
 const UPLOADED_KEY = "haleo:uploaded:v1"; // map<assetId, publicUrl>
+const VIDEO_FRAMES_KEY = "haleo:videoframes:v1"; // map<assetId, publicUrl[]>
 const BUCKET = "intake-media";
 
 export type SpaceAnalysisStatus = "idle" | "uploading" | "analyzing" | "ready" | "error";
