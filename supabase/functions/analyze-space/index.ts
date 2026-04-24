@@ -132,18 +132,16 @@ function buildIntakeBrief(intake: Record<string, unknown>): string {
   const addrText = addr && !addr.skipped
     ? [addr.city, addr.state, addr.zip].filter(Boolean).join(", ")
     : "withheld";
-  const budget = intake.budgetSkipped
-    ? "not shared"
-    : `$${intake.budgetMin}K – $${intake.budgetMax}K`;
   const timeline = asString(intake.timeline, "unspecified");
 
+  // NOTE: Budget is intentionally omitted from the model context. Haleo's
+  // read should describe the space and the work — never the price tag.
   return [
     `Room: ${room}`,
     `Scope tier: ${scope}`,
     `Pain points: ${painPoints || "none stated"}`,
     `Stated dimensions: ${dimText}`,
     `Address / jurisdiction: ${addrText}`,
-    `Budget: ${budget}`,
     `Timeline: ${timeline}`,
   ].join("\n");
 }
