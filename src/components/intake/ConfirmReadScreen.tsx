@@ -28,6 +28,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import type { IntakeData } from "@/lib/intake";
