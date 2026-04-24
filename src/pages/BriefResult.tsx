@@ -930,8 +930,14 @@ const ExecSummary = ({
         />
         <Stat
           icon={Sparkles}
-          label="Readiness"
-          value={`${readiness.score}/100 · ${readiness.level}`}
+          label="How complete"
+          value={
+            readiness.level === "biddable"
+              ? "Ready for contractors"
+              : readiness.level === "shareable"
+                ? "Good to share"
+                : "Just getting started"
+          }
           tone={readiness.level === "biddable" ? "sage" : "accent"}
         />
       </div>
