@@ -180,9 +180,12 @@ const ContractorProfile = () => {
                   </a>
                 </section>
 
-                <Link to="/contractors">
+                <Link
+                  to="/contractors"
+                  state={{ preselectId: contractor.id, openOutreach: true }}
+                >
                   <Button className="w-full rounded-full">
-                    Send project brief
+                    <span className="inline-flex items-center gap-1.5">Send project brief</span>
                   </Button>
                 </Link>
               </aside>

@@ -1,7 +1,7 @@
 // Contractor Discovery — surfaces real San Jose contractors who pulled
 // permits matching the homeowner's project type, ranked by Trust Score.
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, MapPin, Calendar, Hammer, Check,
@@ -62,7 +62,14 @@ const ContractorCard = ({
         </div>
       )}
       <div className="flex items-start gap-4">
-        <ScoreRing score={score.total} />
+        <button
+          type="button"
+          onClick={() => navigate(`/contractors/${contractor.id}`)}
+          aria-label="See trust score breakdown"
+          className="shrink-0 rounded-full transition-smooth hover:opacity-80"
+        >
+          <ScoreRing score={score.total} />
+        </button>
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-lg font-medium leading-tight text-foreground">
             {contractor.company ?? contractor.name}
@@ -70,6 +77,13 @@ const ContractorCard = ({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {contractor.specialty ?? "General"} · {contractor.city ?? "San Jose"}
           </p>
+          <button
+            type="button"
+            onClick={() => navigate(`/contractors/${contractor.id}`)}
+            className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
+          >
+            Why this score?
+          </button>
         </div>
       </div>
 
@@ -120,6 +134,7 @@ const ContractorCard = ({
 const Contractors = () => {
   const { data } = useIntake();
   const navigate = useNavigate();
+  const location = useLocation();
   const { status, ranked, backfillNote, error } = useContractors(data);
   const projectLabel = projectTypeLabel(data);
   const neighborhood = data.address?.city || "your area";
@@ -138,6 +153,25 @@ const Contractors = () => {
 
   // Build the high-level brief summary that goes into the email
   const briefSummary = useMemo(() => buildBriefSnapshot(data), [data]);
+
+  // Honor pre-selection coming from a contractor profile "Send project brief" CTA.
+  const navState = location.state as { preselectId?: string; openOutreach?: boolean } | null;
+  useEffect(() => {
+    if (!navState?.preselectId) return;
+    if (status !== "ready") return;
+    const exists = ranked.some(r => r.contractor.id === navState.preselectId);
+    if (!exists) return;
+    setSelected(prev => {
+      if (prev.has(navState.preselectId!)) return prev;
+      const next = new Set(prev);
+      next.add(navState.preselectId!);
+      return next;
+    });
+    if (navState.openOutreach) setOutreachOpen(true);
+    // Clear nav state so back/forward doesn't re-trigger.
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, ranked, navState?.preselectId]);
 
   const toggle = (id: string) => {
     setSelected(prev => {
