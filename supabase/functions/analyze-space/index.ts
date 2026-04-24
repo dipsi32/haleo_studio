@@ -22,6 +22,7 @@ const MODEL = "google/gemini-2.5-flash";
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MAX_PHOTOS = 6;
 const MAX_FLOORPLANS = 2;
+const MAX_VIDEO_FRAMES = 6;
 
 type Basis = "grounded" | "inferred" | "question";
 
