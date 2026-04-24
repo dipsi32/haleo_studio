@@ -254,10 +254,23 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
         setStatus("uploading");
         setError(null);
         const sessionId = getSessionId();
-        const uploaded: { kind: MediaAsset["kind"]; url: string; mime?: string }[] = [];
+        const uploaded: AnalyzeMediaInput[] = [];
         for (const a of analyzable) {
           const url = await uploadMediaIfNeeded(a, sessionId);
           if (url) uploaded.push({ kind: a.kind, url, mime: a.mime });
+
+          // For videos, also sample stills client-side and upload them so
+          // Haleo can actually "see" the walkthrough.
+          if (a.kind === "video") {
+            try {
+              const frameUrls = await extractAndUploadVideoFrames(a, sessionId);
+              for (const frameUrl of frameUrls) {
+                uploaded.push({ kind: "video_frame", url: frameUrl, mime: "image/jpeg" });
+              }
+            } catch (err) {
+              console.warn("Video frame extraction failed; analysis will rely on photos only.", err);
+            }
+          }
         }
         if (uploaded.length === 0) {
           throw new Error("Could not upload any media — try re-adding the files.");
