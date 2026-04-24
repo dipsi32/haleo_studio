@@ -139,9 +139,19 @@ const ConfirmReadScreen = ({
     .sort()
     .join(",");
   const approvedKey = (intake.approvedAnalysis?.mediaIds ?? []).slice().sort().join(",");
+  const feedbackKey = (intake.readFeedback?.mediaIds ?? []).slice().sort().join(",");
+  const hasPriorFeedback = !!intake.readFeedback && feedbackKey === currentKey;
   const initialConfirmed: Confirmation =
-    intake.approvedAnalysis && approvedKey === currentKey ? "ok" : "unset";
+    intake.approvedAnalysis && approvedKey === currentKey
+      ? "ok"
+      : hasPriorFeedback
+        ? "off"
+        : "unset";
   const [confirmed, setConfirmed] = useState<Confirmation>(initialConfirmed);
+  const [feedbackNote, setFeedbackNote] = useState<string>(
+    hasPriorFeedback ? intake.readFeedback!.note : "",
+  );
+  const [feedbackSaved, setFeedbackSaved] = useState<boolean>(hasPriorFeedback);
 
   // Prioritize most-confident reads first.
   const items = useMemo(() => {
