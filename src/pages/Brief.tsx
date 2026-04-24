@@ -97,37 +97,66 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
   </button>
 );
 
-// ───── Feedforward: live progress dots that mirror the wizard ─────
-const StepDots = ({ step }: { step: number }) => (
-  <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border border-border bg-card/70 px-4 py-2.5 text-xs font-medium text-foreground/70 shadow-soft backdrop-blur">
-    <span className="hidden uppercase tracking-[0.18em] text-accent sm:inline">
-      5 quick steps
-    </span>
-    <span className="hidden h-3 w-px bg-border sm:inline-block" />
-    {STEP_LABELS.map((label, i) => {
-      const n = i + 1;
-      const isDone = step > n;
-      const isActive = step === n;
-      return (
-        <span key={label} className="flex items-center gap-2">
-          <span
-            className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-semibold transition-smooth ${
-              isDone
-                ? "bg-accent text-accent-foreground"
-                : isActive
-                  ? "bg-foreground text-background ring-4 ring-accent-soft"
-                  : "bg-secondary text-foreground/50"
-            }`}
-          >
-            {isDone ? <Check className="h-3 w-3" /> : n}
-          </span>
-          <span className={`whitespace-nowrap ${isActive ? "text-foreground" : ""}`}>{label}</span>
-          {n < STEP_LABELS.length && <span className="hidden h-px w-3 bg-border sm:inline-block md:w-4" />}
-        </span>
-      );
-    })}
-  </div>
-);
+// ───── Feedforward: where you are, how much is left ─────
+// Compact, calm, mobile-first. One clear label for the current step,
+// a segmented bar that shows progress at a glance, and a quiet "x left" meter.
+const StepDots = ({ step }: { step: number }) => {
+  const total = STEP_LABELS.length;
+  const current = Math.max(1, Math.min(total, step));
+  const remaining = total - current;
+  const currentLabel = STEP_LABELS[current - 1];
+
+  return (
+    <div className="mx-auto max-w-md">
+      {/* Top row: where am I */}
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+            Step {current} of {total}
+          </p>
+          <p className="mt-1 truncate font-display text-base font-medium text-foreground">
+            {currentLabel}
+          </p>
+        </div>
+        <p className="shrink-0 text-[11px] font-medium text-muted-foreground">
+          {remaining === 0 ? "Last step" : `${remaining} to go`}
+        </p>
+      </div>
+
+      {/* Segmented progress — five quiet bars, the active one breathes */}
+      <div className="mt-3 flex items-center gap-1.5" role="progressbar" aria-valuenow={current} aria-valuemin={1} aria-valuemax={total} aria-label={`Step ${current} of ${total}: ${currentLabel}`}>
+        {STEP_LABELS.map((label, i) => {
+          const n = i + 1;
+          const isDone = current > n;
+          const isActive = current === n;
+          return (
+            <span key={label} className="relative flex-1 overflow-hidden rounded-full bg-border/70" style={{ height: 4 }}>
+              <motion.span
+                aria-hidden
+                initial={false}
+                animate={{
+                  width: isDone || isActive ? "100%" : "0%",
+                  opacity: isDone ? 1 : isActive ? 0.95 : 0,
+                }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: isDone ? i * 0.04 : 0 }}
+                className={`absolute inset-y-0 left-0 rounded-full ${isDone ? "bg-accent" : "bg-foreground"}`}
+              />
+              {isActive && (
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 rounded-full bg-foreground/40"
+                  initial={{ width: "0%" }}
+                  animate={{ width: ["0%", "100%"] }}
+                  transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
+                />
+              )}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // ───── Screen 1: Room ─────
 const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
