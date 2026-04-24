@@ -578,28 +578,37 @@ const BriefResult = () => {
           </motion.article>
         </div>
 
-        {/* Actions */}
+        {/* Actions — one primary path, one quiet escape hatch */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 grid gap-3 sm:grid-cols-3"
+          className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
         >
-          <Button size="lg" className="rounded-full" disabled={!approved} asChild={approved}>
+          <Button
+            size="lg"
+            className="rounded-full sm:flex-1"
+            onClick={() => setApproved(true)}
+            asChild={approved}
+          >
             {approved ? (
               <Link to="/contractors">
                 <ShieldCheck className="h-4 w-4" />
-                Find verified contractors near you
+                Approve and send to contractors
               </Link>
             ) : (
-              <span><Send className="h-4 w-4" /> Approve to send</span>
+              <span>
+                <Send className="h-4 w-4" />
+                Approve and send to contractors
+              </span>
             )}
           </Button>
-          <Button size="lg" variant="outline" className="rounded-full" disabled={!approved}>
-            <Download className="h-4 w-4" />
-            Download PDF
-          </Button>
-          <Button size="lg" variant="outline" className="rounded-full" onClick={() => setEditOpen(true)}>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-full sm:w-auto"
+            onClick={() => setEditOpen(true)}
+          >
             <Edit3 className="h-4 w-4" />
             Edit brief
           </Button>
