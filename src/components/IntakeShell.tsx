@@ -11,9 +11,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const IntakeShell = ({ step, total, onBack, exitTo = "/", children }: Props) => {
-  const progress = Math.max(0, Math.min(100, (step / total) * 100));
-
+const IntakeShell = ({ step, onBack, exitTo = "/", children }: Props) => {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
@@ -30,9 +28,6 @@ const IntakeShell = ({ step, total, onBack, exitTo = "/", children }: Props) => 
             ) : (
               <Logo />
             )}
-            <p className="hidden text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground sm:block">
-              Step {step} of {total}
-            </p>
           </div>
           <Link
             to={exitTo}
@@ -41,14 +36,6 @@ const IntakeShell = ({ step, total, onBack, exitTo = "/", children }: Props) => 
           >
             <X className="h-4 w-4" />
           </Link>
-        </div>
-        <div className="h-0.5 w-full bg-border/60">
-          <motion.div
-            className="h-full bg-accent"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          />
         </div>
       </header>
 
