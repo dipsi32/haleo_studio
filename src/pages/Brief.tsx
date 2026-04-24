@@ -564,7 +564,6 @@ const ScopeAndBudgetScreen = ({
   <div className="space-y-10">
     <StepDots step={5} />
     <ScreenTitle
-      eyebrow="Step 5 of 5 · last one"
       title="Scope, budget, and timing."
       sub="Pick the type of project that fits. Budget is optional — share if you have one in mind."
     />
