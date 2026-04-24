@@ -102,12 +102,14 @@ type Confirmation = "unset" | "ok" | "off";
 const ConfirmReadScreen = ({
   intake,
   onApprove,
+  onSaveFeedback,
   onContinue,
   onBack,
   stepDots,
 }: {
   intake: IntakeData;
   onApprove: (snapshot: NonNullable<IntakeData["approvedAnalysis"]>) => void;
+  onSaveFeedback?: (feedback: NonNullable<IntakeData["readFeedback"]>) => void;
   onContinue: () => void;
   onBack: () => void;
   stepDots: React.ReactNode;
