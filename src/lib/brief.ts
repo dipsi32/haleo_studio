@@ -692,15 +692,15 @@ export const buildAnalysisSections = (d: IntakeData): AnalysisSection[] => {
 // Honest checklist. The score IS the sum of weights. Total possible = 100.
 export const buildReadiness = (d: IntakeData): BriefReadiness => {
   const checks: { key: string; label: string; weight: number; have: boolean; nudge: string }[] = [
-    { key: "room", label: "Room or scope chosen", weight: 10, have: Boolean(d.room), nudge: "Pick a room to anchor the brief." },
-    { key: "video", label: "Walkthrough video", weight: 22, have: hasKind(d, "video"), nudge: "Add a 30s video — the single biggest signal for contractors." },
-    { key: "photo", label: "Reference photos", weight: 12, have: hasKind(d, "photo"), nudge: "Snap a few photos of the trouble spots." },
-    { key: "plan", label: "Floor plan or measurements", weight: 14, have: hasKind(d, "floorplan") || hasAnyMeasurements(d), nudge: "Add a floor plan or rough measurements." },
-    { key: "pain", label: "Pain points named", weight: 10, have: d.painPoints.length >= 3, nudge: "Tag at least 3 things bugging you about the space." },
-    { key: "scope", label: "Scope of work picked", weight: 10, have: Boolean(d.scope), nudge: "Choose a scope tier so budget is realistic." },
-    { key: "budget", label: "Budget range", weight: 8, have: !d.budgetSkipped && d.budgetMin != null, nudge: "A range — even rough — keeps bids realistic." },
-    { key: "timeline", label: "Timeline anchored", weight: 6, have: Boolean(d.timeline), nudge: "Even 'just exploring' counts." },
-    { key: "address", label: "Project address", weight: 8, have: Boolean(d.address?.city) && !d.address?.skipped, nudge: "Add the address to unlock permit & neighborhood intel." },
+    { key: "room",     label: "The room you're working on",       weight: 10, have: Boolean(d.room),                                                        nudge: "Tell us which room — it grounds everything else." },
+    { key: "video",    label: "A short walkthrough video",         weight: 22, have: hasKind(d, "video"),                                                    nudge: "A 30-second video is the single most helpful thing you can add." },
+    { key: "photo",    label: "A few photos",                      weight: 12, have: hasKind(d, "photo"),                                                    nudge: "Snap a few photos of the trouble spots." },
+    { key: "plan",     label: "Floor plan or rough measurements",  weight: 14, have: hasKind(d, "floorplan") || hasAnyMeasurements(d),                       nudge: "Drop a floor plan or jot a few measurements." },
+    { key: "pain",     label: "What's bugging you about the space",weight: 10, have: d.painPoints.length >= 3,                                               nudge: "Name 3 things you'd love to fix." },
+    { key: "scope",    label: "The kind of project this is",       weight: 10, have: Boolean(d.scope),                                                       nudge: "Pick the type of project that fits best." },
+    { key: "budget",   label: "A budget you have in mind",         weight: 8,  have: !d.budgetSkipped && d.budgetMin != null,                                nudge: "Share a number if you have one — totally optional." },
+    { key: "timeline", label: "When you'd like to start",          weight: 6,  have: Boolean(d.timeline),                                                    nudge: "Even 'just exploring' is helpful to know." },
+    { key: "address",  label: "Your project address",              weight: 8,  have: Boolean(d.address?.city) && !d.address?.skipped,                        nudge: "Add the address to unlock neighborhood and permit info." },
   ];
   const score = checks.reduce((s, c) => s + (c.have ? c.weight : 0), 0);
   const have = checks.filter((c) => c.have).map(({ label, weight }) => ({ label, weight }));
@@ -711,7 +711,7 @@ export const buildReadiness = (d: IntakeData): BriefReadiness => {
 
 export const readinessCopy = (level: BriefReadiness["level"]) =>
   level === "biddable"
-    ? { headline: "Biddable.", sub: "Contractors can quote the same scope from this brief." }
+    ? { headline: "Ready for contractors.", sub: "There's enough here for a contractor to quote with confidence." }
     : level === "shareable"
-      ? { headline: "Shareable.", sub: "Good enough to start a conversation — a few additions would lock it down." }
-      : { headline: "Draft.", sub: "Add a couple more details and contractors will bid with real confidence." };
+      ? { headline: "Good to share.", sub: "Solid enough to start a conversation — a few more details would lock it in." }
+      : { headline: "Just getting started.", sub: "A couple more details and contractors will be able to bid with real confidence." };
