@@ -62,7 +62,8 @@ RULES:
 - Never invent rooms or features that aren't visible or stated.
 - Reference the homeowner's pain points and scope when they shape your read.
 - If video frames are provided, treat them as time-of-day-anchored snapshots — call out lighting, finish condition, and visible MEP cues; note exact dimensions can't come from video.
-- The "summary" is one tight paragraph (≤ 80 words) — what a GC would tell their PM in a hallway.
+- NEVER mention budget, dollars, price ranges, or cost figures anywhere in the summary or items. Pricing belongs to the bid step, not the read.
+- The "summary" is one tight paragraph (≤ 80 words) — what a GC would tell their PM in a hallway. Describe the space and the work, not the budget or timeline numbers.
 
 Return ONLY the tool call. No prose.`;
 
@@ -132,18 +133,16 @@ function buildIntakeBrief(intake: Record<string, unknown>): string {
   const addrText = addr && !addr.skipped
     ? [addr.city, addr.state, addr.zip].filter(Boolean).join(", ")
     : "withheld";
-  const budget = intake.budgetSkipped
-    ? "not shared"
-    : `$${intake.budgetMin}K – $${intake.budgetMax}K`;
   const timeline = asString(intake.timeline, "unspecified");
 
+  // NOTE: Budget is intentionally omitted from the model context. Haleo's
+  // read should describe the space and the work — never the price tag.
   return [
     `Room: ${room}`,
     `Scope tier: ${scope}`,
     `Pain points: ${painPoints || "none stated"}`,
     `Stated dimensions: ${dimText}`,
     `Address / jurisdiction: ${addrText}`,
-    `Budget: ${budget}`,
     `Timeline: ${timeline}`,
   ].join("\n");
 }
