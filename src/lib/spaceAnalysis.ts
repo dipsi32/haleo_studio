@@ -13,9 +13,11 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 import type { AnalysisSection } from "@/lib/brief";
+import { extractVideoFrames } from "@/lib/videoFrames";
 
 const SESSION_KEY = "haleo:session:v1";
 const UPLOADED_KEY = "haleo:uploaded:v1"; // map<assetId, publicUrl>
+const VIDEO_FRAMES_KEY = "haleo:videoframes:v1"; // map<assetId, publicUrl[]>
 const BUCKET = "intake-media";
 
 export type SpaceAnalysisStatus = "idle" | "uploading" | "analyzing" | "ready" | "error";
@@ -92,10 +94,83 @@ export const uploadMediaIfNeeded = async (
   return data.publicUrl;
 };
 
+// What we send to analyze-space. "video_frame" is a synthetic kind produced
+// client-side by sampling stills out of an uploaded walkthrough video.
+export type AnalyzeMediaKind = MediaAsset["kind"] | "video_frame";
+export type AnalyzeMediaInput = { kind: AnalyzeMediaKind; url: string; mime?: string };
+
+const readVideoFrameCache = (): Record<string, string[]> => {
+  try {
+    return JSON.parse(localStorage.getItem(VIDEO_FRAMES_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+};
+const writeVideoFrameCache = (map: Record<string, string[]>) => {
+  try {
+    localStorage.setItem(VIDEO_FRAMES_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
+};
+
+// Pull the actual File for a video asset back out of its blob URL, sample
+// frames, upload each frame to the same intake-media bucket, and cache the
+// resulting public URLs so re-running the brief is free.
+export const extractAndUploadVideoFrames = async (
+  asset: MediaAsset,
+  sessionId: string,
+): Promise<string[]> => {
+  if (asset.kind !== "video") return [];
+  const cache = readVideoFrameCache();
+  if (cache[asset.id]?.length) return cache[asset.id];
+
+  // Re-fetch the video blob from its session URL, then materialize as a File
+  // so the extractor can read duration/dimensions.
+  let file: File | null = null;
+  try {
+    const res = await fetch(asset.url);
+    if (!res.ok) return [];
+    const blob = await res.blob();
+    file = new File([blob], asset.name || "video.mp4", {
+      type: asset.mime || blob.type || "video/mp4",
+    });
+  } catch (err) {
+    console.error("video fetch failed", err);
+    return [];
+  }
+
+  const frames = await extractVideoFrames(file, 6);
+  if (frames.length === 0) return [];
+
+  const uploadedUrls: string[] = [];
+  for (let i = 0; i < frames.length; i++) {
+    const f = frames[i];
+    const path = `${sessionId}/${asset.id}-frame-${String(i).padStart(2, "0")}.jpg`;
+    const { error } = await supabase.storage.from(BUCKET).upload(path, f.blob, {
+      cacheControl: "3600",
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+    if (error) {
+      console.error("frame upload failed", error);
+      continue;
+    }
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    uploadedUrls.push(data.publicUrl);
+  }
+
+  if (uploadedUrls.length > 0) {
+    cache[asset.id] = uploadedUrls;
+    writeVideoFrameCache(cache);
+  }
+  return uploadedUrls;
+};
+
 export const runSpaceAnalysis = async (
   sessionId: string,
   intake: IntakeData,
-  mediaUrls: { kind: MediaAsset["kind"]; url: string; mime?: string }[],
+  mediaUrls: AnalyzeMediaInput[],
 ): Promise<SpaceAnalysis> => {
   const { data, error } = await supabase.functions.invoke("analyze-space", {
     body: { sessionId, intake, mediaUrls },
@@ -179,10 +254,23 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
         setStatus("uploading");
         setError(null);
         const sessionId = getSessionId();
-        const uploaded: { kind: MediaAsset["kind"]; url: string; mime?: string }[] = [];
+        const uploaded: AnalyzeMediaInput[] = [];
         for (const a of analyzable) {
           const url = await uploadMediaIfNeeded(a, sessionId);
           if (url) uploaded.push({ kind: a.kind, url, mime: a.mime });
+
+          // For videos, also sample stills client-side and upload them so
+          // Haleo can actually "see" the walkthrough.
+          if (a.kind === "video") {
+            try {
+              const frameUrls = await extractAndUploadVideoFrames(a, sessionId);
+              for (const frameUrl of frameUrls) {
+                uploaded.push({ kind: "video_frame", url: frameUrl, mime: "image/jpeg" });
+              }
+            } catch (err) {
+              console.warn("Video frame extraction failed; analysis will rely on photos only.", err);
+            }
+          }
         }
         if (uploaded.length === 0) {
           throw new Error("Could not upload any media — try re-adding the files.");
