@@ -267,12 +267,14 @@ const AnnotationBlock = ({
 // ───── Page ─────
 const BriefResult = () => {
   const { data, update, addMedia, removeMedia, togglePill } = useIntake();
+  const navigate = useNavigate();
   const [open, setOpen] = useState<MediaAsset | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [approved, setApproved] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [lineEdits, setLineEdits] = useState<Record<number, string>>({});
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [addressPromptOpen, setAddressPromptOpen] = useState(false);
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
