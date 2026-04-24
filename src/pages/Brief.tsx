@@ -524,7 +524,6 @@ const AddressScreen = ({
     <div className="space-y-10">
       <StepDots step={4} />
       <ScreenTitle
-        eyebrow="Step 4 of 5"
         title="Where's the project?"
         sub="The address unlocks real permit history and neighborhood cost intel for your brief."
       />
