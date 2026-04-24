@@ -1153,12 +1153,35 @@ const TradeGroupCard = ({
   );
 };
 
-// ───── Brief Readiness — slim ACTION bar (not a card competing with the brief) ─────
-// Visual language: horizontal, low-chrome, looks like a toolbar/affordance, not a document.
-const TIER_META: Record<BriefReadiness["level"], { label: string; nextAt: number | null; nextLabel: string | null; toneCls: string }> = {
-  draft: { label: "Draft", nextAt: 50, nextLabel: "Shareable", toneCls: "text-foreground/70" },
-  shareable: { label: "Shareable", nextAt: 75, nextLabel: "Biddable", toneCls: "text-accent" },
-  biddable: { label: "Biddable", nextAt: null, nextLabel: null, toneCls: "text-sage" },
+// ───── How complete is your brief — friendly checklist + one clear next step ─────
+// Visual language: warm, conversational, low-chrome. Talks to the user like a
+// helpful guide, not a form. Score numbers are de-emphasized in favor of plain
+// language ("Just getting started" / "Good to share" / "Ready for contractors").
+const TIER_META: Record<
+  BriefReadiness["level"],
+  { label: string; sub: string; nextLabel: string | null; toneCls: string; dotCls: string }
+> = {
+  draft: {
+    label: "Just getting started",
+    sub: "A few more details and your brief really starts working for you.",
+    nextLabel: "Good to share",
+    toneCls: "text-foreground",
+    dotCls: "bg-foreground/30",
+  },
+  shareable: {
+    label: "Good to share",
+    sub: "Solid enough to start a conversation. A little more and contractors can bid confidently.",
+    nextLabel: "Ready for contractors",
+    toneCls: "text-accent",
+    dotCls: "bg-accent",
+  },
+  biddable: {
+    label: "Ready for contractors",
+    sub: "There's enough here for a contractor to quote with confidence.",
+    nextLabel: null,
+    toneCls: "text-sage",
+    dotCls: "bg-sage",
+  },
 };
 
 const ReadinessBar = ({
@@ -1170,105 +1193,145 @@ const ReadinessBar = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const tier = TIER_META[readiness.level];
+  // Suggest the highest-impact missing item first.
   const topMissing = [...readiness.missing].sort((a, b) => b.weight - a.weight)[0];
-  const pointsToNext = tier.nextAt != null ? Math.max(0, tier.nextAt - readiness.score) : 0;
+  const totalChecks = readiness.have.length + readiness.missing.length;
 
   return (
     <motion.aside
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-      className="mt-8 rounded-2xl border border-dashed border-foreground/15 bg-background/60 p-4"
-      aria-label="Brief readiness — your action area"
+      className="mt-8 overflow-hidden rounded-2xl border border-border bg-card/80 shadow-soft"
+      aria-label="How complete your brief is"
     >
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-        {/* Status */}
-        <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-foreground/5">
-            <Sparkles className={`h-3.5 w-3.5 ${tier.toneCls}`} />
-          </div>
-          <div className="leading-tight">
-            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Brief readiness</p>
-            <p className="text-sm font-medium">
-              <span className={tier.toneCls}>{tier.label}</span>
-              <span className="text-muted-foreground"> · {readiness.score}/100</span>
+      {/* Header — plain language, no jargon */}
+      <div className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:gap-6 md:p-6">
+        <div className="flex items-start gap-3 md:max-w-sm">
+          <span
+            className={`mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${tier.dotCls}`}
+            aria-hidden
+          />
+          <div className="leading-snug">
+            <p className={`font-display text-lg font-medium ${tier.toneCls}`}>
+              {tier.label}
             </p>
+            <p className="mt-1 text-sm text-muted-foreground">{tier.sub}</p>
           </div>
         </div>
 
-        {/* Track */}
-        <div className="min-w-[140px] flex-1">
-          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
+        {/* Progress — soft, not a graded report card */}
+        <div className="flex-1 md:max-w-md">
+          <div className="mb-2 flex items-baseline justify-between text-xs text-muted-foreground">
+            <span>
+              <span className="font-medium text-foreground">{readiness.have.length}</span> of {totalChecks} added
+            </span>
+            {tier.nextLabel && (
+              <span>
+                Next up: <span className="text-foreground">{tier.nextLabel}</span>
+              </span>
+            )}
+          </div>
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/8">
             <motion.div
               className="absolute left-0 top-0 h-full rounded-full bg-accent"
               initial={{ width: 0 }}
               animate={{ width: `${readiness.score}%` }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
             />
-            <span className="absolute top-0 h-full w-px bg-background" style={{ left: "50%" }} aria-hidden />
-            <span className="absolute top-0 h-full w-px bg-background" style={{ left: "75%" }} aria-hidden />
-          </div>
-          <div className="mt-1 flex justify-between text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-            <span>Draft</span>
-            <span>Shareable</span>
-            <span>Biddable</span>
           </div>
         </div>
 
-        {/* CTA */}
-        {topMissing ? (
-          <Button
-            onClick={onAdd}
-            size="sm"
-            className="shrink-0 rounded-full"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add {topMissing.label.toLowerCase()}
-            {tier.nextLabel && <span className="ml-1 text-[10px] opacity-80">+{topMissing.weight} → {tier.nextLabel}</span>}
-          </Button>
-        ) : (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-sage-soft px-3 py-1.5 text-xs font-medium text-sage">
-            <Check className="h-3.5 w-3.5" /> Fully bid-ready
-          </span>
-        )}
-
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-smooth hover:text-foreground"
-        >
-          {expanded ? "Hide" : "What counts?"}
-          <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
+        {/* CTA — one suggestion at a time */}
+        <div className="md:ml-auto">
+          {topMissing ? (
+            <Button
+              onClick={onAdd}
+              size="sm"
+              className="w-full rounded-full md:w-auto"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add {topMissing.label.toLowerCase()}
+            </Button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-soft px-3 py-1.5 text-xs font-medium text-sage">
+              <Check className="h-3.5 w-3.5" /> Nothing left to add
+            </span>
+          )}
+        </div>
       </div>
 
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.ul
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-4 grid gap-1 overflow-hidden border-t border-foreground/10 pt-3 sm:grid-cols-2"
-          >
-            {[
-              ...readiness.have.map((h) => ({ ...h, have: true, nudge: "" })),
-              ...readiness.missing.map((m) => ({ ...m, have: false })),
-            ].map((item) => (
-              <li key={item.label} className="flex items-center gap-2 px-1 py-1 text-xs">
-                {item.have ? (
-                  <Check className="h-3 w-3 shrink-0 text-sage" />
-                ) : (
-                  <span className="grid h-3 w-3 shrink-0 place-items-center rounded-full border border-foreground/30" />
-                )}
-                <span className={`min-w-0 truncate ${item.have ? "text-foreground/80" : "text-foreground/55"}`}>
-                  {item.label}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">+{item.weight}</span>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+      {/* Subtle reveal — the full checklist for those who want it */}
+      <div className="border-t border-border/60">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex w-full items-center justify-between px-5 py-3 text-xs font-medium text-muted-foreground transition-smooth hover:bg-foreground/5 hover:text-foreground md:px-6"
+          aria-expanded={expanded}
+        >
+          <span>{expanded ? "Hide the full checklist" : "See everything we look at"}</span>
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="grid gap-6 px-5 pb-5 pt-1 md:grid-cols-2 md:px-6 md:pb-6">
+                {/* Already in your brief */}
+                <div>
+                  <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Already in your brief
+                  </p>
+                  {readiness.have.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nothing yet — pick something on the right to start.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {readiness.have.map((h) => (
+                        <li key={h.label} className="flex items-start gap-2 text-sm text-foreground/85">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage" />
+                          <span>{h.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Things that would help */}
+                <div>
+                  <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Things that would help
+                  </p>
+                  {readiness.missing.length === 0 ? (
+                    <p className="text-sm text-sage">All set — nothing else needed.</p>
+                  ) : (
+                    <ul className="space-y-2.5">
+                      {[...readiness.missing]
+                        .sort((a, b) => b.weight - a.weight)
+                        .map((m) => (
+                          <li key={m.label} className="flex items-start gap-2 text-sm">
+                            <span
+                              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60"
+                              aria-hidden
+                            />
+                            <div className="leading-snug">
+                              <p className="text-foreground/90">{m.label}</p>
+                              <p className="text-xs text-muted-foreground">{m.nudge}</p>
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.aside>
   );
 };
