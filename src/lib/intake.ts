@@ -92,6 +92,13 @@ export type IntakeData = {
     approvedAt: string; // ISO timestamp
     mediaIds: string[]; // ids covered by this approval — invalidates if media changes
   };
+  // Homeowner's note when they flag Haleo's read as off — surfaces in the
+  // brief and to the contractor so the read can be corrected with context.
+  readFeedback?: {
+    note: string;
+    submittedAt: string; // ISO timestamp
+    mediaIds: string[]; // the read this feedback is about
+  };
 };
 
 const STORAGE_KEY = "haleo:intake:v2";
