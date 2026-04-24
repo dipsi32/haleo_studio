@@ -232,7 +232,7 @@ const Contractors = () => {
         <div className="mt-8 flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 p-4">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
           <div>
-            <p className="text-sm font-medium text-foreground">Unlike Yelp or Angie's List, every contractor here has a verified permit history.</p>
+            <p className="text-sm font-medium text-foreground">Every contractor here has a verified permit history.</p>
             <p className="text-xs text-muted-foreground">We show you who has actually done the work — not who paid to be listed.</p>
           </div>
         </div>
