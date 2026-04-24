@@ -759,18 +759,16 @@ const SectionHeading = ({
   </div>
 );
 
-// ───── Executive Summary — the one-glance dashboard ─────
-// Sits above the document. Gives the user every critical detail in 5 seconds:
-// scope · location · budget · timeline · permit · readiness · what's on file · open questions.
+// ───── Quiet at-a-glance strip ─────
+// Five facts a contractor (or you) needs in 3 seconds. No "Executive summary" label,
+// no duplicate stats, no jargon — just the essentials in plain language.
 const ExecSummary = ({
   data,
   budgetLabel,
   timelineLabel,
   permit,
-  readiness,
   spaceMediaCount,
   inspirationCount,
-  openQuestions,
   tradeCount,
   approved,
   onApprove,
@@ -780,10 +778,8 @@ const ExecSummary = ({
   budgetLabel: string;
   timelineLabel: string;
   permit: { likely: boolean; reason: string };
-  readiness: BriefReadiness;
   spaceMediaCount: number;
   inspirationCount: number;
-  openQuestions: number;
   tradeCount: number;
   approved: boolean;
   onApprove: () => void;
@@ -801,56 +797,48 @@ const ExecSummary = ({
             ? "Add space"
             : "Scope TBD";
 
-  const Stat = ({
+  const Fact = ({
     icon: Icon,
     label,
     value,
-    tone = "default",
   }: {
     icon: typeof FileText;
     label: string;
     value: string;
-    tone?: "default" | "accent" | "sage";
   }) => (
-    <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-3.5">
-      <span
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${
-          tone === "accent"
-            ? "bg-accent-soft text-accent"
-            : tone === "sage"
-              ? "bg-sage-soft text-sage"
-              : "bg-secondary text-foreground/70"
-        }`}
-      >
+    <div className="flex items-center gap-2.5">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
         <Icon className="h-3.5 w-3.5" />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 leading-tight">
         <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-        <p className="mt-0.5 truncate text-sm font-medium text-foreground">{value}</p>
+        <p className="truncate text-sm font-medium text-foreground">{value}</p>
       </div>
     </div>
   );
+
+  const filesValue =
+    spaceMediaCount + inspirationCount === 0
+      ? "None yet"
+      : `${spaceMediaCount} space${inspirationCount ? `, ${inspirationCount} inspo` : ""}`;
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-      className="mt-8 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card to-secondary/40 shadow-soft"
-      aria-label="Executive summary"
+      className="mt-8 overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
+      aria-label="At a glance"
     >
-      {/* Top row: marquee summary + actions */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 md:px-7">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Executive summary</p>
-          <p className="mt-2 font-display text-xl font-light leading-snug text-foreground md:text-2xl">
-            {scopeLabel} · {room.toLowerCase()} · {budgetLabel}
-            {data.address?.city && !data.address.skipped && (
-              <span className="text-foreground/60"> in {data.address.city}</span>
-            )}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
+      {/* One-line headline + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-5 py-4 md:px-6">
+        <p className="font-display text-base font-medium leading-snug text-foreground md:text-lg">
+          {scopeLabel} · {room.toLowerCase()}
+          {data.address?.city && !data.address.skipped && (
+            <span className="text-muted-foreground"> · {data.address.city}</span>
+          )}
+        </p>
+        <div className="flex shrink-0 items-center gap-1.5">
           <Button
             onClick={onApprove}
             size="sm"
@@ -865,45 +853,44 @@ const ExecSummary = ({
         </div>
       </div>
 
-      {/* Stat grid — every critical detail at a glance */}
-      <div className="grid gap-2.5 p-4 sm:grid-cols-2 md:grid-cols-4 md:p-5">
-        <Stat icon={HomeIcon} label="Room" value={room} />
-        <Stat icon={DollarSign} label="Budget" value={budgetLabel} tone="accent" />
-        <Stat icon={Calendar} label="Timeline" value={timelineLabel} />
-        <Stat
-          icon={ShieldCheck}
-          label="Permit"
-          value={permit.likely ? "Likely required" : "Likely exempt"}
-          tone={permit.likely ? "accent" : "sage"}
-        />
-        <Stat icon={Hammer} label="Trades" value={`${tradeCount} in scope`} />
-        <Stat
-          icon={ImageIcon}
-          label="On file"
-          value={`${spaceMediaCount} space${inspirationCount ? ` · ${inspirationCount} inspo` : ""}`}
-        />
-        <Stat
-          icon={HelpCircle}
-          label="Open questions"
-          value={openQuestions === 0 ? "None" : `${openQuestions} to clarify`}
-          tone={openQuestions > 0 ? "accent" : "sage"}
-        />
-        <Stat
-          icon={Sparkles}
-          label="How complete"
-          value={
-            readiness.level === "biddable"
-              ? "Ready for contractors"
-              : readiness.level === "shareable"
-                ? "Good to share"
-                : "Just getting started"
-          }
-          tone={readiness.level === "biddable" ? "sage" : "accent"}
-        />
+      {/* Five quiet facts in a row */}
+      <div className="grid grid-cols-2 gap-x-5 gap-y-3 px-5 py-4 sm:grid-cols-3 md:grid-cols-5 md:px-6">
+        <Fact icon={DollarSign} label="Budget" value={budgetLabel} />
+        <Fact icon={Calendar} label="Timeline" value={timelineLabel} />
+        <Fact icon={ShieldCheck} label="Permit" value={permit.likely ? "Likely" : "Exempt"} />
+        <Fact icon={Hammer} label="Trades" value={`${tradeCount}`} />
+        <Fact icon={ImageIcon} label="Files" value={filesValue} />
       </div>
     </motion.section>
   );
 };
+
+// ───── Layer header — warm intro to each top-level group ─────
+const LayerHeader = ({
+  eyebrow,
+  title,
+  sub,
+}: {
+  eyebrow: string;
+  title: string;
+  sub: string;
+}) => (
+  <header className="border-b border-border bg-secondary/30 px-6 py-5 md:px-10">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">{eyebrow}</p>
+    <p className="mt-1.5 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">
+      {title}
+    </p>
+    <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+  </header>
+);
+
+// ───── Compact key/value row ─────
+const KV = ({ label, value }: { label: string; value: string }) => (
+  <div className="min-w-0">
+    <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{label}</dt>
+    <dd className="mt-0.5 text-sm leading-snug text-foreground">{value}</dd>
+  </div>
+);
 
 // ───── Brief table of contents — the feedforward nav ─────
 // Sticky on desktop, horizontal scroll on mobile. Tells the user what's coming
