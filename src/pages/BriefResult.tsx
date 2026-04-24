@@ -402,8 +402,8 @@ const BriefResult = () => {
           onEdit={() => setEditOpen(true)}
         />
 
-        {/* Friendly readiness — tucked under summary */}
-        <ReadinessBar readiness={readiness} onAdd={() => setEditOpen(true)} />
+        {/* Slim, elegant nudge — only when something meaningful is missing */}
+        <ReadinessNudge readiness={readiness} onAdd={() => setEditOpen(true)} />
 
         {/* ────────── TWO CLEAR LAYERS ──────────
             LAYER 1 → "What you shared" (homeowner intake — vision, space, inspiration)
