@@ -241,7 +241,12 @@ const PublicContractorProfile = () => {
         {license && (
           <section className="mb-10">
             <h2 className="mb-3 font-display text-xl font-light">License standing</h2>
-            <CslbSignals license={license} />
+            <CslbSignals
+              license={license}
+              licenseNumber={contractor.license_number}
+              permitDisplayName={contractor.company || contractor.name}
+              variant="profile"
+            />
           </section>
         )}
 
