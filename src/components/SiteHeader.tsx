@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { UserRound, LogIn } from "lucide-react";
 import Logo from "./Logo";
+import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -24,12 +25,15 @@ const SiteHeader = () => {
         {loading ? (
           <span className="h-9 w-28 rounded-full bg-secondary/60" aria-hidden />
         ) : user ? (
-          <Link
-            to="/account"
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
-          >
-            <UserRound className="h-4 w-4" /> My account
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: user.id }} />
+            <Link
+              to="/account"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
+            >
+              <UserRound className="h-4 w-4" /> My account
+            </Link>
+          </div>
         ) : (
           <Link
             to="/login"
