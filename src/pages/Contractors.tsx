@@ -210,8 +210,34 @@ const Contractors = () => {
         is_simulated: true,
         sent_at: new Date().toISOString(),
       }));
-      const { error: sErr } = await supabase.from("outreach_sends").insert(sends);
+      const { data: insertedSends, error: sErr } = await supabase
+        .from("outreach_sends")
+        .insert(sends)
+        .select("id, contractor_id");
       if (sErr) throw sErr;
+
+      // Fan out notifications (in-app + push + SMS stub) per recipient.
+      // Fire-and-forget — don't block the success state on this.
+      if (insertedSends?.length) {
+        Promise.all(
+          insertedSends.map((s) =>
+            supabase.functions.invoke("notify-contractor-brief", {
+              body: { outreach_send_id: s.id },
+            })
+          )
+        ).catch((err) => console.error("notify fan-out failed", err));
+      }
+
+      // Log a homeowner-side notification so they see the brief left their hands.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("homeowner_notifications").insert({
+          user_id: user.id,
+          type: "brief_sent",
+          title: `Brief sent to ${selectedList.length} contractor${selectedList.length === 1 ? "" : "s"}`,
+          body: `We'll let you know the moment one opens it.`,
+        });
+      }
 
       const names = selectedList.map(rc => rc.contractor.company ?? rc.contractor.name);
       setSentInfo({ count: selectedList.length, names });
