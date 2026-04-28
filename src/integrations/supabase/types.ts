@@ -213,17 +213,30 @@ export type Database = {
       contractors: {
         Row: {
           city: string | null
+          claim_completed_at: string | null
+          claim_started_at: string | null
+          claimed: boolean
+          claimed_at: string | null
           company: string | null
           created_at: string
           email: string | null
+          first_brief_received_at: string | null
+          first_brief_unlocked_at: string | null
           id: string
+          invitation_source: string | null
+          invited_at: string | null
           last_permit_date: string | null
           lat: number | null
           license_number: string
           lng: number | null
           name: string
+          notification_email: string | null
+          notification_phone: string | null
+          notification_preference: string | null
           permit_count: number
           phone: string | null
+          profile_viewed_at: string | null
+          slug: string
           specialty: string | null
           state: string | null
           updated_at: string
@@ -232,17 +245,30 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          claim_completed_at?: string | null
+          claim_started_at?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
+          first_brief_received_at?: string | null
+          first_brief_unlocked_at?: string | null
           id?: string
+          invitation_source?: string | null
+          invited_at?: string | null
           last_permit_date?: string | null
           lat?: number | null
           license_number: string
           lng?: number | null
           name: string
+          notification_email?: string | null
+          notification_phone?: string | null
+          notification_preference?: string | null
           permit_count?: number
           phone?: string | null
+          profile_viewed_at?: string | null
+          slug: string
           specialty?: string | null
           state?: string | null
           updated_at?: string
@@ -251,17 +277,30 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          claim_completed_at?: string | null
+          claim_started_at?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
           company?: string | null
           created_at?: string
           email?: string | null
+          first_brief_received_at?: string | null
+          first_brief_unlocked_at?: string | null
           id?: string
+          invitation_source?: string | null
+          invited_at?: string | null
           last_permit_date?: string | null
           lat?: number | null
           license_number?: string
           lng?: number | null
           name?: string
+          notification_email?: string | null
+          notification_phone?: string | null
+          notification_preference?: string | null
           permit_count?: number
           phone?: string | null
+          profile_viewed_at?: string | null
+          slug?: string
           specialty?: string | null
           state?: string | null
           updated_at?: string
@@ -807,6 +846,10 @@ export type Database = {
     }
     Functions: {
       current_user_email: { Args: never; Returns: string }
+      generate_contractor_slug: {
+        Args: { _license: string; _name: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
