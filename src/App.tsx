@@ -20,6 +20,11 @@ import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
 import ProposalIntelligencePage from "./pages/ProposalIntelligencePage.tsx";
 import ContractorSubmit from "./pages/ContractorSubmit.tsx";
+import ProLanding from "./pages/pro/ProLanding.tsx";
+import ProLogin from "./pages/pro/ProLogin.tsx";
+import ProOnboarding from "./pages/pro/ProOnboarding.tsx";
+import ProInbox from "./pages/pro/ProInbox.tsx";
+import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +79,27 @@ const App = () => (
             <Route path="/proposal" element={<ProposalIntelligencePage />} />
             <Route path="/proposal/:reportId" element={<ProposalIntelligencePage />} />
             <Route path="/contractor/submit/:outreachSendId" element={<ContractorSubmit />} />
+
+            {/* Pro Workspace (contractor-side) */}
+            <Route path="/pro" element={<ProLanding />} />
+            <Route path="/pro/login" element={<ProLogin />} />
+            <Route
+              path="/pro/onboarding"
+              element={
+                <ProtectedRoute>
+                  <ProOnboarding />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pro/inbox"
+              element={
+                <ContractorRoute>
+                  <ProInbox />
+                </ContractorRoute>
+              }
+            />
+
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
