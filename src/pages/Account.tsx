@@ -10,6 +10,7 @@ import { usePilotAccess } from "@/hooks/usePilotAccess";
 import { listMyProjects, deleteProject, type UserProject } from "@/lib/userProjects";
 import { useIntake } from "@/lib/intake";
 import { toast } from "@/hooks/use-toast";
+import ProposalsReceivedSection from "@/components/ProposalsReceivedSection";
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -136,6 +137,8 @@ const Account = () => {
             ))}
           </div>
         )}
+
+        <ProposalsReceivedSection />
       </main>
     </div>
   );

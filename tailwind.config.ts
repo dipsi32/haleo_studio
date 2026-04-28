@@ -53,6 +53,21 @@ export default {
         gold: {
           DEFAULT: "hsl(var(--gold))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          bg: "hsl(var(--success-bg))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          bg: "hsl(var(--warning-bg))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          bg: "hsl(var(--danger-bg))",
+          foreground: "hsl(var(--danger-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -100,6 +115,12 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-up": "fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
         "fade-in": "fade-in 0.6s ease-out",
+        "fade-in-up": "fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+      },
+      boxShadow: {
+        warm: "var(--shadow-warm)",
+        soft: "var(--shadow-soft)",
+        lift: "var(--shadow-lift)",
       },
     },
   },

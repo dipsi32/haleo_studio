@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.verify-cslb-license]
 verify_jwt = false
+
+[functions.analyze-proposal-intake]
+verify_jwt = false
