@@ -13,13 +13,13 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import Navbar from '@/components/Navbar';
-import FooterSection from '@/components/landing/FooterSection';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
 import UpgradeCard from '@/components/report/UpgradeCard';
 import LockedSection from '@/components/report/LockedSection';
 import { TipsContainer } from '@/components/design/ContextualTipDisplay';
 import { InAppEmailComposer } from '@/components/report/InAppEmailComposer';
-import { ContextualTip as TipType } from '@/types/intake';
+import { ContextualTip as TipType } from '@/types/clearcontract-intake';
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface PricingResult {
@@ -415,7 +415,7 @@ export default function ProposalIntelligencePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <SiteHeader />
       <main className="pt-20 pb-16 px-4">
         <div className={cn("max-w-2xl mx-auto", tipsOptedIn && proposalTips.length > 0 && "mr-[300px]")}>
           {/* Header */}
@@ -793,7 +793,7 @@ export default function ProposalIntelligencePage() {
           />
         )}
       </main>
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

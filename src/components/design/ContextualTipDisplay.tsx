@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, AlertTriangle, CheckCircle, FileWarning, Heart, ThumbsUp, Sparkles, ChevronRight } from 'lucide-react';
-import { ContextualTip as TipType } from '@/types/intake';
+import { ContextualTip as TipType } from '@/types/clearcontract-intake';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
