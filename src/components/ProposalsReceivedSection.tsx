@@ -110,10 +110,10 @@ export default function ProposalsReceivedSection() {
     <section className="mt-14">
       <div className="flex items-center gap-2">
         <Inbox className="h-4 w-4 text-accent" />
-        <h2 className="font-display text-xl font-medium">Proposals received</h2>
+        <h2 className="font-display text-xl font-medium">Proposals on the record</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every contractor submission lands here. Your Advocate reviews each one before you read a single line.
+        Every contractor submission is timestamped and reviewed before you read a single line. You'll see the score before you open the file.
       </p>
 
       <div className="mt-6 grid gap-3">
@@ -122,12 +122,18 @@ export default function ProposalsReceivedSection() {
           const riskScore = r.analysis_risk_score;
           const flagCount = Array.isArray(r.analysis_red_flags) ? r.analysis_red_flags.length : 0;
 
-          // risk band colors (semantic tokens)
+          // Risk score: lower is better (fewer issues). Bands chosen to match the
+          // contractor-violation grading homeowners see in the proposal report.
           const scoreClass =
             riskScore == null ? "text-muted-foreground"
-            : riskScore >= 75 ? "text-success"
-            : riskScore >= 55 ? "text-warning"
+            : riskScore <= 25 ? "text-success"
+            : riskScore <= 55 ? "text-warning"
             : "text-danger";
+
+          const headlineLabel =
+            riskScore == null ? "Pending review"
+            : flagCount === 0 ? "Nothing flagged"
+            : `${flagCount} thing${flagCount === 1 ? "" : "s"} to review before signing`;
 
           return (
             <motion.div
@@ -137,6 +143,28 @@ export default function ProposalsReceivedSection() {
               transition={{ duration: 0.4, delay: i * 0.05 }}
               className="rounded-2xl border border-border bg-card p-5 shadow-soft"
             >
+              {/* HEADLINE — risk score is the most prominent line on the card.
+                  A homeowner who sees their score before opening will always click. */}
+              {!reviewing && riskScore != null && (
+                <div className="mb-4 flex items-baseline gap-3 border-b border-border/50 pb-4">
+                  <div className={`font-display text-5xl font-light leading-none tabular-nums ${scoreClass}`}>
+                    {riskScore}
+                    <span className="text-lg font-light text-muted-foreground">/100</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-base font-medium leading-tight">{headlineLabel}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {flagCount > 0
+                        ? "We've drafted the exact pushback language for each one."
+                        : "Your Advocate found no inflated lines, missing permits, or vague terms."}
+                    </p>
+                  </div>
+                  {flagCount > 0
+                    ? <AlertTriangle className="h-5 w-5 shrink-0 text-warning" />
+                    : <ShieldCheck className="h-5 w-5 shrink-0 text-sage" />}
+                </div>
+              )}
+
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -145,43 +173,24 @@ export default function ProposalsReceivedSection() {
                       {r.contractor_name ?? "Contractor"}
                     </p>
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/60">
-                      {r.proposal_source === "haleo_builder" ? "Haleo proposal" : "PDF"}
+                      {r.proposal_source === "haleo_builder" ? "Built in Haleo" : "PDF upload"}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Submitted {fmtDate(r.proposal_submitted_at)}
-                    {r.analysis_total_cost != null && <> · Total {fmt(r.analysis_total_cost)}</>}
+                    Received {fmtDate(r.proposal_submitted_at)}
+                    {r.analysis_total_cost != null && <> · Bid {fmt(r.analysis_total_cost)}</>}
                   </p>
 
-                  {/* Advocate state */}
-                  {reviewing ? (
+                  {/* Reviewing state — quiet, specific, no marketing-speak */}
+                  {reviewing && (
                     <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-accent/20 bg-accent-soft px-3 py-2.5">
                       <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-accent shrink-0" />
                       <div className="text-sm">
-                        <p className="font-medium text-accent-soft-foreground">Your Advocate is reviewing this proposal.</p>
+                        <p className="font-medium text-accent-soft-foreground">Your Advocate is reading this proposal.</p>
                         <p className="mt-0.5 text-xs text-accent-soft-foreground/80">
-                          Checking every line against real permit cost data for your area. Usually under a minute.
+                          Cross-checking every line against permit records, license status, and what neighbors paid. About a minute.
                         </p>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2.5">
-                      <div className={`text-3xl font-bold ${scoreClass}`}>{riskScore ?? "—"}</div>
-                      <div className="text-sm">
-                        <p className="font-medium">
-                          Risk score {riskScore}/100
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {flagCount > 0
-                            ? `${flagCount} thing${flagCount === 1 ? "" : "s"} to review before signing`
-                            : "Looks clean — open to see the full breakdown"}
-                        </p>
-                      </div>
-                      {flagCount > 0 ? (
-                        <AlertTriangle className="ml-auto h-4 w-4 text-warning" />
-                      ) : (
-                        <ShieldCheck className="ml-auto h-4 w-4 text-sage" />
-                      )}
                     </div>
                   )}
                 </div>
@@ -197,7 +206,9 @@ export default function ProposalsReceivedSection() {
                       : "bg-primary text-primary-foreground hover:opacity-90"
                   }`}
                 >
-                  {reviewing ? "Reviewing…" : "Open proposal and analysis"}
+                  {reviewing
+                    ? "Reading…"
+                    : flagCount > 0 ? `See the ${flagCount} flag${flagCount === 1 ? "" : "s"}` : "Open the full record"}
                   {!reviewing && <ArrowRight className="h-3.5 w-3.5" />}
                 </Link>
               </div>
