@@ -9,6 +9,8 @@ import {
   CheckCircle2, FileText, Clock, Wallet, Home,
 } from "lucide-react";
 import Logo from "@/components/Logo";
+import NotificationBell from "@/components/NotificationBell";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
@@ -270,9 +272,14 @@ const Contractors = () => {
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
-          <Link to="/brief/result" className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground">
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to brief
-          </Link>
+          <div className="flex items-center gap-3">
+            {authUser && (
+              <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: authUser.id }} />
+            )}
+            <Link to="/brief/result" className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground">
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to brief
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -36,6 +36,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import Logo from "@/components/Logo";
+import NotificationBell from "@/components/NotificationBell";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -362,12 +364,17 @@ const BriefResult = () => {
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
-          <button
-            onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
-          >
-            <Edit3 className="h-3.5 w-3.5" /> Edit brief
-          </button>
+          <div className="flex items-center gap-3">
+            {brUser && (
+              <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: brUser.id }} />
+            )}
+            <button
+              onClick={() => setEditOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
+            >
+              <Edit3 className="h-3.5 w-3.5" /> Edit brief
+            </button>
+          </div>
         </div>
       </header>
 
