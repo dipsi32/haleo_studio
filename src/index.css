@@ -39,6 +39,17 @@
 
     --gold: 36 55% 52%;              /* permit/score accent */
 
+    /* Semantic risk colors (ported for ProposalIntelligencePage) */
+    --success: 152 35% 42%;
+    --success-bg: 152 30% 95%;
+    --success-foreground: 152 35% 18%;
+    --warning: 38 70% 55%;
+    --warning-bg: 40 60% 95%;
+    --warning-foreground: 38 40% 25%;
+    --danger: 0 50% 55%;
+    --danger-bg: 0 45% 96%;
+    --danger-foreground: 0 40% 25%;
+
     --destructive: 0 62% 48%;
     --destructive-foreground: 38 30% 96%;
 
@@ -57,6 +68,7 @@
     --shadow-soft: 0 1px 2px hsl(20 14% 14% / 0.04), 0 8px 24px -12px hsl(20 14% 14% / 0.10);
     --shadow-lift: 0 2px 4px hsl(20 14% 14% / 0.04), 0 24px 48px -20px hsl(20 14% 14% / 0.18);
     --shadow-accent: 0 12px 32px -12px hsl(14 55% 52% / 0.45);
+    --shadow-warm: 0 1px 2px hsl(20 14% 14% / 0.04), 0 12px 28px -16px hsl(14 55% 52% / 0.22);
 
     --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
