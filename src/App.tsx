@@ -18,6 +18,8 @@ import Login from "./pages/Login.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
 import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
+import ProposalIntelligencePage from "./pages/ProposalIntelligencePage.tsx";
+import ContractorSubmit from "./pages/ContractorSubmit.tsx";
 
 const queryClient = new QueryClient();
 
