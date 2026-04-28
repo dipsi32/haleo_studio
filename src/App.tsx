@@ -71,6 +71,9 @@ const App = () => (
             <Route path="/contractors" element={<Gated><Contractors /></Gated>} />
             <Route path="/contractors/:id" element={<Gated><ContractorProfile /></Gated>} />
             <Route path="/audit" element={<Gated><Audit /></Gated>} />
+            <Route path="/proposal" element={<ProposalIntelligencePage />} />
+            <Route path="/proposal/:reportId" element={<ProposalIntelligencePage />} />
+            <Route path="/contractor/submit/:outreachSendId" element={<ContractorSubmit />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
