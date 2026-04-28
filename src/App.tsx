@@ -24,6 +24,8 @@ import ProLanding from "./pages/pro/ProLanding.tsx";
 import ProLogin from "./pages/pro/ProLogin.tsx";
 import ProOnboarding from "./pages/pro/ProOnboarding.tsx";
 import ProInbox from "./pages/pro/ProInbox.tsx";
+import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
+import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
 import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 
 const queryClient = new QueryClient();
@@ -83,6 +85,9 @@ const App = () => (
             {/* Pro Workspace (contractor-side) */}
             <Route path="/pro" element={<ProLanding />} />
             <Route path="/pro/login" element={<ProLogin />} />
+            {/* Public profile + claim flow — no auth required */}
+            <Route path="/pro/:slug" element={<PublicContractorProfile />} />
+            <Route path="/pro/:slug/claim" element={<ClaimProfile />} />
             <Route
               path="/pro/onboarding"
               element={
