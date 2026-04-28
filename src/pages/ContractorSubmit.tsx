@@ -148,7 +148,7 @@ export default function ContractorSubmit() {
         })
         .catch((e) => console.warn("analyze-proposal-intake invoke failed (non-blocking)", e));
 
-      toast({ title: "Proposal submitted", description: "The homeowner's Advocate is reviewing it now." });
+      toast({ title: "On the record", description: "The homeowner's Advocate is reading it now." });
       navigate(`/contractor/submit/${outreachSendId}?done=1`, { replace: true });
     } catch (e: any) {
       console.error(e);
@@ -190,27 +190,48 @@ export default function ContractorSubmit() {
         </button>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Contractor proposal</p>
-          <h1 className="mt-3 font-display text-4xl font-light">
-            Submit your proposal{batch?.homeowner_name ? ` for ${batch.homeowner_name}` : ""}.
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Proposal submission</p>
+          <h1 className="mt-3 font-display text-4xl font-light leading-tight">
+            {batch?.homeowner_name ? `${batch.homeowner_name.split(" ")[0]} is waiting on your bid.` : "Send your bid through Haleo."}
           </h1>
+          <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+            Whatever you submit becomes part of the homeowner's permanent record for this project. Be specific — vague lines get flagged automatically.
+          </p>
           {batch?.neighborhood && (
-            <p className="mt-2 text-sm text-muted-foreground">{batch.neighborhood} · sent to {send.contractor_name ?? "your team"}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{batch.neighborhood} · addressed to {send.contractor_name ?? "your team"}</p>
           )}
         </motion.div>
+
+        {/* Brief recap — so the contractor isn't bidding blind */}
+        {batch?.brief_snapshot && (
+          <div className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">The brief you're bidding on</p>
+            <p className="mt-3 font-display text-lg leading-snug">
+              {batch.brief_snapshot?.title || batch.brief_snapshot?.room || "Renovation project"}
+            </p>
+            {batch.brief_snapshot?.scope && (
+              <p className="mt-2 text-sm text-foreground/80">{batch.brief_snapshot.scope}</p>
+            )}
+            {batch.brief_snapshot?.budget && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Homeowner budget signal: <span className="text-foreground">{batch.brief_snapshot.budget}</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {alreadySubmitted ? (
           <div className="mt-10 rounded-2xl border border-sage/40 bg-sage-soft p-8 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-sage" />
-            <p className="mt-3 font-display text-xl">Already submitted</p>
+            <p className="mt-3 font-display text-xl">Your proposal is on the record.</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              The homeowner has your proposal. Their Advocate is reviewing it now.
+              The homeowner's Advocate is reading it now. You'll hear back once they've reviewed it.
             </p>
           </div>
         ) : (
           <>
             {/* Mode toggle */}
-            <div className="mt-10 grid grid-cols-2 gap-3">
+            <div className="mt-8 grid grid-cols-2 gap-3">
               <button
                 onClick={() => setMode("pdf")}
                 className={`rounded-2xl border p-5 text-left transition-all ${
@@ -218,8 +239,8 @@ export default function ContractorSubmit() {
                 }`}
               >
                 <FileUp className="h-5 w-5 text-accent" />
-                <p className="mt-3 font-display text-base font-medium">Upload a PDF</p>
-                <p className="mt-1 text-xs text-muted-foreground">Your existing proposal as a PDF.</p>
+                <p className="mt-3 font-display text-base font-medium">Upload your PDF</p>
+                <p className="mt-1 text-xs text-muted-foreground">Send the proposal you'd send anyway.</p>
               </button>
               <button
                 onClick={() => setMode("builder")}
@@ -228,8 +249,8 @@ export default function ContractorSubmit() {
                 }`}
               >
                 <Hammer className="h-5 w-5 text-accent" />
-                <p className="mt-3 font-display text-base font-medium">Build it in Haleo</p>
-                <p className="mt-1 text-xs text-muted-foreground">Cleaner analysis, faster review.</p>
+                <p className="mt-3 font-display text-base font-medium">Itemize it here</p>
+                <p className="mt-1 text-xs text-muted-foreground">Line-by-line. Fewer flags, faster sign-off.</p>
               </button>
             </div>
 
@@ -303,7 +324,7 @@ export default function ContractorSubmit() {
 
             <div className="mt-8 flex items-center justify-end gap-3">
               <Button onClick={handleSubmit} disabled={submitting} className="rounded-full">
-                <Send className="h-4 w-4" /> {submitting ? "Sending…" : "Submit proposal to homeowner"}
+                <Send className="h-4 w-4" /> {submitting ? "Submitting…" : "Put it on the record"}
               </Button>
             </div>
           </>
