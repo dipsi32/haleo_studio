@@ -148,7 +148,7 @@ export default function ContractorSubmit() {
         })
         .catch((e) => console.warn("analyze-proposal-intake invoke failed (non-blocking)", e));
 
-      toast({ title: "Proposal submitted", description: "The homeowner's Advocate is reviewing it now." });
+      toast({ title: "On the record", description: "The homeowner's Advocate is reading it now." });
       navigate(`/contractor/submit/${outreachSendId}?done=1`, { replace: true });
     } catch (e: any) {
       console.error(e);
