@@ -55,6 +55,9 @@ const Account = () => {
         <div className="container flex h-16 items-center justify-between">
           <Logo />
           <div className="flex items-center gap-2">
+            {user && (
+              <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: user.id }} />
+            )}
             {isAdmin && (
               <Link to="/admin" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary">
                 <Shield className="h-3 w-3" /> Admin
