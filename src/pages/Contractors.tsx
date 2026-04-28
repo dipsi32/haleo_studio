@@ -134,6 +134,7 @@ const ContractorCard = ({
 };
 
 const Contractors = () => {
+  const { user: authUser } = useAuth();
   const { data } = useIntake();
   const navigate = useNavigate();
   const location = useLocation();

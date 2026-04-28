@@ -268,6 +268,7 @@ const AnnotationBlock = ({
 
 // ───── Page ─────
 const BriefResult = () => {
+  const { user: brUser } = useAuth();
   const { data, update, addMedia, removeMedia, togglePill } = useIntake();
   const navigate = useNavigate();
   const [open, setOpen] = useState<MediaAsset | null>(null);
