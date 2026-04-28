@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          feature: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          feature: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          feature?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contractor_license_cache: {
         Row: {
           bond_status: string | null
@@ -371,10 +395,17 @@ export type Database = {
           contractor_id: string
           contractor_name: string | null
           created_at: string
+          homeowner_approved_at: string | null
+          homeowner_viewed_at: string | null
           id: string
           is_simulated: boolean
           opened_at: string | null
           personal_note: string | null
+          proposal_analysis_id: string | null
+          proposal_pdf_url: string | null
+          proposal_source: string | null
+          proposal_structured: Json | null
+          proposal_submitted_at: string | null
           responded_at: string | null
           sent_at: string | null
           status: string
@@ -386,10 +417,17 @@ export type Database = {
           contractor_id: string
           contractor_name?: string | null
           created_at?: string
+          homeowner_approved_at?: string | null
+          homeowner_viewed_at?: string | null
           id?: string
           is_simulated?: boolean
           opened_at?: string | null
           personal_note?: string | null
+          proposal_analysis_id?: string | null
+          proposal_pdf_url?: string | null
+          proposal_source?: string | null
+          proposal_structured?: Json | null
+          proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
@@ -401,10 +439,17 @@ export type Database = {
           contractor_id?: string
           contractor_name?: string | null
           created_at?: string
+          homeowner_approved_at?: string | null
+          homeowner_viewed_at?: string | null
           id?: string
           is_simulated?: boolean
           opened_at?: string | null
           personal_note?: string | null
+          proposal_analysis_id?: string | null
+          proposal_pdf_url?: string | null
+          proposal_source?: string | null
+          proposal_structured?: Json | null
+          proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
           status?: string
@@ -493,6 +538,93 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      proposal_analyses: {
+        Row: {
+          analysis_jsonb: Json | null
+          brief_id: string | null
+          contractor_id: string | null
+          contractor_name: string | null
+          created_at: string
+          extracted_data: Json | null
+          file_path: string | null
+          id: string
+          license_data: Json | null
+          next_actions: Json | null
+          outreach_send_id: string | null
+          permit_data: Json | null
+          pricing_data: Json | null
+          pushback_language: Json | null
+          red_flags: Json | null
+          risk_breakdown: Json | null
+          risk_score: number | null
+          roadmap: Json | null
+          session_token: string | null
+          space_type: string | null
+          status: string
+          tier: string | null
+          total_cost: number | null
+          updated_at: string
+          user_id: string | null
+          verdict: string | null
+        }
+        Insert: {
+          analysis_jsonb?: Json | null
+          brief_id?: string | null
+          contractor_id?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          extracted_data?: Json | null
+          file_path?: string | null
+          id?: string
+          license_data?: Json | null
+          next_actions?: Json | null
+          outreach_send_id?: string | null
+          permit_data?: Json | null
+          pricing_data?: Json | null
+          pushback_language?: Json | null
+          red_flags?: Json | null
+          risk_breakdown?: Json | null
+          risk_score?: number | null
+          roadmap?: Json | null
+          session_token?: string | null
+          space_type?: string | null
+          status?: string
+          tier?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          user_id?: string | null
+          verdict?: string | null
+        }
+        Update: {
+          analysis_jsonb?: Json | null
+          brief_id?: string | null
+          contractor_id?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          extracted_data?: Json | null
+          file_path?: string | null
+          id?: string
+          license_data?: Json | null
+          next_actions?: Json | null
+          outreach_send_id?: string | null
+          permit_data?: Json | null
+          pricing_data?: Json | null
+          pushback_language?: Json | null
+          red_flags?: Json | null
+          risk_breakdown?: Json | null
+          risk_score?: number | null
+          roadmap?: Json | null
+          session_token?: string | null
+          space_type?: string | null
+          status?: string
+          tier?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          user_id?: string | null
+          verdict?: string | null
         }
         Relationships: []
       }
