@@ -324,7 +324,7 @@ export default function ContractorSubmit() {
 
             <div className="mt-8 flex items-center justify-end gap-3">
               <Button onClick={handleSubmit} disabled={submitting} className="rounded-full">
-                <Send className="h-4 w-4" /> {submitting ? "Sending…" : "Submit proposal to homeowner"}
+                <Send className="h-4 w-4" /> {submitting ? "Submitting…" : "Put it on the record"}
               </Button>
             </div>
           </>
