@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brief_annotations: {
+        Row: {
+          content: string
+          contractor_id: string
+          created_at: string
+          id: string
+          outreach_send_id: string
+          section_key: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          contractor_id: string
+          created_at?: string
+          id?: string
+          outreach_send_id: string
+          section_key: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          contractor_id?: string
+          created_at?: string
+          id?: string
+          outreach_send_id?: string
+          section_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contractor_accounts: {
         Row: {
           branding: Json
@@ -142,6 +172,84 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_notifications: {
+        Row: {
+          body: string
+          contractor_id: string
+          created_at: string
+          id: string
+          outreach_send_id: string | null
+          read: boolean
+          read_at: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body: string
+          contractor_id: string
+          created_at?: string
+          id?: string
+          outreach_send_id?: string | null
+          read?: boolean
+          read_at?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          body?: string
+          contractor_id?: string
+          created_at?: string
+          id?: string
+          outreach_send_id?: string | null
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      contractor_payments: {
+        Row: {
+          amount: number
+          contractor_id: string
+          created_at: string
+          currency: string
+          error_message: string | null
+          id: string
+          outreach_send_id: string
+          paid_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_status: string | null
+        }
+        Insert: {
+          amount: number
+          contractor_id: string
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          id?: string
+          outreach_send_id: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_status?: string | null
+        }
+        Update: {
+          amount?: number
+          contractor_id?: string
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          id?: string
+          outreach_send_id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_status?: string | null
+        }
+        Relationships: []
+      }
       contractor_permits: {
         Row: {
           address: string | null
@@ -210,6 +318,39 @@ export type Database = {
           },
         ]
       }
+      contractor_push_subscriptions: {
+        Row: {
+          active: boolean
+          auth: string
+          contractor_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          active?: boolean
+          auth: string
+          contractor_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          active?: boolean
+          auth?: string
+          contractor_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       contractors: {
         Row: {
           city: string | null
@@ -236,6 +377,7 @@ export type Database = {
           permit_count: number
           phone: string | null
           profile_viewed_at: string | null
+          push_permission_deferred: boolean
           slug: string
           specialty: string | null
           state: string | null
@@ -268,6 +410,7 @@ export type Database = {
           permit_count?: number
           phone?: string | null
           profile_viewed_at?: string | null
+          push_permission_deferred?: boolean
           slug: string
           specialty?: string | null
           state?: string | null
@@ -300,6 +443,7 @@ export type Database = {
           permit_count?: number
           phone?: string | null
           profile_viewed_at?: string | null
+          push_permission_deferred?: boolean
           slug?: string
           specialty?: string | null
           state?: string | null
@@ -441,6 +585,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homeowner_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          outreach_send_id: string | null
+          read: boolean
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          outreach_send_id?: string | null
+          read?: boolean
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          outreach_send_id?: string | null
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       outreach_batches: {
         Row: {
           brief_snapshot: Json
@@ -486,6 +666,7 @@ export type Database = {
           id: string
           is_simulated: boolean
           opened_at: string | null
+          passed_at: string | null
           personal_note: string | null
           proposal_analysis_id: string | null
           proposal_pdf_url: string | null
@@ -495,6 +676,7 @@ export type Database = {
           responded_at: string | null
           sent_at: string | null
           status: string
+          unlocked_at: string | null
           updated_at: string
         }
         Insert: {
@@ -508,6 +690,7 @@ export type Database = {
           id?: string
           is_simulated?: boolean
           opened_at?: string | null
+          passed_at?: string | null
           personal_note?: string | null
           proposal_analysis_id?: string | null
           proposal_pdf_url?: string | null
@@ -517,6 +700,7 @@ export type Database = {
           responded_at?: string | null
           sent_at?: string | null
           status?: string
+          unlocked_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -530,6 +714,7 @@ export type Database = {
           id?: string
           is_simulated?: boolean
           opened_at?: string | null
+          passed_at?: string | null
           personal_note?: string | null
           proposal_analysis_id?: string | null
           proposal_pdf_url?: string | null
@@ -539,6 +724,7 @@ export type Database = {
           responded_at?: string | null
           sent_at?: string | null
           status?: string
+          unlocked_at?: string | null
           updated_at?: string
         }
         Relationships: [
