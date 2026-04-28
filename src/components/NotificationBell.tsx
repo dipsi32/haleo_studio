@@ -30,7 +30,7 @@ export default function NotificationBell({ table, filter, onItemClick }: Props) 
     let active = true;
 
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from(table)
         .select("id, title, body, read, created_at, outreach_send_id, type")
         .eq(filter.column, filter.value)
@@ -60,7 +60,7 @@ export default function NotificationBell({ table, filter, onItemClick }: Props) 
   const markAllRead = async () => {
     const ids = items.filter((i) => !i.read).map((i) => i.id);
     if (!ids.length) return;
-    await supabase.from(table).update({ read: true, read_at: new Date().toISOString() }).in("id", ids);
+    await (supabase as any).from(table).update({ read: true, read_at: new Date().toISOString() }).in("id", ids);
     setItems((cur) => cur.map((i) => ({ ...i, read: true })));
   };
 
