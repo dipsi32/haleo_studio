@@ -208,26 +208,45 @@ const ProInbox = () => {
               const homeowner = s.outreach_batches?.homeowner_name ?? "A homeowner";
               const isUnlocked = !!s.unlocked_at;
               const isPassed = !!s.passed_at;
+              const snap = s.outreach_batches?.brief_snapshot ?? {};
+              const preview = snap.scope_summary || snap.vision || (snap.trade_groups?.[0]?.lines?.[0] ?? "");
+              const photoCount = snap.rendering_urls?.length ?? 0;
               return (
                 <li key={s.id}>
                   <button
                     onClick={() => setActiveSendId(s.id)}
                     className="flex w-full items-start justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-accent/40 hover:shadow-soft"
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg">{headline}</h3>
                         {isUnlocked && <CheckCircle2 className="h-4 w-4 text-accent" />}
                         {isPassed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Passed</span>}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">From {homeowner}</p>
-                      {s.outreach_batches?.neighborhood && (
-                        <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" /> {s.outreach_batches.neighborhood}
+
+                      {preview && (
+                        <p className={`mt-2 text-sm text-foreground/80 ${isUnlocked ? "line-clamp-2" : "line-clamp-2 italic"}`}>
+                          {isUnlocked ? preview : `"${preview}"`}
                         </p>
                       )}
+
+                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {s.outreach_batches?.neighborhood && (
+                          <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.outreach_batches.neighborhood}</span>
+                        )}
+                        {snap.budget && (
+                          <span className="inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> {snap.budget}</span>
+                        )}
+                        {snap.timeline && (
+                          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {snap.timeline}</span>
+                        )}
+                        {photoCount > 0 && (
+                          <span className="inline-flex items-center gap-1"><ImagePlus className="h-3 w-3" /> {photoCount} photo{photoCount === 1 ? "" : "s"}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       {!isUnlocked && !isPassed && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
                           <Lock className="h-3 w-3" /> $99 to unlock
