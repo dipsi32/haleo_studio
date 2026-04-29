@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
-  ExternalLink, DollarSign, ImagePlus,
+  ExternalLink, DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
