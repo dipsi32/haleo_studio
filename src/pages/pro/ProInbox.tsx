@@ -2,7 +2,10 @@
 // push prompt, notification bell, and an unlock-then-annotate flow.
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2 } from "lucide-react";
+import {
+  Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
+  MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
+} from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
