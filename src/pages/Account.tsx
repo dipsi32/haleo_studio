@@ -178,7 +178,7 @@ const Account = () => {
       <HomeownerConversationDrawer
         outreachSendId={convoSendId}
         open={!!convoSendId}
-        onClose={() => setConvoSendId(null)}
+        onClose={closeConvo}
       />
     </div>
   );
