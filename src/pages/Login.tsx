@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
@@ -9,12 +9,21 @@ import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
+import { useContractorAccount } from "@/hooks/useContractorAccount";
 
 const Login = () => {
   const { user, loading } = useAuth();
+  const { isContractor, account, loading: contractorLoading } = useContractorAccount();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get("next") || "/account";
+  const resolvedNext = useMemo(() => {
+    if (!user || !isContractor) return next;
+    if (next === "/account" || next === "/login") {
+      return account?.onboarded_at ? "/pro/inbox" : "/pro/onboarding";
+    }
+    return next;
+  }, [account?.onboarded_at, isContractor, next, user]);
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -23,13 +32,14 @@ const Login = () => {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate(next, { replace: true });
-  }, [user, loading, navigate, next]);
+    if (loading || contractorLoading || !user) return;
+    navigate(resolvedNext, { replace: true });
+  }, [user, loading, contractorLoading, navigate, resolvedNext]);
 
   const handleGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + next,
+      redirect_uri: window.location.origin + resolvedNext,
     });
     if (result.error) {
       toast({ title: "Couldn't sign in with Google", description: String(result.error), variant: "destructive" });
@@ -38,7 +48,7 @@ const Login = () => {
     }
     if (result.redirected) return; // Browser is redirecting
     // Tokens set — go to next.
-    navigate(next, { replace: true });
+    navigate(resolvedNext, { replace: true });
   };
 
   const handleEmail = async (e: React.FormEvent) => {
