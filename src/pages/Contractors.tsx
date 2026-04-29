@@ -155,7 +155,15 @@ const Contractors = () => {
   );
 
   // Build the high-level brief summary that goes into the email
-  const briefSummary = useMemo(() => buildBriefSnapshot(data), [data]);
+  const homeownerName = (authUser?.user_metadata?.full_name as string | undefined)
+    ?? (authUser?.email ? authUser.email.split("@")[0] : undefined);
+  const briefSummary = useMemo(() => {
+    const snap = buildBriefSnapshot(data, homeownerName) as Record<string, unknown>;
+    // Make headline-friendly fields explicit so the contractor inbox shows
+    // "Kitchen remodel in San Jose" not "New project".
+    snap.projectType = projectLabel;
+    return snap;
+  }, [data, homeownerName, projectLabel]);
 
   // Honor pre-selection coming from a contractor profile "Send project brief" CTA.
   const navState = location.state as { preselectId?: string; openOutreach?: boolean } | null;
