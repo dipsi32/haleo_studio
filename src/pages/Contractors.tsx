@@ -206,6 +206,9 @@ const Contractors = () => {
           neighborhood,
           brief_snapshot: snapshot,
           recipient_count: selectedList.length,
+          homeowner_user_id: authUser?.id ?? null,
+          homeowner_name: homeownerName ?? null,
+          homeowner_email: authUser?.email ?? null,
         })
         .select("id")
         .single();
