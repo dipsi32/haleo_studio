@@ -81,7 +81,7 @@ const ProInbox = () => {
     const load = async () => {
       const { data } = await supabase
         .from("outreach_sends")
-        .select("id, contractor_id, batch_id, sent_at, unlocked_at, passed_at, outreach_batches(neighborhood, homeowner_name, brief_snapshot)")
+        .select("id, contractor_id, batch_id, sent_at, unlocked_at, passed_at, outreach_batches(neighborhood, homeowner_name, homeowner_user_id, brief_snapshot)")
         .eq("contractor_id", contractorId)
         .order("sent_at", { ascending: false });
       if (active && data) setSends(data as unknown as SendRow[]);
