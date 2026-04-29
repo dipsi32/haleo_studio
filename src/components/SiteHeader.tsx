@@ -27,7 +27,11 @@ const SiteHeader = () => {
           <span className="h-9 w-28 rounded-full bg-secondary/60" aria-hidden />
         ) : user ? (
           <div className="flex items-center gap-2">
-            <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: user.id }} />
+            <NotificationBell
+              table="homeowner_notifications"
+              filter={{ column: "user_id", value: user.id }}
+              onItemClick={(n) => navigate(n.outreach_send_id ? `/account?convo=${n.outreach_send_id}` : "/account")}
+            />
             <Link
               to="/account"
               className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
