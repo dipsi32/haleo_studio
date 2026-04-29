@@ -26,6 +26,7 @@ const Account = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<UserProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [convoSendId, setConvoSendId] = useState<string | null>(null);
 
   useEffect(() => {
     if (contractorLoading || !isContractor) return;
