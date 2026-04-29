@@ -24,9 +24,25 @@ const Account = () => {
   const { isContractor, account, loading: contractorLoading } = useContractorAccount();
   const { reset, setData } = useIntake();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<UserProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [convoSendId, setConvoSendId] = useState<string | null>(null);
+
+  // Open conversation drawer from a deep link (e.g., notification bell on home).
+  useEffect(() => {
+    const convo = searchParams.get("convo");
+    if (convo && convo !== convoSendId) setConvoSendId(convo);
+  }, [searchParams, convoSendId]);
+
+  const closeConvo = () => {
+    setConvoSendId(null);
+    if (searchParams.get("convo")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("convo");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (contractorLoading || !isContractor) return;
