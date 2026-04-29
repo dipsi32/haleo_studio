@@ -412,9 +412,10 @@ const ProStudio = () => {
             <InlineField label="Years in business" icon={<Calendar className="h-3 w-3" />} value={account?.years_in_business?.toString() ?? ""}
               placeholder="12" onSave={(v) => saveField({ years_in_business: v ? parseInt(v, 10) || null : null })} />
             <div className="md:col-span-2">
-              <InlineField label="Specialties" icon={<Tag className="h-3 w-3" />} value={account?.specialties}
-                placeholder="Whole-home remodels, kitchens, ADUs, historic homes…"
-                onSave={(v) => saveField({ specialties: v || null })} />
+              <SpecialtiesPicker
+                value={account?.specialties ?? ""}
+                onSave={(v) => saveField({ specialties: v || null })}
+              />
             </div>
           </div>
         </section>
