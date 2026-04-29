@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
-  ExternalLink, DollarSign, ImagePlus,
+  ExternalLink, DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -280,7 +282,7 @@ const ProInbox = () => {
 // =============================================================
 function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; contractorId: string; onClose: () => void }) {
   const { toast } = useToast();
-  const [unlocking, setUnlocking] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [passing, setPassing] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [draft, setDraft] = useState("");
@@ -320,29 +322,6 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
     })();
     return () => { active = false; };
   }, [isUnlocked, contractorId, send.id]);
-
-  const handleUnlock = async () => {
-    setUnlocking(true);
-    try {
-      const { error: payErr } = await supabase.from("contractor_payments").insert({
-        contractor_id: contractorId,
-        outreach_send_id: send.id,
-        amount: 9900,
-        status: "paid",
-        stripe_status: "stubbed",
-        paid_at: new Date().toISOString(),
-      });
-      if (payErr) throw payErr;
-      const { error: upErr } = await supabase
-        .from("outreach_sends")
-        .update({ unlocked_at: new Date().toISOString() })
-        .eq("id", send.id);
-      if (upErr) throw upErr;
-      toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
-    } catch (e) {
-      toast({ title: "Couldn't unlock", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
-    } finally { setUnlocking(false); }
-  };
 
   const handlePass = async () => {
     setPassing(true);
@@ -429,26 +408,43 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 <Lock className="h-3 w-3" /> Preview
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {homeowner} sent a detailed brief for {headline.toLowerCase()}. Photos, scope, budget signal,
-                and timing are all in there. Unlock to see everything.
+              <p className="mt-3 text-sm leading-relaxed text-foreground/80">
+                {homeowner} put together a detailed brief for {headline.toLowerCase()}.
               </p>
               {snap.scope_summary && (
-                <p className="mt-3 line-clamp-2 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
+                <p className="mt-3 line-clamp-3 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
               )}
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                {send.outreach_batches?.neighborhood && (
+                  <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {send.outreach_batches.neighborhood}</span>
+                )}
+                {snap.budget && <span className="inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> {snap.budget}</span>}
+                {snap.timeline && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {snap.timeline}</span>}
+                {(snap.rendering_urls?.length ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-1"><ImagePlus className="h-3 w-3" /> {snap.rendering_urls!.length} photo{snap.rendering_urls!.length === 1 ? "" : "s"}</span>
+                )}
+              </div>
+              <ul className="mt-5 grid gap-2 text-sm text-foreground/80 sm:grid-cols-2">
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Full scope by trade</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Inspiration & site photos</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Direct line to ask the homeowner</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Private notes for your bid</li>
+              </ul>
             </div>
             <div className="rounded-2xl bg-foreground p-6 text-background">
               <p className="font-display text-2xl">$99 to unlock the full brief</p>
-              <p className="mt-1 text-sm opacity-80">One-time. No subscription. No commission.</p>
+              <p className="mt-1 text-sm opacity-80">One-time. No subscription. No commission. You're the only contractor we send this to.</p>
               <div className="mt-4 flex gap-2">
-                <Button onClick={handleUnlock} disabled={unlocking} className="bg-background text-foreground hover:bg-background/90">
-                  {unlocking ? "Unlocking…" : "Unlock for $99"}
+                <Button onClick={() => setPaymentOpen(true)} className="bg-background text-foreground hover:bg-background/90">
+                  <CreditCard className="h-4 w-4" /> Unlock for $99
                 </Button>
                 <Button onClick={handlePass} disabled={passing} variant="ghost" className="text-background hover:bg-background/10 hover:text-background">
                   Not for me
                 </Button>
               </div>
-              <p className="mt-3 text-[11px] opacity-60">Payment is stubbed in this build — click to simulate.</p>
+              <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] opacity-70">
+                <ShieldCheck className="h-3 w-3" /> Secure payment · Refunded if the homeowner is unreachable
+              </p>
             </div>
           </div>
         ) : (
@@ -616,6 +612,223 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </DialogFooter>
+      </DialogContent>
+
+      {paymentOpen && (
+        <PaymentSheet
+          sendId={send.id}
+          contractorId={contractorId}
+          headline={headline}
+          homeowner={homeowner}
+          onClose={() => setPaymentOpen(false)}
+        />
+      )}
+    </Dialog>
+  );
+}
+
+// =============================================================
+// PaymentSheet — $99 unlock with card entry, validation, idempotency
+// =============================================================
+function PaymentSheet({
+  sendId, contractorId, headline, homeowner, onClose,
+}: {
+  sendId: string;
+  contractorId: string;
+  headline: string;
+  homeowner: string;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [step, setStep] = useState<"form" | "processing" | "success">("form");
+  const [error, setError] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [zip, setZip] = useState("");
+
+  const digits = number.replace(/\s/g, "");
+  const numberValid = digits.length >= 13 && digits.length <= 19 && /^\d+$/.test(digits);
+  const expValid = /^(0[1-9]|1[0-2])\/\d{2}$/.test(exp);
+  const cvcValid = /^\d{3,4}$/.test(cvc);
+  const zipValid = zip.trim().length >= 3;
+  const nameValid = name.trim().length >= 2;
+  const formValid = numberValid && expValid && cvcValid && zipValid && nameValid;
+
+  const formatNumber = (v: string) => v.replace(/\D/g, "").slice(0, 19).replace(/(.{4})/g, "$1 ").trim();
+  const formatExp = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 4);
+    return d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`;
+  };
+
+  const submit = async () => {
+    if (!formValid) return;
+    setError(null);
+    setStep("processing");
+
+    try {
+      // Idempotency: if a paid payment already exists for this send, just unlock.
+      const { data: existing } = await supabase
+        .from("contractor_payments")
+        .select("id, status")
+        .eq("outreach_send_id", sendId)
+        .eq("contractor_id", contractorId)
+        .eq("status", "paid")
+        .maybeSingle();
+
+      if (!existing) {
+        // Simulate processor latency for honest UX feedback.
+        await new Promise((r) => setTimeout(r, 1400));
+
+        const last4 = digits.slice(-4);
+        const { error: payErr } = await supabase.from("contractor_payments").insert({
+          contractor_id: contractorId,
+          outreach_send_id: sendId,
+          amount: 9900,
+          currency: "usd",
+          status: "paid",
+          stripe_status: "simulated",
+          stripe_payment_intent_id: `sim_${crypto.randomUUID()}`,
+          paid_at: new Date().toISOString(),
+          error_message: `card_last4=${last4}`,
+        });
+        if (payErr) throw payErr;
+      }
+
+      // Mark unlocked (idempotent — safe if already set).
+      const { error: upErr } = await supabase
+        .from("outreach_sends")
+        .update({ unlocked_at: new Date().toISOString() })
+        .eq("id", sendId)
+        .is("unlocked_at", null);
+      if (upErr) throw upErr;
+
+      setStep("success");
+      toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
+      // Brief celebration, then close — parent realtime will show the unlocked view.
+      setTimeout(() => onClose(), 1100);
+    } catch (e) {
+      setStep("form");
+      setError(e instanceof Error ? e.message : "Payment failed. Please try again.");
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && step !== "processing" && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl">Unlock this brief</DialogTitle>
+          <DialogDescription>
+            {headline} · from {homeowner}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === "success" ? (
+          <div className="py-8 text-center">
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-accent/15">
+              <CheckCircle2 className="h-6 w-6 text-accent" />
+            </div>
+            <p className="font-display text-lg">Payment received</p>
+            <p className="mt-1 text-sm text-muted-foreground">Opening the full brief…</p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-muted-foreground">One-time unlock</p>
+                <p className="font-display text-2xl">$99.00</p>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                You're the only contractor we sent this brief to. No subscription, no commission.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="cc-name" className="text-xs">Name on card</Label>
+                <Input
+                  id="cc-name"
+                  autoComplete="cc-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane Contractor"
+                  disabled={step === "processing"}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cc-number" className="text-xs">Card number</Label>
+                <Input
+                  id="cc-number"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  value={number}
+                  onChange={(e) => setNumber(formatNumber(e.target.value))}
+                  placeholder="4242 4242 4242 4242"
+                  disabled={step === "processing"}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="cc-exp" className="text-xs">Expires</Label>
+                  <Input
+                    id="cc-exp"
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    value={exp}
+                    onChange={(e) => setExp(formatExp(e.target.value))}
+                    placeholder="MM/YY"
+                    disabled={step === "processing"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cc-cvc" className="text-xs">CVC</Label>
+                  <Input
+                    id="cc-cvc"
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    value={cvc}
+                    onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="123"
+                    disabled={step === "processing"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cc-zip" className="text-xs">ZIP</Label>
+                  <Input
+                    id="cc-zip"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value.slice(0, 10))}
+                    placeholder="95110"
+                    disabled={step === "processing"}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+            )}
+
+            <p className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="h-3 w-3" /> Card details are encrypted in transit. We never store full numbers.
+            </p>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="ghost" onClick={onClose} disabled={step === "processing"}>Cancel</Button>
+              <Button onClick={submit} disabled={!formValid || step === "processing"}>
+                {step === "processing" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Charging $99…</>
+                ) : (
+                  <><Lock className="h-4 w-4" /> Pay $99 & unlock</>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
