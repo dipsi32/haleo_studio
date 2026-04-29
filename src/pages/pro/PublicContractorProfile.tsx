@@ -247,7 +247,95 @@ const PublicContractorProfile = () => {
               </span>
             )}
           </div>
+          {profile?.tagline && (
+            <p className="mt-5 max-w-2xl font-display text-xl font-light italic text-foreground/80 md:text-2xl">
+              "{profile.tagline}"
+            </p>
+          )}
         </div>
+
+        {/* Promo banner */}
+        {profile?.promo_text && (
+          <section className="mb-8 flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-5">
+            <Star className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+            <p className="text-sm font-medium text-foreground">{profile.promo_text}</p>
+          </section>
+        )}
+
+        {/* About + meta */}
+        {(profile?.bio || profile?.years_in_business || profile?.service_areas) && (
+          <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+            <h2 className="font-display text-xl font-light">About</h2>
+            {profile?.bio && (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">{profile.bio}</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+              {profile?.years_in_business != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" /> {profile.years_in_business} years in business
+                </span>
+              )}
+              {profile?.service_areas && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Serves {profile.service_areas}
+                </span>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Specialties */}
+        {specialtyList.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-3 font-display text-xl font-light">Specialties</h2>
+            <div className="flex flex-wrap gap-2">
+              {specialtyList.map((s) => (
+                <span key={s} className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-foreground">
+                  {s}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Gallery */}
+        {gallery.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-light">
+              <ImageIcon className="h-4 w-4 text-accent" /> Recent work
+            </h2>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {gallery.map((url) => (
+                <div key={url} className="aspect-square overflow-hidden rounded-2xl border border-border bg-muted">
+                  <img src={url} alt="Project" loading="lazy" className="h-full w-full object-cover transition hover:scale-105" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Socials */}
+        {socials.length > 0 && (
+          <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+            <h2 className="font-display text-xl font-light">Find them online</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {socials.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <a
+                    key={s.href}
+                    href={s.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground/80 transition hover:border-accent/50 hover:text-foreground"
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {s.label}
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Trust score */}
         {score && (
