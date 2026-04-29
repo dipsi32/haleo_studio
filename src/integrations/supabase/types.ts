@@ -68,6 +68,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brief_clarifications: {
+        Row: {
+          contractor_id: string
+          created_at: string
+          homeowner_user_id: string
+          id: string
+          message: string
+          outreach_send_id: string
+          sender_role: string
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string
+          homeowner_user_id: string
+          id?: string
+          message: string
+          outreach_send_id: string
+          sender_role: string
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string
+          homeowner_user_id?: string
+          id?: string
+          message?: string
+          outreach_send_id?: string
+          sender_role?: string
+        }
+        Relationships: []
+      }
       contractor_accounts: {
         Row: {
           branding: Json
@@ -627,6 +657,7 @@ export type Database = {
           created_at: string
           homeowner_email: string | null
           homeowner_name: string | null
+          homeowner_user_id: string | null
           id: string
           neighborhood: string | null
           recipient_count: number
@@ -637,6 +668,7 @@ export type Database = {
           created_at?: string
           homeowner_email?: string | null
           homeowner_name?: string | null
+          homeowner_user_id?: string | null
           id?: string
           neighborhood?: string | null
           recipient_count?: number
@@ -647,6 +679,7 @@ export type Database = {
           created_at?: string
           homeowner_email?: string | null
           homeowner_name?: string | null
+          homeowner_user_id?: string | null
           id?: string
           neighborhood?: string | null
           recipient_count?: number
