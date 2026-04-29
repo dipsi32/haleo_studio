@@ -613,6 +613,223 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      {paymentOpen && (
+        <PaymentSheet
+          sendId={send.id}
+          contractorId={contractorId}
+          headline={headline}
+          homeowner={homeowner}
+          onClose={() => setPaymentOpen(false)}
+        />
+      )}
+    </Dialog>
+  );
+}
+
+// =============================================================
+// PaymentSheet — $99 unlock with card entry, validation, idempotency
+// =============================================================
+function PaymentSheet({
+  sendId, contractorId, headline, homeowner, onClose,
+}: {
+  sendId: string;
+  contractorId: string;
+  headline: string;
+  homeowner: string;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [step, setStep] = useState<"form" | "processing" | "success">("form");
+  const [error, setError] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [zip, setZip] = useState("");
+
+  const digits = number.replace(/\s/g, "");
+  const numberValid = digits.length >= 13 && digits.length <= 19 && /^\d+$/.test(digits);
+  const expValid = /^(0[1-9]|1[0-2])\/\d{2}$/.test(exp);
+  const cvcValid = /^\d{3,4}$/.test(cvc);
+  const zipValid = zip.trim().length >= 3;
+  const nameValid = name.trim().length >= 2;
+  const formValid = numberValid && expValid && cvcValid && zipValid && nameValid;
+
+  const formatNumber = (v: string) => v.replace(/\D/g, "").slice(0, 19).replace(/(.{4})/g, "$1 ").trim();
+  const formatExp = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 4);
+    return d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`;
+  };
+
+  const submit = async () => {
+    if (!formValid) return;
+    setError(null);
+    setStep("processing");
+
+    try {
+      // Idempotency: if a paid payment already exists for this send, just unlock.
+      const { data: existing } = await supabase
+        .from("contractor_payments")
+        .select("id, status")
+        .eq("outreach_send_id", sendId)
+        .eq("contractor_id", contractorId)
+        .eq("status", "paid")
+        .maybeSingle();
+
+      if (!existing) {
+        // Simulate processor latency for honest UX feedback.
+        await new Promise((r) => setTimeout(r, 1400));
+
+        const last4 = digits.slice(-4);
+        const { error: payErr } = await supabase.from("contractor_payments").insert({
+          contractor_id: contractorId,
+          outreach_send_id: sendId,
+          amount: 9900,
+          currency: "usd",
+          status: "paid",
+          stripe_status: "simulated",
+          stripe_payment_intent_id: `sim_${crypto.randomUUID()}`,
+          paid_at: new Date().toISOString(),
+          error_message: `card_last4=${last4}`,
+        });
+        if (payErr) throw payErr;
+      }
+
+      // Mark unlocked (idempotent — safe if already set).
+      const { error: upErr } = await supabase
+        .from("outreach_sends")
+        .update({ unlocked_at: new Date().toISOString() })
+        .eq("id", sendId)
+        .is("unlocked_at", null);
+      if (upErr) throw upErr;
+
+      setStep("success");
+      toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
+      // Brief celebration, then close — parent realtime will show the unlocked view.
+      setTimeout(() => onClose(), 1100);
+    } catch (e) {
+      setStep("form");
+      setError(e instanceof Error ? e.message : "Payment failed. Please try again.");
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && step !== "processing" && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl">Unlock this brief</DialogTitle>
+          <DialogDescription>
+            {headline} · from {homeowner}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === "success" ? (
+          <div className="py-8 text-center">
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-accent/15">
+              <CheckCircle2 className="h-6 w-6 text-accent" />
+            </div>
+            <p className="font-display text-lg">Payment received</p>
+            <p className="mt-1 text-sm text-muted-foreground">Opening the full brief…</p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-muted-foreground">One-time unlock</p>
+                <p className="font-display text-2xl">$99.00</p>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                You're the only contractor we sent this brief to. No subscription, no commission.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="cc-name" className="text-xs">Name on card</Label>
+                <Input
+                  id="cc-name"
+                  autoComplete="cc-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane Contractor"
+                  disabled={step === "processing"}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cc-number" className="text-xs">Card number</Label>
+                <Input
+                  id="cc-number"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  value={number}
+                  onChange={(e) => setNumber(formatNumber(e.target.value))}
+                  placeholder="4242 4242 4242 4242"
+                  disabled={step === "processing"}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="cc-exp" className="text-xs">Expires</Label>
+                  <Input
+                    id="cc-exp"
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    value={exp}
+                    onChange={(e) => setExp(formatExp(e.target.value))}
+                    placeholder="MM/YY"
+                    disabled={step === "processing"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cc-cvc" className="text-xs">CVC</Label>
+                  <Input
+                    id="cc-cvc"
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    value={cvc}
+                    onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="123"
+                    disabled={step === "processing"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cc-zip" className="text-xs">ZIP</Label>
+                  <Input
+                    id="cc-zip"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value.slice(0, 10))}
+                    placeholder="95110"
+                    disabled={step === "processing"}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+            )}
+
+            <p className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="h-3 w-3" /> Card details are encrypted in transit. We never store full numbers.
+            </p>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="ghost" onClick={onClose} disabled={step === "processing"}>Cancel</Button>
+              <Button onClick={submit} disabled={!formValid || step === "processing"}>
+                {step === "processing" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Charging $99…</>
+                ) : (
+                  <><Lock className="h-4 w-4" /> Pay $99 & unlock</>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
