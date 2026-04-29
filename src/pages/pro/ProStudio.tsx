@@ -1,5 +1,6 @@
-// "My Studio" — the contractor's home base after login.
-// Warm, editable profile + a leads ticker that pulls them into the inbox.
+// "My Profile" — the contractor's home base after login.
+// Warm, editable landing page + a leads ticker that pulls them into the inbox.
+// Every edit here syncs straight to their public profile and the homeowner-facing card.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -303,10 +304,10 @@ const ProStudio = () => {
   };
 
   if (loading) {
-    return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Opening your studio…</div>;
+    return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Opening your profile…</div>;
   }
 
-  const company = account?.company_name || "Your studio";
+  const company = account?.company_name || "there";
   const completion = (() => {
     const fields = [
       account?.tagline, account?.bio, account?.phone, account?.public_email,
@@ -325,7 +326,7 @@ const ProStudio = () => {
           <div className="flex items-center gap-3">
             <Logo />
             <span className="hidden text-xs text-muted-foreground sm:inline">·</span>
-            <span className="hidden text-sm font-medium sm:inline">My Studio</span>
+            <span className="hidden text-sm font-medium sm:inline">My profile</span>
           </div>
           <div className="flex items-center gap-2">
             {contractorId && (
@@ -372,7 +373,7 @@ const ProStudio = () => {
                     waiting on you.
                   </span>
                 ) : (
-                  <span className="text-muted-foreground">your studio is open for business.</span>
+                  <span className="text-muted-foreground">your profile is live and ready.</span>
                 )}
               </h1>
               <p className="mt-3 max-w-xl text-base text-muted-foreground">
@@ -433,7 +434,7 @@ const ProStudio = () => {
             <p className="mt-2 text-xs text-muted-foreground">
               {completion < 50 ? "A richer profile gets 3× more brief opens." :
                completion < 90 ? "Almost there — a couple more details and you're set." :
-               "Your studio looks fantastic ✨"}
+               "Your profile looks fantastic ✨"}
             </p>
           </div>
         </motion.section>

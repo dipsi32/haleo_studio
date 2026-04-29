@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles, Globe, Instagram, Facebook, Mail, Star, Image as ImageIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,8 +23,29 @@ type ContractorRow = Contractor & {
   claimed_at: string | null;
 };
 
+type PublicProfile = {
+  company_name: string | null;
+  tagline: string | null;
+  bio: string | null;
+  promo_text: string | null;
+  public_email: string | null;
+  website: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  houzz: string | null;
+  yelp: string | null;
+  tiktok: string | null;
+  logo_url: string | null;
+  gallery_urls: string[] | null;
+  years_in_business: number | null;
+  service_areas: string | null;
+  specialties: string | null;
+};
+
 const formatDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—";
+
+const normalizeUrl = (u: string) => (u.startsWith("http") ? u : `https://${u}`);
 
 const PublicContractorProfile = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -33,6 +54,7 @@ const PublicContractorProfile = () => {
   const fromHomeowner = params.get("ref") === "homeowner";
 
   const [contractor, setContractor] = useState<ContractorRow | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [permits, setPermits] = useState<Permit[]>([]);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +85,7 @@ const PublicContractorProfile = () => {
           .then(() => {});
       }
 
-      const [{ data: p }, { data: l }] = await Promise.all([
+      const [{ data: p }, { data: l }, { data: pp }] = await Promise.all([
         supabase
           .from("contractor_permits")
           .select("*")
@@ -74,6 +96,11 @@ const PublicContractorProfile = () => {
           .select("*")
           .eq("license_number", row.license_number)
           .maybeSingle(),
+        supabase
+          .from("contractor_profiles_public" as never)
+          .select("*")
+          .eq("contractor_id", row.id)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setPermits((p ?? []) as Permit[]);
@@ -82,6 +109,13 @@ const PublicContractorProfile = () => {
           ? ({ ...l, deep_link: cslbDeepLink(row.license_number) } as LicenseStatus)
           : null,
       );
+      if (pp) {
+        const pr = pp as unknown as PublicProfile & { gallery_urls: unknown };
+        setProfile({
+          ...pr,
+          gallery_urls: Array.isArray(pr.gallery_urls) ? (pr.gallery_urls as string[]) : [],
+        });
+      }
       setLoading(false);
     })();
     return () => {
@@ -123,8 +157,18 @@ const PublicContractorProfile = () => {
     );
   }
 
-  const displayName = contractor.company || contractor.name;
+  const displayName = profile?.company_name || contractor.company || contractor.name;
   const showBanner = !contractor.claimed;
+  const gallery = profile?.gallery_urls ?? [];
+  const specialtyList = (profile?.specialties ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const socials: Array<{ label: string; href: string; icon: typeof Globe }> = [];
+  if (profile?.website) socials.push({ label: "Website", href: normalizeUrl(profile.website), icon: Globe });
+  if (profile?.instagram) socials.push({ label: `@${profile.instagram.replace(/^@/, "")}`, href: `https://instagram.com/${profile.instagram.replace(/^@/, "")}`, icon: Instagram });
+  if (profile?.facebook) socials.push({ label: "Facebook", href: normalizeUrl(profile.facebook), icon: Facebook });
+  if (profile?.houzz) socials.push({ label: "Houzz", href: normalizeUrl(profile.houzz), icon: Globe });
+  if (profile?.yelp) socials.push({ label: "Yelp", href: normalizeUrl(profile.yelp), icon: Globe });
+  if (profile?.tiktok) socials.push({ label: `@${profile.tiktok.replace(/^@/, "")}`, href: `https://tiktok.com/@${profile.tiktok.replace(/^@/, "")}`, icon: Globe });
+  if (profile?.public_email) socials.push({ label: profile.public_email, href: `mailto:${profile.public_email}`, icon: Mail });
 
   return (
     <div className="min-h-screen bg-gradient-warm">
@@ -203,7 +247,95 @@ const PublicContractorProfile = () => {
               </span>
             )}
           </div>
+          {profile?.tagline && (
+            <p className="mt-5 max-w-2xl font-display text-xl font-light italic text-foreground/80 md:text-2xl">
+              "{profile.tagline}"
+            </p>
+          )}
         </div>
+
+        {/* Promo banner */}
+        {profile?.promo_text && (
+          <section className="mb-8 flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-5">
+            <Star className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+            <p className="text-sm font-medium text-foreground">{profile.promo_text}</p>
+          </section>
+        )}
+
+        {/* About + meta */}
+        {(profile?.bio || profile?.years_in_business || profile?.service_areas) && (
+          <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+            <h2 className="font-display text-xl font-light">About</h2>
+            {profile?.bio && (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">{profile.bio}</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+              {profile?.years_in_business != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" /> {profile.years_in_business} years in business
+                </span>
+              )}
+              {profile?.service_areas && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Serves {profile.service_areas}
+                </span>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Specialties */}
+        {specialtyList.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-3 font-display text-xl font-light">Specialties</h2>
+            <div className="flex flex-wrap gap-2">
+              {specialtyList.map((s) => (
+                <span key={s} className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-foreground">
+                  {s}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Gallery */}
+        {gallery.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-light">
+              <ImageIcon className="h-4 w-4 text-accent" /> Recent work
+            </h2>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {gallery.map((url) => (
+                <div key={url} className="aspect-square overflow-hidden rounded-2xl border border-border bg-muted">
+                  <img src={url} alt="Project" loading="lazy" className="h-full w-full object-cover transition hover:scale-105" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Socials */}
+        {socials.length > 0 && (
+          <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+            <h2 className="font-display text-xl font-light">Find them online</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {socials.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <a
+                    key={s.href}
+                    href={s.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground/80 transition hover:border-accent/50 hover:text-foreground"
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {s.label}
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Trust score */}
         {score && (

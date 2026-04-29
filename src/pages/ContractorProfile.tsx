@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,17 @@ import {
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 
+type ContractorPublicProfile = {
+  company_name: string | null;
+  tagline: string | null;
+  bio: string | null;
+  promo_text: string | null;
+  gallery_urls: string[] | null;
+  years_in_business: number | null;
+  service_areas: string | null;
+  specialties: string | null;
+};
+
 const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
 const ContractorProfile = () => {
@@ -21,6 +32,7 @@ const ContractorProfile = () => {
   const [contractor, setContractor] = useState<Contractor | null>(null);
   const [permits, setPermits] = useState<Permit[]>([]);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [profile, setProfile] = useState<ContractorPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,13 +43,18 @@ const ContractorProfile = () => {
       if (!c || cancelled) { setLoading(false); return; }
       setContractor(c as Contractor);
 
-      const [{ data: p }, { data: l }] = await Promise.all([
+      const [{ data: p }, { data: l }, { data: pp }] = await Promise.all([
         supabase.from("contractor_permits").select("*").eq("contractor_id", id).order("issued_date", { ascending: false }),
         supabase.from("contractor_license_cache").select("*").eq("license_number", c.license_number).maybeSingle(),
+        supabase.from("contractor_profiles_public" as never).select("*").eq("contractor_id", id).maybeSingle(),
       ]);
       if (cancelled) return;
       setPermits((p ?? []) as Permit[]);
       setLicense(l ? { ...l, deep_link: cslbDeepLink(c.license_number) } as LicenseStatus : null);
+      if (pp) {
+        const pr = pp as unknown as ContractorPublicProfile & { gallery_urls: unknown };
+        setProfile({ ...pr, gallery_urls: Array.isArray(pr.gallery_urls) ? (pr.gallery_urls as string[]) : [] });
+      }
 
       // Kick off CSLB verification in the background if we don't have a fresh cache
       if (!l) {
@@ -83,17 +100,74 @@ const ContractorProfile = () => {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{contractor.specialty ?? "General contractor"}</p>
               <h1 className="mt-2 font-display text-4xl font-light leading-tight md:text-5xl">
-                {contractor.company ?? contractor.name}
+                {profile?.company_name ?? contractor.company ?? contractor.name}
               </h1>
+              {profile?.tagline && (
+                <p className="mt-3 max-w-2xl font-display text-lg font-light italic text-foreground/75 md:text-xl">
+                  "{profile.tagline}"
+                </p>
+              )}
               <p className="mt-3 text-base text-muted-foreground">
                 {contractor.permit_count} verified permit{contractor.permit_count === 1 ? "" : "s"} on file in {contractor.city ?? "San Jose"}.
                 Last job {formatDate(contractor.last_permit_date)}.
               </p>
             </motion.div>
 
+            {profile?.promo_text && (
+              <div className="mt-6 flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-4">
+                <Star className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+                <p className="text-sm font-medium text-foreground">{profile.promo_text}</p>
+              </div>
+            )}
+
             <div className="mt-8 grid gap-6 md:grid-cols-[1fr_280px]">
               {/* Left column */}
               <div className="space-y-6">
+                {/* About from contractor */}
+                {(profile?.bio || profile?.years_in_business || profile?.service_areas) && (
+                  <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+                    <h2 className="font-display text-xl font-medium">About</h2>
+                    {profile?.bio && (
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">{profile.bio}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                      {profile?.years_in_business != null && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" /> {profile.years_in_business} years in business
+                        </span>
+                      )}
+                      {profile?.service_areas && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5" /> Serves {profile.service_areas}
+                        </span>
+                      )}
+                    </div>
+                    {profile?.specialties && (
+                      <div className="mt-4 flex flex-wrap gap-1.5">
+                        {profile.specialties.split(",").map((s) => s.trim()).filter(Boolean).map((s) => (
+                          <span key={s} className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-foreground">{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* Recent work gallery */}
+                {profile?.gallery_urls && profile.gallery_urls.length > 0 && (
+                  <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+                    <h2 className="flex items-center gap-2 font-display text-xl font-medium">
+                      <ImageIcon className="h-4 w-4 text-accent" /> Recent work
+                    </h2>
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {profile.gallery_urls.map((url) => (
+                        <div key={url} className="aspect-square overflow-hidden rounded-2xl border border-border bg-muted">
+                          <img src={url} alt="Project" loading="lazy" className="h-full w-full object-cover transition hover:scale-105" />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {/* Trust Score breakdown */}
                 {score && (
                   <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
