@@ -8,6 +8,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePilotAccess } from "@/hooks/usePilotAccess";
+import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { listMyProjects, deleteProject, type UserProject } from "@/lib/userProjects";
 import { useIntake } from "@/lib/intake";
 import { toast } from "@/hooks/use-toast";
@@ -19,14 +20,21 @@ const Account = () => {
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const access = usePilotAccess();
+  const { isContractor, account, loading: contractorLoading } = useContractorAccount();
   const { reset, setData } = useIntake();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<UserProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (contractorLoading || !isContractor) return;
+    navigate(account?.onboarded_at ? "/pro/inbox" : "/pro/onboarding", { replace: true });
+  }, [account?.onboarded_at, contractorLoading, isContractor, navigate]);
+
+  useEffect(() => {
+    if (isContractor) return;
     listMyProjects().then((rows) => { setProjects(rows); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+  }, [isContractor]);
 
   const startNew = () => {
     reset();
