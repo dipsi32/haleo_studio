@@ -100,40 +100,85 @@ export type Database = {
       }
       contractor_accounts: {
         Row: {
+          bio: string | null
           branding: Json
           company_name: string | null
           contractor_id: string | null
           created_at: string
+          facebook: string | null
+          gallery_urls: Json
+          houzz: string | null
           id: string
+          instagram: string | null
           logo_url: string | null
           onboarded_at: string | null
+          phone: string | null
           portfolio_links: Json
+          promo_text: string | null
+          public_email: string | null
+          service_areas: string | null
+          specialties: string | null
+          tagline: string | null
+          tiktok: string | null
           updated_at: string
           user_id: string
+          website: string | null
+          years_in_business: number | null
+          yelp: string | null
         }
         Insert: {
+          bio?: string | null
           branding?: Json
           company_name?: string | null
           contractor_id?: string | null
           created_at?: string
+          facebook?: string | null
+          gallery_urls?: Json
+          houzz?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
           onboarded_at?: string | null
+          phone?: string | null
           portfolio_links?: Json
+          promo_text?: string | null
+          public_email?: string | null
+          service_areas?: string | null
+          specialties?: string | null
+          tagline?: string | null
+          tiktok?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
+          years_in_business?: number | null
+          yelp?: string | null
         }
         Update: {
+          bio?: string | null
           branding?: Json
           company_name?: string | null
           contractor_id?: string | null
           created_at?: string
+          facebook?: string | null
+          gallery_urls?: Json
+          houzz?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
           onboarded_at?: string | null
+          phone?: string | null
           portfolio_links?: Json
+          promo_text?: string | null
+          public_email?: string | null
+          service_areas?: string | null
+          specialties?: string | null
+          tagline?: string | null
+          tiktok?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
+          years_in_business?: number | null
+          yelp?: string | null
         }
         Relationships: [
           {
