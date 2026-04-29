@@ -155,6 +155,13 @@ const ProInbox = () => {
             <Button asChild variant="ghost" size="sm">
               <Link to="/pro/onboarding">Edit portal</Link>
             </Button>
+            {profileSlug && (
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/pro/${profileSlug}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Public profile
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
