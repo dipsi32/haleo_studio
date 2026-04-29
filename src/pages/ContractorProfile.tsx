@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,17 @@ import {
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 
+type ContractorPublicProfile = {
+  company_name: string | null;
+  tagline: string | null;
+  bio: string | null;
+  promo_text: string | null;
+  gallery_urls: string[] | null;
+  years_in_business: number | null;
+  service_areas: string | null;
+  specialties: string | null;
+};
+
 const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
 const ContractorProfile = () => {
@@ -21,6 +32,7 @@ const ContractorProfile = () => {
   const [contractor, setContractor] = useState<Contractor | null>(null);
   const [permits, setPermits] = useState<Permit[]>([]);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [profile, setProfile] = useState<ContractorPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,13 +43,18 @@ const ContractorProfile = () => {
       if (!c || cancelled) { setLoading(false); return; }
       setContractor(c as Contractor);
 
-      const [{ data: p }, { data: l }] = await Promise.all([
+      const [{ data: p }, { data: l }, { data: pp }] = await Promise.all([
         supabase.from("contractor_permits").select("*").eq("contractor_id", id).order("issued_date", { ascending: false }),
         supabase.from("contractor_license_cache").select("*").eq("license_number", c.license_number).maybeSingle(),
+        supabase.from("contractor_profiles_public" as never).select("*").eq("contractor_id", id).maybeSingle(),
       ]);
       if (cancelled) return;
       setPermits((p ?? []) as Permit[]);
       setLicense(l ? { ...l, deep_link: cslbDeepLink(c.license_number) } as LicenseStatus : null);
+      if (pp) {
+        const pr = pp as unknown as ContractorPublicProfile & { gallery_urls: unknown };
+        setProfile({ ...pr, gallery_urls: Array.isArray(pr.gallery_urls) ? (pr.gallery_urls as string[]) : [] });
+      }
 
       // Kick off CSLB verification in the background if we don't have a fresh cache
       if (!l) {
