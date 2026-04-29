@@ -717,6 +717,13 @@ function PaymentSheet({
               </p>
             </div>
 
+            <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                <strong>Test mode.</strong> No real card is charged yet — live billing is coming soon. Use any details to unlock.
+              </span>
+            </div>
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="cc-name" className="text-xs">Name on card</Label>
