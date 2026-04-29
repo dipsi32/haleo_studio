@@ -138,34 +138,7 @@ const ProInbox = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-sm font-medium">{account?.company_name ?? "Workspace"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {contractorId && (
-              <NotificationBell
-                table="contractor_notifications"
-                filter={{ column: "contractor_id", value: contractorId }}
-                onItemClick={(n) => n.outreach_send_id && setActiveSendId(n.outreach_send_id)}
-              />
-            )}
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/pro/profile">My Studio</Link>
-            </Button>
-            {profileSlug && (
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/pro/${profileSlug}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Public profile
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <ProHeader />
 
       {pushBannerOpen && (
         <div className="border-b border-accent/30 bg-accent/5">
