@@ -153,7 +153,7 @@ const ProInbox = () => {
               />
             )}
             <Button asChild variant="ghost" size="sm">
-              <Link to="/pro/onboarding">Edit portal</Link>
+              <Link to="/pro/profile">My Studio</Link>
             </Button>
             {profileSlug && (
               <Button asChild variant="outline" size="sm">
