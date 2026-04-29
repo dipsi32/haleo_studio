@@ -67,7 +67,11 @@ const Account = () => {
           <Logo />
           <div className="flex items-center gap-2">
             {user && (
-              <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: user.id }} />
+              <NotificationBell
+                table="homeowner_notifications"
+                filter={{ column: "user_id", value: user.id }}
+                onItemClick={(n) => n.outreach_send_id && setConvoSendId(n.outreach_send_id)}
+              />
             )}
             {isAdmin && (
               <Link to="/admin" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary">
