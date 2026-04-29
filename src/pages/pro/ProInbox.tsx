@@ -70,9 +70,21 @@ const ProInbox = () => {
   const [loading, setLoading] = useState(true);
   const [activeSendId, setActiveSendId] = useState<string | null>(null);
   const [pushBannerOpen, setPushBannerOpen] = useState(false);
+  const [profileSlug, setProfileSlug] = useState<string | null>(null);
 
   const contractorId = account?.contractor_id;
   const activeSend = useMemo(() => sends.find((s) => s.id === activeSendId) ?? null, [sends, activeSendId]);
+
+  // Fetch slug for "View public profile" link
+  useEffect(() => {
+    if (!contractorId) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase.from("contractors").select("slug").eq("id", contractorId).maybeSingle();
+      if (active && data?.slug) setProfileSlug(data.slug);
+    })();
+    return () => { active = false; };
+  }, [contractorId]);
 
   // Load briefs
   useEffect(() => {
