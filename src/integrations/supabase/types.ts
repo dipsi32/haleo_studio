@@ -1106,7 +1106,77 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      contractor_profiles_public: {
+        Row: {
+          bio: string | null
+          company_name: string | null
+          contractor_id: string | null
+          facebook: string | null
+          gallery_urls: Json | null
+          houzz: string | null
+          instagram: string | null
+          logo_url: string | null
+          promo_text: string | null
+          public_email: string | null
+          service_areas: string | null
+          specialties: string | null
+          tagline: string | null
+          tiktok: string | null
+          updated_at: string | null
+          website: string | null
+          years_in_business: number | null
+          yelp: string | null
+        }
+        Insert: {
+          bio?: string | null
+          company_name?: string | null
+          contractor_id?: string | null
+          facebook?: string | null
+          gallery_urls?: Json | null
+          houzz?: string | null
+          instagram?: string | null
+          logo_url?: string | null
+          promo_text?: string | null
+          public_email?: string | null
+          service_areas?: string | null
+          specialties?: string | null
+          tagline?: string | null
+          tiktok?: string | null
+          updated_at?: string | null
+          website?: string | null
+          years_in_business?: number | null
+          yelp?: string | null
+        }
+        Update: {
+          bio?: string | null
+          company_name?: string | null
+          contractor_id?: string | null
+          facebook?: string | null
+          gallery_urls?: Json | null
+          houzz?: string | null
+          instagram?: string | null
+          logo_url?: string | null
+          promo_text?: string | null
+          public_email?: string | null
+          service_areas?: string | null
+          specialties?: string | null
+          tagline?: string | null
+          tiktok?: string | null
+          updated_at?: string | null
+          website?: string | null
+          years_in_business?: number | null
+          yelp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_accounts_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       current_user_email: { Args: never; Returns: string }
