@@ -5,6 +5,7 @@ import { Plus, FileText, Trash2, LogOut, Shield, ArrowRight, Sparkles } from "lu
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
+import HomeownerConversationDrawer from "@/components/HomeownerConversationDrawer";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePilotAccess } from "@/hooks/usePilotAccess";
