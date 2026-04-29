@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
+import ProHeader from "@/components/pro/ProHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -321,36 +322,7 @@ const ProStudio = () => {
   return (
     <div className="min-h-screen bg-gradient-warm">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <span className="hidden text-xs text-muted-foreground sm:inline">·</span>
-            <span className="hidden text-sm font-medium sm:inline">My profile</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {contractorId && (
-              <NotificationBell
-                table="contractor_notifications"
-                filter={{ column: "contractor_id", value: contractorId }}
-                onItemClick={() => navigate("/pro/inbox")}
-              />
-            )}
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/pro/inbox">
-                <Inbox className="mr-1.5 h-4 w-4" /> Inbox
-              </Link>
-            </Button>
-            {profileSlug && (
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/pro/${profileSlug}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Public view
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <ProHeader />
 
       <main className="mx-auto max-w-6xl px-6 pb-16 pt-10">
         {/* WELCOME + LEADS TICKER */}

@@ -1,16 +1,15 @@
 // Contractor inbox: list of received briefs with locked/unlocked states,
 // push prompt, notification bell, and an unlock-then-annotate flow.
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
-  ExternalLink, DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2,
+  DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Logo from "@/components/Logo";
-import NotificationBell from "@/components/NotificationBell";
+import ProHeader from "@/components/pro/ProHeader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,21 +71,21 @@ const ProInbox = () => {
   const [loading, setLoading] = useState(true);
   const [activeSendId, setActiveSendId] = useState<string | null>(null);
   const [pushBannerOpen, setPushBannerOpen] = useState(false);
-  const [profileSlug, setProfileSlug] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const contractorId = account?.contractor_id;
   const activeSend = useMemo(() => sends.find((s) => s.id === activeSendId) ?? null, [sends, activeSendId]);
 
-  // Fetch slug for "View public profile" link
+  // Honor ?open=<send_id> deep link (from notification bell, etc.)
   useEffect(() => {
-    if (!contractorId) return;
-    let active = true;
-    (async () => {
-      const { data } = await supabase.from("contractors").select("slug").eq("id", contractorId).maybeSingle();
-      if (active && data?.slug) setProfileSlug(data.slug);
-    })();
-    return () => { active = false; };
-  }, [contractorId]);
+    const open = searchParams.get("open");
+    if (open && open !== activeSendId) {
+      setActiveSendId(open);
+      const next = new URLSearchParams(searchParams);
+      next.delete("open");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, activeSendId, setSearchParams]);
 
   // Load briefs
   useEffect(() => {
@@ -139,34 +138,7 @@ const ProInbox = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-sm font-medium">{account?.company_name ?? "Workspace"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {contractorId && (
-              <NotificationBell
-                table="contractor_notifications"
-                filter={{ column: "contractor_id", value: contractorId }}
-                onItemClick={(n) => n.outreach_send_id && setActiveSendId(n.outreach_send_id)}
-              />
-            )}
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/pro/profile">My Studio</Link>
-            </Button>
-            {profileSlug && (
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/pro/${profileSlug}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Public profile
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <ProHeader />
 
       {pushBannerOpen && (
         <div className="border-b border-accent/30 bg-accent/5">
@@ -743,6 +715,13 @@ function PaymentSheet({
               <p className="mt-2 text-[11px] text-muted-foreground">
                 You're the only contractor we sent this brief to. No subscription, no commission.
               </p>
+            </div>
+
+            <div className="flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                <strong>Test mode.</strong> No real card is charged yet — live billing is coming soon. Use any details to unlock.
+              </span>
             </div>
 
             <div className="space-y-3">

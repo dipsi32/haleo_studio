@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, FileText, Trash2, LogOut, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
+import HomeownerConversationDrawer from "@/components/HomeownerConversationDrawer";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePilotAccess } from "@/hooks/usePilotAccess";
@@ -23,8 +24,25 @@ const Account = () => {
   const { isContractor, account, loading: contractorLoading } = useContractorAccount();
   const { reset, setData } = useIntake();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<UserProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [convoSendId, setConvoSendId] = useState<string | null>(null);
+
+  // Open conversation drawer from a deep link (e.g., notification bell on home).
+  useEffect(() => {
+    const convo = searchParams.get("convo");
+    if (convo && convo !== convoSendId) setConvoSendId(convo);
+  }, [searchParams, convoSendId]);
+
+  const closeConvo = () => {
+    setConvoSendId(null);
+    if (searchParams.get("convo")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("convo");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (contractorLoading || !isContractor) return;
@@ -65,7 +83,11 @@ const Account = () => {
           <Logo />
           <div className="flex items-center gap-2">
             {user && (
-              <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: user.id }} />
+              <NotificationBell
+                table="homeowner_notifications"
+                filter={{ column: "user_id", value: user.id }}
+                onItemClick={(n) => n.outreach_send_id && setConvoSendId(n.outreach_send_id)}
+              />
             )}
             {isAdmin && (
               <Link to="/admin" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary">
@@ -152,6 +174,12 @@ const Account = () => {
 
         <ProposalsReceivedSection />
       </main>
+
+      <HomeownerConversationDrawer
+        outreachSendId={convoSendId}
+        open={!!convoSendId}
+        onClose={closeConvo}
+      />
     </div>
   );
 };
