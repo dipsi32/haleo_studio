@@ -107,6 +107,99 @@ function InlineField({
   );
 }
 
+// ---------- Specialties multi-select with custom add ----------
+const SPECIALTY_SUGGESTIONS = [
+  "Kitchen remodels", "Bathroom remodels", "Whole-home remodels", "ADUs",
+  "Additions", "Outdoor living", "Decks & patios", "Roofing", "Solar",
+  "Historic homes", "New construction", "Garage conversions",
+  "Basement finishing", "Tile & flooring", "Cabinetry & millwork",
+  "Painting", "Electrical", "Plumbing", "HVAC", "Landscaping",
+];
+
+function SpecialtiesPicker({ value, onSave }: { value: string; onSave: (next: string) => Promise<void> }) {
+  const selected = value.split(",").map((s) => s.trim()).filter(Boolean);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const commit = async (next: string[]) => {
+    setBusy(true);
+    try { await onSave(next.join(", ")); } finally { setBusy(false); }
+  };
+
+  const toggle = (item: string) => {
+    const exists = selected.some((s) => s.toLowerCase() === item.toLowerCase());
+    const next = exists
+      ? selected.filter((s) => s.toLowerCase() !== item.toLowerCase())
+      : [...selected, item];
+    commit(next);
+  };
+
+  const addCustom = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (selected.some((s) => s.toLowerCase() === v.toLowerCase())) { setDraft(""); return; }
+    commit([...selected, v]);
+    setDraft("");
+  };
+
+  const remove = (item: string) => commit(selected.filter((s) => s.toLowerCase() !== item.toLowerCase()));
+
+  const suggestions = SPECIALTY_SUGGESTIONS.filter(
+    (s) => !selected.some((sel) => sel.toLowerCase() === s.toLowerCase()),
+  );
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card/60 p-4 transition-all hover:border-accent/40 hover:bg-card">
+      <p className="mb-3 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <Tag className="h-3 w-3" /> Specialties
+        {busy && <Loader2 className="h-3 w-3 animate-spin" />}
+      </p>
+
+      {selected.length > 0 ? (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {selected.map((s) => (
+            <span key={s} className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+              {s}
+              <button onClick={() => remove(s)} className="hover:opacity-70" aria-label={`Remove ${s}`}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mb-3 text-xs italic text-muted-foreground/70">Tap what you do best — or type your own.</p>
+      )}
+
+      <div className="mb-3 flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
+          placeholder="Add your own…"
+          className="h-9 rounded-xl bg-background"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addCustom} disabled={!draft.trim()} className="h-9 rounded-xl">
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
+      </div>
+
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => toggle(s)}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground transition hover:border-accent/50 hover:text-foreground"
+            >
+              <Plus className="h-3 w-3" /> {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Page ----------
 const ProStudio = () => {
   const { user } = useAuth();
@@ -412,9 +505,10 @@ const ProStudio = () => {
             <InlineField label="Years in business" icon={<Calendar className="h-3 w-3" />} value={account?.years_in_business?.toString() ?? ""}
               placeholder="12" onSave={(v) => saveField({ years_in_business: v ? parseInt(v, 10) || null : null })} />
             <div className="md:col-span-2">
-              <InlineField label="Specialties" icon={<Tag className="h-3 w-3" />} value={account?.specialties}
-                placeholder="Whole-home remodels, kitchens, ADUs, historic homes…"
-                onSave={(v) => saveField({ specialties: v || null })} />
+              <SpecialtiesPicker
+                value={account?.specialties ?? ""}
+                onSave={(v) => saveField({ specialties: v || null })}
+              />
             </div>
           </div>
         </section>
