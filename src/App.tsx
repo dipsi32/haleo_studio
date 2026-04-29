@@ -24,6 +24,7 @@ import ProLanding from "./pages/pro/ProLanding.tsx";
 import ProLogin from "./pages/pro/ProLogin.tsx";
 import ProOnboarding from "./pages/pro/ProOnboarding.tsx";
 import ProInbox from "./pages/pro/ProInbox.tsx";
+import ProStudio from "./pages/pro/ProStudio.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
 import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
 import ContractorRoute from "./components/auth/ContractorRoute.tsx";
@@ -94,6 +95,14 @@ const App = () => (
                 <ProtectedRoute>
                   <ProOnboarding />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pro/profile"
+              element={
+                <ContractorRoute>
+                  <ProStudio />
+                </ContractorRoute>
               }
             />
             <Route

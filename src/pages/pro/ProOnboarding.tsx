@@ -78,7 +78,7 @@ const ProOnboarding = () => {
 
       await refetch();
       toast({ title: "Workspace ready", description: "Welcome in." });
-      navigate("/pro/inbox", { replace: true });
+      navigate("/pro/profile", { replace: true });
     } catch (err) {
       toast({
         title: "Couldn't save",

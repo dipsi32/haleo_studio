@@ -28,7 +28,7 @@ const Account = () => {
 
   useEffect(() => {
     if (contractorLoading || !isContractor) return;
-    navigate(account?.onboarded_at ? "/pro/inbox" : "/pro/onboarding", { replace: true });
+    navigate(account?.onboarded_at ? "/pro/profile" : "/pro/onboarding", { replace: true });
   }, [account?.onboarded_at, contractorLoading, isContractor, navigate]);
 
   useEffect(() => {

@@ -20,7 +20,7 @@ const Login = () => {
   const resolvedNext = useMemo(() => {
     if (!user || !isContractor) return next;
     if (next === "/account" || next === "/login") {
-      return account?.onboarded_at ? "/pro/inbox" : "/pro/onboarding";
+      return account?.onboarded_at ? "/pro/profile" : "/pro/onboarding";
     }
     return next;
   }, [account?.onboarded_at, isContractor, next, user]);
