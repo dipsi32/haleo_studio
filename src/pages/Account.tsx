@@ -158,6 +158,12 @@ const Account = () => {
 
         <ProposalsReceivedSection />
       </main>
+
+      <HomeownerConversationDrawer
+        outreachSendId={convoSendId}
+        open={!!convoSendId}
+        onClose={() => setConvoSendId(null)}
+      />
     </div>
   );
 };
