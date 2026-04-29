@@ -408,26 +408,43 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 <Lock className="h-3 w-3" /> Preview
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {homeowner} sent a detailed brief for {headline.toLowerCase()}. Photos, scope, budget signal,
-                and timing are all in there. Unlock to see everything.
+              <p className="mt-3 text-sm leading-relaxed text-foreground/80">
+                {homeowner} put together a detailed brief for {headline.toLowerCase()}.
               </p>
               {snap.scope_summary && (
-                <p className="mt-3 line-clamp-2 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
+                <p className="mt-3 line-clamp-3 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
               )}
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                {send.outreach_batches?.neighborhood && (
+                  <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {send.outreach_batches.neighborhood}</span>
+                )}
+                {snap.budget && <span className="inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> {snap.budget}</span>}
+                {snap.timeline && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {snap.timeline}</span>}
+                {(snap.rendering_urls?.length ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-1"><ImagePlus className="h-3 w-3" /> {snap.rendering_urls!.length} photo{snap.rendering_urls!.length === 1 ? "" : "s"}</span>
+                )}
+              </div>
+              <ul className="mt-5 grid gap-2 text-sm text-foreground/80 sm:grid-cols-2">
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Full scope by trade</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Inspiration & site photos</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Direct line to ask the homeowner</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-accent shrink-0" /> Private notes for your bid</li>
+              </ul>
             </div>
             <div className="rounded-2xl bg-foreground p-6 text-background">
               <p className="font-display text-2xl">$99 to unlock the full brief</p>
-              <p className="mt-1 text-sm opacity-80">One-time. No subscription. No commission.</p>
+              <p className="mt-1 text-sm opacity-80">One-time. No subscription. No commission. You're the only contractor we send this to.</p>
               <div className="mt-4 flex gap-2">
-                <Button onClick={handleUnlock} disabled={unlocking} className="bg-background text-foreground hover:bg-background/90">
-                  {unlocking ? "Unlocking…" : "Unlock for $99"}
+                <Button onClick={() => setPaymentOpen(true)} className="bg-background text-foreground hover:bg-background/90">
+                  <CreditCard className="h-4 w-4" /> Unlock for $99
                 </Button>
                 <Button onClick={handlePass} disabled={passing} variant="ghost" className="text-background hover:bg-background/10 hover:text-background">
                   Not for me
                 </Button>
               </div>
-              <p className="mt-3 text-[11px] opacity-60">Payment is stubbed in this build — click to simulate.</p>
+              <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] opacity-70">
+                <ShieldCheck className="h-3 w-3" /> Secure payment · Refunded if the homeowner is unreachable
+              </p>
             </div>
           </div>
         ) : (
