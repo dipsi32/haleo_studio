@@ -85,7 +85,7 @@ const PublicContractorProfile = () => {
           .then(() => {});
       }
 
-      const [{ data: p }, { data: l }] = await Promise.all([
+      const [{ data: p }, { data: l }, { data: pp }] = await Promise.all([
         supabase
           .from("contractor_permits")
           .select("*")
@@ -96,6 +96,11 @@ const PublicContractorProfile = () => {
           .select("*")
           .eq("license_number", row.license_number)
           .maybeSingle(),
+        supabase
+          .from("contractor_profiles_public" as never)
+          .select("*")
+          .eq("contractor_id", row.id)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setPermits((p ?? []) as Permit[]);
@@ -104,6 +109,13 @@ const PublicContractorProfile = () => {
           ? ({ ...l, deep_link: cslbDeepLink(row.license_number) } as LicenseStatus)
           : null,
       );
+      if (pp) {
+        const pr = pp as unknown as PublicProfile & { gallery_urls: unknown };
+        setProfile({
+          ...pr,
+          gallery_urls: Array.isArray(pr.gallery_urls) ? (pr.gallery_urls as string[]) : [],
+        });
+      }
       setLoading(false);
     })();
     return () => {
