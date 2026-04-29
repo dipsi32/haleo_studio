@@ -173,7 +173,7 @@ const ProStudio = () => {
   // Save helper
   const saveField = async (patch: Record<string, unknown>) => {
     if (!user) return;
-    const { error } = await supabase.from("contractor_accounts").update(patch).eq("user_id", user.id);
+    const { error } = await supabase.from("contractor_accounts").update(patch as never).eq("user_id", user.id);
     if (error) { toast({ title: "Couldn't save", description: error.message, variant: "destructive" }); return; }
     await refetch();
   };
