@@ -282,7 +282,7 @@ const ProInbox = () => {
 // =============================================================
 function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; contractorId: string; onClose: () => void }) {
   const { toast } = useToast();
-  const [unlocking, setUnlocking] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [passing, setPassing] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [draft, setDraft] = useState("");
@@ -322,29 +322,6 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
     })();
     return () => { active = false; };
   }, [isUnlocked, contractorId, send.id]);
-
-  const handleUnlock = async () => {
-    setUnlocking(true);
-    try {
-      const { error: payErr } = await supabase.from("contractor_payments").insert({
-        contractor_id: contractorId,
-        outreach_send_id: send.id,
-        amount: 9900,
-        status: "paid",
-        stripe_status: "stubbed",
-        paid_at: new Date().toISOString(),
-      });
-      if (payErr) throw payErr;
-      const { error: upErr } = await supabase
-        .from("outreach_sends")
-        .update({ unlocked_at: new Date().toISOString() })
-        .eq("id", send.id);
-      if (upErr) throw upErr;
-      toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
-    } catch (e) {
-      toast({ title: "Couldn't unlock", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
-    } finally { setUnlocking(false); }
-  };
 
   const handlePass = async () => {
     setPassing(true);
