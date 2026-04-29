@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
+  ExternalLink, DollarSign, ImagePlus,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
