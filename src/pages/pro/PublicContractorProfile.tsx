@@ -157,8 +157,18 @@ const PublicContractorProfile = () => {
     );
   }
 
-  const displayName = contractor.company || contractor.name;
+  const displayName = profile?.company_name || contractor.company || contractor.name;
   const showBanner = !contractor.claimed;
+  const gallery = profile?.gallery_urls ?? [];
+  const specialtyList = (profile?.specialties ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const socials: Array<{ label: string; href: string; icon: typeof Globe }> = [];
+  if (profile?.website) socials.push({ label: "Website", href: normalizeUrl(profile.website), icon: Globe });
+  if (profile?.instagram) socials.push({ label: `@${profile.instagram.replace(/^@/, "")}`, href: `https://instagram.com/${profile.instagram.replace(/^@/, "")}`, icon: Instagram });
+  if (profile?.facebook) socials.push({ label: "Facebook", href: normalizeUrl(profile.facebook), icon: Facebook });
+  if (profile?.houzz) socials.push({ label: "Houzz", href: normalizeUrl(profile.houzz), icon: Globe });
+  if (profile?.yelp) socials.push({ label: "Yelp", href: normalizeUrl(profile.yelp), icon: Globe });
+  if (profile?.tiktok) socials.push({ label: `@${profile.tiktok.replace(/^@/, "")}`, href: `https://tiktok.com/@${profile.tiktok.replace(/^@/, "")}`, icon: Globe });
+  if (profile?.public_email) socials.push({ label: profile.public_email, href: `mailto:${profile.public_email}`, icon: Mail });
 
   return (
     <div className="min-h-screen bg-gradient-warm">
