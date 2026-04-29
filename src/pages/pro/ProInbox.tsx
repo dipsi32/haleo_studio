@@ -17,6 +17,21 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { getPushPermission, subscribeToPush, deferPushPermission, isPushSupported } from "@/lib/push";
 
+type BriefSnapshot = {
+  homeowner_name?: string;
+  neighborhood?: string;
+  scope_summary?: string;
+  vision?: string;
+  frustrations?: string[];
+  rooms?: string[];
+  scope_label?: string;
+  timeline?: string;
+  budget?: string;
+  rendering_urls?: string[];
+  trade_groups?: { trade: string; lines: string[] }[];
+  projectType?: string;
+};
+
 type SendRow = {
   id: string;
   contractor_id: string;
@@ -27,15 +42,22 @@ type SendRow = {
   outreach_batches: {
     neighborhood: string | null;
     homeowner_name: string | null;
-    brief_snapshot: any;
+    homeowner_user_id: string | null;
+    brief_snapshot: BriefSnapshot | null;
   } | null;
 };
 
 type Annotation = { id: string; section_key: string; content: string };
+type Clarification = {
+  id: string;
+  sender_role: "contractor" | "homeowner";
+  message: string;
+  created_at: string;
+};
 
 const headlineFor = (s: SendRow) => {
   const snap = s.outreach_batches?.brief_snapshot ?? {};
-  const proj = snap.projectType || snap.project_type || snap.scope || "New project";
+  const proj = snap.projectType || snap.scope_label || "New project";
   const hood = s.outreach_batches?.neighborhood;
   return hood ? `${proj} in ${hood}` : proj;
 };
