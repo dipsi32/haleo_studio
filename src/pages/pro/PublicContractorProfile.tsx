@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles, Globe, Instagram, Facebook, Mail, Star, Image as ImageIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,8 +23,29 @@ type ContractorRow = Contractor & {
   claimed_at: string | null;
 };
 
+type PublicProfile = {
+  company_name: string | null;
+  tagline: string | null;
+  bio: string | null;
+  promo_text: string | null;
+  public_email: string | null;
+  website: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  houzz: string | null;
+  yelp: string | null;
+  tiktok: string | null;
+  logo_url: string | null;
+  gallery_urls: string[] | null;
+  years_in_business: number | null;
+  service_areas: string | null;
+  specialties: string | null;
+};
+
 const formatDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—";
+
+const normalizeUrl = (u: string) => (u.startsWith("http") ? u : `https://${u}`);
 
 const PublicContractorProfile = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -33,6 +54,7 @@ const PublicContractorProfile = () => {
   const fromHomeowner = params.get("ref") === "homeowner";
 
   const [contractor, setContractor] = useState<ContractorRow | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [permits, setPermits] = useState<Permit[]>([]);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [loading, setLoading] = useState(true);
