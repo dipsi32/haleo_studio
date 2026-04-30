@@ -28,6 +28,8 @@ import ProStudio from "./pages/pro/ProStudio.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
 import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
 import ContractorRoute from "./components/auth/ContractorRoute.tsx";
+import HomeownerNotificationToaster from "./components/HomeownerNotificationToaster.tsx";
+import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <HomeownerNotificationToaster />
+          <ContractorNotificationToaster />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />

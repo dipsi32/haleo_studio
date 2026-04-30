@@ -1,14 +1,27 @@
 import { Link, useNavigate } from "react-router-dom";
-import { UserRound, LogIn } from "lucide-react";
+import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown } from "lucide-react";
 import Logo from "./Logo";
 import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const SiteHeader = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
 
   return (
     <header className="absolute inset-x-0 top-0 z-30">
@@ -32,12 +45,36 @@ const SiteHeader = () => {
               filter={{ column: "user_id", value: user.id }}
               onItemClick={(n) => navigate(n.outreach_send_id ? `/account?convo=${n.outreach_send_id}` : "/account")}
             />
-            <Link
-              to="/account"
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
-            >
-              <UserRound className="h-4 w-4" /> My account
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary">
+                <UserRound className="h-4 w-4" />
+                <span className="hidden max-w-[140px] truncate sm:inline">
+                  {user.user_metadata?.full_name?.split(" ")[0] ?? "Account"}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
+                  {user.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/account")}>
+                  <UserRound className="h-4 w-4" /> My projects
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/account#messages")}>
+                  <MessageSquare className="h-4 w-4" /> Messages
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    <Shield className="h-4 w-4" /> Admin
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : (
           <Link
