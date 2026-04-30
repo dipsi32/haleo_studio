@@ -19,6 +19,7 @@ import Waitlist from "./pages/Waitlist.tsx";
 import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
 import ProposalIntelligencePage from "./pages/ProposalIntelligencePage.tsx";
+import ProposalsCompare from "./pages/ProposalsCompare.tsx";
 import ContractorSubmit from "./pages/ContractorSubmit.tsx";
 import ProLanding from "./pages/pro/ProLanding.tsx";
 import ProLogin from "./pages/pro/ProLogin.tsx";
@@ -85,6 +86,14 @@ const App = () => (
             <Route path="/audit" element={<Gated><Audit /></Gated>} />
             <Route path="/proposal" element={<ProposalIntelligencePage />} />
             <Route path="/proposal/:reportId" element={<ProposalIntelligencePage />} />
+            <Route
+              path="/account/proposals/compare"
+              element={
+                <ProtectedRoute>
+                  <ProposalsCompare />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/contractor/submit/:outreachSendId" element={<ContractorSubmit />} />
 
             {/* Pro Workspace (contractor-side) */}
