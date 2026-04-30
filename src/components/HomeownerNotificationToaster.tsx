@@ -3,9 +3,9 @@
 // they're on. Mount once at the app root inside AuthProvider.
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
 
 export default function HomeownerNotificationToaster() {
   const { user } = useAuth();
