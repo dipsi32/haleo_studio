@@ -90,6 +90,23 @@ export default function ProposalsReceivedSection() {
       });
       setRows(merged);
       setLoading(false);
+
+      // Safety net: if a proposal was submitted but has no analysis row yet
+      // (or an analysis stuck in 'pending' for a while), kick off the
+      // analyze-proposal-intake function so the homeowner never sees a
+      // submitted-but-untouched proposal. Best-effort, fire and forget.
+      for (const row of merged) {
+        const needsKick =
+          !row.proposal_analysis_id ||
+          (row.analysis_status === "pending" &&
+            row.proposal_submitted_at &&
+            Date.now() - new Date(row.proposal_submitted_at).getTime() > 90_000);
+        if (needsKick) {
+          supabase.functions
+            .invoke("analyze-proposal-intake", { body: { outreach_send_id: row.send_id } })
+            .catch(() => { /* non-blocking */ });
+        }
+      }
     };
 
     load();
@@ -106,6 +123,8 @@ export default function ProposalsReceivedSection() {
   if (loading) return null;
   if (rows.length === 0) return null;
 
+  const completeCount = rows.filter((r) => r.analysis_status === "complete").length;
+
   return (
     <section className="mt-14">
       <div className="flex items-center gap-2">
@@ -115,6 +134,31 @@ export default function ProposalsReceivedSection() {
       <p className="mt-1 text-sm text-muted-foreground">
         Every contractor submission is timestamped and reviewed before you read a single line. You'll see the score before you open the file.
       </p>
+
+      {/* Multi-bid CTA — appears the moment 2+ proposals are analyzed */}
+      {completeCount >= 2 && (
+        <Link
+          to="/account/proposals/compare"
+          className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-sage/30 bg-sage-soft p-5 transition-all hover:shadow-warm"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-background/60">
+              <GitCompare className="h-5 w-5 text-sage" />
+            </div>
+            <div>
+              <p className="font-display text-base font-medium">
+                You have {completeCount} proposals analyzed. Ready to compare them side by side?
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                We'll surface the strongest one in 10 seconds — and the exact things to push back on.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sage px-4 py-2 text-sm font-medium text-sage-foreground">
+            Compare all proposals <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </Link>
+      )}
 
       <div className="mt-6 grid gap-3">
         {rows.map((r, i) => {
