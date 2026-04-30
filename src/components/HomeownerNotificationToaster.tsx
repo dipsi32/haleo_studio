@@ -37,15 +37,13 @@ export default function HomeownerNotificationToaster() {
           // Skip stale events that fire on initial subscribe.
           if (new Date(n.created_at).getTime() < mountedAt.current - 5000) return;
 
-          toast({
-            title: n.title,
+          toast(n.title, {
             description: n.body,
             action: n.outreach_send_id
-              ? ({
-                  altText: "Open conversation",
+              ? {
+                  label: "Open",
                   onClick: () => navigate(`/account?convo=${n.outreach_send_id}`),
-                  children: "Open",
-                } as any)
+                }
               : undefined,
           });
         },
