@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Inbox, Loader2, AlertTriangle, ShieldCheck, ArrowRight, FileText } from "lucide-react";
+import { Inbox, Loader2, AlertTriangle, ShieldCheck, ArrowRight, FileText, GitCompare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
