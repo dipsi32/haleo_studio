@@ -47,6 +47,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <HomeownerNotificationToaster />
+          <ContractorNotificationToaster />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
