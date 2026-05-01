@@ -99,7 +99,20 @@ const ProOnboarding = () => {
     <div className="min-h-screen bg-gradient-warm px-6 py-10">
       <header className="mx-auto flex max-w-3xl items-center justify-between">
         <Logo />
-        <span className="text-xs text-muted-foreground">Setup · 2 minutes</span>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-muted-foreground">Setup · 2 minutes</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              navigate("/pro/login", { replace: true });
+            }}
+            className="rounded-full text-xs"
+          >
+            Sign out
+          </Button>
+        </div>
       </header>
 
       <motion.div
