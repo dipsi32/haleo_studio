@@ -1,8 +1,8 @@
-// Magic-link login for contractors. Email + 6-digit OTP. No passwords.
+// Plain email + password login for contractors.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
@@ -16,12 +16,12 @@ const ProLogin = () => {
   const { isContractor, account, loading: acctLoading } = useContractorAccount();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get("next") || "/pro/inbox";
+  const next = params.get("next") || "/pro/profile";
   const errorParam = params.get("error");
 
-  const [stage, setStage] = useState<"email" | "otp">("email");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -42,46 +42,27 @@ const ProLogin = () => {
     }
   }, [errorParam]);
 
-  const sendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) return;
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/pro/login`,
-        },
-      });
-      if (error) throw error;
-      setStage("otp");
-      toast({ title: "We sent you a 6-digit code", description: `Check ${email}` });
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin + "/pro/login" },
+        });
+        if (error) throw error;
+        toast({ title: "Account created", description: "Signing you in…" });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
     } catch (err) {
       toast({
-        title: "Couldn't send code",
+        title: mode === "signup" ? "Couldn't create account" : "Sign in failed",
         description: err instanceof Error ? err.message : "Try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp.trim(),
-        type: "email",
-      });
-      if (error) throw error;
-      // Effect above handles routing
-    } catch (err) {
-      toast({
-        title: "That code didn't work",
-        description: err instanceof Error ? err.message : "Try again or request a new one.",
         variant: "destructive",
       });
     } finally {
@@ -103,71 +84,67 @@ const ProLogin = () => {
             Pro Workspace
           </span>
           <h1 className="font-display text-3xl font-light">
-            {stage === "email" ? "Sign in to your workspace" : "Enter your 6-digit code"}
+            {mode === "signup" ? "Create your contractor account" : "Sign in to your workspace"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">
-            {stage === "email"
-              ? "Type the email tied to your Haleo profile. We'll send you a one-time code — no passwords."
-              : `Check ${email} — the code expires in 10 minutes.`}
+            {mode === "signup"
+              ? "Use the email tied to your Haleo profile."
+              : "Email and password — quick and simple."}
           </p>
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
-          {stage === "email" ? (
-            <form onSubmit={sendOtp} className="space-y-3">
-              <div>
-                <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Email
-                </label>
-                <div className="relative mt-1">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    autoFocus
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="h-11 rounded-xl bg-background pl-9"
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Email
+              </label>
+              <div className="relative mt-1">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  autoFocus
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="h-11 rounded-xl bg-background pl-9"
+                />
               </div>
-              <Button type="submit" disabled={busy || !email} className="h-11 w-full rounded-full">
-                {busy ? "Sending…" : "Send my code"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={verifyOtp} className="space-y-3">
-              <Input
-                autoFocus
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                className="h-14 rounded-xl bg-background text-center font-mono text-2xl tracking-[0.5em]"
-              />
-              <Button
-                type="submit"
-                disabled={busy || otp.length !== 6}
-                className="h-11 w-full rounded-full"
-              >
-                {busy ? "Opening…" : "Open my workspace"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStage("email");
-                  setOtp("");
-                }}
-                className="block w-full text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Wrong email? Go back
-              </button>
-            </form>
-          )}
+            </div>
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Password
+              </label>
+              <div className="relative mt-1">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="h-11 rounded-xl bg-background pl-9"
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={busy} className="h-11 w-full rounded-full">
+              {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
+
+          <p className="mt-5 text-center text-xs text-muted-foreground">
+            {mode === "signup" ? "Already have an account?" : "New contractor?"}{" "}
+            <button
+              type="button"
+              onClick={() => setMode((m) => (m === "signup" ? "signin" : "signup"))}
+              className="font-medium text-accent underline-offset-4 hover:underline"
+            >
+              {mode === "signup" ? "Sign in" : "Create one"}
+            </button>
+          </p>
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
