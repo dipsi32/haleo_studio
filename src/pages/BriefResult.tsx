@@ -397,18 +397,56 @@ const BriefResult = () => {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <Logo />
+        <div className="container flex h-16 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(brUser ? "/account" : "/")}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent/40 hover:text-foreground"
+              aria-label="Back to my projects"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {brUser ? "My projects" : "Home"}
+            </button>
+            <span className="hidden sm:inline-flex"><Logo /></span>
+          </div>
+          <div className="flex items-center gap-2">
+            {brUser && (
+              <span className="hidden items-center gap-1.5 rounded-full bg-sage-soft px-3 py-1 text-[11px] font-medium text-sage sm:inline-flex" title="Saved automatically">
+                <Check className="h-3 w-3" /> Saved
+              </span>
+            )}
             {brUser && (
               <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: brUser.id }} />
             )}
             <button
               onClick={() => setEditOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
             >
               <Edit3 className="h-3.5 w-3.5" /> Edit brief
             </button>
+            {brUser && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium transition-smooth hover:bg-secondary">
+                  <UserRound className="h-3.5 w-3.5" />
+                  <span className="hidden max-w-[120px] truncate sm:inline">
+                    {brUser.user_metadata?.full_name?.split(" ")[0] ?? "Account"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
+                    {brUser.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/account")}>
+                    <UserRound className="h-4 w-4" /> My projects
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
