@@ -192,7 +192,7 @@ const ProInbox = () => {
               const isPassed = !!s.passed_at;
               const snap = s.outreach_batches?.brief_snapshot ?? {};
               const preview = snap.scope_summary || snap.vision || (snap.trade_groups?.[0]?.lines?.[0] ?? "");
-              const photoCount = snap.rendering_urls?.length ?? 0;
+              const photoCount = (snap.room_photo_urls?.length ?? 0) + (snap.floorplan_urls?.length ?? 0) + (snap.rendering_urls?.length ?? 0);
               return (
                 <li key={s.id}>
                   <button
