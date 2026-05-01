@@ -547,6 +547,51 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
               </section>
             )}
 
+            {/* Haleo's read — attachment style, collapsible */}
+            {snap.haleo_read && (
+              <details className="group rounded-2xl border border-accent/30 bg-accent/5 p-5 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
+                      <Sparkles className="h-3 w-3" /> Haleo's read of the space
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[9px] font-semibold normal-case tracking-normal">Attachment</span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/90">{snap.haleo_read.summary}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">Tap to expand the full grounded read · the homeowner reviewed and approved this</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-accent transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div className="mt-4 space-y-4 border-t border-accent/20 pt-4">
+                  {snap.haleo_read.sections.map((sec, si) => (
+                    <div key={si}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
+                      <ul className="mt-2 space-y-1.5">
+                        {sec.items.map((it, ii) => (
+                          <li key={ii} className="flex items-start gap-2 text-sm text-foreground/85">
+                            <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                              it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50"
+                            }`} />
+                            <span>
+                              {it.text}
+                              <span className="ml-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                {it.basis === "grounded" ? "seen" : it.basis === "inferred" ? "likely" : "open"}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  {snap.read_feedback && (
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homeowner's correction</p>
+                      <p className="mt-1 text-sm italic text-foreground/85">"{snap.read_feedback}"</p>
+                    </div>
+                  )}
+                </div>
+              </details>
+            )}
+
             {/* Private notes */}
             <section className="rounded-2xl border border-border bg-muted/20 p-5">
               <div className="flex items-center justify-between">
