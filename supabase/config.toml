@@ -8,5 +8,8 @@ verify_jwt = false
 
 [functions.analyze-proposal-intake]
 verify_jwt = false
+
+[functions.fetch-sj-permits]
+verify_jwt = false
 [functions.seed-test-contractor]
 verify_jwt = false

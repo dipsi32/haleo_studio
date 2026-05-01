@@ -21,14 +21,20 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const SJ_RESOURCE = '761b7ae8-3be1-4ad6-923d-c7af6404a904'
 const SJ_API = 'https://data.sanjoseca.gov/api/3/action/datastore_search'
 
+// Broadened keyword set so we don't drop legit residential work like
+// "Alterations", "Sub-Trades Only", "Repair", etc. The dataset is San Jose
+// residential/commercial permits only — being inclusive is safe.
 const projectQueries = (room?: string): string[] => {
-  if (!room) return ['kitchen', 'bath', 'addition', 'remodel']
+  const broad = ['kitchen', 'bath', 'addition', 'remodel', 'alteration', 'sub-trades', 'repair', 'single-family']
+  if (!room) return broad
   const r = room.toLowerCase()
-  if (r.includes('kitchen')) return ['kitchen']
-  if (r.includes('bath')) return ['bath']
-  if (r.includes('addition')) return ['addition']
-  if (r.includes('full')) return ['remodel', 'addition']
-  return ['remodel']
+  // Even when a room is specified, include broad terms so contractor history
+  // isn't artificially shrunk to a single keyword match.
+  if (r.includes('kitchen')) return ['kitchen', ...broad]
+  if (r.includes('bath')) return ['bath', ...broad]
+  if (r.includes('addition')) return ['addition', 'alteration', ...broad]
+  if (r.includes('full')) return broad
+  return broad
 }
 
 interface SJRecord {
@@ -108,12 +114,15 @@ Deno.serve(async (req) => {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
     const zip = body.zip || url.searchParams.get('zip') || '95110'
     const room = body.room || url.searchParams.get('room') || undefined
+    const contractor = body.contractor || url.searchParams.get('contractor') || undefined
     const limit = Number(body.limit || url.searchParams.get('limit') || 500)
 
-    const queries = projectQueries(room)
+    // If a contractor name is provided, search by name only — this catches
+    // every permit they pulled regardless of work-type keyword.
+    const queries = contractor ? [contractor] : projectQueries(room)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Pull records for each project keyword in parallel
+    // Pull records for each query in parallel
     const perQuery = Math.ceil(limit / queries.length)
     let fetchError: string | null = null
 
@@ -149,12 +158,14 @@ Deno.serve(async (req) => {
     // Filter to records with a contractor
     const withContractor = allRecords.filter(r => parseContractor(r.CONTRACTOR))
 
-    // Optional zip filter — match leading 3 digits to broaden the area
-    const zipPrefix = String(zip).slice(0, 3)
-    const zipFiltered = zip
+    // Dataset is San Jose-only, so we keep all SJ zips. We only filter when
+    // searching by `zip` (no contractor name) AND only loosely (full SJ area =
+    // any 95xxx zip). This way contractors who pulled permits across multiple
+    // SJ neighborhoods still all show up.
+    const zipFiltered = (zip && !contractor)
       ? withContractor.filter(r => {
           const { zip: rz } = parseLocation(r.gx_location)
-          return !rz || rz.startsWith(zipPrefix)
+          return !rz || rz.startsWith('95')
         })
       : withContractor
 
@@ -273,12 +284,25 @@ Deno.serve(async (req) => {
       if (!pErr) permitsUpserted += chunk.length
     }
 
+    // Recompute permit_count for affected contractors from the DB so the value
+    // reflects total history, not just records returned in this run.
+    for (const contractorId of idByKey.values()) {
+      const { count } = await supabase
+        .from('contractor_permits')
+        .select('id', { count: 'exact', head: true })
+        .eq('contractor_id', contractorId)
+      if (typeof count === 'number') {
+        await supabase.from('contractors').update({ permit_count: count }).eq('id', contractorId)
+      }
+    }
+
     const contractorsUpserted = upsertedContractors?.length ?? 0
 
     return new Response(JSON.stringify({
       ok: true,
       zip,
       room,
+      contractor,
       raw_rows: allRecords.length,
       with_contractor: withContractor.length,
       filtered_rows: zipFiltered.length,
