@@ -109,20 +109,20 @@ const steps = [
   {
     n: "01",
     icon: Sparkles,
-    title: "We translate your dream",
-    body: "Into a brief every contractor can bid on. No more repeating yourself, no more lost in translation.",
+    title: "Translate your dream into a scoped brief",
+    body: "Tell us what you want. We turn it into a clear, contractor-ready scope — no jargon, no guesswork.",
   },
   {
     n: "02",
     icon: ShieldCheck,
-    title: "We audit every proposal",
-    body: "Against real city permit data. You'll know if the number is fair before you ever sign a thing.",
+    title: "See only contractors who've done it nearby",
+    body: "We show you pros who've actually pulled permits for similar projects in your area. No random lists.",
   },
   {
     n: "03",
     icon: CalendarCheck2,
-    title: "We stay until it's done",
-    body: "A shared timeline that tracks every milestone and inspection. No more wondering why the site is quiet.",
+    title: "Invite multiple bids, pick the best one",
+    body: "Send your brief to several contractors at once, compare proposals side-by-side, and choose with confidence.",
   },
 ];
 
