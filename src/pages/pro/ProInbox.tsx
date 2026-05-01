@@ -30,6 +30,14 @@ type BriefSnapshot = {
   timeline?: string;
   budget?: string;
   rendering_urls?: string[];
+  room_photo_urls?: string[];
+  floorplan_urls?: string[];
+  haleo_read?: {
+    summary: string;
+    sections: { title: string; items: { text: string; basis: "grounded" | "inferred" | "question" }[] }[];
+    approvedAt?: string;
+  };
+  read_feedback?: string;
   trade_groups?: { trade: string; lines: string[] }[];
   projectType?: string;
 };
