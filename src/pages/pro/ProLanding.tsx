@@ -9,9 +9,14 @@ const ProLanding = () => {
     <div className="min-h-screen bg-gradient-warm">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Logo />
-        <Link to="/pro/login" className="text-sm font-medium text-foreground hover:text-accent">
-          Sign in
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/pro/login?mode=signin" className="text-sm font-medium text-foreground hover:text-accent">
+            Sign in
+          </Link>
+          <Button asChild size="sm" variant="outline" className="rounded-full">
+            <Link to="/pro/login?mode=signup">Create account</Link>
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-6 pb-24 pt-16 text-center">
@@ -31,11 +36,14 @@ const ProLanding = () => {
             Skip the cold leads. Haleo sends you projects from homeowners who've already done the
             scope, the budget, and the photos — so your bid lands in context, not in a guessing game.
           </p>
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full">
-              <Link to="/pro/login">
-                Open my workspace <ArrowRight className="h-4 w-4" />
+              <Link to="/pro/login?mode=signup">
+                Create your account <ArrowRight className="h-4 w-4" />
               </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full">
+              <Link to="/pro/login?mode=signin">I already have one</Link>
             </Button>
           </div>
         </motion.div>
