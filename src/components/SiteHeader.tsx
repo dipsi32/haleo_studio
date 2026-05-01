@@ -31,7 +31,7 @@ const SiteHeader = () => {
           <a href="#how" className="transition-smooth hover:text-foreground">How it works</a>
           <a href="#pricing" className="transition-smooth hover:text-foreground">Pricing</a>
           <Link to="/brief" className="transition-smooth hover:text-foreground">For homeowners</Link>
-          <Link to="/audit" className="transition-smooth hover:text-foreground">For contractors</Link>
+          <Link to="/pro/login" className="transition-smooth hover:text-foreground">For contractors</Link>
           {isAdmin && (
             <Link to="/admin" className="transition-smooth hover:text-foreground">Admin</Link>
           )}
