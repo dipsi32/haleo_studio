@@ -21,14 +21,20 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const SJ_RESOURCE = '761b7ae8-3be1-4ad6-923d-c7af6404a904'
 const SJ_API = 'https://data.sanjoseca.gov/api/3/action/datastore_search'
 
+// Broadened keyword set so we don't drop legit residential work like
+// "Alterations", "Sub-Trades Only", "Repair", etc. The dataset is San Jose
+// residential/commercial permits only — being inclusive is safe.
 const projectQueries = (room?: string): string[] => {
-  if (!room) return ['kitchen', 'bath', 'addition', 'remodel']
+  const broad = ['kitchen', 'bath', 'addition', 'remodel', 'alteration', 'sub-trades', 'repair', 'single-family']
+  if (!room) return broad
   const r = room.toLowerCase()
-  if (r.includes('kitchen')) return ['kitchen']
-  if (r.includes('bath')) return ['bath']
-  if (r.includes('addition')) return ['addition']
-  if (r.includes('full')) return ['remodel', 'addition']
-  return ['remodel']
+  // Even when a room is specified, include broad terms so contractor history
+  // isn't artificially shrunk to a single keyword match.
+  if (r.includes('kitchen')) return ['kitchen', ...broad]
+  if (r.includes('bath')) return ['bath', ...broad]
+  if (r.includes('addition')) return ['addition', 'alteration', ...broad]
+  if (r.includes('full')) return broad
+  return broad
 }
 
 interface SJRecord {
