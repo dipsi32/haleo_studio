@@ -622,8 +622,10 @@ function PaymentSheet({
   const [zip, setZip] = useState("");
 
   const digits = number.replace(/\s/g, "");
-  const numberValid = digits.length >= 13 && digits.length <= 19 && /^\d+$/.test(digits);
-  const expValid = /^(0[1-9]|1[0-2])\/\d{2}$/.test(exp);
+  // Test mode: keep validation lenient so any plausible input unlocks.
+  // Real card validation will land when Stripe is wired in.
+  const numberValid = digits.length >= 12 && /^\d+$/.test(digits);
+  const expValid = exp.replace(/\D/g, "").length >= 3;
   const cvcValid = /^\d{3,4}$/.test(cvc);
   const zipValid = zip.trim().length >= 3;
   const nameValid = name.trim().length >= 2;
