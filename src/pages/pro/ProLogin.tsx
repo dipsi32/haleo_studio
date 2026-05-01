@@ -19,7 +19,8 @@ const ProLogin = () => {
   const next = params.get("next") || "/pro/profile";
   const errorParam = params.get("error");
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const initialMode = (params.get("mode") === "signin" ? "signin" : "signup") as "signin" | "signup";
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -88,12 +89,33 @@ const ProLogin = () => {
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">
             {mode === "signup"
-              ? "Use the email tied to your Haleo profile."
+              ? "Set up your Pro Workspace in under a minute."
               : "Email and password — quick and simple."}
           </p>
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+          <div className="mb-5 grid grid-cols-2 gap-1 rounded-full border border-border bg-background p-1">
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className={`h-9 rounded-full text-xs font-medium uppercase tracking-[0.18em] transition ${
+                mode === "signup" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Create account
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className={`h-9 rounded-full text-xs font-medium uppercase tracking-[0.18em] transition ${
+                mode === "signin" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Sign in
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
