@@ -278,7 +278,7 @@ const AnnotationBlock = ({
 
 // ───── Page ─────
 const BriefResult = () => {
-  const { user: brUser } = useAuth();
+  const { user: brUser, signOut } = useAuth();
   const { data, update, addMedia, removeMedia, togglePill } = useIntake();
   const navigate = useNavigate();
   const [open, setOpen] = useState<MediaAsset | null>(null);
@@ -288,6 +288,30 @@ const BriefResult = () => {
   const [lineEdits, setLineEdits] = useState<Record<number, string>>({});
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addressPromptOpen, setAddressPromptOpen] = useState(false);
+  const projectIdRef = useRef<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem("haleo:active_project_id") : null,
+  );
+
+  // Auto-save edits made on the result page (annotations, line edits to scope, etc.)
+  // so nothing is lost if the homeowner closes the tab or signs out.
+  useEffect(() => {
+    if (!brUser || !data.room) return;
+    const t = setTimeout(() => {
+      saveDraft(data, projectIdRef.current ?? undefined)
+        .then((row) => {
+          projectIdRef.current = row.id;
+          sessionStorage.setItem("haleo:active_project_id", row.id);
+        })
+        .catch(() => {/* RLS / offline — ignore */});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [data, brUser]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
+
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
