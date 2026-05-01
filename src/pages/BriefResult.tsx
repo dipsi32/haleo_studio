@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { saveDraft } from "@/lib/userProjects";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ArrowLeft,
   ArrowRight,
   Download,
   Edit3,
@@ -38,6 +40,15 @@ import {
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -268,7 +279,7 @@ const AnnotationBlock = ({
 
 // ───── Page ─────
 const BriefResult = () => {
-  const { user: brUser } = useAuth();
+  const { user: brUser, signOut } = useAuth();
   const { data, update, addMedia, removeMedia, togglePill } = useIntake();
   const navigate = useNavigate();
   const [open, setOpen] = useState<MediaAsset | null>(null);
@@ -278,6 +289,30 @@ const BriefResult = () => {
   const [lineEdits, setLineEdits] = useState<Record<number, string>>({});
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addressPromptOpen, setAddressPromptOpen] = useState(false);
+  const projectIdRef = useRef<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem("haleo:active_project_id") : null,
+  );
+
+  // Auto-save edits made on the result page (annotations, line edits to scope, etc.)
+  // so nothing is lost if the homeowner closes the tab or signs out.
+  useEffect(() => {
+    if (!brUser || !data.room) return;
+    const t = setTimeout(() => {
+      saveDraft(data, projectIdRef.current ?? undefined)
+        .then((row) => {
+          projectIdRef.current = row.id;
+          sessionStorage.setItem("haleo:active_project_id", row.id);
+        })
+        .catch(() => {/* RLS / offline — ignore */});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [data, brUser]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
+
 
   const homeowner = useMemo(() => buildHomeownerLayer(data), [data]);
   const contractorLines = useMemo(() => buildContractorLayer(data), [data]);
@@ -363,18 +398,56 @@ const BriefResult = () => {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <header className="border-b border-border/60 bg-background/70 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <Logo />
+        <div className="container flex h-16 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(brUser ? "/account" : "/")}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent/40 hover:text-foreground"
+              aria-label="Back to my projects"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {brUser ? "My projects" : "Home"}
+            </button>
+            <span className="hidden sm:inline-flex"><Logo /></span>
+          </div>
+          <div className="flex items-center gap-2">
+            {brUser && (
+              <span className="hidden items-center gap-1.5 rounded-full bg-sage-soft px-3 py-1 text-[11px] font-medium text-sage sm:inline-flex" title="Saved automatically">
+                <Check className="h-3 w-3" /> Saved
+              </span>
+            )}
             {brUser && (
               <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: brUser.id }} />
             )}
             <button
               onClick={() => setEditOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent hover:text-foreground"
             >
               <Edit3 className="h-3.5 w-3.5" /> Edit brief
             </button>
+            {brUser && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium transition-smooth hover:bg-secondary">
+                  <UserRound className="h-3.5 w-3.5" />
+                  <span className="hidden max-w-[120px] truncate sm:inline">
+                    {brUser.user_metadata?.full_name?.split(" ")[0] ?? "Account"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
+                    {brUser.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/account")}>
+                    <UserRound className="h-4 w-4" /> My projects
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
