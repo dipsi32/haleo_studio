@@ -284,12 +284,25 @@ Deno.serve(async (req) => {
       if (!pErr) permitsUpserted += chunk.length
     }
 
+    // Recompute permit_count for affected contractors from the DB so the value
+    // reflects total history, not just records returned in this run.
+    for (const contractorId of idByKey.values()) {
+      const { count } = await supabase
+        .from('contractor_permits')
+        .select('id', { count: 'exact', head: true })
+        .eq('contractor_id', contractorId)
+      if (typeof count === 'number') {
+        await supabase.from('contractors').update({ permit_count: count }).eq('id', contractorId)
+      }
+    }
+
     const contractorsUpserted = upsertedContractors?.length ?? 0
 
     return new Response(JSON.stringify({
       ok: true,
       zip,
       room,
+      contractor,
       raw_rows: allRecords.length,
       with_contractor: withContractor.length,
       filtered_rows: zipFiltered.length,
