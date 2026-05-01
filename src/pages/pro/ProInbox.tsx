@@ -434,6 +434,39 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
           </div>
         ) : (
           <div className="space-y-6 py-2">
+            {/* Room photos — homeowner-uploaded, shown first so contractor sees the actual space */}
+            {((snap.room_photo_urls?.length ?? 0) > 0 || (snap.floorplan_urls?.length ?? 0) > 0) && (
+              <section className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" /> The space
+                  <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground/70">
+                    Photos & floorplans the homeowner uploaded
+                  </span>
+                </div>
+                {(snap.room_photo_urls?.length ?? 0) > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {snap.room_photo_urls!.map((url, i) => (
+                      <a key={`p-${i}`} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg border border-border">
+                        <img src={url} alt={`Room photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {(snap.floorplan_urls?.length ?? 0) > 0 && (
+                  <>
+                    <p className="mt-4 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Floorplan</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {snap.floorplan_urls!.map((url, i) => (
+                        <a key={`f-${i}`} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg border border-border bg-muted/40">
+                          <img src={url} alt={`Floorplan ${i + 1}`} className="h-full w-full object-contain" loading="lazy" />
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
             {/* Top metadata strip */}
             <div className="grid gap-3 sm:grid-cols-3">
               {snap.scope_label && (
