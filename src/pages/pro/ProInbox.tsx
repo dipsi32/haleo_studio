@@ -30,6 +30,14 @@ type BriefSnapshot = {
   timeline?: string;
   budget?: string;
   rendering_urls?: string[];
+  room_photo_urls?: string[];
+  floorplan_urls?: string[];
+  haleo_read?: {
+    summary: string;
+    sections: { title: string; items: { text: string; basis: "grounded" | "inferred" | "question" }[] }[];
+    approvedAt?: string;
+  };
+  read_feedback?: string;
   trade_groups?: { trade: string; lines: string[] }[];
   projectType?: string;
 };
@@ -184,7 +192,7 @@ const ProInbox = () => {
               const isPassed = !!s.passed_at;
               const snap = s.outreach_batches?.brief_snapshot ?? {};
               const preview = snap.scope_summary || snap.vision || (snap.trade_groups?.[0]?.lines?.[0] ?? "");
-              const photoCount = snap.rendering_urls?.length ?? 0;
+              const photoCount = (snap.room_photo_urls?.length ?? 0) + (snap.floorplan_urls?.length ?? 0) + (snap.rendering_urls?.length ?? 0);
               return (
                 <li key={s.id}>
                   <button
@@ -426,6 +434,39 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
           </div>
         ) : (
           <div className="space-y-6 py-2">
+            {/* Room photos — homeowner-uploaded, shown first so contractor sees the actual space */}
+            {((snap.room_photo_urls?.length ?? 0) > 0 || (snap.floorplan_urls?.length ?? 0) > 0) && (
+              <section className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" /> The space
+                  <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground/70">
+                    Photos & floorplans the homeowner uploaded
+                  </span>
+                </div>
+                {(snap.room_photo_urls?.length ?? 0) > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {snap.room_photo_urls!.map((url, i) => (
+                      <a key={`p-${i}`} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg border border-border">
+                        <img src={url} alt={`Room photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {(snap.floorplan_urls?.length ?? 0) > 0 && (
+                  <>
+                    <p className="mt-4 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Floorplan</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {snap.floorplan_urls!.map((url, i) => (
+                        <a key={`f-${i}`} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg border border-border bg-muted/40">
+                          <img src={url} alt={`Floorplan ${i + 1}`} className="h-full w-full object-contain" loading="lazy" />
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
             {/* Top metadata strip */}
             <div className="grid gap-3 sm:grid-cols-3">
               {snap.scope_label && (
@@ -504,6 +545,51 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* Haleo's read — attachment style, collapsible */}
+            {snap.haleo_read && (
+              <details className="group rounded-2xl border border-accent/30 bg-accent/5 p-5 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
+                      <Sparkles className="h-3 w-3" /> Haleo's read of the space
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[9px] font-semibold normal-case tracking-normal">Attachment</span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/90">{snap.haleo_read.summary}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">Tap to expand the full grounded read · the homeowner reviewed and approved this</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-accent transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div className="mt-4 space-y-4 border-t border-accent/20 pt-4">
+                  {snap.haleo_read.sections.map((sec, si) => (
+                    <div key={si}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
+                      <ul className="mt-2 space-y-1.5">
+                        {sec.items.map((it, ii) => (
+                          <li key={ii} className="flex items-start gap-2 text-sm text-foreground/85">
+                            <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                              it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50"
+                            }`} />
+                            <span>
+                              {it.text}
+                              <span className="ml-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                {it.basis === "grounded" ? "seen" : it.basis === "inferred" ? "likely" : "open"}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  {snap.read_feedback && (
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homeowner's correction</p>
+                      <p className="mt-1 text-sm italic text-foreground/85">"{snap.read_feedback}"</p>
+                    </div>
+                  )}
+                </div>
+              </details>
             )}
 
             {/* Private notes */}

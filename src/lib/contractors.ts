@@ -193,7 +193,19 @@ export type BriefSnapshot = {
   scope_label?: string;
   timeline?: string;
   budget?: string;
+  // Inspiration / reference imagery the homeowner attached
   rendering_urls: string[];
+  // Actual photos & floorplans of the room (homeowner-uploaded)
+  room_photo_urls: string[];
+  floorplan_urls: string[];
+  // Haleo's grounded read of the space — shown to contractor as an attachment
+  haleo_read?: {
+    summary: string;
+    sections: { title: string; items: { text: string; basis: "grounded" | "inferred" | "question" }[] }[];
+    approvedAt?: string;
+  };
+  // Homeowner's correction note if they flagged Haleo's read as off
+  read_feedback?: string;
   trade_groups: { trade: string; lines: string[] }[];
 };
 
@@ -208,10 +220,28 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
   const budget = data.budgetSkipped || data.budgetMin == null
     ? undefined
     : `${fmtMoney(data.budgetMin)} – ${fmtMoney(data.budgetMax)}`;
+  const urlOf = (m: { url: string; uploadedUrl?: string }) => m.uploadedUrl || (m.url && !m.url.startsWith('blob:') ? m.url : '');
   const renderings = data.media
-    .filter(m => m.kind === 'inspiration' && (m.uploadedUrl || m.url))
-    .map(m => m.uploadedUrl || m.url);
+    .filter(m => m.kind === 'inspiration')
+    .map(urlOf)
+    .filter(Boolean);
+  const roomPhotos = data.media
+    .filter(m => m.kind === 'photo' || m.kind === 'video')
+    .map(urlOf)
+    .filter(Boolean);
+  const floorplans = data.media
+    .filter(m => m.kind === 'floorplan')
+    .map(urlOf)
+    .filter(Boolean);
   const groups = groupContractorLinesByTrade(buildContractorLayer(data));
+  const haleo = data.approvedAnalysis ? {
+    summary: data.approvedAnalysis.summary,
+    sections: data.approvedAnalysis.sections.map(s => ({
+      title: s.title,
+      items: s.items.map(it => ({ text: it.text, basis: it.basis })),
+    })),
+    approvedAt: data.approvedAnalysis.approvedAt,
+  } : undefined;
   return {
     homeowner_name: homeownerName,
     neighborhood: data.address?.city ?? 'your area',
@@ -223,6 +253,10 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     timeline,
     budget,
     rendering_urls: renderings,
+    room_photo_urls: roomPhotos,
+    floorplan_urls: floorplans,
+    haleo_read: haleo,
+    read_feedback: data.readFeedback?.note,
     trade_groups: groups.map(g => ({ trade: g.meta.label, lines: g.lines.map(l => l.text) })),
   };
 };
