@@ -158,12 +158,14 @@ Deno.serve(async (req) => {
     // Filter to records with a contractor
     const withContractor = allRecords.filter(r => parseContractor(r.CONTRACTOR))
 
-    // Optional zip filter — match leading 3 digits to broaden the area
-    const zipPrefix = String(zip).slice(0, 3)
-    const zipFiltered = zip
+    // Dataset is San Jose-only, so we keep all SJ zips. We only filter when
+    // searching by `zip` (no contractor name) AND only loosely (full SJ area =
+    // any 95xxx zip). This way contractors who pulled permits across multiple
+    // SJ neighborhoods still all show up.
+    const zipFiltered = (zip && !contractor)
       ? withContractor.filter(r => {
           const { zip: rz } = parseLocation(r.gx_location)
-          return !rz || rz.startsWith(zipPrefix)
+          return !rz || rz.startsWith('95')
         })
       : withContractor
 
