@@ -233,7 +233,7 @@ const ProStudio = () => {
     if (!contractorId) return;
     let active = true;
     (async () => {
-      const [{ data: c }, { data: sends }, { count: unread }] = await Promise.all([
+      const [{ data: c }, { data: sends }, { data: unreadNotifs }] = await Promise.all([
         supabase.from("contractors").select("slug").eq("id", contractorId).maybeSingle(),
         supabase
           .from("outreach_sends")
@@ -241,17 +241,22 @@ const ProStudio = () => {
           .eq("contractor_id", contractorId)
           .order("sent_at", { ascending: false })
           .limit(50),
+        // Count DISTINCT briefs with unread notifications, not raw notification rows.
+        // Multiple events about the same brief (received, clarification, etc.) used
+        // to inflate this number — "3 new" when only one brief had landed.
         supabase
           .from("contractor_notifications")
-          .select("id", { count: "exact", head: true })
+          .select("outreach_send_id")
           .eq("contractor_id", contractorId)
-          .eq("read", false),
+          .eq("read", false)
+          .not("outreach_send_id", "is", null),
       ]);
       if (!active) return;
       if (c?.slug) setProfileSlug(c.slug);
       const list = (sends ?? []) as Array<{ id: string; sent_at: string | null; outreach_batches: { neighborhood: string | null; brief_snapshot: { projectType?: string; scope_label?: string } | null } | null }>;
       setTotalLeads(list.length);
-      setUnreadLeads(unread ?? 0);
+      const distinctUnread = new Set((unreadNotifs ?? []).map((n: { outreach_send_id: string | null }) => n.outreach_send_id).filter(Boolean));
+      setUnreadLeads(distinctUnread.size);
       const top = list[0];
       if (top?.sent_at) {
         const snap = top.outreach_batches?.brief_snapshot ?? {};
