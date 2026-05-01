@@ -114,12 +114,15 @@ Deno.serve(async (req) => {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
     const zip = body.zip || url.searchParams.get('zip') || '95110'
     const room = body.room || url.searchParams.get('room') || undefined
+    const contractor = body.contractor || url.searchParams.get('contractor') || undefined
     const limit = Number(body.limit || url.searchParams.get('limit') || 500)
 
-    const queries = projectQueries(room)
+    // If a contractor name is provided, search by name only — this catches
+    // every permit they pulled regardless of work-type keyword.
+    const queries = contractor ? [contractor] : projectQueries(room)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Pull records for each project keyword in parallel
+    // Pull records for each query in parallel
     const perQuery = Math.ceil(limit / queries.length)
     let fetchError: string | null = null
 
