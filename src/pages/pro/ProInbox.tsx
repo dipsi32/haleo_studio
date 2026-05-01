@@ -242,6 +242,11 @@ const ProInbox = () => {
         <BriefDetailDialog
           send={activeSend}
           contractorId={contractorId}
+          onUnlocked={(sendId, unlockedAt) => {
+            setSends((current) => current.map((row) => (
+              row.id === sendId ? { ...row, unlocked_at: unlockedAt } : row
+            )));
+          }}
           onClose={() => setActiveSendId(null)}
         />
       )}
@@ -252,7 +257,7 @@ const ProInbox = () => {
 // =============================================================
 // Brief detail with locked / unlocked states + private annotations
 // =============================================================
-function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; contractorId: string; onClose: () => void }) {
+function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: SendRow; contractorId: string; onUnlocked: (sendId: string, unlockedAt: string) => void; onClose: () => void }) {
   const { toast } = useToast();
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [passing, setPassing] = useState(false);
@@ -592,6 +597,7 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
           contractorId={contractorId}
           headline={headline}
           homeowner={homeowner}
+          onUnlocked={onUnlocked}
           onClose={() => setPaymentOpen(false)}
         />
       )}
@@ -603,12 +609,13 @@ function BriefDetailDialog({ send, contractorId, onClose }: { send: SendRow; con
 // PaymentSheet — $99 unlock with card entry, validation, idempotency
 // =============================================================
 function PaymentSheet({
-  sendId, contractorId, headline, homeowner, onClose,
+  sendId, contractorId, headline, homeowner, onUnlocked, onClose,
 }: {
   sendId: string;
   contractorId: string;
   headline: string;
   homeowner: string;
+  onUnlocked: (sendId: string, unlockedAt: string) => void;
   onClose: () => void;
 }) {
   const { toast } = useToast();
@@ -672,13 +679,15 @@ function PaymentSheet({
       }
 
       // Mark unlocked (idempotent — safe if already set).
+      const unlockedAt = new Date().toISOString();
       const { error: upErr } = await supabase
         .from("outreach_sends")
-        .update({ unlocked_at: new Date().toISOString() })
+        .update({ unlocked_at: unlockedAt })
         .eq("id", sendId)
         .is("unlocked_at", null);
       if (upErr) throw upErr;
 
+      onUnlocked(sendId, unlockedAt);
       setStep("success");
       toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
       // Brief celebration, then close — parent realtime will show the unlocked view.
