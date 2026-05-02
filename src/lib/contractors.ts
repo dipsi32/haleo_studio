@@ -59,12 +59,17 @@ export type LicenseStatus = {
 export const cslbDeepLink = (license: string) =>
   `https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/LicenseDetail.aspx?LicNum=${encodeURIComponent(license)}`;
 
-// ───── Trust Score ─────
-// 30 — permits in homeowner's area
-// 20 — recency (last 12 months weighted)
-// 25 — license status (active, no violations)
-// 15 — project type match
-// 10 — completion rate (closed / opened)
+// ───── Trust Score (out of 100) ─────
+// 7-signal model. License standing was removed in favor of richer
+// public-record signals from San Jose.
+//
+//  25 — Local permit volume (≥20 permits in area)
+//  20 — Recent activity (last 12 months)
+//  15 — Project type match (similar work)
+//  15 — Job completion rate (closed / opened)
+//  15 — Expired-without-Final rate (computed from existing permit data)
+//   5 — Inspection failure rate (Coming soon — full credit until live)
+//   5 — Open code violations on past job sites (Coming soon until cached)
 export type TrustScoreBreakdown = {
   total: number;
   components: {
@@ -72,8 +77,17 @@ export type TrustScoreBreakdown = {
     weight: number;
     earned: number;
     detail: string;
+    status?: 'live' | 'coming_soon';
   }[];
 };
+
+export type TrustSignals = {
+  open_code_violations: number;
+  addresses_with_violations: number;
+  addresses_checked: number;
+  expired_without_final: number;
+  permits_old_enough: number;
+} | null;
 
 const monthsBetween = (a: Date, b: Date) =>
   Math.abs((b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
@@ -81,14 +95,15 @@ const monthsBetween = (a: Date, b: Date) =>
 export const computeTrustScore = (
   contractor: Contractor,
   permits: Permit[],
-  license: LicenseStatus | null,
+  _license: LicenseStatus | null, // signature kept for compat; no longer used
   projectKeywords: string[],
+  signals: TrustSignals = null,
 ): TrustScoreBreakdown => {
-  // 1. Local permit volume — 30 pts max at 20+ permits
+  // 1. Local permit volume — 25 pts max at 20+ permits
   const localCount = permits.length;
-  const localScore = Math.min(30, Math.round((localCount / 20) * 30));
+  const localScore = Math.min(25, Math.round((localCount / 20) * 25));
 
-  // 2. Recency — 20 pts based on last 12 months activity
+  // 2. Recency — 20 pts based on last 12 months activity (8+ jobs = full)
   const now = new Date();
   const recent = permits.filter(p => {
     if (!p.issued_date) return false;
@@ -97,52 +112,62 @@ export const computeTrustScore = (
   });
   const recencyScore = Math.min(20, Math.round((recent.length / 8) * 20));
 
-  // 3. License — 25 pts if active + no discipline
-  let licenseScore = 0;
-  let licenseDetail = 'Verify on CSLB';
-  if (license) {
-    const isActive = (license.status ?? '').toLowerCase().includes('active') ||
-                     (license.status ?? '').toLowerCase().includes('current');
-    const noExp = !license.expiration_date || new Date(license.expiration_date) > now;
-    if (isActive && noExp && !license.has_disciplinary_action) {
-      licenseScore = 25;
-      licenseDetail = 'Active, no disciplinary actions';
-    } else if (isActive && noExp) {
-      licenseScore = 18;
-      licenseDetail = 'Active with disciplinary record';
-    } else {
-      licenseScore = 8;
-      licenseDetail = 'License needs review';
-    }
-  } else if (contractor.license_number) {
-    // Have a license number but no scrape yet — give half credit, nudge user to verify
-    licenseScore = 12;
-    licenseDetail = 'License on file — verify on CSLB';
-  }
-
-  // 4. Project type match — 15 pts based on keyword hits
+  // 3. Project type match — 15 pts (5+ matches = full)
   const matchCount = permits.filter(p => {
     const hay = `${p.work_type ?? ''} ${p.description ?? ''}`.toLowerCase();
     return projectKeywords.some(k => hay.includes(k.toLowerCase()));
   }).length;
   const matchScore = Math.min(15, Math.round((matchCount / 5) * 15));
 
-  // 5. Completion rate — 10 pts
+  // 4. Completion rate — 15 pts (closed / opened)
   const opened = permits.filter(p => p.issued_date).length;
   const closed = permits.filter(p => p.completed_date).length;
   const completionRate = opened > 0 ? closed / opened : 0;
-  const completionScore = Math.round(completionRate * 10);
+  const completionScore = Math.round(completionRate * 15);
 
-  const total = localScore + recencyScore + licenseScore + matchScore + completionScore;
+  // 5. Expired-without-Final — 15 pts. Penalize the rate, not the count.
+  let expiredScore = 15;
+  let expiredDetail = 'No data yet';
+  if (signals && signals.permits_old_enough > 0) {
+    const rate = signals.expired_without_final / signals.permits_old_enough;
+    // 0% = 15 pts, 50%+ = 0 pts (linear)
+    expiredScore = Math.max(0, Math.round(15 * (1 - rate / 0.5)));
+    expiredDetail = `${signals.expired_without_final} of ${signals.permits_old_enough} older permits never finalized`;
+  } else if (signals) {
+    expiredDetail = 'Not enough older permits to evaluate';
+  }
+
+  // 6. Inspection failure rate — 5 pts (Coming soon)
+  const inspectionScore = 5;
+  const inspectionDetail = 'Coming soon — pulling pass/fail history';
+
+  // 7. Open code violations on past job sites — 5 pts.
+  let violationScore = 5;
+  let violationDetail = 'Coming soon — checking past job addresses';
+  let violationStatus: 'live' | 'coming_soon' = 'coming_soon';
+  if (signals && signals.addresses_checked > 0) {
+    violationStatus = 'live';
+    const rate = signals.addresses_with_violations / signals.addresses_checked;
+    // 0% = 5 pts, 25%+ = 0 pts
+    violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
+    violationDetail = signals.open_code_violations === 0
+      ? `Clean — checked ${signals.addresses_checked} past job addresses`
+      : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`;
+  }
+
+  const total = localScore + recencyScore + matchScore + completionScore +
+                expiredScore + inspectionScore + violationScore;
 
   return {
     total,
     components: [
-      { label: 'Local permit volume', weight: 30, earned: localScore, detail: `${localCount} permits in your area` },
-      { label: 'Recent activity', weight: 20, earned: recencyScore, detail: `${recent.length} jobs in the last 12 months` },
-      { label: 'License standing', weight: 25, earned: licenseScore, detail: licenseDetail },
-      { label: 'Project type match', weight: 15, earned: matchScore, detail: `${matchCount} ${projectKeywords[0] ?? 'similar'} jobs` },
-      { label: 'Job completion rate', weight: 10, earned: completionScore, detail: `${Math.round(completionRate * 100)}% closed permits` },
+      { label: 'Local permit volume', weight: 25, earned: localScore, detail: `${localCount} permits in your area`, status: 'live' },
+      { label: 'Recent activity', weight: 20, earned: recencyScore, detail: `${recent.length} jobs in the last 12 months`, status: 'live' },
+      { label: 'Project type match', weight: 15, earned: matchScore, detail: `${matchCount} ${projectKeywords[0] ?? 'similar'} jobs`, status: 'live' },
+      { label: 'Job completion rate', weight: 15, earned: completionScore, detail: `${Math.round(completionRate * 100)}% closed permits`, status: 'live' },
+      { label: 'Expired without Final', weight: 15, earned: expiredScore, detail: expiredDetail, status: signals ? 'live' : 'coming_soon' },
+      { label: 'Inspection failure rate', weight: 5, earned: inspectionScore, detail: inspectionDetail, status: 'coming_soon' },
+      { label: 'Open code violations', weight: 5, earned: violationScore, detail: violationDetail, status: violationStatus },
     ],
   };
 };
