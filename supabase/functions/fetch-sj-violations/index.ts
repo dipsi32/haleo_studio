@@ -77,7 +77,7 @@ const queryArcgis = async (whereClause: string): Promise<Record<string, unknown>
   const url = `${ARCGIS_LAYER}?${params.toString()}`;
   const res = await fetch(url, {
     headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) {
     throw new Error(`ArcGIS ${res.status}: ${await res.text()}`);
@@ -227,11 +227,13 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Run lookups serially to avoid hammering the city's server
+    // Run lookups with bounded concurrency (4 in flight) to keep total latency low.
     const results: AddressResult[] = [];
-    for (const addr of distinctAddresses) {
-      const r = await fetchForAddress(supabase, addr);
-      if (r) results.push(r);
+    const CONCURRENCY = 4;
+    for (let i = 0; i < distinctAddresses.length; i += CONCURRENCY) {
+      const chunk = distinctAddresses.slice(i, i + CONCURRENCY);
+      const settled = await Promise.all(chunk.map(a => fetchForAddress(supabase, a)));
+      for (const r of settled) if (r) results.push(r);
     }
 
     // Compute "expired without final" from existing permit data:
