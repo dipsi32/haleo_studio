@@ -11,5 +11,7 @@ verify_jwt = false
 
 [functions.fetch-sj-permits]
 verify_jwt = false
+[functions.fetch-sj-violations]
+verify_jwt = false
 [functions.seed-test-contractor]
 verify_jwt = false

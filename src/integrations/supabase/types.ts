@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      address_code_violations: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          last_checked_at: string
+          most_recent_open_date: string | null
+          open_case_count: number
+          raw_cases: Json | null
+          violation_types: string[] | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          last_checked_at?: string
+          most_recent_open_date?: string | null
+          open_case_count?: number
+          raw_cases?: Json | null
+          violation_types?: string[] | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          last_checked_at?: string
+          most_recent_open_date?: string | null
+          open_case_count?: number
+          raw_cases?: Json | null
+          violation_types?: string[] | null
+        }
+        Relationships: []
+      }
       brief_annotations: {
         Row: {
           content: string
@@ -423,6 +456,45 @@ export type Database = {
           id?: string
           p256dh?: string
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      contractor_trust_signals: {
+        Row: {
+          addresses_checked: number
+          addresses_with_violations: number
+          contractor_id: string
+          created_at: string
+          expired_without_final: number
+          id: string
+          last_calculated_at: string
+          open_code_violations: number
+          permits_old_enough: number
+          updated_at: string
+        }
+        Insert: {
+          addresses_checked?: number
+          addresses_with_violations?: number
+          contractor_id: string
+          created_at?: string
+          expired_without_final?: number
+          id?: string
+          last_calculated_at?: string
+          open_code_violations?: number
+          permits_old_enough?: number
+          updated_at?: string
+        }
+        Update: {
+          addresses_checked?: number
+          addresses_with_violations?: number
+          contractor_id?: string
+          created_at?: string
+          expired_without_final?: number
+          id?: string
+          last_calculated_at?: string
+          open_code_violations?: number
+          permits_old_enough?: number
+          updated_at?: string
         }
         Relationships: []
       }
