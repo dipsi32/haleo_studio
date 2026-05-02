@@ -55,29 +55,45 @@ const normalize = (raw: string | null | undefined): string | null => {
   return cleaned;
 };
 
+// Fetch one page with retry on transient failures.
+const fetchPage = async (offset: number, page: number) => {
+  const params = new URLSearchParams({
+    where: "1=1",
+    outFields: "LOCATION,OPENDATE,CLOSEDATE,DISPOSITION,CASESTATUS,VIOLATIONTYPE,DESCRIPTION",
+    returnGeometry: "false",
+    orderByFields: "OBJECTID",
+    resultOffset: String(offset),
+    resultRecordCount: String(page),
+    f: "json",
+  });
+  const url = `${ARCGIS_LAYER}?${params.toString()}`;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (!res.ok) throw new Error(`ArcGIS ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(`ArcGIS error: ${data.error.message}`);
+      return data;
+    } catch (e) {
+      lastErr = e;
+      console.log(`page ${offset} attempt ${attempt + 1} failed:`, e);
+      await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw lastErr ?? new Error("ArcGIS unknown error");
+};
+
 // Pull every page of the open-cases layer.
 const fetchAllOpenCases = async (): Promise<{ address: string; case: CodeCase }[]> => {
   const all: { address: string; case: CodeCase }[] = [];
   let offset = 0;
-  const PAGE = 2000;
+  const PAGE = 1000; // smaller pages → fewer ArcGIS timeouts
   while (true) {
-    const params = new URLSearchParams({
-      where: "1=1",
-      outFields: "LOCATION,OPENDATE,CLOSEDATE,DISPOSITION,CASESTATUS,VIOLATIONTYPE,DESCRIPTION",
-      returnGeometry: "false",
-      orderByFields: "OBJECTID",
-      resultOffset: String(offset),
-      resultRecordCount: String(PAGE),
-      f: "json",
-    });
-    const url = `${ARCGIS_LAYER}?${params.toString()}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) throw new Error(`ArcGIS ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(`ArcGIS error: ${data.error.message}`);
+    const data = await fetchPage(offset, PAGE);
     const features: { attributes: Record<string, unknown> }[] = data.features ?? [];
     for (const f of features) {
       const a = f.attributes;
@@ -95,6 +111,7 @@ const fetchAllOpenCases = async (): Promise<{ address: string; case: CodeCase }[
         },
       });
     }
+    console.log(`fetched offset=${offset} count=${features.length} total=${all.length}`);
     if (!data.exceededTransferLimit || features.length < PAGE) break;
     offset += PAGE;
     if (offset > 50_000) break; // safety
@@ -226,6 +243,22 @@ const computeContractorSignals = async (
   };
 };
 
+// Background snapshot runner — kicked off via EdgeRuntime.waitUntil so the
+// caller doesn't have to hold the connection open for the full ArcGIS sweep.
+const runSnapshotInBackground = async (supabase: ReturnType<typeof createClient>) => {
+  try {
+    console.log("snapshot: starting full open-cases sweep");
+    const cases = await fetchAllOpenCases();
+    const written = await writeSnapshot(supabase, cases);
+    console.log(`snapshot: complete — ${written.addresses} addresses written`);
+  } catch (e) {
+    console.error("snapshot: failed", e);
+  }
+};
+
+// deno-lint-ignore no-explicit-any
+const edge: any = (globalThis as any).EdgeRuntime;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -235,25 +268,77 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Refresh snapshot if needed (or forced)
-    const needSnapshot = !!body.snapshot || !!body.force || !(await isSnapshotFresh(supabase));
-    let snapshotInfo: { addresses: number; refreshed: boolean } = { addresses: 0, refreshed: false };
+    // Probe: tiny request to verify ArcGIS reachability from this network.
+    if (body.probe) {
+      const probeUrl = `${ARCGIS_LAYER}?where=1%3D1&returnCountOnly=true&f=json`;
+      const t0 = Date.now();
+      try {
+        const res = await fetch(probeUrl, { signal: AbortSignal.timeout(60_000) });
+        const text = await res.text();
+        return new Response(JSON.stringify({
+          ok: true, probe: { status: res.status, ms: Date.now() - t0, body: text.slice(0, 500) }
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e) {
+        return new Response(JSON.stringify({
+          ok: false, probe: { ms: Date.now() - t0, error: e instanceof Error ? e.message : String(e) }
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // Status check: how fresh is the snapshot, how many addresses cached?
+    if (body.status) {
+      const { count } = await supabase
+        .from("address_code_violations")
+        .select("address", { count: "exact", head: true });
+      const { data: latest } = await supabase
+        .from("address_code_violations")
+        .select("last_checked_at")
+        .order("last_checked_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          cached_addresses: count ?? 0,
+          last_checked_at: latest?.last_checked_at ?? null,
+          fresh: latest ? Date.now() - new Date(latest.last_checked_at).getTime() < SNAPSHOT_TTL_MS : false,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const fresh = await isSnapshotFresh(supabase);
+    const needSnapshot = !!body.snapshot || !!body.force || !fresh;
+
+    // Kick the snapshot off in the background. Do NOT await it — ArcGIS sweep
+    // can take 60-120s and would time out the HTTP request.
     if (needSnapshot) {
-      const cases = await fetchAllOpenCases();
-      const written = await writeSnapshot(supabase, cases);
-      snapshotInfo = { addresses: written.addresses, refreshed: true };
+      if (edge?.waitUntil) {
+        edge.waitUntil(runSnapshotInBackground(supabase));
+      } else {
+        runSnapshotInBackground(supabase);
+      }
     }
 
     if (body.contractor_id) {
+      // Compute against whatever's already cached. If nothing cached yet, the
+      // numbers will be zero this call and accurate after the snapshot finishes.
       const signals = await computeContractorSignals(supabase, body.contractor_id);
       return new Response(
-        JSON.stringify({ ok: true, snapshot: snapshotInfo, ...signals }),
+        JSON.stringify({
+          ok: true,
+          snapshot: { refreshed: needSnapshot, in_background: needSnapshot },
+          ...signals,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     return new Response(
-      JSON.stringify({ ok: true, snapshot: snapshotInfo }),
+      JSON.stringify({
+        ok: true,
+        snapshot: { refreshed: needSnapshot, in_background: needSnapshot, was_fresh: fresh },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
