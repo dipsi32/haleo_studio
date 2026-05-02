@@ -268,6 +268,23 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Probe: tiny request to verify ArcGIS reachability from this network.
+    if (body.probe) {
+      const probeUrl = `${ARCGIS_LAYER}?where=1%3D1&returnCountOnly=true&f=json`;
+      const t0 = Date.now();
+      try {
+        const res = await fetch(probeUrl, { signal: AbortSignal.timeout(60_000) });
+        const text = await res.text();
+        return new Response(JSON.stringify({
+          ok: true, probe: { status: res.status, ms: Date.now() - t0, body: text.slice(0, 500) }
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e) {
+        return new Response(JSON.stringify({
+          ok: false, probe: { ms: Date.now() - t0, error: e instanceof Error ? e.message : String(e) }
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // Status check: how fresh is the snapshot, how many addresses cached?
     if (body.status) {
       const { count } = await supabase
