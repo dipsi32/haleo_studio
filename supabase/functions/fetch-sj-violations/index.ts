@@ -55,29 +55,45 @@ const normalize = (raw: string | null | undefined): string | null => {
   return cleaned;
 };
 
+// Fetch one page with retry on transient failures.
+const fetchPage = async (offset: number, page: number) => {
+  const params = new URLSearchParams({
+    where: "1=1",
+    outFields: "LOCATION,OPENDATE,CLOSEDATE,DISPOSITION,CASESTATUS,VIOLATIONTYPE,DESCRIPTION",
+    returnGeometry: "false",
+    orderByFields: "OBJECTID",
+    resultOffset: String(offset),
+    resultRecordCount: String(page),
+    f: "json",
+  });
+  const url = `${ARCGIS_LAYER}?${params.toString()}`;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (!res.ok) throw new Error(`ArcGIS ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(`ArcGIS error: ${data.error.message}`);
+      return data;
+    } catch (e) {
+      lastErr = e;
+      console.log(`page ${offset} attempt ${attempt + 1} failed:`, e);
+      await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw lastErr ?? new Error("ArcGIS unknown error");
+};
+
 // Pull every page of the open-cases layer.
 const fetchAllOpenCases = async (): Promise<{ address: string; case: CodeCase }[]> => {
   const all: { address: string; case: CodeCase }[] = [];
   let offset = 0;
-  const PAGE = 2000;
+  const PAGE = 1000; // smaller pages → fewer ArcGIS timeouts
   while (true) {
-    const params = new URLSearchParams({
-      where: "1=1",
-      outFields: "LOCATION,OPENDATE,CLOSEDATE,DISPOSITION,CASESTATUS,VIOLATIONTYPE,DESCRIPTION",
-      returnGeometry: "false",
-      orderByFields: "OBJECTID",
-      resultOffset: String(offset),
-      resultRecordCount: String(PAGE),
-      f: "json",
-    });
-    const url = `${ARCGIS_LAYER}?${params.toString()}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) throw new Error(`ArcGIS ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(`ArcGIS error: ${data.error.message}`);
+    const data = await fetchPage(offset, PAGE);
     const features: { attributes: Record<string, unknown> }[] = data.features ?? [];
     for (const f of features) {
       const a = f.attributes;
@@ -95,6 +111,7 @@ const fetchAllOpenCases = async (): Promise<{ address: string; case: CodeCase }[
         },
       });
     }
+    console.log(`fetched offset=${offset} count=${features.length} total=${all.length}`);
     if (!data.exceededTransferLimit || features.length < PAGE) break;
     offset += PAGE;
     if (offset > 50_000) break; // safety
