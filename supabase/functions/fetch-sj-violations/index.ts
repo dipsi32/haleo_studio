@@ -243,6 +243,22 @@ const computeContractorSignals = async (
   };
 };
 
+// Background snapshot runner — kicked off via EdgeRuntime.waitUntil so the
+// caller doesn't have to hold the connection open for the full ArcGIS sweep.
+const runSnapshotInBackground = async (supabase: ReturnType<typeof createClient>) => {
+  try {
+    console.log("snapshot: starting full open-cases sweep");
+    const cases = await fetchAllOpenCases();
+    const written = await writeSnapshot(supabase, cases);
+    console.log(`snapshot: complete — ${written.addresses} addresses written`);
+  } catch (e) {
+    console.error("snapshot: failed", e);
+  }
+};
+
+// deno-lint-ignore no-explicit-any
+const edge: any = (globalThis as any).EdgeRuntime;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -252,25 +268,60 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Refresh snapshot if needed (or forced)
-    const needSnapshot = !!body.snapshot || !!body.force || !(await isSnapshotFresh(supabase));
-    let snapshotInfo: { addresses: number; refreshed: boolean } = { addresses: 0, refreshed: false };
+    // Status check: how fresh is the snapshot, how many addresses cached?
+    if (body.status) {
+      const { count } = await supabase
+        .from("address_code_violations")
+        .select("address", { count: "exact", head: true });
+      const { data: latest } = await supabase
+        .from("address_code_violations")
+        .select("last_checked_at")
+        .order("last_checked_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          cached_addresses: count ?? 0,
+          last_checked_at: latest?.last_checked_at ?? null,
+          fresh: latest ? Date.now() - new Date(latest.last_checked_at).getTime() < SNAPSHOT_TTL_MS : false,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const fresh = await isSnapshotFresh(supabase);
+    const needSnapshot = !!body.snapshot || !!body.force || !fresh;
+
+    // Kick the snapshot off in the background. Do NOT await it — ArcGIS sweep
+    // can take 60-120s and would time out the HTTP request.
     if (needSnapshot) {
-      const cases = await fetchAllOpenCases();
-      const written = await writeSnapshot(supabase, cases);
-      snapshotInfo = { addresses: written.addresses, refreshed: true };
+      if (edge?.waitUntil) {
+        edge.waitUntil(runSnapshotInBackground(supabase));
+      } else {
+        runSnapshotInBackground(supabase);
+      }
     }
 
     if (body.contractor_id) {
+      // Compute against whatever's already cached. If nothing cached yet, the
+      // numbers will be zero this call and accurate after the snapshot finishes.
       const signals = await computeContractorSignals(supabase, body.contractor_id);
       return new Response(
-        JSON.stringify({ ok: true, snapshot: snapshotInfo, ...signals }),
+        JSON.stringify({
+          ok: true,
+          snapshot: { refreshed: needSnapshot, in_background: needSnapshot },
+          ...signals,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     return new Response(
-      JSON.stringify({ ok: true, snapshot: snapshotInfo }),
+      JSON.stringify({
+        ok: true,
+        snapshot: { refreshed: needSnapshot, in_background: needSnapshot, was_fresh: fresh },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
