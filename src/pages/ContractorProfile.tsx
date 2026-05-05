@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIntake } from "@/lib/intake";
 import {
-  type Contractor, type Permit, type LicenseStatus,
+  type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
