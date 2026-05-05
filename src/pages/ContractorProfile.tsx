@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIntake } from "@/lib/intake";
 import {
-  type Contractor, type Permit, type LicenseStatus,
+  type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
@@ -33,6 +33,7 @@ const ContractorProfile = () => {
   const [permits, setPermits] = useState<Permit[]>([]);
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [profile, setProfile] = useState<ContractorPublicProfile | null>(null);
+  const [signals, setSignals] = useState<TrustSignals>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,10 +44,11 @@ const ContractorProfile = () => {
       if (!c || cancelled) { setLoading(false); return; }
       setContractor(c as Contractor);
 
-      const [{ data: p }, { data: l }, { data: pp }] = await Promise.all([
+      const [{ data: p }, { data: l }, { data: pp }, { data: ts }] = await Promise.all([
         supabase.from("contractor_permits").select("*").eq("contractor_id", id).order("issued_date", { ascending: false }),
         supabase.from("contractor_license_cache").select("*").eq("license_number", c.license_number).maybeSingle(),
         supabase.from("contractor_profiles_public" as never).select("*").eq("contractor_id", id).maybeSingle(),
+        supabase.from("contractor_trust_signals").select("*").eq("contractor_id", id).maybeSingle(),
       ]);
       if (cancelled) return;
       setPermits((p ?? []) as Permit[]);
@@ -55,6 +57,7 @@ const ContractorProfile = () => {
         const pr = pp as unknown as ContractorPublicProfile & { gallery_urls: unknown };
         setProfile({ ...pr, gallery_urls: Array.isArray(pr.gallery_urls) ? (pr.gallery_urls as string[]) : [] });
       }
+      if (ts) setSignals(ts as TrustSignals);
 
       // Kick off CSLB verification in the background if we don't have a fresh cache
       if (!l) {
@@ -65,6 +68,21 @@ const ContractorProfile = () => {
           }
         } catch { /* ignore */ }
       }
+
+      // Refresh SJ trust signals (code violations + expired permits) in background
+      try {
+        const { data: fresh } = await supabase.functions.invoke("fetch-sj-violations", { body: { contractor_id: id } });
+        if (!cancelled && fresh?.ok) {
+          setSignals({
+            open_code_violations: fresh.open_code_violations ?? 0,
+            addresses_with_violations: fresh.addresses_with_violations ?? 0,
+            addresses_checked: fresh.addresses_checked ?? 0,
+            expired_without_final: fresh.expired_without_final ?? 0,
+            permits_old_enough: fresh.permits_old_enough ?? 0,
+          });
+        }
+      } catch { /* ignore */ }
+
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -72,7 +90,7 @@ const ContractorProfile = () => {
 
   const keywords = projectKeywords(intake);
   const projectLabel = projectTypeLabel(intake);
-  const score = contractor ? computeTrustScore(contractor, permits, license, keywords) : null;
+  const score = contractor ? computeTrustScore(contractor, permits, license, keywords, signals) : null;
 
   // Project type breakdown
   const breakdown = permits.reduce<Record<string, number>>((acc, p) => {
