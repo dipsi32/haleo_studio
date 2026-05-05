@@ -73,10 +73,11 @@ export const cslbDeepLink = (license: string) =>
 export type TrustScoreBreakdown = {
   total: number;
   components: {
-    label: string;
+    label: string;       // homeowner-friendly label
+    what: string;        // one-line plain-English explanation of what we measure & why
     weight: number;
     earned: number;
-    detail: string;
+    detail: string;      // what we found for THIS contractor
     status?: 'live' | 'coming_soon';
   }[];
 };
