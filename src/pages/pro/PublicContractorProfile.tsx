@@ -350,23 +350,24 @@ const PublicContractorProfile = () => {
             <div className="mt-5 space-y-4">
               {score.components.map((c) => {
                 const pending = c.status === 'coming_soon';
+                const noData = c.status === 'insufficient_data';
                 return (
                   <div key={c.label}>
                     <div className="flex items-baseline justify-between text-sm">
                       <span className="text-foreground">{c.label}</span>
                       <span className="text-muted-foreground">
-                        {pending ? `Pending · ${c.weight} pts` : `${c.earned}/${c.weight}`}
+                        {pending ? `Pending · ${c.weight} pts` : noData ? `? / ${c.weight}` : `${c.earned}/${c.weight}`}
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground/90">{c.what}</p>
                     <div className="mt-1.5 h-1.5 rounded-full bg-muted">
                       <div
-                        className={`h-full rounded-full ${pending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
-                        style={{ width: pending ? '100%' : `${(c.earned / c.weight) * 100}%` }}
+                        className={`h-full rounded-full ${pending || noData ? 'bg-muted-foreground/30' : 'bg-accent'}`}
+                        style={{ width: pending || noData ? '100%' : `${(c.earned / c.weight) * 100}%` }}
                       />
                     </div>
                     <p className="mt-1 text-xs font-medium text-foreground/70">
-                      {pending ? '⏳ ' : '→ '}{c.detail}
+                      {pending ? '⏳ ' : noData ? '⚠ ' : '→ '}{c.detail}
                     </p>
                   </div>
                 );

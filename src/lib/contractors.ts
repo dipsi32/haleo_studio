@@ -78,7 +78,7 @@ export type TrustScoreBreakdown = {
     weight: number;
     earned: number;
     detail: string;      // what we found for THIS contractor
-    status?: 'live' | 'coming_soon';
+    status?: 'live' | 'coming_soon' | 'insufficient_data';
   }[];
 };
 
@@ -176,7 +176,8 @@ export const computeTrustScore = (
         weight: 15, earned: completionScore, detail: `${Math.round(completionRate * 100)}% closed permits`, status: 'live' },
       { label: 'No abandoned permits',
         what: 'Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.',
-        weight: 15, earned: expiredScore, detail: expiredDetail, status: signals ? 'live' : 'coming_soon' },
+        weight: 15, earned: expiredScore, detail: expiredDetail,
+        status: !signals ? 'coming_soon' : signals.permits_old_enough === 0 ? 'insufficient_data' : 'live' },
       { label: 'Inspection pass rate',
         what: 'How often city inspectors have failed their work. A high failure rate signals corner-cutting on code.',
         weight: 5, earned: inspectionScore, detail: inspectionDetail, status: 'coming_soon' },
