@@ -67,15 +67,28 @@ const fetchPage = async (offset: number, page: number) => {
     f: "json",
   });
   const url = `${ARCGIS_LAYER}?${params.toString()}`;
+  // SJ ArcGIS blocks Supabase/cloud egress IPs (every direct fetch hangs).
+  // Firecrawl reaches it fine, so we proxy through it. Returns raw JSON in
+  // `data.rawHtml` since ArcGIS responds with application/json.
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": "Haleo/1.0 (contractor trust signals)" },
-        signal: AbortSignal.timeout(45_000),
+      const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url, formats: ["rawHtml"] }),
+        signal: AbortSignal.timeout(90_000),
       });
-      if (!res.ok) throw new Error(`ArcGIS ${res.status}`);
-      const data = await res.json();
+      if (!res.ok) throw new Error(`Firecrawl ${res.status}`);
+      const fc = await res.json();
+      const raw = fc?.data?.rawHtml;
+      if (!raw) throw new Error("Firecrawl returned no body");
+      const data = JSON.parse(raw);
       if (data.error) throw new Error(`ArcGIS error: ${data.error.message}`);
       return data;
     } catch (e) {
