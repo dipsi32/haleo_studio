@@ -178,19 +178,30 @@ const ContractorProfile = () => {
                     <p className="mt-1 text-xs text-muted-foreground">
                       Based on verified permit history, license status, and real completed work near you — not reviews or paid listings.
                     </p>
-                    <div className="mt-5 space-y-3">
-                      {score.components.map(c => (
-                        <div key={c.label}>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-foreground/85">{c.label}</span>
-                            <span className="font-mono text-xs text-muted-foreground">{c.earned}/{c.weight}</span>
+                    <div className="mt-5 space-y-4">
+                      {score.components.map(c => {
+                        const pending = c.status === 'coming_soon';
+                        return (
+                          <div key={c.label}>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-foreground/85">{c.label}</span>
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {pending ? `Pending · ${c.weight} pts` : `${c.earned}/${c.weight}`}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground/90">{c.what}</p>
+                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
+                              <div
+                                className={`h-full ${pending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
+                                style={{ width: pending ? '100%' : `${(c.earned / c.weight) * 100}%` }}
+                              />
+                            </div>
+                            <p className="mt-1 text-xs font-medium text-foreground/70">
+                              {pending ? '⏳ ' : '→ '}{c.detail}
+                            </p>
                           </div>
-                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
-                            <div className="h-full bg-accent" style={{ width: `${(c.earned / c.weight) * 100}%` }} />
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{c.detail}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 )}
