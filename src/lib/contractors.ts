@@ -145,7 +145,7 @@ export const computeTrustScore = (
   // 7. Open code violations on past job sites — 5 pts.
   let violationScore = 5;
   let violationDetail = 'Coming soon — checking past job addresses';
-  let violationStatus: 'live' | 'coming_soon' = 'coming_soon';
+  let violationStatus: 'live' | 'coming_soon' | 'insufficient_data' = 'coming_soon';
   if (signals && signals.addresses_checked > 0) {
     violationStatus = 'live';
     const rate = signals.addresses_with_violations / signals.addresses_checked;
@@ -154,6 +154,9 @@ export const computeTrustScore = (
     violationDetail = signals.open_code_violations === 0
       ? `Clean — checked ${signals.addresses_checked} past job addresses`
       : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`;
+  } else if (signals) {
+    violationStatus = 'insufficient_data';
+    violationDetail = 'Not enough address data to cross-check';
   }
 
   const total = localScore + recencyScore + matchScore + completionScore +

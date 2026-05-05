@@ -17,6 +17,7 @@ import {
   type Permit,
   type LicenseStatus,
   type TrustScoreBreakdown,
+  type TrustSignals,
   computeTrustScore,
   projectKeywords,
   cslbDeepLink,
@@ -212,13 +213,33 @@ export const useContractors = (data: IntakeData) => {
           licensesNeedingVerify.push({ num, reason: "missing" });
         }
 
-        // 5. Rank with whatever data we have right now
+        // 5. Trust signals — bulk load from DB for all contractors.
+        //    These power components 5 (abandoned permits) and 7 (code violations).
+        const { data: signalsRows } = await supabase
+          .from('contractor_trust_signals')
+          .select('contractor_id, open_code_violations, addresses_with_violations, addresses_checked, expired_without_final, permits_old_enough, last_calculated_at')
+          .in('contractor_id', ids);
+
+        const signalsByContractorId = new Map<string, TrustSignals & { last_calculated_at: string }>();
+        for (const row of signalsRows ?? []) {
+          signalsByContractorId.set(row.contractor_id, {
+            open_code_violations:     row.open_code_violations,
+            addresses_with_violations: row.addresses_with_violations,
+            addresses_checked:        row.addresses_checked,
+            expired_without_final:    row.expired_without_final,
+            permits_old_enough:       row.permits_old_enough,
+            last_calculated_at:       row.last_calculated_at,
+          });
+        }
+
+        // 6. Rank with whatever data we have right now
         const buildRanked = (): RankedContractor[] => {
           const verifyingSet = verifyingRef.current;
           const out: RankedContractor[] = contractors.map(c => {
             const cPermits = permits.filter(p => p.contractor_id === c.id);
             const license = licensesByNum.get(c.license_number) ?? null;
-            const score = computeTrustScore(c, cPermits, license, keywords);
+            const signals = signalsByContractorId.get(c.id) ?? null;
+            const score = computeTrustScore(c, cPermits, license, keywords, signals);
             const matchCount = cPermits.filter(p => {
               const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
               return keywords.some(k => hay.includes(k.toLowerCase()));
@@ -243,7 +264,47 @@ export const useContractors = (data: IntakeData) => {
           setStatus("ready");
         }
 
-        // 6. Kick off Firecrawl verifications for licenses that need them.
+        // 7. Background: kick fetch-sj-violations for contractors with no signals row
+        //    or signals older than 7 days. Limited to 3 at a time to avoid noise.
+        const SIGNALS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+        const needSignals = contractors
+          .filter(c => {
+            const s = signalsByContractorId.get(c.id);
+            if (!s) return true;
+            return Date.now() - new Date(s.last_calculated_at).getTime() > SIGNALS_TTL_MS;
+          })
+          .slice(0, 10)
+          .map(c => c.id);
+
+        if (needSignals.length > 0 && !cancelled) {
+          const refreshSignals = async () => {
+            for (let i = 0; i < needSignals.length; i += 3) {
+              if (cancelled) break;
+              const chunk = needSignals.slice(i, i + 3);
+              await Promise.allSettled(chunk.map(async (contractorId) => {
+                try {
+                  const { data: res } = await supabase.functions.invoke('fetch-sj-violations', {
+                    body: { contractor_id: contractorId },
+                  });
+                  if (res?.ok) {
+                    signalsByContractorId.set(contractorId, {
+                      open_code_violations:      res.open_code_violations,
+                      addresses_with_violations: res.addresses_with_violations,
+                      addresses_checked:         res.addresses_checked,
+                      expired_without_final:     res.expired_without_final,
+                      permits_old_enough:        res.permits_old_enough,
+                      last_calculated_at:        new Date().toISOString(),
+                    });
+                  }
+                } catch { /* non-blocking */ }
+              }));
+              if (!cancelled) setRanked(buildRanked());
+            }
+          };
+          void refreshSignals();
+        }
+
+        // 8. Kick off Firecrawl verifications for licenses that need them.
         //    Limit concurrency to avoid blasting the edge function.
         const queue = licensesNeedingVerify.filter(({ num }) => !verifyingRef.current.has(num));
         queue.forEach(({ num }) => verifyingRef.current.add(num));

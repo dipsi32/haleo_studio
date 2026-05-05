@@ -296,6 +296,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Recompute trust signals for all affected contractors in one SQL call.
+    // Runs in background so it doesn't delay the HTTP response.
+    const contractorIds = Array.from(idByKey.values())
+    const signalWork = supabase.rpc('refresh_signals_for_contractors', { p_contractor_ids: contractorIds })
+    // deno-lint-ignore no-explicit-any
+    const edge: any = (globalThis as any).EdgeRuntime
+    if (edge?.waitUntil) {
+      edge.waitUntil(signalWork)
+    } else {
+      signalWork.catch((e: unknown) => console.warn('signal refresh failed', e))
+    }
+
     const contractorsUpserted = upsertedContractors?.length ?? 0
 
     return new Response(JSON.stringify({

@@ -347,6 +347,45 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Bulk mode: recompute signals for all contractors that have no signals row
+    // or a row older than stale_age_hours (default 168 = 7 days).
+    // Kicked by fetch-sj-permits after a permit import and by pg_cron weekly.
+    if (body.stale_refresh) {
+      const staleAgeHours: number = typeof body.stale_age_hours === "number" ? body.stale_age_hours : 168;
+      const cutoff = new Date(Date.now() - staleAgeHours * 3600 * 1000).toISOString();
+
+      const { data: staleContractors } = await supabase
+        .from("contractors")
+        .select("id");
+
+      const { data: freshSignals } = await supabase
+        .from("contractor_trust_signals")
+        .select("contractor_id")
+        .gte("last_calculated_at", cutoff);
+
+      const freshSet = new Set((freshSignals ?? []).map((r) => r.contractor_id));
+      const toRefresh = (staleContractors ?? [])
+        .map((c) => c.id)
+        .filter((id) => !freshSet.has(id));
+
+      let processed = 0;
+      for (const contractorId of toRefresh) {
+        await computeContractorSignals(supabase, contractorId);
+        processed++;
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          stale_refresh: true,
+          snapshot: { refreshed: needSnapshot, in_background: needSnapshot },
+          processed,
+          total_contractors: staleContractors?.length ?? 0,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
