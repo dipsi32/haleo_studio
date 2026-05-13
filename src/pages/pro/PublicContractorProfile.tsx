@@ -317,7 +317,7 @@ const PublicContractorProfile = () => {
         {/* Contact */}
         {(() => {
           const email = profile?.public_email || contractor.email;
-          const phone = profile?.phone || contractor.phone;
+          const phone = contractor.phone;
           const addressLine = [contractor.city, contractor.state, contractor.zip].filter(Boolean).join(", ");
           if (!email && !phone && !addressLine) return null;
           return (
