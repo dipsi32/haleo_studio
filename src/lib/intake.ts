@@ -33,6 +33,8 @@ export type Room =
 
 export type AdditionType = "bedroom" | "bathroom" | "living" | "floor";
 export type AdditionLocation = "rear" | "side" | "above" | "unsure";
+export type AdditionKind = "adu" | "jadu" | "addition";
+export type PermitStatus = "yes" | "in-progress" | "not-yet";
 
 export type Timeline = "asap" | "1-3" | "3-6" | "exploring";
 
@@ -64,6 +66,10 @@ export type IntakeData = {
   additionType?: AdditionType;
   additionSize?: number;
   additionLocation?: AdditionLocation;
+  // ADU/JADU specifics — only used when room === "addition"
+  additionKind?: AdditionKind;
+  permitStatus?: PermitStatus;
+  visionNote?: string;
   // media (real file uploads + object URLs)
   media: MediaAsset[];
   // optional rough notes
