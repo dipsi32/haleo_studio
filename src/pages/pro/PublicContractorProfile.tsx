@@ -314,6 +314,37 @@ const PublicContractorProfile = () => {
           </section>
         )}
 
+        {/* Contact */}
+        {(() => {
+          const email = profile?.public_email || contractor.email;
+          const phone = profile?.phone || contractor.phone;
+          const addressLine = [contractor.city, contractor.state, contractor.zip].filter(Boolean).join(", ");
+          if (!email && !phone && !addressLine) return null;
+          return (
+            <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+              <h2 className="font-display text-xl font-light">Contact</h2>
+              <p className="mt-1 text-xs text-muted-foreground">From their CSLB record and Haleo profile.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {email && (
+                  <a href={`mailto:${email}`} className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground/85 transition hover:border-accent/50 hover:text-foreground">
+                    <Mail className="h-4 w-4 text-accent" /> <span className="truncate">{email}</span>
+                  </a>
+                )}
+                {phone && (
+                  <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground/85 transition hover:border-accent/50 hover:text-foreground">
+                    <Phone className="h-4 w-4 text-accent" /> {phone}
+                  </a>
+                )}
+                {addressLine && (
+                  <div className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground/85 sm:col-span-2">
+                    <MapPin className="h-4 w-4 text-accent" /> {addressLine}
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        })()}
+
         {/* Socials */}
         {socials.length > 0 && (
           <section className="mb-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
