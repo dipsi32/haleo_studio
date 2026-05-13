@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Inbox, Bell, ArrowRight, Pencil, Check, X, Plus, Image as ImageIcon,
   Instagram, Globe, Facebook, Phone, Mail, MapPin, Tag, Calendar, Loader2,
-  ExternalLink, Camera, Trash2, Megaphone, Heart, Star,
+  ExternalLink, Camera, Trash2, Megaphone, Heart, Star, ShieldCheck,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
