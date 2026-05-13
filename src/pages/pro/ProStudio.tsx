@@ -213,6 +213,7 @@ const ProStudio = () => {
   const [totalLeads, setTotalLeads] = useState(0);
   const [recentLead, setRecentLead] = useState<{ when: string; project: string; hood: string | null } | null>(null);
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
+  const [cslbOnFile, setCslbOnFile] = useState<{ email: string | null; phone: string | null; city: string | null; state: string | null; zip: string | null; license_number: string | null } | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
