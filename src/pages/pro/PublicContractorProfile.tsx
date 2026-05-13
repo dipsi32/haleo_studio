@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles, Globe, Instagram, Facebook, Mail, Star, Image as ImageIcon } from "lucide-react";
+import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles, Globe, Instagram, Facebook, Mail, Phone, Star, Image as ImageIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
