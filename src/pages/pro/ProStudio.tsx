@@ -235,7 +235,7 @@ const ProStudio = () => {
     let active = true;
     (async () => {
       const [{ data: c }, { data: sends }, { data: unreadNotifs }] = await Promise.all([
-        supabase.from("contractors").select("slug").eq("id", contractorId).maybeSingle(),
+        supabase.from("contractors").select("slug, email, phone, city, state, zip, license_number").eq("id", contractorId).maybeSingle(),
         supabase
           .from("outreach_sends")
           .select("id, sent_at, outreach_batches(neighborhood, brief_snapshot)")
