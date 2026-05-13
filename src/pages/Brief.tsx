@@ -29,6 +29,7 @@ import AddressStep from "@/components/intake/AddressStep";
 import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
 import ConfirmReadScreen from "@/components/intake/ConfirmReadScreen";
+import AdditionFlow from "@/components/intake/AdditionFlow";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
@@ -715,15 +716,14 @@ const Brief = () => {
           />
         )}
         {step === 2 && isAddition && (
-          <AdditionScreen
+          <AdditionFlow
             key="addition"
-            data={{
-              additionType: data.additionType,
-              additionSize: data.additionSize,
-              additionLocation: data.additionLocation,
-            }}
-            onChange={(p) => update(p)}
+            data={data}
+            onUpdate={(p) => update(p)}
+            onAddMedia={addMedia}
+            onRemoveMedia={removeMedia}
             onContinue={next}
+            outerSteps={<StepDots step={2} />}
           />
         )}
         {step === 3 && shouldShowConfirmRead && (
