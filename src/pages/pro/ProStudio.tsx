@@ -254,6 +254,7 @@ const ProStudio = () => {
       ]);
       if (!active) return;
       if (c?.slug) setProfileSlug(c.slug);
+      if (c) setCslbOnFile({ email: c.email ?? null, phone: c.phone ?? null, city: c.city ?? null, state: c.state ?? null, zip: c.zip ?? null, license_number: c.license_number ?? null });
       const list = (sends ?? []) as Array<{ id: string; sent_at: string | null; outreach_batches: { neighborhood: string | null; brief_snapshot: { projectType?: string; scope_label?: string } | null } | null }>;
       setTotalLeads(list.length);
       const distinctUnread = new Set((unreadNotifs ?? []).map((n: { outreach_send_id: string | null }) => n.outreach_send_id).filter(Boolean));
