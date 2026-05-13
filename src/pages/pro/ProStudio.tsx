@@ -469,6 +469,40 @@ const ProStudio = () => {
           />
         </section>
 
+        {/* ON FILE WITH CSLB (read-only) */}
+        {cslbOnFile && (cslbOnFile.email || cslbOnFile.phone || cslbOnFile.city) && (
+          <section className="mt-10">
+            <header className="mb-4">
+              <h2 className="flex items-center gap-2 font-display text-2xl font-light">
+                <ShieldCheck className="h-5 w-5 text-accent" /> What's on file with CSLB
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pulled from your California State License Board record{cslbOnFile.license_number ? ` (#${cslbOnFile.license_number})` : ""}. Read-only here — update it on the CSLB site to change.
+              </p>
+            </header>
+            <div className="grid gap-3 md:grid-cols-2">
+              {cslbOnFile.email && (
+                <div className="rounded-2xl border border-border/70 bg-card/60 p-4">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"><Mail className="h-3 w-3" /> Email on file</p>
+                  <p className="mt-1.5 truncate text-sm text-foreground">{cslbOnFile.email}</p>
+                </div>
+              )}
+              {cslbOnFile.phone && (
+                <div className="rounded-2xl border border-border/70 bg-card/60 p-4">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"><Phone className="h-3 w-3" /> Phone on file</p>
+                  <p className="mt-1.5 text-sm text-foreground">{cslbOnFile.phone}</p>
+                </div>
+              )}
+              {(cslbOnFile.city || cslbOnFile.state || cslbOnFile.zip) && (
+                <div className="rounded-2xl border border-border/70 bg-card/60 p-4 md:col-span-2">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"><MapPin className="h-3 w-3" /> Business address</p>
+                  <p className="mt-1.5 text-sm text-foreground">{[cslbOnFile.city, cslbOnFile.state, cslbOnFile.zip].filter(Boolean).join(", ")}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* CONTACT */}
         <section className="mt-10">
           <header className="mb-4">
