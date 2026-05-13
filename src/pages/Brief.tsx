@@ -665,7 +665,7 @@ const Brief = () => {
   const hasAnalyzableMedia = data.media.some(
     (m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video",
   );
-  const shouldShowConfirmRead = hasAnalyzableMedia && !isAddition;
+  const shouldShowConfirmRead = hasAnalyzableMedia;
 
   const next = () =>
     setStep((s) => {
