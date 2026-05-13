@@ -144,16 +144,30 @@ function buildIntakeBrief(intake: Record<string, unknown>): string {
     : "withheld";
   const timeline = asString(intake.timeline, "unspecified");
 
-  // NOTE: Budget is intentionally omitted from the model context. Haleo's
-  // read should describe the space and the work — never the price tag.
-  return [
-    `Room: ${room}`,
+  const lines = [
+    `Project type: ${room}`,
     `Scope tier: ${scope}`,
     `Pain points: ${painPoints || "none stated"}`,
     `Stated dimensions: ${dimText}`,
     `Address / jurisdiction: ${addrText}`,
     `Timeline: ${timeline}`,
-  ].join("\n");
+  ];
+
+  // Addition / ADU / JADU specific context
+  if (room === "addition") {
+    const kind = asString(intake.additionKind);
+    const permit = asString(intake.permitStatus);
+    const size = typeof intake.additionSize === "number" ? `${intake.additionSize} sq ft` : "not provided";
+    const vision = asString(intake.visionNote);
+    lines.push(`Addition kind: ${kind || "unspecified"} (ADU = standalone accessory dwelling, JADU = junior ADU carved from existing home, addition = extra square footage attached to home)`);
+    lines.push(`Permit status: ${permit || "unspecified"}`);
+    lines.push(`Target size: ${size}`);
+    if (vision) lines.push(`Homeowner vision: ${vision}`);
+  }
+
+  // NOTE: Budget is intentionally omitted from the model context. Haleo's
+  // read should describe the space and the work — never the price tag.
+  return lines.join("\n");
 }
 
 async function fetchImageAsDataUrl(url: string, mime?: string): Promise<string | null> {
