@@ -29,7 +29,6 @@ type PublicProfile = {
   bio: string | null;
   promo_text: string | null;
   public_email: string | null;
-  phone: string | null;
   website: string | null;
   instagram: string | null;
   facebook: string | null;
