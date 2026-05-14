@@ -148,7 +148,8 @@ const SkeletonRead = ({
       ))}
     </ul>
   </div>
-);
+  );
+};
 
 // Inline preview of the architectural plans the model is grounding its read on.
 // Renders image plans as thumbnails and PDFs as labeled file tiles.
