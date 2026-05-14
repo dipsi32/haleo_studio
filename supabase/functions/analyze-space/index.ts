@@ -228,22 +228,32 @@ async function extractPlanText(
   }
 }
 
-function fallbackSections(intake: Record<string, unknown>): AnalysisResult {
+function fallbackSections(
+  intake: Record<string, unknown>,
+  reason: "no_media" | "plan_unreadable" = "no_media",
+): AnalysisResult {
+  const summary =
+    reason === "plan_unreadable"
+      ? "Haleo couldn't read your plan PDF — it may be a scanned image or too large to parse. Try exporting a smaller PDF or adding a few photos so we can ground the read."
+      : "No analyzable visuals on file yet. Add at least one photo, a short video, or a plan PDF to generate a grounded read.";
+  const placeholder =
+    reason === "plan_unreadable"
+      ? "Awaiting a readable plan or a few photos."
+      : "Awaiting photos to read.";
   return {
-    summary:
-      "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.",
+    summary,
     sections: [
       {
         key: "structural",
         title: "Structural read",
         description: "What the bones look like before site visit.",
-        items: [{ text: "Awaiting photos to read structure.", basis: "question" }],
+        items: [{ text: placeholder, basis: "question" }],
       },
       {
         key: "finishes",
         title: "Visible items & finishes",
         description: "Materials and condition.",
-        items: [{ text: "Awaiting photos to read finishes.", basis: "question" }],
+        items: [{ text: placeholder, basis: "question" }],
       },
       {
         key: "constraints",
