@@ -41,11 +41,42 @@ const BASIS_META = {
   question: { label: "Open", icon: HelpCircle, cls: "text-foreground/60" },
 } as const;
 
-// A single, calm message — no looping phrases. The progress bar carries
-// the sense of motion so we don't have to chatter at the user.
-const NARRATION_MESSAGE = "Haleo is taking a careful look at your space.";
+// Loading copy + the groups of info we tell the homeowner Haleo is pulling.
+// When plans are attached we lean into the "reading your drawings" framing,
+// because "looking at your space" feels wrong for a PDF set.
+const PLAN_GROUPS = [
+  "Sheet titles & scale",
+  "Room labels & sizes",
+  "Wall & door layout",
+  "Window & light openings",
+  "Plumbing & electrical notes",
+  "Structural callouts",
+  "Schedules & finishes",
+  "Site & setback notes",
+];
+const SPACE_GROUPS = [
+  "Layout & flow",
+  "Surfaces & finishes",
+  "Cabinets & storage",
+  "Fixtures & plumbing",
+  "Lighting & windows",
+  "Condition & wear",
+  "Constraints to flag",
+  "Upgrade opportunities",
+];
 
-const SkeletonRead = ({ progress }: { progress: number }) => (
+const SkeletonRead = ({
+  progress,
+  hasPlans,
+}: {
+  progress: number;
+  hasPlans: boolean;
+}) => {
+  const headline = hasPlans
+    ? "Haleo is reading your attachment."
+    : "Haleo is taking a careful look at your space.";
+  const groups = hasPlans ? PLAN_GROUPS : SPACE_GROUPS;
+  return (
   <div aria-busy="true" aria-live="polite">
     {/* Summary skeleton */}
     <div className="space-y-3">
@@ -59,10 +90,10 @@ const SkeletonRead = ({ progress }: { progress: number }) => (
         <span className="relative grid h-7 w-7 shrink-0 place-items-center">
           <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" />
           <span className="relative grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-foreground">
-            <Eye className="h-3.5 w-3.5" />
+            {hasPlans ? <FileText className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </span>
         </span>
-        <p className="text-sm font-medium text-foreground/85">{NARRATION_MESSAGE}</p>
+        <p className="text-sm font-medium text-foreground/85">{headline}</p>
       </div>
       <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-accent/15">
         <motion.div
@@ -72,7 +103,27 @@ const SkeletonRead = ({ progress }: { progress: number }) => (
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         />
       </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">Usually about 10–15 seconds.</p>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        {hasPlans
+          ? "Pulling out the things that matter for your remodel."
+          : "Usually about 10–15 seconds."}
+      </p>
+
+      {/* Grouped, scannable chips of what we're extracting */}
+      <ul className="mt-4 flex flex-wrap gap-1.5">
+        {groups.map((g, i) => (
+          <motion.li
+            key={g}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08, duration: 0.35 }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-background/70 px-2.5 py-1 text-[11px] font-medium text-foreground/75"
+          >
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            {g}
+          </motion.li>
+        ))}
+      </ul>
     </div>
 
     {/* Bullets skeleton */}
