@@ -26,12 +26,14 @@ import {
   Pencil,
   ArrowLeft,
   ArrowRight,
+  Map,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
-import type { IntakeData } from "@/lib/intake";
+import type { IntakeData, MediaAsset } from "@/lib/intake";
 
 const BASIS_META = {
   grounded: { label: "Seen", icon: Check, cls: "text-sage" },
