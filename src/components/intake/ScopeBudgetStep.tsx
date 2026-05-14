@@ -26,6 +26,7 @@ type Props = {
   selectedTimeline?: Timeline;
   onPickTimeline: (t: Timeline) => void;
   address?: Address;
+  hideScope?: boolean;
 };
 
 // Parse loose budget input like "120k", "$80,000", "200" → number in $K.
@@ -50,6 +51,7 @@ const ScopeBudgetStep = ({
   selectedTimeline,
   onPickTimeline,
   address,
+  hideScope,
 }: Props) => {
   const active = scopeFor(scope);
 
@@ -90,6 +92,7 @@ const ScopeBudgetStep = ({
     <TooltipProvider delayDuration={120}>
       <div className="space-y-10">
         {/* ── Scope ── */}
+        {!hideScope && (
         <section>
           <div className="mb-4">
             <p className="font-display text-2xl font-light leading-tight">
@@ -160,6 +163,7 @@ const ScopeBudgetStep = ({
             })}
           </div>
         </section>
+        )}
 
         {/* ── Budget (optional) ── */}
         <section className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
