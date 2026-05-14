@@ -771,6 +771,7 @@ const Brief = () => {
             }
             selectedTimeline={data.timeline}
             address={data.address}
+            hideScope={isAddition}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);
