@@ -210,7 +210,7 @@ async function extractPlanText(
     const res = await fetch(url);
     if (!res.ok) return null;
     const buf = new Uint8Array(await res.arrayBuffer());
-    if (buf.byteLength > 25 * 1024 * 1024) {
+    if (buf.byteLength > 80 * 1024 * 1024) {
       console.warn(`Skipping oversize PDF (${buf.byteLength} bytes): ${url}`);
       return null;
     }
