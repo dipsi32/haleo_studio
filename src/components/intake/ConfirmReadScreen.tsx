@@ -222,6 +222,9 @@ const ConfirmReadScreen = ({
           )}
         </div>
 
+        {/* Plans strip — show the homeowner exactly what Haleo is reading */}
+        <PlansStrip plans={intake.media.filter((m) => m.kind === "floorplan")} />
+
         {/* Body */}
         <div className="px-5 py-5 md:px-6 md:py-6">
           {(status === "uploading" || status === "analyzing" || status === "idle") && (
