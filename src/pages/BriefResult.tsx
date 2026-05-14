@@ -499,6 +499,9 @@ const BriefResult = () => {
             annotations={annotations}
             onSaveAnnotation={saveAnnotation}
             approved={approved}
+            analysisStatus={analysisStatus}
+            analysisSummary={analysis?.summary}
+            tradeGroups={tradeGroups}
           />
         ) : (
         <div className="mt-10 grid gap-6 md:grid-cols-[200px_1fr] md:gap-8 lg:grid-cols-[220px_1fr]">
