@@ -1375,6 +1375,9 @@ const AdditionOnePager = ({
   annotations,
   onSaveAnnotation,
   approved,
+  analysisStatus,
+  analysisSummary,
+  tradeGroups,
 }: {
   data: IntakeData;
   homeowner: string;
@@ -1387,6 +1390,9 @@ const AdditionOnePager = ({
   annotations: Record<string, string>;
   onSaveAnnotation: (id: string, text: string) => void;
   approved: boolean;
+  analysisStatus: "idle" | "uploading" | "analyzing" | "ready" | "error";
+  analysisSummary?: string;
+  tradeGroups: TradeGroup[];
 }) => {
   const kindLabel =
     data.additionKind === "adu" ? "ADU"
