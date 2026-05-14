@@ -616,7 +616,7 @@ const BriefResult = () => {
               />
 
               {/* Haleo's read — vision-grounded analysis of the photos / plans */}
-              {(analysisStatus === "ready" || analysisStatus === "analyzing" || analysisStatus === "uploading") && (
+              {spaceMedia.length > 0 && (
                 <div className="border-b border-border px-6 py-6 md:px-10">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <div>
@@ -624,7 +624,9 @@ const BriefResult = () => {
                       <p className="mt-1 text-xs text-muted-foreground">
                         {analysisStatus === "ready"
                           ? "What our vision model pulled from your uploads — every claim tagged so contractors know what's verified."
-                          : "Reading your uploads now…"}
+                          : analysisStatus === "error"
+                            ? "We couldn't finish the read."
+                            : "Reading your uploads now…"}
                       </p>
                     </div>
                     {analysisStatus === "ready" && analysis && (
@@ -634,7 +636,7 @@ const BriefResult = () => {
                     )}
                   </div>
 
-                  {analysisStatus !== "ready" && (
+                  {(analysisStatus === "uploading" || analysisStatus === "analyzing" || analysisStatus === "idle") && (
                     <div className="mt-4 space-y-2">
                       <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
                       <div className="h-3 w-1/2 animate-pulse rounded-full bg-secondary" />
@@ -655,9 +657,9 @@ const BriefResult = () => {
                     </div>
                   )}
 
-                  {analysisError && analysisStatus === "error" && (
+                  {analysisStatus === "error" && (
                     <p className="mt-3 text-xs text-destructive">
-                      Couldn't read your uploads — {analysisError}
+                      Couldn't read your uploads{analysisError ? ` — ${analysisError}` : ""}.
                     </p>
                   )}
 
