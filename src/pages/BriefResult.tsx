@@ -499,6 +499,9 @@ const BriefResult = () => {
             annotations={annotations}
             onSaveAnnotation={saveAnnotation}
             approved={approved}
+            analysisStatus={analysisStatus}
+            analysisSummary={analysis?.summary}
+            tradeGroups={tradeGroups}
           />
         ) : (
         <div className="mt-10 grid gap-6 md:grid-cols-[200px_1fr] md:gap-8 lg:grid-cols-[220px_1fr]">
@@ -1372,6 +1375,9 @@ const AdditionOnePager = ({
   annotations,
   onSaveAnnotation,
   approved,
+  analysisStatus,
+  analysisSummary,
+  tradeGroups,
 }: {
   data: IntakeData;
   homeowner: string;
@@ -1384,6 +1390,9 @@ const AdditionOnePager = ({
   annotations: Record<string, string>;
   onSaveAnnotation: (id: string, text: string) => void;
   approved: boolean;
+  analysisStatus: "idle" | "uploading" | "analyzing" | "ready" | "error";
+  analysisSummary?: string;
+  tradeGroups: TradeGroup[];
 }) => {
   const kindLabel =
     data.additionKind === "adu" ? "ADU"
@@ -1444,6 +1453,80 @@ const AdditionOnePager = ({
               <MediaTile key={m.id} m={m} onOpen={onOpenMedia} />
             ))}
           </div>
+
+          {/* Haleo's read of the attachment — high-level summary */}
+          {(analysisStatus === "ready" && analysisSummary) ||
+          analysisStatus === "uploading" ||
+          analysisStatus === "analyzing" ? (
+            <div className="mt-5 rounded-2xl border border-border bg-secondary/30 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+                  What Haleo sees in your plans
+                </p>
+                {analysisStatus === "ready" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sage">
+                    <Eye className="h-3 w-3" /> Vision-grounded
+                  </span>
+                )}
+              </div>
+              {analysisStatus === "ready" && analysisSummary ? (
+                <p className="mt-2 text-sm leading-relaxed text-foreground/85">{analysisSummary}</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
+                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-secondary" />
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Scope of work — quick digest, no expand, just trade + count + 1-line each */}
+      {tradeGroups.length > 0 && (
+        <div className="border-b border-border px-6 py-6 md:px-8">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-display text-base font-medium">Scope of work</p>
+            <span className="text-xs text-muted-foreground">Quick digest</span>
+          </div>
+          <ul className="mt-3 divide-y divide-border/70 rounded-2xl border border-border bg-card">
+            {tradeGroups.map((g) => (
+              <li key={g.trade} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-display text-sm font-semibold text-foreground">
+                    {g.meta.label}
+                  </p>
+                  <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold tabular-nums text-foreground/70">
+                    {g.lines.length} item{g.lines.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <ul className="mt-1.5 space-y-1">
+                  {g.lines.slice(0, 3).map((line, i) => (
+                    <li
+                      key={i}
+                      className="flex gap-2 text-[13px] leading-snug text-foreground/80"
+                    >
+                      <span
+                        className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${
+                          line.basis === "grounded"
+                            ? "bg-sage"
+                            : line.basis === "inferred"
+                              ? "bg-accent"
+                              : "bg-foreground/40"
+                        }`}
+                      />
+                      <span className="truncate">{line.text}</span>
+                    </li>
+                  ))}
+                  {g.lines.length > 3 && (
+                    <li className="pl-3 text-[11px] text-muted-foreground">
+                      +{g.lines.length - 3} more
+                    </li>
+                  )}
+                </ul>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
