@@ -247,6 +247,10 @@ export type BriefSnapshot = {
   // Homeowner's correction note if they flagged Haleo's read as off
   read_feedback?: string;
   trade_groups: { trade: string; lines: string[] }[];
+  // Addition-specific quick facts so contractors can scan-and-decide
+  addition_size_sqft?: number;
+  permit_status?: "yes" | "in-progress" | "not-yet";
+  is_addition?: boolean;
 };
 
 const fmtMoney = (v?: number) => (v == null ? '' : v >= 500 ? '$500K+' : `$${v}K`);
