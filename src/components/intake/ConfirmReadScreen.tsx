@@ -304,7 +304,7 @@ const ConfirmReadScreen = ({
         aria-live="polite"
       >
         {/* Header */}
-        {(() => null)()}
+        
         <div className="flex items-start gap-3 border-b border-border bg-secondary/40 px-5 py-4 md:px-6">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
             {hasPlans ? <FileText className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
