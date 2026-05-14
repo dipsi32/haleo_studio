@@ -40,7 +40,13 @@ type BriefSnapshot = {
   read_feedback?: string;
   trade_groups?: { trade: string; lines: string[] }[];
   projectType?: string;
+  addition_size_sqft?: number;
+  permit_status?: "yes" | "in-progress" | "not-yet";
+  is_addition?: boolean;
 };
+
+const permitLabel = (p?: BriefSnapshot["permit_status"]) =>
+  p === "yes" ? "Permit ready" : p === "in-progress" ? "Permit in progress" : p === "not-yet" ? "No permit yet" : null;
 
 type SendRow = {
   id: string;
