@@ -349,10 +349,11 @@ serve(async (req) => {
 
     // 2. Build vision payload — photos, floor plans, then video frames
     const photos = mediaUrls.filter((m: { kind: string }) => m.kind === "photo").slice(0, MAX_PHOTOS);
-    const plans = mediaUrls.filter((m: { kind: string }) => m.kind === "floorplan").slice(0, MAX_FLOORPLANS);
-    // Video walkthroughs are sampled into stills client-side and arrive here
-    // as kind="video_frame". Treat as time-anchored snapshots — usable for
-    // finishes/lighting/MEP cues, but the model must hedge on dimensions.
+    const allPlans = mediaUrls.filter((m: { kind: string }) => m.kind === "floorplan").slice(0, MAX_FLOORPLANS);
+    // Image-format plans (jpg/png) go through vision. PDFs go through text
+    // extraction since the OpenAI-compatible shim can't render PDF data URLs.
+    const imagePlans = allPlans.filter((m: { mime?: string }) => (m.mime || "").startsWith("image/"));
+    const pdfPlans = allPlans.filter((m: { mime?: string }) => (m.mime || "").includes("pdf"));
     const videoFrames = mediaUrls
       .filter((m: { kind: string }) => m.kind === "video_frame")
       .slice(0, MAX_VIDEO_FRAMES);
@@ -360,7 +361,7 @@ serve(async (req) => {
 
     const imageInputs: Array<{ url: string; mime?: string }> = [
       ...photos,
-      ...plans,
+      ...imagePlans,
       ...videoFrames,
     ];
     const dataUrls: string[] = [];
@@ -369,8 +370,15 @@ serve(async (req) => {
       if (url) dataUrls.push(url);
     }
 
-    if (dataUrls.length === 0 && videos.length === 0) {
-      // No usable media — short-circuit to fallback
+    // Pull the textual layer out of any PDF plans so Haleo can actually
+    // read sheet titles, schedules, dimensions, and notes.
+    const planTexts: Array<{ name: string; pages: number; text: string }> = [];
+    for (const p of pdfPlans) {
+      const extracted = await extractPlanText(p.url, (p as { name?: string }).name || "Plan.pdf");
+      if (extracted && extracted.text.length > 20) planTexts.push(extracted);
+    }
+
+    if (dataUrls.length === 0 && videos.length === 0 && planTexts.length === 0) {
       const result = fallbackSections(intake);
       await supabase
         .from("space_analyses")
@@ -382,7 +390,17 @@ serve(async (req) => {
       );
     }
 
-    const userText = `HOMEOWNER INTAKE:\n${buildIntakeBrief(intake)}\n\nMEDIA PROVIDED:\n- Photos attached: ${photos.length}\n- Floor plans attached: ${plans.length}\n- Video walkthroughs sampled into ${videoFrames.length} still frame(s) (treat as time-anchored snapshots; do not estimate exact dimensions from them).\n\nThe images below appear in this order: photos first, then floor plans, then video frames.\n\nProduce the structured contractor-readable space analysis now.`;
+    let userText = `HOMEOWNER INTAKE:\n${buildIntakeBrief(intake)}\n\nMEDIA PROVIDED:\n- Photos attached: ${photos.length}\n- Image-format plans attached: ${imagePlans.length}\n- PDF plan sets parsed: ${planTexts.length}\n- Video walkthroughs sampled into ${videoFrames.length} still frame(s) (treat as time-anchored snapshots; do not estimate exact dimensions from them).`;
+
+    if (planTexts.length > 0) {
+      userText += `\n\n=== PLAN SHEET TEXT (extracted from uploaded PDF plans) ===\n`;
+      for (const pt of planTexts) {
+        userText += `\n--- File: ${pt.name} (${pt.pages} page${pt.pages === 1 ? "" : "s"}) ---\n${pt.text}\n`;
+      }
+      userText += `\n=== END PLAN SHEET TEXT ===\n\nIMPORTANT: The text above is extracted directly from the homeowner's plan PDFs. Quote sheet numbers, dimensions, room labels, and schedule entries you can literally read. Lead the "summary" with what kind of plan set this is (architectural, site, structural) and the headline footprint / room program if visible. Use the "structural" and "code" sections to specifically narrate what the plans show.`;
+    }
+
+    userText += `\n\nThe images below appear in this order: photos first, then image-format plans, then video frames.\n\nProduce the structured contractor-readable space analysis now.`;
 
     const userContent: Array<Record<string, unknown>> = [{ type: "text", text: userText }];
     for (const url of dataUrls) {
