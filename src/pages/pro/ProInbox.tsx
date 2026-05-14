@@ -223,6 +223,19 @@ const ProInbox = () => {
                         {s.outreach_batches?.neighborhood && (
                           <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.outreach_batches.neighborhood}</span>
                         )}
+                        {snap.addition_size_sqft && (
+                          <span className="inline-flex items-center gap-1 font-medium text-foreground/80"><Hammer className="h-3 w-3" /> {snap.addition_size_sqft.toLocaleString()} sq ft</span>
+                        )}
+                        {permitLabel(snap.permit_status) && (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${snap.permit_status === "yes" ? "bg-accent/15 text-accent" : "bg-muted text-foreground/70"}`}>
+                            <ShieldCheck className="h-3 w-3" /> {permitLabel(snap.permit_status)}
+                          </span>
+                        )}
+                        {(snap.floorplan_urls?.length ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-accent">
+                            <CheckCircle2 className="h-3 w-3" /> Plans attached
+                          </span>
+                        )}
                         {snap.budget && (
                           <span className="inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> {snap.budget}</span>
                         )}
