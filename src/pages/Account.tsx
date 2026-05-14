@@ -14,6 +14,7 @@ import { listMyProjects, deleteProject, type UserProject } from "@/lib/userProje
 import { useIntake } from "@/lib/intake";
 import { toast } from "@/hooks/use-toast";
 import ProposalsReceivedSection from "@/components/ProposalsReceivedSection";
+import HomeownerPathChooser from "@/components/HomeownerPathChooser";
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -131,7 +132,9 @@ const Account = () => {
           </div>
         </motion.div>
 
-        <div className="mt-10 flex items-center justify-between">
+        <HomeownerPathChooser />
+
+        <div className="mt-12 flex items-center justify-between">
           <h2 className="font-display text-xl font-medium">Saved rooms</h2>
           <Button onClick={startNew} className="rounded-full">
             <Plus className="h-4 w-4" /> Start a new room
