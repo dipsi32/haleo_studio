@@ -389,7 +389,10 @@ serve(async (req) => {
     }
 
     if (dataUrls.length === 0 && videos.length === 0 && planTexts.length === 0) {
-      const result = fallbackSections(intake);
+      // If the user attached PDFs but we couldn't extract any text, tell them
+      // it's the PDF that's the problem — not "you uploaded nothing".
+      const reason = pdfPlans.length > 0 ? "plan_unreadable" : "no_media";
+      const result = fallbackSections(intake, reason);
       await supabase
         .from("space_analyses")
         .update({ status: "done", result, error: null })
