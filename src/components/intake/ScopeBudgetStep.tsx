@@ -26,6 +26,7 @@ type Props = {
   selectedTimeline?: Timeline;
   onPickTimeline: (t: Timeline) => void;
   address?: Address;
+  hideScope?: boolean;
 };
 
 // Parse loose budget input like "120k", "$80,000", "200" → number in $K.
