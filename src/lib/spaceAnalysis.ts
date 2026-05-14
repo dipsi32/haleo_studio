@@ -193,7 +193,11 @@ const readCachedResult = (key: string): SpaceAnalysis | null => {
     const parsed = JSON.parse(raw) as Record<string, SpaceAnalysis>;
     const cached = parsed[key] ?? null;
     if (!cached) return null;
-    if (cached.summary === FALLBACK_SUMMARY || cached.summary.startsWith("No analyzable ")) {
+    if (
+      cached.summary === FALLBACK_SUMMARY ||
+      cached.summary.startsWith("No analyzable ") ||
+      cached.summary.startsWith("Haleo couldn't read")
+    ) {
       return null;
     }
     return cached;
