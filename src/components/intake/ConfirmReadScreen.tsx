@@ -231,6 +231,10 @@ const ConfirmReadScreen = ({
     return () => clearInterval(id);
   }, [status]);
 
+  // Plans (PDF/floorplan attachments) get a different framing than room photos.
+  const planMedia = intake.media.filter((m) => m.kind === "floorplan");
+  const hasPlans = planMedia.length > 0;
+
   // Seed confirmation from prior approval — revisiting shouldn't re-ask.
   const currentKey = intake.media
     .filter((m) => m.kind === "photo" || m.kind === "floorplan" || m.kind === "video")
