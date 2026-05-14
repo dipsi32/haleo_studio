@@ -1357,4 +1357,136 @@ const ReadinessNudge = ({
   );
 };
 
+// ───── Addition one-pager — only what a contractor needs to bid ─────
+// Replaces the heavier two-layer brief for ADU/JADU/Addition projects.
+// Header line + vision + plans + key facts + (optional) inspiration. That's it.
+const AdditionOnePager = ({
+  data,
+  homeowner,
+  permit,
+  spaceMedia,
+  inspirationMedia,
+  budgetLabel,
+  timelineLabel,
+  onOpenMedia,
+  annotations,
+  onSaveAnnotation,
+  approved,
+}: {
+  data: IntakeData;
+  homeowner: string;
+  permit: { likely: boolean; reason: string };
+  spaceMedia: MediaAsset[];
+  inspirationMedia: MediaAsset[];
+  budgetLabel: string;
+  timelineLabel: string;
+  onOpenMedia: (m: MediaAsset) => void;
+  annotations: Record<string, string>;
+  onSaveAnnotation: (id: string, text: string) => void;
+  approved: boolean;
+}) => {
+  const kindLabel =
+    data.additionKind === "adu" ? "ADU"
+    : data.additionKind === "jadu" ? "JADU"
+    : data.additionKind === "addition" ? "Addition"
+    : "Addition";
+  const sizeLabel = data.additionSize ? `${data.additionSize.toLocaleString()} sq ft` : null;
+  const permitLabel =
+    data.permitStatus === "yes" ? "Permit active"
+    : data.permitStatus === "in-progress" ? "Permit in progress"
+    : data.permitStatus === "not-yet" ? "No permit yet"
+    : permit.likely ? "Permit likely" : "Permit exempt";
+  const cityLabel =
+    data.address?.city && !data.address?.skipped
+      ? [data.address.city, data.address.state].filter(Boolean).join(", ")
+      : null;
+
+  const headline = [kindLabel, sizeLabel, permitLabel, cityLabel].filter(Boolean).join(" · ");
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-lift"
+    >
+      {/* Headline strip */}
+      <div className="border-b border-border bg-secondary/30 px-6 py-5 md:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+          For your contractor
+        </p>
+        <p className="mt-1.5 font-display text-lg font-medium leading-snug text-foreground md:text-xl">
+          {headline}
+        </p>
+      </div>
+
+      {/* Vision */}
+      <div className="border-b border-border px-6 py-6 md:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">The vision</p>
+        <div className="mt-2 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+          <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
+            "{data.visionNote?.trim() || homeowner}"
+          </p>
+        </div>
+      </div>
+
+      {/* Plans */}
+      {spaceMedia.length > 0 && (
+        <div className="border-b border-border px-6 py-6 md:px-8">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-display text-base font-medium">Plans</p>
+            <span className="text-xs text-muted-foreground">
+              {spaceMedia.length} file{spaceMedia.length > 1 ? "s" : ""} · tap to open
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {spaceMedia.map((m) => (
+              <MediaTile key={m.id} m={m} onOpen={onOpenMedia} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Key facts */}
+      <div className="border-b border-border px-6 py-6 md:px-8">
+        <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 md:grid-cols-4">
+          <KV label="Type" value={kindLabel} />
+          <KV label="Size" value={sizeLabel ?? "—"} />
+          <KV label="Permit" value={permitLabel} />
+          <KV label="Budget" value={budgetLabel} />
+          <KV label="Timeline" value={timelineLabel} />
+          <KV label="Location" value={cityLabel ?? "Not shared"} />
+        </dl>
+      </div>
+
+      {/* Inspiration — small, only if provided */}
+      {inspirationMedia.length > 0 && (
+        <div className="border-b border-border px-6 py-6 md:px-8">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-display text-base font-medium">Look &amp; feel</p>
+            <span className="text-xs text-muted-foreground">
+              {inspirationMedia.length} ref{inspirationMedia.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-5 lg:grid-cols-6">
+            {inspirationMedia.map((m) => (
+              <MediaTile key={m.id} m={m} onOpen={onOpenMedia} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* One annotation block — keep it simple */}
+      <div className="px-6 py-5 md:px-8">
+        <AnnotationBlock
+          sectionId="addition-note"
+          value={annotations["addition-note"]}
+          onSave={onSaveAnnotation}
+          locked={approved}
+        />
+      </div>
+    </motion.article>
+  );
+};
+
 export default BriefResult;
