@@ -550,6 +550,7 @@ const ScopeAndBudgetScreen = ({
   onPickTimeline,
   selectedTimeline,
   address,
+  hideScope,
 }: {
   scope?: ScopeTier;
   onScopeChange: (s: ScopeTier) => void;
@@ -561,12 +562,17 @@ const ScopeAndBudgetScreen = ({
   onPickTimeline: (t: Timeline) => void;
   selectedTimeline?: Timeline;
   address?: Address;
+  hideScope?: boolean;
 }) => (
   <div className="space-y-10">
     <StepDots step={5} />
     <ScreenTitle
-      title="Scope, budget, and timing."
-      sub="Pick the type of project that fits. Budget is optional — share if you have one in mind."
+      title={hideScope ? "Budget and timing." : "Scope, budget, and timing."}
+      sub={
+        hideScope
+          ? "Budget is optional — share if you have one in mind."
+          : "Pick the type of project that fits. Budget is optional — share if you have one in mind."
+      }
     />
     <ScopeBudgetStep
       scope={scope}
@@ -579,6 +585,7 @@ const ScopeAndBudgetScreen = ({
       selectedTimeline={selectedTimeline}
       onPickTimeline={onPickTimeline}
       address={address}
+      hideScope={hideScope}
     />
   </div>
 );
