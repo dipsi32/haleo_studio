@@ -185,7 +185,7 @@ export const runSpaceAnalysis = async (
 // result in localStorage so navigating away and back doesn't re-spend tokens.
 
 const RESULT_CACHE_KEY = "haleo:analysis:v2";
-const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.";
+const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo, a short video, or a plan PDF to generate a grounded read.";
 const readCachedResult = (key: string): SpaceAnalysis | null => {
   try {
     const raw = localStorage.getItem(RESULT_CACHE_KEY);
