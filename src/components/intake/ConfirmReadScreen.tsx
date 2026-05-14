@@ -512,7 +512,7 @@ const ConfirmReadScreen = ({
       {(status === "uploading" || status === "analyzing" || status === "idle") && (
         <div className="flex flex-col items-center gap-3">
           <Button size="lg" disabled className="rounded-full px-8">
-            Reading your space…
+            {hasPlans ? "Reading your attachment…" : "Reading your space…"}
           </Button>
           <p className="text-xs text-muted-foreground">Usually 10–15 seconds.</p>
         </div>
