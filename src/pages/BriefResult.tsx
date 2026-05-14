@@ -615,6 +615,61 @@ const BriefResult = () => {
                 sub="Scope of work grouped by trade, plus permit signals — every line tagged so nothing is fabricated."
               />
 
+              {/* Haleo's read — vision-grounded analysis of the photos / plans */}
+              {(analysisStatus === "ready" || analysisStatus === "analyzing" || analysisStatus === "uploading") && (
+                <div className="border-b border-border px-6 py-6 md:px-10">
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
+                    <div>
+                      <p className="font-display text-base font-medium">Haleo's read of your {data.media.some((m) => m.kind === "floorplan") ? "plans & space" : "space"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {analysisStatus === "ready"
+                          ? "What our vision model pulled from your uploads — every claim tagged so contractors know what's verified."
+                          : "Reading your uploads now…"}
+                      </p>
+                    </div>
+                    {analysisStatus === "ready" && analysis && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-sage">
+                        <Eye className="h-3 w-3" /> Vision-grounded
+                      </span>
+                    )}
+                  </div>
+
+                  {analysisStatus !== "ready" && (
+                    <div className="mt-4 space-y-2">
+                      <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
+                      <div className="h-3 w-1/2 animate-pulse rounded-full bg-secondary" />
+                    </div>
+                  )}
+
+                  {analysisStatus === "ready" && analysis?.summary && (
+                    <div className="mt-4 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                      <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
+                        {analysis.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {analysisStatus === "ready" && sections.length > 0 && (
+                    <div className="mt-4">
+                      <DetailedSpaceAnalysis sections={sections} />
+                    </div>
+                  )}
+
+                  {analysisError && analysisStatus === "error" && (
+                    <p className="mt-3 text-xs text-destructive">
+                      Couldn't read your uploads — {analysisError}
+                    </p>
+                  )}
+
+                  <AnnotationBlock
+                    sectionId="haleo-read"
+                    value={annotations["haleo-read"]}
+                    onSave={saveAnnotation}
+                    locked={approved}
+                  />
+                </div>
+              )}
+
               {/* Scope of work */}
               <div className="border-b border-border px-6 py-6 md:px-10">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
