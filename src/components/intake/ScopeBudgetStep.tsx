@@ -51,6 +51,7 @@ const ScopeBudgetStep = ({
   selectedTimeline,
   onPickTimeline,
   address,
+  hideScope,
 }: Props) => {
   const active = scopeFor(scope);
 
