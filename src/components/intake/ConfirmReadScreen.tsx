@@ -300,16 +300,21 @@ const ConfirmReadScreen = ({
         aria-live="polite"
       >
         {/* Header */}
+        {(() => null)()}
         <div className="flex items-start gap-3 border-b border-border bg-secondary/40 px-5 py-4 md:px-6">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-            <Eye className="h-4 w-4" />
+            {hasPlans ? <FileText className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-base font-medium leading-tight">Haleo's read</p>
+            <p className="font-display text-base font-medium leading-tight">
+              {hasPlans ? "Haleo's read of your plans" : "Haleo's read"}
+            </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {status === "ready"
                 ? "Confirm or flag anything that's off."
-                : "Reading the photos you shared…"}
+                : hasPlans
+                  ? "Reading the drawings you uploaded…"
+                  : "Reading the photos you shared…"}
             </p>
           </div>
           {status === "ready" && (
@@ -320,12 +325,12 @@ const ConfirmReadScreen = ({
         </div>
 
         {/* Plans strip — show the homeowner exactly what Haleo is reading */}
-        <PlansStrip plans={intake.media.filter((m) => m.kind === "floorplan")} />
+        <PlansStrip plans={planMedia} />
 
         {/* Body */}
         <div className="px-5 py-5 md:px-6 md:py-6">
           {(status === "uploading" || status === "analyzing" || status === "idle") && (
-            <SkeletonRead progress={progress} />
+            <SkeletonRead progress={progress} hasPlans={hasPlans} />
           )}
 
           {status === "error" && (
