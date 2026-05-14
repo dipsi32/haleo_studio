@@ -302,6 +302,9 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     haleo_read: haleo,
     read_feedback: data.readFeedback?.note,
     trade_groups: groups.map(g => ({ trade: g.meta.label, lines: g.lines.map(l => l.text) })),
+    addition_size_sqft: data.room === 'addition' ? data.additionSize : undefined,
+    permit_status: data.room === 'addition' ? data.permitStatus : undefined,
+    is_addition: data.room === 'addition',
   };
 };
 
