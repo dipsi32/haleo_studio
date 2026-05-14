@@ -99,6 +99,51 @@ const SkeletonRead = ({ progress }: { progress: number }) => (
   </div>
 );
 
+// Inline preview of the architectural plans the model is grounding its read on.
+// Renders image plans as thumbnails and PDFs as labeled file tiles.
+const PlansStrip = ({ plans }: { plans: MediaAsset[] }) => {
+  if (!plans.length) return null;
+  return (
+    <div className="border-b border-border bg-secondary/20 px-5 py-4 md:px-6">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/60">
+        <Map className="h-3.5 w-3.5 text-accent" />
+        Plans Haleo is reading · {plans.length}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+        {plans.map((p) => {
+          const isImage = p.mime?.startsWith("image/");
+          return isImage ? (
+            <a
+              key={p.id}
+              href={p.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-background shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
+              title={p.name}
+            >
+              <img src={p.url} alt={p.name} className="h-full w-full object-cover" />
+            </a>
+          ) : (
+            <a
+              key={p.id}
+              href={p.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group flex aspect-square flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-background p-2 text-center shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
+              title={p.name}
+            >
+              <FileText className="h-6 w-6 text-accent" />
+              <span className="line-clamp-2 text-[10px] font-medium text-foreground/75">
+                {p.name}
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 type Confirmation = "unset" | "ok" | "off";
 
 const ConfirmReadScreen = ({
