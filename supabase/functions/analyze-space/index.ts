@@ -210,7 +210,7 @@ async function extractPlanText(
     const res = await fetch(url);
     if (!res.ok) return null;
     const buf = new Uint8Array(await res.arrayBuffer());
-    if (buf.byteLength > 25 * 1024 * 1024) {
+    if (buf.byteLength > 80 * 1024 * 1024) {
       console.warn(`Skipping oversize PDF (${buf.byteLength} bytes): ${url}`);
       return null;
     }
@@ -228,22 +228,32 @@ async function extractPlanText(
   }
 }
 
-function fallbackSections(intake: Record<string, unknown>): AnalysisResult {
+function fallbackSections(
+  intake: Record<string, unknown>,
+  reason: "no_media" | "plan_unreadable" = "no_media",
+): AnalysisResult {
+  const summary =
+    reason === "plan_unreadable"
+      ? "Haleo couldn't read your plan PDF — it may be a scanned image or too large to parse. Try exporting a smaller PDF or adding a few photos so we can ground the read."
+      : "No analyzable visuals on file yet. Add at least one photo, a short video, or a plan PDF to generate a grounded read.";
+  const placeholder =
+    reason === "plan_unreadable"
+      ? "Awaiting a readable plan or a few photos."
+      : "Awaiting photos to read.";
   return {
-    summary:
-      "No analyzable visuals on file yet. Add at least one photo or a short video to generate a grounded space read.",
+    summary,
     sections: [
       {
         key: "structural",
         title: "Structural read",
         description: "What the bones look like before site visit.",
-        items: [{ text: "Awaiting photos to read structure.", basis: "question" }],
+        items: [{ text: placeholder, basis: "question" }],
       },
       {
         key: "finishes",
         title: "Visible items & finishes",
         description: "Materials and condition.",
-        items: [{ text: "Awaiting photos to read finishes.", basis: "question" }],
+        items: [{ text: placeholder, basis: "question" }],
       },
       {
         key: "constraints",
@@ -379,7 +389,10 @@ serve(async (req) => {
     }
 
     if (dataUrls.length === 0 && videos.length === 0 && planTexts.length === 0) {
-      const result = fallbackSections(intake);
+      // If the user attached PDFs but we couldn't extract any text, tell them
+      // it's the PDF that's the problem — not "you uploaded nothing".
+      const reason = pdfPlans.length > 0 ? "plan_unreadable" : "no_media";
+      const result = fallbackSections(intake, reason);
       await supabase
         .from("space_analyses")
         .update({ status: "done", result, error: null })
