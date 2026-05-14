@@ -247,6 +247,10 @@ export type BriefSnapshot = {
   // Homeowner's correction note if they flagged Haleo's read as off
   read_feedback?: string;
   trade_groups: { trade: string; lines: string[] }[];
+  // Addition-specific quick facts so contractors can scan-and-decide
+  addition_size_sqft?: number;
+  permit_status?: "yes" | "in-progress" | "not-yet";
+  is_addition?: boolean;
 };
 
 const fmtMoney = (v?: number) => (v == null ? '' : v >= 500 ? '$500K+' : `$${v}K`);
@@ -298,6 +302,9 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     haleo_read: haleo,
     read_feedback: data.readFeedback?.note,
     trade_groups: groups.map(g => ({ trade: g.meta.label, lines: g.lines.map(l => l.text) })),
+    addition_size_sqft: data.room === 'addition' ? data.additionSize : undefined,
+    permit_status: data.room === 'addition' ? data.permitStatus : undefined,
+    is_addition: data.room === 'addition',
   };
 };
 

@@ -40,7 +40,13 @@ type BriefSnapshot = {
   read_feedback?: string;
   trade_groups?: { trade: string; lines: string[] }[];
   projectType?: string;
+  addition_size_sqft?: number;
+  permit_status?: "yes" | "in-progress" | "not-yet";
+  is_addition?: boolean;
 };
+
+const permitLabel = (p?: BriefSnapshot["permit_status"]) =>
+  p === "yes" ? "Permit ready" : p === "in-progress" ? "Permit in progress" : p === "not-yet" ? "No permit yet" : null;
 
 type SendRow = {
   id: string;
@@ -216,6 +222,19 @@ const ProInbox = () => {
                       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         {s.outreach_batches?.neighborhood && (
                           <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.outreach_batches.neighborhood}</span>
+                        )}
+                        {snap.addition_size_sqft && (
+                          <span className="inline-flex items-center gap-1 font-medium text-foreground/80"><Hammer className="h-3 w-3" /> {snap.addition_size_sqft.toLocaleString()} sq ft</span>
+                        )}
+                        {permitLabel(snap.permit_status) && (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${snap.permit_status === "yes" ? "bg-accent/15 text-accent" : "bg-muted text-foreground/70"}`}>
+                            <ShieldCheck className="h-3 w-3" /> {permitLabel(snap.permit_status)}
+                          </span>
+                        )}
+                        {(snap.floorplan_urls?.length ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-accent">
+                            <CheckCircle2 className="h-3 w-3" /> Plans attached
+                          </span>
                         )}
                         {snap.budget && (
                           <span className="inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> {snap.budget}</span>
@@ -396,8 +415,37 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
               <p className="mt-3 text-sm leading-relaxed text-foreground/80">
                 {homeowner} put together a detailed brief for {headline.toLowerCase()}.
               </p>
+
+              {/* At-a-glance facts so the contractor can decide fast */}
+              {(snap.addition_size_sqft || permitLabel(snap.permit_status) || (snap.floorplan_urls?.length ?? 0) > 0) && (
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {snap.addition_size_sqft && (
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Size</p>
+                      <p className="mt-1 font-display text-lg leading-none">{snap.addition_size_sqft.toLocaleString()}<span className="ml-1 text-xs font-normal text-muted-foreground">sq ft</span></p>
+                    </div>
+                  )}
+                  {permitLabel(snap.permit_status) && (
+                    <div className={`rounded-xl border p-3 ${snap.permit_status === "yes" ? "border-accent/40 bg-accent/10" : "border-border bg-card"}`}>
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Permit</p>
+                      <p className={`mt-1 inline-flex items-center gap-1 text-sm font-medium ${snap.permit_status === "yes" ? "text-accent" : "text-foreground/80"}`}>
+                        <ShieldCheck className="h-3.5 w-3.5" /> {permitLabel(snap.permit_status)}
+                      </p>
+                    </div>
+                  )}
+                  {(snap.floorplan_urls?.length ?? 0) > 0 && (
+                    <div className="rounded-xl border border-accent/40 bg-accent/10 p-3">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Plans</p>
+                      <p className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-accent">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Ready ({snap.floorplan_urls!.length})
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {snap.scope_summary && (
-                <p className="mt-3 line-clamp-3 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
+                <p className="mt-4 line-clamp-3 text-sm italic text-foreground/70">"{snap.scope_summary}"</p>
               )}
               <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                 {send.outreach_batches?.neighborhood && (
