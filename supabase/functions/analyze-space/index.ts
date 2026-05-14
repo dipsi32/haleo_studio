@@ -197,6 +197,37 @@ async function fetchImageAsDataUrl(url: string, mime?: string): Promise<string |
   }
 }
 
+// Architectural plans frequently arrive as PDFs. Vision models can't render
+// PDF data URLs reliably through the OpenAI-compatible shim, so we extract
+// the textual layer (sheet titles, schedules, dimensions, callouts, notes)
+// and surface it to the model as structured text. This is what lets Haleo
+// actually "read" the plan and tell the homeowner what it sees.
+async function extractPlanText(
+  url: string,
+  name: string,
+): Promise<{ name: string; pages: number; text: string } | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength > 25 * 1024 * 1024) {
+      console.warn(`Skipping oversize PDF (${buf.byteLength} bytes): ${url}`);
+      return null;
+    }
+    const pdf = await getDocumentProxy(buf);
+    const { totalPages, text } = await extractText(pdf, { mergePages: true });
+    const cleaned = (Array.isArray(text) ? text.join("\n") : text)
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+      .slice(0, 8000); // keep prompt reasonable
+    return { name, pages: totalPages, text: cleaned };
+  } catch (err) {
+    console.error(`extractPlanText failed for ${url}:`, err);
+    return null;
+  }
+}
+
 function fallbackSections(intake: Record<string, unknown>): AnalysisResult {
   return {
     summary:
