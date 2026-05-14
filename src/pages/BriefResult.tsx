@@ -486,9 +486,21 @@ const BriefResult = () => {
         {/* Slim, elegant nudge — only when something meaningful is missing */}
         <ReadinessNudge readiness={readiness} onAdd={() => setEditOpen(true)} />
 
-        {/* ────────── TWO CLEAR LAYERS ──────────
-            LAYER 1 → "What you shared" (homeowner intake — vision, space, inspiration)
-            LAYER 2 → "What contractors see" (scope of work + permit) */}
+        {data.room === "addition" ? (
+          <AdditionOnePager
+            data={data}
+            homeowner={homeowner}
+            permit={permit}
+            spaceMedia={spaceMedia}
+            inspirationMedia={inspirationMedia}
+            budgetLabel={budgetLabel}
+            timelineLabel={timelineLabel}
+            onOpenMedia={setOpen}
+            annotations={annotations}
+            onSaveAnnotation={saveAnnotation}
+            approved={approved}
+          />
+        ) : (
         <div className="mt-10 grid gap-6 md:grid-cols-[200px_1fr] md:gap-8 lg:grid-cols-[220px_1fr]">
           {/* Sticky two-tab nav */}
           <BriefTOC
@@ -731,6 +743,7 @@ const BriefResult = () => {
 
           </motion.article>
         </div>
+        )}
 
         {/* Actions — one primary path, one quiet escape hatch */}
         <motion.div
