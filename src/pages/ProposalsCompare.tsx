@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import {
-  type AnalyzedProposal, type ScoredProposal, type Verdict,
+  type AnalyzedProposal, type ScoredProposal, type Verdict, type StandoutChip,
   scoreProposal, computeVerdict, draftPushback, extractRequestedTrades,
-  classifyTradeCoverage,
+  classifyTradeCoverage, computeStandouts,
 } from "@/lib/proposalComparison";
 
 // Multi-bid comparison view. The whole point of this screen: in 10 seconds the
