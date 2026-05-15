@@ -967,6 +967,7 @@ export type Database = {
         Row: {
           analysis_jsonb: Json | null
           brief_id: string | null
+          comparison_group_id: string | null
           contractor_id: string | null
           contractor_name: string | null
           created_at: string
@@ -995,6 +996,7 @@ export type Database = {
         Insert: {
           analysis_jsonb?: Json | null
           brief_id?: string | null
+          comparison_group_id?: string | null
           contractor_id?: string | null
           contractor_name?: string | null
           created_at?: string
@@ -1023,6 +1025,7 @@ export type Database = {
         Update: {
           analysis_jsonb?: Json | null
           brief_id?: string | null
+          comparison_group_id?: string | null
           contractor_id?: string | null
           contractor_name?: string | null
           created_at?: string

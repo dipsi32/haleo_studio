@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import {
-  type AnalyzedProposal, type ScoredProposal, type Verdict,
+  type AnalyzedProposal, type ScoredProposal, type Verdict, type StandoutChip,
   scoreProposal, computeVerdict, draftPushback, extractRequestedTrades,
-  classifyTradeCoverage,
+  classifyTradeCoverage, computeStandouts,
 } from "@/lib/proposalComparison";
 
 // Multi-bid comparison view. The whole point of this screen: in 10 seconds the
@@ -56,36 +56,50 @@ export default function ProposalsCompare() {
         .eq("homeowner_email", user.email);
 
       const batchIds = (batches ?? []).map((b: any) => b.id);
-      if (batchIds.length === 0) {
-        if (!cancelled) { setProposals([]); setLoading(false); }
-        return;
-      }
-      // Use the most recent batch's brief as the requested trade list.
+      // Use the most recent batch's brief as the requested trade list (if any).
       if (!cancelled && batches && batches.length > 0) {
         setBriefSnapshot((batches[batches.length - 1] as any).brief_snapshot);
       }
 
-      const { data: sends } = await supabase
-        .from("outreach_sends")
-        .select("id, contractor_id, contractor_name, proposal_analysis_id, status, proposal_source, proposal_structured, proposal_submitted_at")
-        .in("batch_id", batchIds)
-        .not("proposal_submitted_at", "is", null)
-        .order("proposal_submitted_at", { ascending: false });
+      // ── Contractor-submitted proposals via outreach ─────────────────
+      let sendsArr: any[] = [];
+      if (batchIds.length > 0) {
+        const { data: sends } = await supabase
+          .from("outreach_sends")
+          .select("id, contractor_id, contractor_name, proposal_analysis_id, status, proposal_source, proposal_structured, proposal_submitted_at")
+          .in("batch_id", batchIds)
+          .not("proposal_submitted_at", "is", null)
+          .order("proposal_submitted_at", { ascending: false });
+        sendsArr = sends ?? [];
+      }
 
-      const sendsArr = sends ?? [];
-      const analysisIds = sendsArr.map((s: any) => s.proposal_analysis_id).filter(Boolean) as string[];
+      const sendAnalysisIds = sendsArr.map((s: any) => s.proposal_analysis_id).filter(Boolean) as string[];
 
       let analysesById: Record<string, any> = {};
-      if (analysisIds.length > 0) {
+      if (sendAnalysisIds.length > 0) {
         const { data: analyses } = await supabase
           .from("proposal_analyses")
           .select("id, status, risk_score, red_flags, extracted_data, permit_data, license_data, next_actions, analysis_jsonb, total_cost")
-          .in("id", analysisIds);
+          .in("id", sendAnalysisIds);
         for (const a of analyses ?? []) analysesById[(a as any).id] = a;
+      }
+
+      // ── Homeowner-uploaded PDFs (no outreach_send) ──────────────────
+      let uploadedRows: any[] = [];
+      if (user?.id) {
+        const { data: uploaded } = await supabase
+          .from("proposal_analyses")
+          .select("id, status, risk_score, red_flags, extracted_data, permit_data, license_data, next_actions, analysis_jsonb, total_cost, contractor_name, created_at")
+          .eq("user_id", user.id)
+          .is("outreach_send_id", null)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        uploadedRows = uploaded ?? [];
       }
 
       let pending = 0;
       const merged: AnalyzedProposal[] = [];
+
       for (const s of sendsArr) {
         const a = s.proposal_analysis_id ? analysesById[s.proposal_analysis_id] : null;
         const isComplete = a && a.status === "complete";
@@ -98,6 +112,7 @@ export default function ProposalsCompare() {
           status: s.status,
           proposal_source: s.proposal_source,
           proposal_structured: s.proposal_structured,
+          source_kind: "haleo",
           analysis_status: a.status,
           risk_score: a.risk_score,
           red_flags: Array.isArray(a.red_flags) ? a.red_flags : [],
@@ -109,6 +124,36 @@ export default function ProposalsCompare() {
           total_cost: a.total_cost,
         });
       }
+
+      for (const a of uploadedRows) {
+        const isComplete = a.status === "complete";
+        if (!isComplete) { pending++; continue; }
+        const name =
+          a.contractor_name
+          ?? a.extracted_data?.contractorName
+          ?? a.extracted_data?.contractor_name
+          ?? "Uploaded proposal";
+        merged.push({
+          send_id: `upload:${a.id}`,
+          contractor_id: null,
+          contractor_name: name,
+          proposal_analysis_id: a.id,
+          status: "uploaded",
+          proposal_source: "upload",
+          proposal_structured: null,
+          source_kind: "uploaded",
+          analysis_status: a.status,
+          risk_score: a.risk_score,
+          red_flags: Array.isArray(a.red_flags) ? a.red_flags : [],
+          extracted_data: a.extracted_data ?? {},
+          permit_data: a.permit_data ?? {},
+          license_data: a.license_data ?? {},
+          next_actions: Array.isArray(a.next_actions) ? a.next_actions : [],
+          analysis_jsonb: a.analysis_jsonb ?? {},
+          total_cost: a.total_cost,
+        });
+      }
+
       if (!cancelled) {
         setProposals(merged.slice(0, 3)); // max 3 columns per spec
         setPendingCount(pending);
@@ -138,6 +183,14 @@ export default function ProposalsCompare() {
     () => (scored.length >= 2 ? computeVerdict(scored) : null),
     [scored],
   );
+
+  const standoutsBySend = useMemo(() => computeStandouts(scored), [scored]);
+
+  const sourceMix = useMemo(() => {
+    const haleo = scored.filter((s) => s.proposal.source_kind === "haleo").length;
+    const uploaded = scored.filter((s) => s.proposal.source_kind === "uploaded").length;
+    return { haleo, uploaded, mixed: haleo > 0 && uploaded > 0 };
+  }, [scored]);
 
   // Detect when the recommended winner changes (realtime update moment).
   useEffect(() => {
@@ -255,6 +308,17 @@ export default function ProposalsCompare() {
           <VerdictBar verdict={verdict} scored={scored} changed={recommendationChanged} />
         )}
 
+        {/* Honest disclosure when sources are mixed — protects against
+            apples-to-oranges wins driven by data availability. */}
+        {scored.length >= 2 && sourceMix.mixed && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-muted-foreground">
+              Heads up: permit history and license checks are richer for the {sourceMix.haleo} proposal{sourceMix.haleo === 1 ? "" : "s"} submitted through Haleo. The {sourceMix.uploaded} bid{sourceMix.uploaded === 1 ? "" : "s"} you uploaded {sourceMix.uploaded === 1 ? "has" : "have"} scope and pricing data only — keep that in mind when reading the verdict.
+            </p>
+          </div>
+        )}
+
         {/* Pending banner if a third (or more) proposal is still analyzing */}
         {scored.length >= 2 && pendingCount > 0 && (
           <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm">
@@ -270,7 +334,7 @@ export default function ProposalsCompare() {
           <>
             {/* Desktop / tablet table */}
             <div className="mt-8 hidden md:block">
-              <ComparisonTable scored={scored} requestedTrades={requestedTrades} verdict={verdict} />
+              <ComparisonTable scored={scored} requestedTrades={requestedTrades} verdict={verdict} standoutsBySend={standoutsBySend} />
             </div>
             {/* Mobile single-column with swipe */}
             <div className="mt-8 md:hidden">
@@ -282,6 +346,7 @@ export default function ProposalsCompare() {
                 onPrev={() => setActiveMobileIdx((i) => Math.max(0, i - 1))}
                 onNext={() => setActiveMobileIdx((i) => Math.min(scored.length - 1, i + 1))}
                 isWinner={verdict?.kind === "winner" && (verdict as any).winnerSendId === scored[activeMobileIdx].proposal.send_id}
+                standouts={standoutsBySend[scored[activeMobileIdx].proposal.send_id] ?? []}
               />
             </div>
           </>
@@ -433,8 +498,8 @@ function RowFromDim({ di, scored }: { di: number; scored: ScoredProposal[] }) {
 // ─── Comparison Table (desktop) ──────────────────────────────────────
 
 function ComparisonTable({
-  scored, requestedTrades, verdict,
-}: { scored: ScoredProposal[]; requestedTrades: string[]; verdict: Verdict | null }) {
+  scored, requestedTrades, verdict, standoutsBySend,
+}: { scored: ScoredProposal[]; requestedTrades: string[]; verdict: Verdict | null; standoutsBySend: Record<string, StandoutChip[]> }) {
   const winnerId = verdict?.kind === "winner" ? (verdict as any).winnerSendId : null;
   const cols = scored.length;
 
@@ -446,13 +511,17 @@ function ComparisonTable({
         {scored.map((s) => {
           const sc = scoreClass(s.haleoScore);
           const isWinner = s.proposal.send_id === winnerId;
+          const chips = standoutsBySend[s.proposal.send_id] ?? [];
           return (
             <div key={s.proposal.send_id} className={`p-5 ${isWinner ? "bg-sage-soft/40" : ""} border-l border-border`}>
-              {isWinner && (
-                <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
-                  <ShieldCheck className="h-3 w-3" /> Recommended
-                </p>
-              )}
+              <div className="mb-2 flex items-center gap-1.5">
+                {isWinner && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
+                    <ShieldCheck className="h-3 w-3" /> Recommended
+                  </span>
+                )}
+                <SourceBadge kind={s.proposal.source_kind} />
+              </div>
               <p className="font-display text-base font-medium leading-tight">{s.proposal.contractor_name}</p>
               <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full ${sc.bg} ${sc.border} border px-3 py-1`}>
                 <span className={`text-sm font-semibold tabular-nums ${sc.text}`}>{s.haleoScore}</span>
@@ -464,6 +533,9 @@ function ComparisonTable({
                   : "No San Jose permits on file under this name"}
               </p>
               <p className="mt-3 font-display text-2xl font-light tabular-nums">{fmtMoney(s.proposal.total_cost)}</p>
+
+              {/* Standout strip — what makes this proposal stand out vs the others */}
+              <StandoutStrip chips={chips} />
             </div>
           );
         })}
@@ -666,10 +738,10 @@ function ProtectionRow({ cols, label, tip, values }: { cols: number; label: stri
 // ─── Mobile single-column view ───────────────────────────────────────
 
 function MobileProposalCard({
-  scored, requestedTrades, idx, total, onPrev, onNext, isWinner,
+  scored, requestedTrades, idx, total, onPrev, onNext, isWinner, standouts,
 }: {
   scored: ScoredProposal; requestedTrades: string[]; idx: number; total: number;
-  onPrev: () => void; onNext: () => void; isWinner: boolean;
+  onPrev: () => void; onNext: () => void; isWinner: boolean; standouts: StandoutChip[];
 }) {
   const sc = scoreClass(scored.haleoScore);
   return (
@@ -684,17 +756,22 @@ function MobileProposalCard({
         </button>
       </div>
       <div className={`mt-3 rounded-3xl border bg-card p-5 shadow-soft ${isWinner ? "border-sage/40" : "border-border"}`}>
-        {isWinner && (
-          <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
-            <ShieldCheck className="h-3 w-3" /> Recommended
-          </p>
-        )}
+        <div className="mb-2 flex items-center gap-1.5">
+          {isWinner && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
+              <ShieldCheck className="h-3 w-3" /> Recommended
+            </span>
+          )}
+          <SourceBadge kind={scored.proposal.source_kind} />
+        </div>
         <p className="font-display text-lg font-medium">{scored.proposal.contractor_name}</p>
         <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full ${sc.bg} ${sc.border} border px-3 py-1`}>
           <span className={`text-sm font-semibold tabular-nums ${sc.text}`}>{scored.haleoScore}</span>
           <span className={`text-[11px] ${sc.text}`}>· {sc.label}</span>
         </div>
         <p className="mt-3 font-display text-3xl font-light tabular-nums">{fmtMoney(scored.proposal.total_cost)}</p>
+
+        <StandoutStrip chips={standouts} />
 
         {/* Trade coverage first on mobile, per spec */}
         {requestedTrades.length > 0 && (
@@ -885,5 +962,61 @@ function SingleProposalState({ scored }: { scored: ScoredProposal }) {
         Waiting on more proposals? Once a second one arrives we'll compare them side by side automatically.
       </p>
     </>
+  );
+}
+
+// ─── Source badge & Standout strip ───────────────────────────────────
+
+function SourceBadge({ kind }: { kind?: "uploaded" | "haleo" }) {
+  if (!kind) return null;
+  if (kind === "haleo") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-accent">
+        Submitted via Haleo
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/70">
+      Uploaded by you
+    </span>
+  );
+}
+
+// One-glance "what makes this stand out" summary. Chips render only when this
+// proposal beats (or trails) the set median by ≥10 points on a dimension —
+// see computeStandouts in proposalComparison.ts. Each chip's evidence sentence
+// maps back to data already in the row, so the homeowner can verify in the drilldown.
+function StandoutStrip({ chips }: { chips: StandoutChip[] }) {
+  if (chips.length === 0) {
+    return (
+      <p className="mt-4 rounded-xl border border-dashed border-border bg-secondary/30 px-3 py-2.5 text-[11px] text-muted-foreground">
+        No clear edge — competitive across the board with the others in this set.
+      </p>
+    );
+  }
+  return (
+    <div className="mt-4 space-y-1.5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/55">
+        What makes this stand out
+      </p>
+      <ul className="space-y-1.5">
+        {chips.map((c, i) => {
+          const tone = c.tone === "positive"
+            ? "border-sage/30 bg-sage-soft text-sage-foreground"
+            : "border-danger/30 bg-danger/10 text-foreground";
+          const sign = c.tone === "positive" ? "+" : "";
+          return (
+            <li key={i} className={`rounded-xl border px-2.5 py-2 text-[11px] leading-snug ${tone}`}>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium">{c.label}</span>
+                <span className="tabular-nums opacity-70">{sign}{c.delta} vs others</span>
+              </div>
+              <p className="mt-0.5 opacity-90">{c.evidence}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

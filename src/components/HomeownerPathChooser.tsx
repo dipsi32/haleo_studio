@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck, Hammer, ArrowRight, FileSearch, MapPin, Clock, Sparkles } from "lucide-react";
+import { ShieldCheck, Hammer, ArrowRight, FileSearch, MapPin, Clock, Sparkles, BarChart3 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 /**
  * The "two doors" — the first thing a homeowner sees when they land in their
@@ -12,6 +15,34 @@ import { ShieldCheck, Hammer, ArrowRight, FileSearch, MapPin, Clock, Sparkles } 
  * We route both, gently and clearly, without overwhelming them with options.
  */
 export default function HomeownerPathChooser() {
+  const { user } = useAuth();
+  const [analyzedCount, setAnalyzedCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const uploads = await supabase
+        .from("proposal_analyses").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("status", "complete");
+      let total = uploads.count ?? 0;
+      if (user.email) {
+        const { data: batches } = await supabase
+          .from("outreach_batches").select("id").eq("homeowner_email", user.email);
+        const batchIds = (batches ?? []).map((b: any) => b.id);
+        if (batchIds.length > 0) {
+          const { count } = await supabase.from("outreach_sends")
+            .select("id", { count: "exact", head: true })
+            .in("batch_id", batchIds)
+            .not("proposal_submitted_at", "is", null);
+          total += count ?? 0;
+        }
+      }
+      if (!cancelled) setAnalyzedCount(total);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.email]);
+
   return (
     <section aria-labelledby="paths-heading" className="mt-10">
       <div className="flex items-center gap-2">
@@ -124,6 +155,23 @@ export default function HomeownerPathChooser() {
           </p>
         </motion.div>
       </div>
+
+      {analyzedCount >= 2 && (
+        <Link
+          to="/proposal/compare"
+          className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 px-4 py-3 transition-colors hover:bg-accent-soft"
+        >
+          <div className="flex items-center gap-2.5">
+            <BarChart3 className="h-4 w-4 text-accent" />
+            <span className="text-sm">
+              You have <span className="font-medium">{analyzedCount} bids</span> ready to compare side-by-side.
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-accent">
+            Open comparison <ArrowRight className="h-3 w-3" />
+          </span>
+        </Link>
+      )}
 
       {/* Quiet reassurance bar — for the homeowner who isn't sure either applies. */}
       <p className="mt-5 text-center text-xs text-muted-foreground">
