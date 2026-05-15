@@ -198,24 +198,33 @@ const ContractorProfile = () => {
                     </p>
                     <div className="mt-5 space-y-4">
                       {score.components.map(c => {
-                        const pending = c.status === 'coming_soon';
+                        const isPenalty = c.status === 'penalty';
+                        const isPending = c.status === 'pending' || c.status === 'coming_soon';
+                        const pct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
+                        const rightLabel = isPenalty
+                          ? `${c.earned > 0 ? '+' : ''}${c.earned} pts`
+                          : c.weight === 0
+                            ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending')
+                            : `${c.earned}/${c.weight}`;
                         return (
                           <div key={c.label}>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-foreground/85">{c.label}</span>
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {pending ? `Pending · ${c.weight} pts` : `${c.earned}/${c.weight}`}
+                              <span className={`font-medium ${isPenalty ? 'text-destructive' : 'text-foreground/85'}`}>{c.label}</span>
+                              <span className={`font-mono text-xs ${isPenalty ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {rightLabel}
                               </span>
                             </div>
                             <p className="mt-0.5 text-xs text-muted-foreground/90">{c.what}</p>
-                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
-                              <div
-                                className={`h-full ${pending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
-                                style={{ width: pending ? '100%' : `${(c.earned / c.weight) * 100}%` }}
-                              />
-                            </div>
-                            <p className="mt-1 text-xs font-medium text-foreground/70">
-                              {pending ? '⏳ ' : '→ '}{c.detail}
+                            {!isPenalty && (
+                              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
+                                <div
+                                  className={`h-full ${isPending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
+                                  style={{ width: isPending ? '100%' : `${pct}%` }}
+                                />
+                              </div>
+                            )}
+                            <p className={`mt-1 text-xs font-medium ${isPenalty ? 'text-destructive' : 'text-foreground/70'}`}>
+                              {isPenalty ? '⚠ ' : isPending ? '⏳ ' : '→ '}{c.detail}
                             </p>
                           </div>
                         );
