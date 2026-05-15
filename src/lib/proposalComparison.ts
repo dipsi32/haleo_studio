@@ -20,6 +20,11 @@
 // `outreach_sends` row + the homeowner's `outreach_batches.brief_snapshot`.
 // No invented fields.
 
+// Where this proposal came into Haleo. "uploaded" = homeowner uploaded a PDF
+// themselves; "haleo" = a contractor submitted via an outreach batch. Used for
+// honest disclosure ("uploaded bids have less data than Haleo-submitted ones").
+export type ProposalSourceKind = "uploaded" | "haleo";
+
 export type AnalyzedProposal = {
   send_id: string;
   contractor_id: string | null;
@@ -28,6 +33,7 @@ export type AnalyzedProposal = {
   status: string; // outreach_sends.status (e.g. 'proposal_submitted', 'negotiating')
   proposal_source: string | null;
   proposal_structured: any | null;
+  source_kind?: ProposalSourceKind;
   // From proposal_analyses
   analysis_status: string | null;
   risk_score: number | null;          // 0-100, LOWER is safer (raw)
