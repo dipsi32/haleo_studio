@@ -56,36 +56,50 @@ export default function ProposalsCompare() {
         .eq("homeowner_email", user.email);
 
       const batchIds = (batches ?? []).map((b: any) => b.id);
-      if (batchIds.length === 0) {
-        if (!cancelled) { setProposals([]); setLoading(false); }
-        return;
-      }
-      // Use the most recent batch's brief as the requested trade list.
+      // Use the most recent batch's brief as the requested trade list (if any).
       if (!cancelled && batches && batches.length > 0) {
         setBriefSnapshot((batches[batches.length - 1] as any).brief_snapshot);
       }
 
-      const { data: sends } = await supabase
-        .from("outreach_sends")
-        .select("id, contractor_id, contractor_name, proposal_analysis_id, status, proposal_source, proposal_structured, proposal_submitted_at")
-        .in("batch_id", batchIds)
-        .not("proposal_submitted_at", "is", null)
-        .order("proposal_submitted_at", { ascending: false });
+      // ── Contractor-submitted proposals via outreach ─────────────────
+      let sendsArr: any[] = [];
+      if (batchIds.length > 0) {
+        const { data: sends } = await supabase
+          .from("outreach_sends")
+          .select("id, contractor_id, contractor_name, proposal_analysis_id, status, proposal_source, proposal_structured, proposal_submitted_at")
+          .in("batch_id", batchIds)
+          .not("proposal_submitted_at", "is", null)
+          .order("proposal_submitted_at", { ascending: false });
+        sendsArr = sends ?? [];
+      }
 
-      const sendsArr = sends ?? [];
-      const analysisIds = sendsArr.map((s: any) => s.proposal_analysis_id).filter(Boolean) as string[];
+      const sendAnalysisIds = sendsArr.map((s: any) => s.proposal_analysis_id).filter(Boolean) as string[];
 
       let analysesById: Record<string, any> = {};
-      if (analysisIds.length > 0) {
+      if (sendAnalysisIds.length > 0) {
         const { data: analyses } = await supabase
           .from("proposal_analyses")
           .select("id, status, risk_score, red_flags, extracted_data, permit_data, license_data, next_actions, analysis_jsonb, total_cost")
-          .in("id", analysisIds);
+          .in("id", sendAnalysisIds);
         for (const a of analyses ?? []) analysesById[(a as any).id] = a;
+      }
+
+      // ── Homeowner-uploaded PDFs (no outreach_send) ──────────────────
+      let uploadedRows: any[] = [];
+      if (user?.id) {
+        const { data: uploaded } = await supabase
+          .from("proposal_analyses")
+          .select("id, status, risk_score, red_flags, extracted_data, permit_data, license_data, next_actions, analysis_jsonb, total_cost, contractor_name, created_at")
+          .eq("user_id", user.id)
+          .is("outreach_send_id", null)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        uploadedRows = uploaded ?? [];
       }
 
       let pending = 0;
       const merged: AnalyzedProposal[] = [];
+
       for (const s of sendsArr) {
         const a = s.proposal_analysis_id ? analysesById[s.proposal_analysis_id] : null;
         const isComplete = a && a.status === "complete";
@@ -98,6 +112,7 @@ export default function ProposalsCompare() {
           status: s.status,
           proposal_source: s.proposal_source,
           proposal_structured: s.proposal_structured,
+          source_kind: "haleo",
           analysis_status: a.status,
           risk_score: a.risk_score,
           red_flags: Array.isArray(a.red_flags) ? a.red_flags : [],
@@ -109,6 +124,36 @@ export default function ProposalsCompare() {
           total_cost: a.total_cost,
         });
       }
+
+      for (const a of uploadedRows) {
+        const isComplete = a.status === "complete";
+        if (!isComplete) { pending++; continue; }
+        const name =
+          a.contractor_name
+          ?? a.extracted_data?.contractorName
+          ?? a.extracted_data?.contractor_name
+          ?? "Uploaded proposal";
+        merged.push({
+          send_id: `upload:${a.id}`,
+          contractor_id: null,
+          contractor_name: name,
+          proposal_analysis_id: a.id,
+          status: "uploaded",
+          proposal_source: "upload",
+          proposal_structured: null,
+          source_kind: "uploaded",
+          analysis_status: a.status,
+          risk_score: a.risk_score,
+          red_flags: Array.isArray(a.red_flags) ? a.red_flags : [],
+          extracted_data: a.extracted_data ?? {},
+          permit_data: a.permit_data ?? {},
+          license_data: a.license_data ?? {},
+          next_actions: Array.isArray(a.next_actions) ? a.next_actions : [],
+          analysis_jsonb: a.analysis_jsonb ?? {},
+          total_cost: a.total_cost,
+        });
+      }
+
       if (!cancelled) {
         setProposals(merged.slice(0, 3)); // max 3 columns per spec
         setPendingCount(pending);
