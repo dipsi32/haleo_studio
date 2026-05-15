@@ -34,8 +34,8 @@ const Hero = () => (
           <em className="font-normal italic text-accent">Turned into proof.</em>
         </h1>
         <p className="mx-auto mt-8 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          A $100K decision shouldn't run on gut feel. We surface the data
-          that's already public — and make it usable.
+          Stop guessing which contractor won't wreck your home.
+          See who's actually pulled permits on your block — before you sign.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
