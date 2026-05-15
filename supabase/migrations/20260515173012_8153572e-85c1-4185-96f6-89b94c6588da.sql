@@ -1,0 +1,2 @@
+ALTER TABLE public.proposal_analyses ADD COLUMN IF NOT EXISTS comparison_group_id uuid;
+CREATE INDEX IF NOT EXISTS idx_proposal_analyses_comparison_group ON public.proposal_analyses(comparison_group_id);
