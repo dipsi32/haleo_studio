@@ -790,7 +790,7 @@ const BriefResult = () => {
             where the numbers stand — before you sign anything.
           </p>
           <Link
-            to="/audit"
+            to="/proposal"
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-smooth hover:bg-accent/90"
           >
             Start a forensic audit
