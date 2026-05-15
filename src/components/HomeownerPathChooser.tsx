@@ -15,6 +15,34 @@ import { useAuth } from "@/context/AuthContext";
  * We route both, gently and clearly, without overwhelming them with options.
  */
 export default function HomeownerPathChooser() {
+  const { user } = useAuth();
+  const [analyzedCount, setAnalyzedCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const uploads = await supabase
+        .from("proposal_analyses").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("status", "complete");
+      let total = uploads.count ?? 0;
+      if (user.email) {
+        const { data: batches } = await supabase
+          .from("outreach_batches").select("id").eq("homeowner_email", user.email);
+        const batchIds = (batches ?? []).map((b: any) => b.id);
+        if (batchIds.length > 0) {
+          const { count } = await supabase.from("outreach_sends")
+            .select("id", { count: "exact", head: true })
+            .in("batch_id", batchIds)
+            .not("proposal_submitted_at", "is", null);
+          total += count ?? 0;
+        }
+      }
+      if (!cancelled) setAnalyzedCount(total);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.email]);
+
   return (
     <section aria-labelledby="paths-heading" className="mt-10">
       <div className="flex items-center gap-2">
