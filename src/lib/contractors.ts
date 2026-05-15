@@ -59,26 +59,42 @@ export type LicenseStatus = {
 export const cslbDeepLink = (license: string) =>
   `https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/LicenseDetail.aspx?LicNum=${encodeURIComponent(license)}`;
 
-// ───── Trust Score (out of 100) ─────
-// 7-signal model. License standing was removed in favor of richer
-// public-record signals from San Jose.
+// ───── Haleo Trust Index — v2 ─────
+// Scored out of 100 with a DYNAMIC denominator: signals we couldn't read
+// yet (CSLB scrape failed, no SJ trust-signals row, etc.) drop their
+// weight from BOTH numerator and denominator instead of inflating the
+// score with free credit. Penalties apply *after* normalization.
 //
-//  25 — Local permit volume (≥20 permits in area)
-//  20 — Recent activity (last 12 months)
-//  15 — Project type match (similar work)
-//  15 — Job completion rate (closed / opened)
-//  15 — Expired-without-Final rate (computed from existing permit data)
-//   5 — Inspection failure rate (Coming soon — full credit until live)
-//   5 — Open code violations on past job sites (Coming soon until cached)
+//  Permit-derived (San Jose open data)
+//   20  Local track record         (≥20 permits in area = full credit)
+//   15  Recent activity            (last 12 months, 8+ jobs = full)
+//   12  Right kind of work         (project-type keyword match)
+//   12  Finishes what they start   (closed ÷ opened)
+//   13  No abandoned permits       (only when permits_old_enough > 0)
+//
+//  CSLB-derived (only when license scrape succeeded)
+//   18  License standing           (active=18, expiring=14, expired/suspended=0)
+//    5  Bond on file
+//    5  Workers' Comp on file
+//
+//  Penalties (subtracted from final 0–100 score, then clamped)
+//  −15  CSLB has disciplinary actions on record
+//  −10  Business name mismatch (CSLB record vs. permits)
+//
+//  Phase-2 informational rows (weight 0 — shown but do not move the score)
+//   ·  Inspection pass rate
+//   ·  Code violations on past job sites (becomes live once we've checked addresses)
+export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
+
 export type TrustScoreBreakdown = {
   total: number;
   components: {
-    label: string;       // homeowner-friendly label
-    what: string;        // one-line plain-English explanation of what we measure & why
-    weight: number;
-    earned: number;
-    detail: string;      // what we found for THIS contractor
-    status?: 'live' | 'coming_soon';
+    label: string;
+    what: string;
+    weight: number;   // contribution to denominator (0 when not yet measurable)
+    earned: number;   // contribution to numerator
+    detail: string;
+    status: ComponentStatus;
   }[];
 };
 
