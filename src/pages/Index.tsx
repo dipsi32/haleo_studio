@@ -38,24 +38,28 @@ const Hero = () => (
           <p>Know who to hire.</p>
           <p>Know every step before it happens.</p>
         </div>
-        <p className="mx-auto mt-10 max-w-md text-pretty text-base leading-relaxed text-muted-foreground">
-          You bring the dream. <span className="text-foreground">We bring everything else.</span>
+        <p className="mx-auto mt-10 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground">
+          Hire contractors using <span className="text-foreground">real permit history</span> —
+          not Yelp reviews, not guesswork, not the loudest ad.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/brief"
             className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90 hover:shadow-accent"
           >
-            Let's get started
+            Find a permit-proven contractor
             <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
           </Link>
           <Link
             to="/audit"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-7 py-4 text-sm font-medium transition-smooth hover:bg-secondary"
           >
-            Already have a proposal? Start here
+            Got a proposal? Get a free forensic read
           </Link>
         </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Two doors, one promise: no paid placements, no marketing fluff — just proof.
+        </p>
       </motion.div>
 
       {/* Floating brief preview */}
