@@ -522,3 +522,124 @@ export function draftPushback(scored: ScoredProposal): string {
   lines.push("Once these are sorted I'll be ready to make a decision. Thanks for the care here.");
   return lines.join("\n");
 }
+
+// ─── Standout chips ──────────────────────────────────────────────────
+//
+// Diff each proposal's per-dimension score against the SET MEDIAN. Emit a chip
+// only when this proposal is meaningfully better (or worse) than the others on
+// that dimension — i.e. the gap is ≥10 points. Each chip carries an evidence
+// sentence pulled from fields already in the row, so claims map back to data
+// the homeowner can verify in the drilldown. No invented numbers.
+
+export type StandoutTone = "positive" | "negative";
+export type StandoutChip = {
+  key: DimensionScore["key"];
+  label: string;
+  tone: StandoutTone;
+  delta: number;       // points above (or below) the set median
+  evidence: string;    // one short, concrete sentence
+};
+
+const median = (xs: number[]): number => {
+  if (xs.length === 0) return 0;
+  const sorted = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+};
+
+function evidenceFor(
+  key: DimensionScore["key"],
+  s: ScoredProposal,
+  tone: StandoutTone,
+): string {
+  switch (key) {
+    case "permits": {
+      if (s.permitCount != null && s.permitCount > 0 && s.finaledPct != null) {
+        return tone === "positive"
+          ? `${s.permitCount} permit${s.permitCount === 1 ? "" : "s"} on file · ${Math.round(s.finaledPct)}% finalized — strongest local track record in this set.`
+          : `Only ${s.permitCount} permit${s.permitCount === 1 ? "" : "s"} on file · ${Math.round(s.finaledPct)}% finalized.`;
+      }
+      return tone === "positive"
+        ? "Has a documented local permit history — others don't."
+        : "No San Jose permits on file under this name.";
+    }
+    case "payment": {
+      const dep = s.depositPct == null ? null : Math.round(s.depositPct);
+      const ms = s.milestoneCount;
+      if (dep != null) {
+        return tone === "positive"
+          ? `${dep}% deposit · ${ms} milestone${ms === 1 ? "" : "s"} — cleanest payment terms in this set.`
+          : `${dep}% deposit · ${ms} milestone${ms === 1 ? "" : "s"} — heaviest up-front ask in this set.`;
+      }
+      return tone === "positive"
+        ? `${ms} milestone${ms === 1 ? "" : "s"} structured — most defined payment plan here.`
+        : "Payment structure isn't clearly defined.";
+    }
+    case "flags": {
+      if (tone === "positive") {
+        return s.criticalFlagCount === 0 && s.warningFlagCount === 0
+          ? "No red flags raised — only proposal in this set with a clean read."
+          : `Only ${s.criticalFlagCount} critical · ${s.warningFlagCount} warning — fewest flags here.`;
+      }
+      return `${s.criticalFlagCount} critical · ${s.warningFlagCount} warning flag${s.warningFlagCount === 1 ? "" : "s"} — most issues raised in this set.`;
+    }
+    case "scope": {
+      if (tone === "positive") {
+        return s.missingTrades.length === 0
+          ? "Itemizes every requested trade — most complete scope here."
+          : `Covers ${s.coveredTrades.length} of ${s.coveredTrades.length + s.vagueTrades.length + s.missingTrades.length} requested trades — most complete here.`;
+      }
+      return s.missingTrades.length > 0
+        ? `Missing ${s.missingTrades.slice(0, 3).join(", ")}${s.missingTrades.length > 3 ? " and more" : ""} from the requested scope.`
+        : "Scope is vaguer than the others in this set.";
+    }
+    case "risk": {
+      return tone === "positive"
+        ? `Lowest overall risk score in this set (${s.haleoScore}/100).`
+        : `Highest overall risk in this set (${s.haleoScore}/100).`;
+    }
+  }
+}
+
+export function computeStandouts(
+  scored: ScoredProposal[],
+): Record<string, StandoutChip[]> {
+  const out: Record<string, StandoutChip[]> = {};
+  if (scored.length < 2) {
+    for (const s of scored) out[s.proposal.send_id] = [];
+    return out;
+  }
+  const dimKeys = scored[0].dimensions.map((d) => d.key);
+  // Pre-compute the set median per dimension.
+  const medians: Record<string, number> = {};
+  for (const key of dimKeys) {
+    medians[key] = median(
+      scored.map((s) => s.dimensions.find((d) => d.key === key)?.score ?? 0),
+    );
+  }
+
+  const THRESHOLD = 10; // points
+
+  for (const s of scored) {
+    const chips: StandoutChip[] = [];
+    for (const dim of s.dimensions) {
+      const delta = dim.score - medians[dim.key];
+      if (Math.abs(delta) < THRESHOLD) continue;
+      const tone: StandoutTone = delta > 0 ? "positive" : "negative";
+      chips.push({
+        key: dim.key,
+        label: dim.label,
+        tone,
+        delta: Math.round(delta),
+        evidence: evidenceFor(dim.key, s, tone),
+      });
+    }
+    // Show the most meaningful 3 (largest absolute deltas), positive first.
+    chips.sort((a, b) => {
+      if (a.tone !== b.tone) return a.tone === "positive" ? -1 : 1;
+      return Math.abs(b.delta) - Math.abs(a.delta);
+    });
+    out[s.proposal.send_id] = chips.slice(0, 3);
+  }
+  return out;
+}
