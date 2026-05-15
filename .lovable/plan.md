@@ -1,88 +1,131 @@
-## Goal
+## Why this needs a plan, not a one-shot edit
 
-One bid-comparison surface that handles **both** sources of proposals — PDFs the homeowner uploads themselves AND proposals contractors submit through Haleo — and tells the homeowner, in plain language, *what makes one contractor stand out over the others* on each parameter that matters.
+The Trust Score is the heart of the product. Right now it's a 7-signal model worth 100 pts, with **two "coming soon" rows that auto-credit 10 pts to everyone** and **CSLB data fully ingested but not in the score**. We need to fix those gaps, widen the inputs, and add the contextual + capacity intelligence that turns this into something defensible — without breaking the homeowner-facing UI mid-flight.
 
-No new scoring math. We already have `src/lib/proposalComparison.ts` (5 weighted dimensions, `haleoScore`, `computeVerdict`, `draftPushback`). We're closing the loop on input + presentation only.
-
----
-
-## What exists today
-
-- `/proposal` (`ProposalIntelligencePage.tsx`) — single-PDF upload + audit. Stores rows in `proposal_analyses` with `user_id` (no `outreach_send_id`).
-- Contractor-submitted bids — flow through `outreach_sends.proposal_submitted_at` and create `proposal_analyses` rows linked by `outreach_send_id`.
-- `/proposal/compare` (`ProposalsCompare.tsx`) — already loads contractor-submitted analyses and renders verdict + per-dimension scoring. **Does not currently include uploaded-only PDFs.**
-- `proposalComparison.ts` — full scoring engine.
-
-The gap: uploads and contractor submissions live in the same table but are never pulled into the same comparison view, and the per-row "why this one wins on permits" callouts only exist inside drilldown.
+I'm proposing a 4-phase build. Each phase ends with a shippable, more-accurate score.
 
 ---
 
-## Plan
+## Phase 1 — Stop the bleeding + wire CSLB into the score (this loop)
 
-### 1. Treat every analyzed proposal as comparable, regardless of source
+The fastest accuracy win. No new data sources required — CSLB is already in `cslb_licenses` + `contractor_license_cache`, just unused by `computeTrustScore`.
 
-Extend `ProposalsCompare` query to load BOTH:
-- `proposal_analyses` rows tied to `outreach_sends` for this homeowner (current behavior)
-- `proposal_analyses` rows where `user_id = auth.uid()` AND `outreach_send_id IS NULL` (uploaded PDFs)
+**Score model v2 (100 pts):**
 
-Normalize both into the existing `AnalyzedProposal` shape. Uploaded rows use `extracted_data.contractor_name` and synthesize a stable `send_id` like `upload:<analysis_id>`. Source-tag each card: **"Uploaded by you"** vs **"Submitted via Haleo"** — small badge, not a section split. Comparison is one list.
+```text
+LIVE NOW
+ 20  Local track record       (was 25 — make room for CSLB)
+ 15  Recent activity          (was 20)
+ 12  Right kind of work       (was 15)
+ 12  Finishes what they start (was 15)
+ 13  No abandoned permits     (was 15)
+ ── 
+ 18  License standing  ← NEW from CSLB (active=full, expiring=−4, expired/suspended=0)
+  5  Bond on file      ← NEW from CSLB
+  5  Workers' Comp     ← NEW from CSLB  (missing WC is a homeowner liability bomb)
+  ─ 
+ ≤−15 Disciplinary actions    ← NEW, hard penalty applied AFTER sum, capped
+ ≤−10 Mismatched business name ← NEW, penalty
+                                                 = 100 pts ceiling
 
-### 2. One entry point on `/proposal`, one on the homeowner dashboard
-
-On `ProposalIntelligencePage.tsx`, after a successful single-bid audit, surface a calm CTA: **"Add another bid to compare side-by-side"** — re-uses the same uploader, just stamps `comparison_group` on the new analysis. Up to 3 total.
-
-Group uploads by a new `comparison_group_id` (UUID) on `proposal_analyses` so a homeowner can have multiple independent comparison sets (kitchen vs bathroom). Contractor-submitted bids implicitly group by `batch_id`.
-
-### 3. Make "what makes this one stand out" the centerpiece
-
-Today the verdict line is generic ("strongest overall"). Replace the top of each comparison card with a **Standout strip** — 1-3 chips that show *only the dimensions where this contractor is meaningfully better than the others in this set*.
-
-Computed (no new scoring) by diffing each contractor's per-dimension score against the set median:
-
-```
-Permits     +18 pts vs others →  "31 SJ permits, 94% finalized — most in this set"
-Payment     +25 pts vs others →  "10% deposit, 4 milestones — only one within CA cap"
-Scope        −22 pts vs others →  "Missing electrical + tile line items"
+DROPPED FROM SCORE (kept as displayed signals only, not score-bearing):
+ ·  Inspection pass rate     → moved to "Coming in Phase 2" badge, no auto-credit
+ ·  Code violations on past sites → kept live where data exists, displayed but worth 0 until coverage > X%
 ```
 
-Rules:
-- Chip shows only when the gap to the next-best is ≥10 points on that dimension.
-- Positive gaps render sage; negative render danger; neutral hidden.
-- Each chip has a single concrete sentence pulled from existing `dimension.explanation` + the underlying field (permit count, deposit %, missing trades), so claims map to evidence already in the row. No invented numbers.
-- If a contractor has no standout (all dimensions within ±10 of median), show one honest line: "No clear edge — competitive across the board."
+**Why this is the right v2:**
+- Fixes the artificial inflation (no more free 10 pts for everyone).
+- License/bond/WC are the three things a homeowner is told to check on every consumer-protection guide — and we're the only ones doing it automatically.
+- Disciplinary actions become a true deal-breaker, not a side-pill.
 
-This is the bit that takes the stress out: at a glance the homeowner sees *why* the recommendation lands where it does, not just a score.
-
-### 4. Honest verdict when sources are mixed
-
-If the set mixes uploaded PDFs and Haleo-submitted bids, add one line under the verdict: *"Permit history and license checks are richer for the 2 contractors who submitted through Haleo. The uploaded bid has scope + pricing data only."* Prevents an apples-to-oranges win that's really a data-availability artifact.
-
-### 5. Edge cases (no surprises)
-
-- 1 proposal in set → "Add a second bid to unlock comparison" (existing behavior, keep).
-- Any `pending` analysis → skeleton card, poll every 3s (already wired for contractor side; extend to uploads).
-- All have ≥1 critical flag → existing `all_flagged` verdict; no winner crowned.
-- Top two within 4 pts → existing `tie` verdict + standout strips do the differentiating.
+**Files touched:**
+- `src/lib/contractors.ts` — rewrite `computeTrustScore`, take `LicenseStatus` as a real input, add penalty model.
+- `src/lib/useContractors.ts` — already passes license, no change needed.
+- Profile + card UIs — copy refresh on each row's `what` text.
 
 ---
 
-## Technical section
+## Phase 2 — Inspection pass rate + stop-work orders (next loop, needs new ingest)
 
-**DB migration** (one):
-- `proposal_analyses.comparison_group_id uuid null` + index. Stamped on upload when user clicks "Add another bid"; null otherwise.
+These come from the **San José Building Permits Activity** + **Code Enforcement** datasets we're already hitting, plus the **Inspections** dataset we haven't.
 
-**Files to change:**
-- `src/pages/ProposalsCompare.tsx` — extend query to union uploaded analyses; render source badge; render Standout strip above each card.
-- `src/lib/proposalComparison.ts` — add pure helper `computeStandouts(scored: ScoredProposal[]): Record<sendId, StandoutChip[]>` that diffs each dimension against set median and emits chips with evidence sentences. No changes to existing scoring.
-- `src/pages/ProposalIntelligencePage.tsx` — post-audit CTA "Add another bid to compare" that re-opens uploader with `comparison_group_id` carried through; "Compare bids" link when group has ≥2.
-- `src/components/HomeownerPathChooser.tsx` — surface "Compare bids you've received" as a returning-user shortcut when the homeowner has ≥2 analyzed proposals (uploaded or submitted).
+**New edge function: `fetch-sj-inspections`**
+- Source: SJ Open Data — Building Inspections (`inspections.csv`, joined to permits by permit number).
+- Per contractor compute:
+  - `inspection_attempts` — total inspections recorded
+  - `inspection_failures` — count where result ∈ {Failed, Partial, Correction Notice}
+  - `first_pass_rate` — inspections that passed on attempt #1 / total finals
+  - `avg_attempts_to_pass` — for permits that eventually passed final
+- Stop-work orders surface in the same dataset under result codes / a separate "Notices" feed; we capture `stop_work_orders` count and `stop_work_last_date`.
 
-**No changes to:** `analyze-proposal` edge function, scoring weights, `outreach_sends` schema, contractor flow.
+**New table: `contractor_inspection_signals`**
+```text
+contractor_id          uuid PK
+total_inspections      int
+total_failures         int
+first_pass_rate        numeric(4,3)
+avg_attempts           numeric(4,2)
+stop_work_orders       int
+stop_work_last_date    date
+last_calculated_at     timestamptz
+```
+
+**Score model v3** turns the "Coming Soon" inspection row into a real **10-pt** component (taken from local track record + recent activity) and adds a **−15 pt stop-work penalty**.
 
 ---
 
-## Out of scope (call out, don't build)
+## Phase 3 — Contextual + capacity intelligence (the moat)
 
-- AI-written "negotiation winner-picker" — `draftPushback` already does this per-bid; we're not adding a new generator.
-- Cross-project comparison (kitchen bids vs bathroom bids in one view).
-- Paid tier gating on comparison — first comparison stays free per existing posture.
+This is where the patent story lives. All computed from data we already have once Phase 2 lands — no new sources.
+
+1. **Recency-weighted permit scoring.** Replace the binary "last 12 months" cutoff with exponential decay: `weight = exp(-age_months / 24)`. A permit from 6 months ago counts 0.78×, from 3 years ago 0.22×. Applied across local count, type-match, and completion.
+
+2. **Project-fit vector, not keyword count.** Today: substring match on `work_type`. New: tag every permit with a coarse project type (`kitchen`, `bath`, `addition`, `adu`, `whole_home`, `roof`, `mep_only`, `deck`, `solar`). Score project fit as `cosine(contractor_type_distribution, target_type_one_hot)`. A 50-deck contractor bidding an addition scores ~0.1, not the current ~0.
+
+3. **Complexity trajectory.** Bucket permits by valuation tier (`<$25k`, `$25–100k`, `$100–500k`, `$500k+`). Compute median valuation by year. A contractor whose median tier is rising over 5 years is "growing into your job"; flat or declining = "stuck at smaller scope". Surfaced as a new badge, modest score effect (±3 pts).
+
+4. **Capacity / availability signal — the real-time inference.**
+   - `active_permits` = permits with `issued_date` in last 18 mo AND no `completed_date`.
+   - `historical_throughput` = trailing-12-month moving average of permits closed.
+   - `capacity_pressure = active_permits / historical_throughput` (>1.5 = stretched).
+   - This is **not** a score component. It's a separate "Likely availability" pill on the card: *"Looks available"* / *"Stretched right now — expect slow replies"* / *"Likely overloaded"*.
+   - Patentable framing: *"Method for inferring real-time service-provider capacity from public permit issuance and completion records."*
+
+---
+
+## Phase 4 — Outcome data loop (the long-term moat)
+
+The pilot homeowners are the goldmine. After project close (or any milestone marked "done"), trigger a 3-question micro-survey:
+
+```text
+1. Did this finish on time?              [Yes / Close / No]
+2. Did it land within budget?            [Yes / Close / No]
+3. Would you hire them again?            [Yes / Maybe / No]
+```
+
+**New table: `homeowner_outcome_reviews`** — `outreach_send_id`, `contractor_id`, `homeowner_user_id`, three enums, optional comment, `submitted_at`. RLS: homeowners write/read own; contractors read aggregates only via a security-definer function.
+
+Surfacing: **"Verified by Haleo homeowners"** badge appears on a contractor card the moment they have ≥3 reviews. Aggregate appears as a 5th band on the score breakdown — *"What past Haleo customers said"* — but doesn't enter the 100-pt total until n≥5 (avoids early bias). Eventually it eats weight from the proxy signals.
+
+---
+
+## Sources we are deliberately deferring
+
+These are great but each adds a non-trivial moving piece I don't want to bundle into the same loop:
+
+- **Mechanic's liens** — county recorder data, no clean API for SCC; would need scraping or a paid API (CourtHouseDirect / DataTree). Defer to Phase 3.5.
+- **Federal tax liens** — IRS no longer publishes these publicly since 2018; PACER for bankruptcy is the realistic proxy. Low ROI right now.
+- **BBB complaints** — no API, ToS-hostile to scraping. Skip until we have a partnership or it materially moves outcomes.
+- **Certificate of Occupancy** — SJ doesn't publish this as a separate feed; it's implicit in final inspection pass on the permit. Phase 2 already captures the signal.
+- **CSLB citation feed** — separate from license data; CSLB publishes a monthly Disciplinary Actions PDF. Worth a dedicated ingest in Phase 2.
+
+---
+
+## What I need from you before I start
+
+**Two decisions, then I ship Phase 1 today:**
+
+1. **Score weights for v2** — comfortable with the proposed redistribution above, or want to weight CSLB even higher (e.g. 25 pts combined)?
+2. **Disciplinary penalty severity** — do we treat any disciplinary record as an automatic *"Do not hire"* (max score capped at, say, 40), or as a heavy −15 pt subtraction that still lets a long-tenured contractor recover? The first is more honest; the second is more defensible if CSLB's record is stale or wrong.
+
+After you answer, I execute Phase 1 end-to-end in one loop, then we look at the output together before starting Phase 2.
