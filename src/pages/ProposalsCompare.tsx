@@ -498,8 +498,8 @@ function RowFromDim({ di, scored }: { di: number; scored: ScoredProposal[] }) {
 // ─── Comparison Table (desktop) ──────────────────────────────────────
 
 function ComparisonTable({
-  scored, requestedTrades, verdict,
-}: { scored: ScoredProposal[]; requestedTrades: string[]; verdict: Verdict | null }) {
+  scored, requestedTrades, verdict, standoutsBySend,
+}: { scored: ScoredProposal[]; requestedTrades: string[]; verdict: Verdict | null; standoutsBySend: Record<string, StandoutChip[]> }) {
   const winnerId = verdict?.kind === "winner" ? (verdict as any).winnerSendId : null;
   const cols = scored.length;
 
@@ -511,13 +511,17 @@ function ComparisonTable({
         {scored.map((s) => {
           const sc = scoreClass(s.haleoScore);
           const isWinner = s.proposal.send_id === winnerId;
+          const chips = standoutsBySend[s.proposal.send_id] ?? [];
           return (
             <div key={s.proposal.send_id} className={`p-5 ${isWinner ? "bg-sage-soft/40" : ""} border-l border-border`}>
-              {isWinner && (
-                <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
-                  <ShieldCheck className="h-3 w-3" /> Recommended
-                </p>
-              )}
+              <div className="mb-2 flex items-center gap-1.5">
+                {isWinner && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
+                    <ShieldCheck className="h-3 w-3" /> Recommended
+                  </span>
+                )}
+                <SourceBadge kind={s.proposal.source_kind} />
+              </div>
               <p className="font-display text-base font-medium leading-tight">{s.proposal.contractor_name}</p>
               <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full ${sc.bg} ${sc.border} border px-3 py-1`}>
                 <span className={`text-sm font-semibold tabular-nums ${sc.text}`}>{s.haleoScore}</span>
@@ -529,6 +533,9 @@ function ComparisonTable({
                   : "No San Jose permits on file under this name"}
               </p>
               <p className="mt-3 font-display text-2xl font-light tabular-nums">{fmtMoney(s.proposal.total_cost)}</p>
+
+              {/* Standout strip — what makes this proposal stand out vs the others */}
+              <StandoutStrip chips={chips} />
             </div>
           );
         })}
