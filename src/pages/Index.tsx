@@ -61,7 +61,7 @@ const proofs = [
   {
     icon: FileCheck2,
     label: "Permit history",
-    body: "Every job pulls a permit. Every permit is public.",
+    body: "The serious work leaves a paper trail. We read it.",
   },
   {
     icon: MapPin,
