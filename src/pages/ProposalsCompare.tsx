@@ -184,6 +184,14 @@ export default function ProposalsCompare() {
     [scored],
   );
 
+  const standoutsBySend = useMemo(() => computeStandouts(scored), [scored]);
+
+  const sourceMix = useMemo(() => {
+    const haleo = scored.filter((s) => s.proposal.source_kind === "haleo").length;
+    const uploaded = scored.filter((s) => s.proposal.source_kind === "uploaded").length;
+    return { haleo, uploaded, mixed: haleo > 0 && uploaded > 0 };
+  }, [scored]);
+
   // Detect when the recommended winner changes (realtime update moment).
   useEffect(() => {
     if (verdict?.kind !== "winner") return;
