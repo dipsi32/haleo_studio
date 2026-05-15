@@ -964,3 +964,59 @@ function SingleProposalState({ scored }: { scored: ScoredProposal }) {
     </>
   );
 }
+
+// ─── Source badge & Standout strip ───────────────────────────────────
+
+function SourceBadge({ kind }: { kind?: "uploaded" | "haleo" }) {
+  if (!kind) return null;
+  if (kind === "haleo") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-accent">
+        Submitted via Haleo
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/70">
+      Uploaded by you
+    </span>
+  );
+}
+
+// One-glance "what makes this stand out" summary. Chips render only when this
+// proposal beats (or trails) the set median by ≥10 points on a dimension —
+// see computeStandouts in proposalComparison.ts. Each chip's evidence sentence
+// maps back to data already in the row, so the homeowner can verify in the drilldown.
+function StandoutStrip({ chips }: { chips: StandoutChip[] }) {
+  if (chips.length === 0) {
+    return (
+      <p className="mt-4 rounded-xl border border-dashed border-border bg-secondary/30 px-3 py-2.5 text-[11px] text-muted-foreground">
+        No clear edge — competitive across the board with the others in this set.
+      </p>
+    );
+  }
+  return (
+    <div className="mt-4 space-y-1.5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/55">
+        What makes this stand out
+      </p>
+      <ul className="space-y-1.5">
+        {chips.map((c, i) => {
+          const tone = c.tone === "positive"
+            ? "border-sage/30 bg-sage-soft text-sage-foreground"
+            : "border-danger/30 bg-danger/10 text-foreground";
+          const sign = c.tone === "positive" ? "+" : "";
+          return (
+            <li key={i} className={`rounded-xl border px-2.5 py-2 text-[11px] leading-snug ${tone}`}>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium">{c.label}</span>
+                <span className="tabular-nums opacity-70">{sign}{c.delta} vs others</span>
+              </div>
+              <p className="mt-0.5 opacity-90">{c.evidence}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
