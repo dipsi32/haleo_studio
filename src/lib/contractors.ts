@@ -59,26 +59,42 @@ export type LicenseStatus = {
 export const cslbDeepLink = (license: string) =>
   `https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/LicenseDetail.aspx?LicNum=${encodeURIComponent(license)}`;
 
-// ───── Trust Score (out of 100) ─────
-// 7-signal model. License standing was removed in favor of richer
-// public-record signals from San Jose.
+// ───── Haleo Trust Index — v2 ─────
+// Scored out of 100 with a DYNAMIC denominator: signals we couldn't read
+// yet (CSLB scrape failed, no SJ trust-signals row, etc.) drop their
+// weight from BOTH numerator and denominator instead of inflating the
+// score with free credit. Penalties apply *after* normalization.
 //
-//  25 — Local permit volume (≥20 permits in area)
-//  20 — Recent activity (last 12 months)
-//  15 — Project type match (similar work)
-//  15 — Job completion rate (closed / opened)
-//  15 — Expired-without-Final rate (computed from existing permit data)
-//   5 — Inspection failure rate (Coming soon — full credit until live)
-//   5 — Open code violations on past job sites (Coming soon until cached)
+//  Permit-derived (San Jose open data)
+//   20  Local track record         (≥20 permits in area = full credit)
+//   15  Recent activity            (last 12 months, 8+ jobs = full)
+//   12  Right kind of work         (project-type keyword match)
+//   12  Finishes what they start   (closed ÷ opened)
+//   13  No abandoned permits       (only when permits_old_enough > 0)
+//
+//  CSLB-derived (only when license scrape succeeded)
+//   18  License standing           (active=18, expiring=14, expired/suspended=0)
+//    5  Bond on file
+//    5  Workers' Comp on file
+//
+//  Penalties (subtracted from final 0–100 score, then clamped)
+//  −15  CSLB has disciplinary actions on record
+//  −10  Business name mismatch (CSLB record vs. permits)
+//
+//  Phase-2 informational rows (weight 0 — shown but do not move the score)
+//   ·  Inspection pass rate
+//   ·  Code violations on past job sites (becomes live once we've checked addresses)
+export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
+
 export type TrustScoreBreakdown = {
   total: number;
   components: {
-    label: string;       // homeowner-friendly label
-    what: string;        // one-line plain-English explanation of what we measure & why
-    weight: number;
-    earned: number;
-    detail: string;      // what we found for THIS contractor
-    status?: 'live' | 'coming_soon';
+    label: string;
+    what: string;
+    weight: number;   // contribution to denominator (0 when not yet measurable)
+    earned: number;   // contribution to numerator
+    detail: string;
+    status: ComponentStatus;
   }[];
 };
 
@@ -96,95 +112,216 @@ const monthsBetween = (a: Date, b: Date) =>
 export const computeTrustScore = (
   contractor: Contractor,
   permits: Permit[],
-  _license: LicenseStatus | null, // signature kept for compat; no longer used
+  license: LicenseStatus | null,
   projectKeywords: string[],
   signals: TrustSignals = null,
 ): TrustScoreBreakdown => {
-  // 1. Local permit volume — 25 pts max at 20+ permits
-  const localCount = permits.length;
-  const localScore = Math.min(25, Math.round((localCount / 20) * 25));
-
-  // 2. Recency — 20 pts based on last 12 months activity (8+ jobs = full)
+  const components: TrustScoreBreakdown['components'] = [];
   const now = new Date();
+
+  // ── Permit-derived signals ──────────────────────────────────────────────
+
+  // 1. Local track record — 20 pts max at 20+ permits
+  const localCount = permits.length;
+  const localScore = Math.min(20, Math.round((localCount / 20) * 20));
+  components.push({
+    label: 'Local track record',
+    what: "How many permitted jobs they've pulled in your area. More local work = more proof they actually build here.",
+    weight: 20, earned: localScore,
+    detail: `${localCount} permits in your area`,
+    status: 'live',
+  });
+
+  // 2. Recent activity — 15 pts (8+ jobs in last 12mo = full)
   const recent = permits.filter(p => {
     if (!p.issued_date) return false;
-    const d = new Date(p.issued_date);
-    return monthsBetween(d, now) <= 12;
+    return monthsBetween(new Date(p.issued_date), now) <= 12;
   });
-  const recencyScore = Math.min(20, Math.round((recent.length / 8) * 20));
+  const recencyScore = Math.min(15, Math.round((recent.length / 8) * 15));
+  components.push({
+    label: 'Recent activity',
+    what: "Are they actively working right now? We count permits pulled in the last 12 months so you don't hire someone who's gone quiet.",
+    weight: 15, earned: recencyScore,
+    detail: `${recent.length} jobs in the last 12 months`,
+    status: 'live',
+  });
 
-  // 3. Project type match — 15 pts (5+ matches = full)
+  // 3. Right kind of work — 12 pts (5+ matches = full)
   const matchCount = permits.filter(p => {
     const hay = `${p.work_type ?? ''} ${p.description ?? ''}`.toLowerCase();
     return projectKeywords.some(k => hay.includes(k.toLowerCase()));
   }).length;
-  const matchScore = Math.min(15, Math.round((matchCount / 5) * 15));
+  const matchScore = Math.min(12, Math.round((matchCount / 5) * 12));
+  components.push({
+    label: 'Right kind of work',
+    what: `How often their past jobs match what you're building. We look for ${projectKeywords[0] ?? 'similar'}-type work in their permit history.`,
+    weight: 12, earned: matchScore,
+    detail: `${matchCount} ${projectKeywords[0] ?? 'similar'} jobs`,
+    status: 'live',
+  });
 
-  // 4. Completion rate — 15 pts (closed / opened)
+  // 4. Finishes what they start — 12 pts
   const opened = permits.filter(p => p.issued_date).length;
   const closed = permits.filter(p => p.completed_date).length;
   const completionRate = opened > 0 ? closed / opened : 0;
-  const completionScore = Math.round(completionRate * 15);
+  const completionScore = Math.round(completionRate * 12);
+  components.push({
+    label: 'Finishes what they start',
+    what: "Of the permits they've opened, how many they've closed out properly. Low % = a pattern of leaving jobs hanging.",
+    weight: 12, earned: completionScore,
+    detail: `${Math.round(completionRate * 100)}% closed permits`,
+    status: 'live',
+  });
 
-  // 5. Expired-without-Final — 15 pts. Penalize the rate, not the count.
-  let expiredScore = 15;
-  let expiredDetail = 'No data yet';
+  // 5. No abandoned permits — 13 pts. Excluded from denominator if no signals.
   if (signals && signals.permits_old_enough > 0) {
     const rate = signals.expired_without_final / signals.permits_old_enough;
-    // 0% = 15 pts, 50%+ = 0 pts (linear)
-    expiredScore = Math.max(0, Math.round(15 * (1 - rate / 0.5)));
-    expiredDetail = `${signals.expired_without_final} of ${signals.permits_old_enough} older permits never finalized`;
-  } else if (signals) {
-    expiredDetail = 'Not enough older permits to evaluate';
+    const expiredScore = Math.max(0, Math.round(13 * (1 - rate / 0.5)));
+    components.push({
+      label: 'No abandoned permits',
+      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
+      weight: 13, earned: expiredScore,
+      detail: `${signals.expired_without_final} of ${signals.permits_old_enough} older permits never finalized`,
+      status: 'live',
+    });
+  } else {
+    components.push({
+      label: 'No abandoned permits',
+      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
+      weight: 0, earned: 0,
+      detail: signals ? 'Not enough older permits to evaluate' : 'Pulling permit history…',
+      status: 'pending',
+    });
   }
 
-  // 6. Inspection failure rate — 5 pts (Coming soon)
-  const inspectionScore = 5;
-  const inspectionDetail = 'Coming soon — pulling pass/fail history';
+  // ── CSLB-derived signals (only when scrape succeeded) ───────────────────
+  const cslbReady = !!(license && license.scrape_succeeded);
 
-  // 7. Open code violations on past job sites — 5 pts.
-  let violationScore = 5;
-  let violationDetail = 'Coming soon — checking past job addresses';
-  let violationStatus: 'live' | 'coming_soon' = 'coming_soon';
+  if (cslbReady && license) {
+    // 6. License standing — 18 pts
+    const status = (license.status ?? '').toLowerCase();
+    const exp = license.expiration_date;
+    const monthsLeft = exp
+      ? (new Date(exp).getFullYear() - now.getFullYear()) * 12 + (new Date(exp).getMonth() - now.getMonth())
+      : null;
+    const isExpired = monthsLeft != null && monthsLeft < 0;
+    const isSuspended = /suspend|revoked|inactive/.test(status);
+    const isActive = (/active|current/.test(status)) && !isExpired && !isSuspended;
+    let licScore = 0;
+    let licDetail = 'License not active';
+    if (isSuspended) { licScore = 0; licDetail = /revoked/.test(status) ? 'License revoked by CSLB' : 'License suspended by CSLB'; }
+    else if (isExpired) { licScore = 0; licDetail = 'License expired'; }
+    else if (isActive && monthsLeft != null && monthsLeft <= 3) { licScore = 14; licDetail = 'License active but expires within 90 days'; }
+    else if (isActive) { licScore = 18; licDetail = 'License active and in good standing'; }
+    components.push({
+      label: 'License in good standing',
+      what: "We check the contractor's CSLB record directly. Active = legally allowed to do the work; expired or suspended is an immediate red flag.",
+      weight: 18, earned: licScore, detail: licDetail, status: 'live',
+    });
+
+    // 7. Bond on file — 5 pts
+    const bondVerified = !!license.bond_status &&
+      /active|current|on file|filed|exempt|issued|valid|yes/i.test(license.bond_status) &&
+      !/none|cancel|expired|no bond/i.test(license.bond_status);
+    components.push({
+      label: 'Bond on file',
+      what: "California requires every licensed contractor to post a $25,000 bond. If they walk off your job, you can file a claim against it.",
+      weight: 5, earned: bondVerified ? 5 : 0,
+      detail: bondVerified ? 'Active contractor bond on file' : 'No active bond on CSLB record',
+      status: 'live',
+    });
+
+    // 8. Workers' Comp — 5 pts
+    const wcVerified = !!license.workers_comp_status &&
+      /active|current|on file|filed|exempt|issued|valid|yes/i.test(license.workers_comp_status) &&
+      !/none|cancel|expired|no .*comp/i.test(license.workers_comp_status);
+    components.push({
+      label: "Workers' Comp coverage",
+      what: "If a worker is injured on your property and the contractor has no Workers' Comp, YOU can be held liable. We verify this directly with CSLB.",
+      weight: 5, earned: wcVerified ? 5 : 0,
+      detail: wcVerified ? "Workers' Comp on file" : "No Workers' Comp on file — homeowner liability risk",
+      status: 'live',
+    });
+  } else {
+    components.push({
+      label: 'License in good standing',
+      what: "We check the contractor's CSLB record directly for license status, bond, and Workers' Comp coverage.",
+      weight: 0, earned: 0,
+      detail: 'Verifying with CSLB…',
+      status: 'pending',
+    });
+  }
+
+  // ── Phase-2 informational rows (visible, weight depends on data) ────
   if (signals && signals.addresses_checked > 0) {
-    violationStatus = 'live';
     const rate = signals.addresses_with_violations / signals.addresses_checked;
-    // 0% = 5 pts, 25%+ = 0 pts
-    violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
-    violationDetail = signals.open_code_violations === 0
-      ? `Clean — checked ${signals.addresses_checked} past job addresses`
-      : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`;
+    const violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
+    components.push({
+      label: 'No code violations on past jobs',
+      what: "We check the addresses they've worked at against San Jose's open code-enforcement cases. Open cases = work that didn't hold up.",
+      weight: 5, earned: violationScore,
+      detail: signals.open_code_violations === 0
+        ? `Clean — checked ${signals.addresses_checked} past job addresses`
+        : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`,
+      status: 'live',
+    });
+  } else {
+    components.push({
+      label: 'No code violations on past jobs',
+      what: "We check addresses they've worked at against open code-enforcement cases.",
+      weight: 0, earned: 0,
+      detail: 'Checking past job sites…',
+      status: 'pending',
+    });
   }
 
-  const total = localScore + recencyScore + matchScore + completionScore +
-                expiredScore + inspectionScore + violationScore;
+  components.push({
+    label: 'Inspection pass rate',
+    what: "How often city inspectors pass their work on the first try. A high re-inspection rate signals corner-cutting on code.",
+    weight: 0, earned: 0,
+    detail: 'Coming soon — pulling pass/fail history from city inspections',
+    status: 'coming_soon',
+  });
 
-  return {
-    total,
-    components: [
-      { label: 'Local track record',
-        what: 'How many permitted jobs they’ve pulled in your area. More local work = more proof they actually build here.',
-        weight: 25, earned: localScore, detail: `${localCount} permits in your area`, status: 'live' },
-      { label: 'Recent activity',
-        what: 'Are they actively working right now? We count permits pulled in the last 12 months so you don’t hire someone who’s gone quiet.',
-        weight: 20, earned: recencyScore, detail: `${recent.length} jobs in the last 12 months`, status: 'live' },
-      { label: 'Right kind of work',
-        what: `How often their past jobs match what you’re building. We look for ${projectKeywords[0] ?? 'similar'}-type work in their permit history.`,
-        weight: 15, earned: matchScore, detail: `${matchCount} ${projectKeywords[0] ?? 'similar'} jobs`, status: 'live' },
-      { label: 'Finishes what they start',
-        what: 'Of the permits they’ve opened, how many they’ve closed out properly. Low % = a pattern of leaving jobs hanging.',
-        weight: 15, earned: completionScore, detail: `${Math.round(completionRate * 100)}% closed permits`, status: 'live' },
-      { label: 'No abandoned permits',
-        what: 'Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.',
-        weight: 15, earned: expiredScore, detail: expiredDetail, status: signals ? 'live' : 'coming_soon' },
-      { label: 'Inspection pass rate',
-        what: 'How often city inspectors have failed their work. A high failure rate signals corner-cutting on code.',
-        weight: 5, earned: inspectionScore, detail: inspectionDetail, status: 'coming_soon' },
-      { label: 'No code violations on past jobs',
-        what: 'We check the addresses they’ve worked at against San Jose’s open code-enforcement cases. Open cases = work that didn’t hold up.',
-        weight: 5, earned: violationScore, detail: violationDetail, status: violationStatus },
-    ],
-  };
+  // ── Normalize to 100, then apply CSLB penalties ─────────────────────────
+  const weightSum = components.reduce((s, c) => s + c.weight, 0);
+  const earnedSum = components.reduce((s, c) => s + c.earned, 0);
+  let normalized = weightSum > 0 ? Math.round((earnedSum / weightSum) * 100) : 0;
+
+  // Penalty: disciplinary actions (−15)
+  if (cslbReady && license && license.has_disciplinary_action) {
+    normalized -= 15;
+    components.push({
+      label: 'CSLB disciplinary action on record',
+      what: 'CSLB has formal complaints, citations, or disciplinary actions on this contractor. Read the details before contacting.',
+      weight: 0, earned: -15,
+      detail: license.disciplinary_notes ?? 'Disciplinary record found — review on CSLB before hiring',
+      status: 'penalty',
+    });
+  }
+
+  // Penalty: business name mismatch (−10)
+  if (cslbReady && license && license.business_name && (contractor.company || contractor.name)) {
+    const norm = (s: string) => s.toLowerCase()
+      .replace(/[.,'"`]/g, '')
+      .replace(/\b(inc|llc|corp|co|company|incorporated|the)\b/g, '')
+      .replace(/\s+/g, ' ').trim();
+    const a = norm(license.business_name);
+    const b = norm(contractor.company ?? contractor.name);
+    if (a && b && a !== b && !a.includes(b) && !b.includes(a)) {
+      normalized -= 10;
+      components.push({
+        label: 'Business name mismatch',
+        what: "The name on the CSLB license doesn't match the name on the permits they've pulled. Verify which entity you'd be contracting with.",
+        weight: 0, earned: -10,
+        detail: `CSLB: ${license.business_name} · Permits: ${contractor.company ?? contractor.name}`,
+        status: 'penalty',
+      });
+    }
+  }
+
+  const total = Math.max(0, Math.min(100, normalized));
+  return { total, components };
 };
 
 // ───── Project keyword extraction ─────
