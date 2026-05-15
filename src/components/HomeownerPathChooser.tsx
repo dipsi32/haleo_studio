@@ -156,6 +156,23 @@ export default function HomeownerPathChooser() {
         </motion.div>
       </div>
 
+      {analyzedCount >= 2 && (
+        <Link
+          to="/proposal/compare"
+          className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 px-4 py-3 transition-colors hover:bg-accent-soft"
+        >
+          <div className="flex items-center gap-2.5">
+            <BarChart3 className="h-4 w-4 text-accent" />
+            <span className="text-sm">
+              You have <span className="font-medium">{analyzedCount} bids</span> ready to compare side-by-side.
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-accent">
+            Open comparison <ArrowRight className="h-3 w-3" />
+          </span>
+        </Link>
+      )}
+
       {/* Quiet reassurance bar — for the homeowner who isn't sure either applies. */}
       <p className="mt-5 text-center text-xs text-muted-foreground">
         Not sure yet? Either path is reversible — and you can do both. Most homeowners do.
