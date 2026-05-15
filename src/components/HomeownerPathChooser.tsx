@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck, Hammer, ArrowRight, FileSearch, MapPin, Clock, Sparkles } from "lucide-react";
+import { ShieldCheck, Hammer, ArrowRight, FileSearch, MapPin, Clock, Sparkles, BarChart3 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 /**
  * The "two doors" — the first thing a homeowner sees when they land in their
