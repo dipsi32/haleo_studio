@@ -738,10 +738,10 @@ function ProtectionRow({ cols, label, tip, values }: { cols: number; label: stri
 // ─── Mobile single-column view ───────────────────────────────────────
 
 function MobileProposalCard({
-  scored, requestedTrades, idx, total, onPrev, onNext, isWinner,
+  scored, requestedTrades, idx, total, onPrev, onNext, isWinner, standouts,
 }: {
   scored: ScoredProposal; requestedTrades: string[]; idx: number; total: number;
-  onPrev: () => void; onNext: () => void; isWinner: boolean;
+  onPrev: () => void; onNext: () => void; isWinner: boolean; standouts: StandoutChip[];
 }) {
   const sc = scoreClass(scored.haleoScore);
   return (
@@ -756,17 +756,22 @@ function MobileProposalCard({
         </button>
       </div>
       <div className={`mt-3 rounded-3xl border bg-card p-5 shadow-soft ${isWinner ? "border-sage/40" : "border-border"}`}>
-        {isWinner && (
-          <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
-            <ShieldCheck className="h-3 w-3" /> Recommended
-          </p>
-        )}
+        <div className="mb-2 flex items-center gap-1.5">
+          {isWinner && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sage-foreground">
+              <ShieldCheck className="h-3 w-3" /> Recommended
+            </span>
+          )}
+          <SourceBadge kind={scored.proposal.source_kind} />
+        </div>
         <p className="font-display text-lg font-medium">{scored.proposal.contractor_name}</p>
         <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full ${sc.bg} ${sc.border} border px-3 py-1`}>
           <span className={`text-sm font-semibold tabular-nums ${sc.text}`}>{scored.haleoScore}</span>
           <span className={`text-[11px] ${sc.text}`}>· {sc.label}</span>
         </div>
         <p className="mt-3 font-display text-3xl font-light tabular-nums">{fmtMoney(scored.proposal.total_cost)}</p>
+
+        <StandoutStrip chips={standouts} />
 
         {/* Trade coverage first on mobile, per spec */}
         {requestedTrades.length > 0 && (
