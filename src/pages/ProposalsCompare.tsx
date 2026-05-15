@@ -308,6 +308,17 @@ export default function ProposalsCompare() {
           <VerdictBar verdict={verdict} scored={scored} changed={recommendationChanged} />
         )}
 
+        {/* Honest disclosure when sources are mixed — protects against
+            apples-to-oranges wins driven by data availability. */}
+        {scored.length >= 2 && sourceMix.mixed && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-muted-foreground">
+              Heads up: permit history and license checks are richer for the {sourceMix.haleo} proposal{sourceMix.haleo === 1 ? "" : "s"} submitted through Haleo. The {sourceMix.uploaded} bid{sourceMix.uploaded === 1 ? "" : "s"} you uploaded {sourceMix.uploaded === 1 ? "has" : "have"} scope and pricing data only — keep that in mind when reading the verdict.
+            </p>
+          </div>
+        )}
+
         {/* Pending banner if a third (or more) proposal is still analyzing */}
         {scored.length >= 2 && pendingCount > 0 && (
           <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm">
@@ -323,7 +334,7 @@ export default function ProposalsCompare() {
           <>
             {/* Desktop / tablet table */}
             <div className="mt-8 hidden md:block">
-              <ComparisonTable scored={scored} requestedTrades={requestedTrades} verdict={verdict} />
+              <ComparisonTable scored={scored} requestedTrades={requestedTrades} verdict={verdict} standoutsBySend={standoutsBySend} />
             </div>
             {/* Mobile single-column with swipe */}
             <div className="mt-8 md:hidden">
@@ -335,6 +346,7 @@ export default function ProposalsCompare() {
                 onPrev={() => setActiveMobileIdx((i) => Math.max(0, i - 1))}
                 onNext={() => setActiveMobileIdx((i) => Math.min(scored.length - 1, i + 1))}
                 isWinner={verdict?.kind === "winner" && (verdict as any).winnerSendId === scored[activeMobileIdx].proposal.send_id}
+                standouts={standoutsBySend[scored[activeMobileIdx].proposal.send_id] ?? []}
               />
             </div>
           </>
