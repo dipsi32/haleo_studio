@@ -520,6 +520,37 @@ export default function ProposalIntelligencePage() {
             {/* ═══ PRICING RESULTS (FREE) ═══ */}
             {step === 'pricing' && pricingResult && (
               <motion.div key="pricing" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                {/* Compare with other bids — surfaces only when this analysis is saved
+                    to the user's account (otherwise we'd lose it on the next upload). */}
+                {user && savedAnalysisId && (
+                  <Card className="border-accent/30 bg-accent-soft/40 p-4">
+                    <div className="flex items-start gap-3">
+                      <BarChart3 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm">Got more bids? Stack them side-by-side.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Upload up to 3 proposals and we'll show exactly what makes one stand out — permits, payment terms, scope, risk. No more spreadsheets.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Link
+                          to="/proposal/compare"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                        >
+                          Compare bids <ArrowRight className="h-3 w-3" />
+                        </Link>
+                        <Link
+                          to="/proposal"
+                          onClick={() => { setStep('upload'); setFile(null); setPricingResult(null); setContractResult(null); setSavedAnalysisId(null); }}
+                          className="text-center text-[11px] text-accent hover:underline"
+                        >
+                          + Add another bid
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Section 1: What Haleo Found */}
                 <SectionLabel number={1} label="What's in Your Proposal" />
                 {pricingResult.extractedProposal && (
