@@ -51,7 +51,7 @@ const Hero = () => (
             <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
           </Link>
           <Link
-            to="/audit"
+            to="/proposal"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-7 py-4 text-sm font-medium transition-smooth hover:bg-secondary"
           >
             Got a proposal? Get a free forensic read
@@ -248,7 +248,7 @@ const Pricing = () => (
             ))}
           </ul>
           <Link
-            to="/audit"
+            to="/proposal"
             className="mt-10 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-4 text-sm font-medium transition-smooth hover:bg-secondary"
           >
             Join as a contractor
