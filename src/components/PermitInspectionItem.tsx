@@ -61,6 +61,13 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
         explanation: 'The permit is open and inspections are still in progress. Normal for jobs less than ~18 months old.',
         tone: 'bg-accent/15 text-accent border-accent/30',
       };
+    case 'trades_passed':
+      return {
+        Icon: CheckCircle2,
+        label: 'All trades passed — final sign-off pending',
+        explanation: 'Every trade inspection (electrical, plumbing, etc.) has been signed off. The contractor just needs to call in the final inspection for the city to close the permit. This is normal in the days/weeks after the last trade visit.',
+        tone: 'bg-sage/15 text-sage border-sage/30',
+      };
     default:
       return {
         Icon: Hourglass,
