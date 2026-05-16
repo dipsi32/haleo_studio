@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon, ChevronDown, ShieldCheck, MapPinned, AlertTriangle } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,52 +187,109 @@ const ContractorProfile = () => {
                   </section>
                 )}
 
-                {/* Trust Score breakdown */}
-                {score && (
-                  <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-display text-xl font-medium">Haleo Trust Score</h2>
-                      <span className="font-display text-3xl font-medium text-accent">{score.total}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Based on verified permit history, license status, and real completed work near you — not reviews or paid listings.
-                    </p>
-                    <div className="mt-5 space-y-4">
-                      {score.components.map(c => {
-                        const isPenalty = c.status === 'penalty';
-                        const isPending = c.status === 'pending' || c.status === 'coming_soon';
-                        const pct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
-                        const rightLabel = isPenalty
-                          ? `${c.earned > 0 ? '+' : ''}${c.earned} pts`
-                          : c.weight === 0
-                            ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending')
-                            : `${c.earned}/${c.weight}`;
-                        return (
-                          <div key={c.label}>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className={`font-medium ${isPenalty ? 'text-destructive' : 'text-foreground/85'}`}>{c.label}</span>
-                              <span className={`font-mono text-xs ${isPenalty ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                {rightLabel}
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-xs text-muted-foreground/90">{c.what}</p>
-                            {!isPenalty && (
-                              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
-                                <div
-                                  className={`h-full ${isPending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
-                                  style={{ width: isPending ? '100%' : `${pct}%` }}
-                                />
+                {/* Trust Score — headline + grouped progressive disclosure */}
+                {score && (() => {
+                  const groups = [
+                    {
+                      key: 'track',
+                      label: 'Local track record',
+                      Icon: MapPinned,
+                      blurb: 'How much real, recent, on-topic work they have nearby.',
+                      match: (l: string) => ['Local track record', 'Recent activity', 'Right kind of work'].includes(l),
+                    },
+                    {
+                      key: 'license',
+                      label: 'License & insurance',
+                      Icon: ShieldCheck,
+                      blurb: 'CSLB standing, bond, and Workers\u2019 Comp coverage.',
+                      match: (l: string) => ['License in good standing', 'Bond on file', "Workers' Comp coverage"].includes(l),
+                    },
+                    {
+                      key: 'sites',
+                      label: 'Past job sites',
+                      Icon: AlertTriangle,
+                      blurb: 'Open code-enforcement cases at addresses they\u2019ve worked.',
+                      match: (l: string) => ['No code violations on past jobs'].includes(l),
+                    },
+                  ];
+                  const penalties = score.components.filter(c => c.status === 'penalty');
+                  return (
+                    <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+                      <div className="flex items-baseline justify-between">
+                        <h2 className="font-display text-xl font-medium">Haleo Trust Score</h2>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-display text-4xl font-medium text-accent">{score.total}</span>
+                          <span className="text-sm text-muted-foreground">/100</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        Built from verified permits, CSLB records, and city data near you — never reviews or paid placement.
+                      </p>
+
+                      <div className="mt-5 space-y-2">
+                        {groups.map((g, idx) => {
+                          const items = score.components.filter(c => g.match(c.label));
+                          if (items.length === 0) return null;
+                          const earned = items.reduce((s, c) => s + c.earned, 0);
+                          const weight = items.reduce((s, c) => s + c.weight, 0);
+                          const allPending = items.every(c => c.status === 'pending' || c.status === 'coming_soon');
+                          const right = allPending ? 'Checking…' : weight === 0 ? '—' : `${earned}/${weight}`;
+                          return (
+                            <details key={g.key} className="group rounded-2xl border border-border/60 bg-background/40 open:bg-background" open={idx === 0}>
+                              <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl p-3 hover:bg-secondary/40">
+                                <g.Icon className="h-4 w-4 shrink-0 text-accent" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium leading-tight">{g.label}</p>
+                                  <p className="mt-0.5 text-[11px] text-muted-foreground">{g.blurb}</p>
+                                </div>
+                                <span className="font-mono text-xs text-muted-foreground">{right}</span>
+                                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                              </summary>
+                              <div className="space-y-4 border-t border-border/60 px-4 py-4">
+                                {items.map(c => {
+                                  const isPending = c.status === 'pending' || c.status === 'coming_soon';
+                                  const cpct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
+                                  const rightLabel = c.weight === 0 ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending') : `${c.earned}/${c.weight}`;
+                                  return (
+                                    <div key={c.label}>
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-foreground/85">{c.label}</span>
+                                        <span className="font-mono text-xs text-muted-foreground">{rightLabel}</span>
+                                      </div>
+                                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
+                                        <div
+                                          className={`h-full ${isPending ? 'bg-muted-foreground/30' : 'bg-accent'}`}
+                                          style={{ width: isPending ? '100%' : `${cpct}%` }}
+                                        />
+                                      </div>
+                                      <p className="mt-1 text-xs text-foreground/70">{isPending ? '⏳ ' : '→ '}{c.detail}</p>
+                                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/90">{c.what}</p>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            )}
-                            <p className={`mt-1 text-xs font-medium ${isPenalty ? 'text-destructive' : 'text-foreground/70'}`}>
-                              {isPenalty ? '⚠ ' : isPending ? '⏳ ' : '→ '}{c.detail}
-                            </p>
+                            </details>
+                          );
+                        })}
+
+                        {penalties.length > 0 && (
+                          <div className="mt-3 space-y-2 rounded-2xl border border-destructive/30 bg-destructive/5 p-3">
+                            {penalties.map(c => (
+                              <div key={c.label}>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium text-destructive">{c.label}</span>
+                                  <span className="font-mono text-xs text-destructive">{c.earned > 0 ? '+' : ''}{c.earned} pts</span>
+                                </div>
+                                <p className="mt-1 text-xs text-destructive/90">⚠ {c.detail}</p>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                )}
+                        )}
+                      </div>
+                    </section>
+                  );
+                })()}
+
 
                 {/* Project breakdown */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
@@ -247,21 +304,32 @@ const ContractorProfile = () => {
                   </div>
                 </section>
 
-                {/* Permit timeline — each row has an on-demand "Check inspection
-                    record" button that pulls live SJ inspection data for that
-                    one address (the per-address 3-Address Strategy). */}
+                {/* Permit timeline — show 3, expand for rest. */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                   <h2 className="font-display text-xl font-medium">Recent permit history</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Last 10 permits pulled by this contractor — directly from City of San Jose records.
-                    Click any address to pull its live inspection record and spot stalled permits, owner-builder filings, or incomplete trade sign-offs.
+                    Pulled directly from City of San José records. Tap any address to check its live inspection record.
                   </p>
                   <ul className="mt-4 space-y-3">
-                    {permits.slice(0, 10).map(p => (
+                    {permits.slice(0, 3).map(p => (
                       <PermitInspectionItem key={p.id} permit={p} contractorId={contractor.id} />
                     ))}
                   </ul>
+                  {permits.length > 3 && (
+                    <details className="group mt-3">
+                      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-secondary">
+                        Show {Math.min(permits.length, 10) - 3} more permits
+                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <ul className="mt-3 space-y-3">
+                        {permits.slice(3, 10).map(p => (
+                          <PermitInspectionItem key={p.id} permit={p} contractorId={contractor.id} />
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                 </section>
+
               </div>
 
               {/* Right rail */}
