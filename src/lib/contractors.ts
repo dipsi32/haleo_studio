@@ -160,39 +160,9 @@ export const computeTrustScore = (
     status: 'live',
   });
 
-  // 4. Finishes what they start — 12 pts
-  const opened = permits.filter(p => p.issued_date).length;
-  const closed = permits.filter(p => p.completed_date).length;
-  const completionRate = opened > 0 ? closed / opened : 0;
-  const completionScore = Math.round(completionRate * 12);
-  components.push({
-    label: 'Finishes what they start',
-    what: "Of the permits they've opened, how many they've closed out properly. Low % = a pattern of leaving jobs hanging.",
-    weight: 12, earned: completionScore,
-    detail: `${Math.round(completionRate * 100)}% closed permits`,
-    status: 'live',
-  });
-
-  // 5. No abandoned permits — 13 pts. Excluded from denominator if no signals.
-  if (signals && signals.permits_old_enough > 0) {
-    const rate = signals.expired_without_final / signals.permits_old_enough;
-    const expiredScore = Math.max(0, Math.round(13 * (1 - rate / 0.5)));
-    components.push({
-      label: 'No abandoned permits',
-      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
-      weight: 13, earned: expiredScore,
-      detail: `${signals.expired_without_final} of ${signals.permits_old_enough} older permits never finalized`,
-      status: 'live',
-    });
-  } else {
-    components.push({
-      label: 'No abandoned permits',
-      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
-      weight: 0, earned: 0,
-      detail: signals ? 'Not enough older permits to evaluate' : 'Pulling permit history…',
-      status: 'pending',
-    });
-  }
+  // (Removed: "Finishes what they start" and "No abandoned permits" —
+  // SJ Open Data drops finalized permits from its feeds, so completed_date
+  // is unreliable and these metrics were misleading.)
 
   // ── CSLB-derived signals (only when scrape succeeded) ───────────────────
   const cslbReady = !!(license && license.scrape_succeeded);
