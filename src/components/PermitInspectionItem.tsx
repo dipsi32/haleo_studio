@@ -54,7 +54,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: AlertTriangle,
         label: `Open ${months ?? '?'}+ months on city's open list`,
-        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up. Use the "Check final-inspection status on city portal" link below to confirm.',
+        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up.',
         tone: 'bg-accent/15 text-accent border-accent/30',
       };
     case 'expired_open':
