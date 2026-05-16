@@ -12,6 +12,7 @@ import {
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
+import RecentSiteInspections from "@/components/RecentSiteInspections";
 
 type ContractorPublicProfile = {
   company_name: string | null;
@@ -245,6 +246,11 @@ const ContractorProfile = () => {
                     ))}
                   </div>
                 </section>
+
+                {/* Live 3-Address inspection lookup — NOT scored, shown verbatim
+                    so a homeowner can do the same due diligence a city-hall
+                    visit would surface. */}
+                <RecentSiteInspections contractorId={contractor.id} permits={permits} />
 
                 {/* Permit timeline */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
