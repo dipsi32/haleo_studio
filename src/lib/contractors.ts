@@ -69,21 +69,18 @@ export const cslbDeepLink = (license: string) =>
 //   20  Local track record         (≥20 permits in area = full credit)
 //   15  Recent activity            (last 12 months, 8+ jobs = full)
 //   12  Right kind of work         (project-type keyword match)
-//   12  Finishes what they start   (closed ÷ opened)
-//   13  No abandoned permits       (only when permits_old_enough > 0)
 //
 //  CSLB-derived (only when license scrape succeeded)
 //   18  License standing           (active=18, expiring=14, expired/suspended=0)
 //    5  Bond on file
 //    5  Workers' Comp on file
 //
+//  Permit-site checks
+//    5  No code violations on past jobs (when addresses checked > 0)
+//
 //  Penalties (subtracted from final 0–100 score, then clamped)
 //  −15  CSLB has disciplinary actions on record
 //  −10  Business name mismatch (CSLB record vs. permits)
-//
-//  Phase-2 informational rows (weight 0 — shown but do not move the score)
-//   ·  Inspection pass rate
-//   ·  Code violations on past job sites (becomes live once we've checked addresses)
 export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
 
 export type TrustScoreBreakdown = {
