@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { Permit } from "@/lib/contractors";
 
 type Approval = { code: string; label: string; status: 'complete' | 'in_progress' | 'pending' | 'unknown'; raw: string };
-type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'unknown';
+type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'trades_passed' | 'unknown';
 
 type InspectionResult = {
   folder_number: string;
@@ -110,8 +110,18 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
     }
   };
 
-  const chip = result?.found ? lifecycleChip(result.lifecycle, result.months_since_issued) : null;
+  // Promote "all trades passed but no final yet" to its own friendlier state —
+  // SJ marks the permit as still under inspection until the contractor calls
+  // in the final, so the raw lifecycle would otherwise read "Active."
+  const allTradesPassed =
+    !!result?.approvals?.length && result.approvals.every(a => a.status === 'complete');
+  const effectiveLifecycle: Lifecycle | 'trades_passed' =
+    result?.found && result.lifecycle === 'in_inspection' && allTradesPassed && !result.final_date
+      ? 'trades_passed'
+      : (result?.lifecycle ?? 'unknown');
+  const chip = result?.found ? lifecycleChip(effectiveLifecycle, result.months_since_issued) : null;
   const Chip = chip?.Icon;
+
 
   return (
     <li className="rounded-2xl border border-border/60 bg-background p-3">
