@@ -34,15 +34,40 @@ const formatDate = (d?: string | null) =>
 const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
   switch (lc) {
     case 'closed':
-      return { Icon: CheckCircle2, label: 'Closed — final inspection passed', tone: 'bg-sage/15 text-sage border-sage/30' };
+      return {
+        Icon: CheckCircle2,
+        label: 'Final inspection passed',
+        explanation: 'The city signed off on this job. No outstanding inspections.',
+        tone: 'bg-sage/15 text-sage border-sage/30',
+      };
     case 'stalled':
-      return { Icon: AlertTriangle, label: `Open ${months ?? '?'}+ months — never finalized`, tone: 'bg-destructive/15 text-destructive border-destructive/30' };
+      return {
+        Icon: AlertTriangle,
+        label: `Stalled — open ${months ?? '?'}+ months`,
+        explanation: 'This permit has been open well past a typical job and never received a final inspection. Ask the contractor what happened here before hiring.',
+        tone: 'bg-destructive/15 text-destructive border-destructive/30',
+      };
     case 'expired_open':
-      return { Icon: ShieldAlert, label: 'Expired without final inspection', tone: 'bg-destructive/15 text-destructive border-destructive/30' };
+      return {
+        Icon: ShieldAlert,
+        label: 'Expired without final inspection',
+        explanation: 'The permit expired and the city never finalized the work. This can create resale/insurance problems for the homeowner.',
+        tone: 'bg-destructive/15 text-destructive border-destructive/30',
+      };
     case 'in_inspection':
-      return { Icon: Hourglass, label: 'In inspection now', tone: 'bg-accent/15 text-accent border-accent/30' };
+      return {
+        Icon: Hourglass,
+        label: 'Active — awaiting final inspection',
+        explanation: 'The permit is open and inspections are still in progress. Normal for jobs less than ~18 months old.',
+        tone: 'bg-accent/15 text-accent border-accent/30',
+      };
     default:
-      return { Icon: Hourglass, label: 'Status unknown', tone: 'bg-muted text-muted-foreground border-border' };
+      return {
+        Icon: Hourglass,
+        label: 'Status unknown',
+        explanation: 'The city portal didn\'t return a clear status for this permit.',
+        tone: 'bg-muted text-muted-foreground border-border',
+      };
   }
 };
 
