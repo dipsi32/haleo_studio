@@ -12,7 +12,7 @@ import {
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
-import RecentSiteInspections from "@/components/RecentSiteInspections";
+import PermitInspectionItem from "@/components/PermitInspectionItem";
 
 type ContractorPublicProfile = {
   company_name: string | null;
@@ -247,29 +247,18 @@ const ContractorProfile = () => {
                   </div>
                 </section>
 
-                {/* Live 3-Address inspection lookup — NOT scored, shown verbatim
-                    so a homeowner can do the same due diligence a city-hall
-                    visit would surface. */}
-                <RecentSiteInspections contractorId={contractor.id} permits={permits} />
-
-                {/* Permit timeline */}
+                {/* Permit timeline — each row has an on-demand "Check inspection
+                    record" button that pulls live SJ inspection data for that
+                    one address (the per-address 3-Address Strategy). */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                   <h2 className="font-display text-xl font-medium">Recent permit history</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">Last 10 permits pulled by this contractor — directly from City of San Jose records.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Last 10 permits pulled by this contractor — directly from City of San Jose records.
+                    Click any address to pull its live inspection record and spot stalled permits, owner-builder filings, or incomplete trade sign-offs.
+                  </p>
                   <ul className="mt-4 space-y-3">
                     {permits.slice(0, 10).map(p => (
-                      <li key={p.id} className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background p-3">
-                        <Hammer className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-tight">{p.work_type ?? "Permit"}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                            {p.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.address}</span>}
-                            {p.issued_date && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDate(p.issued_date)}</span>}
-                            {p.status && <span className="rounded-full bg-secondary px-2 py-0.5">{p.status}</span>}
-                          </div>
-                        </div>
-                      </li>
+                      <PermitInspectionItem key={p.id} permit={p} contractorId={contractor.id} />
                     ))}
                   </ul>
                 </section>

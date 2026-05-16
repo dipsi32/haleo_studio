@@ -1,0 +1,210 @@
+// One permit row in the "Recent permit history" list with an on-demand
+// "Check inspection record" button. Pulls live SJ inspection data per address,
+// one at a time, so the homeowner can drill into anything that looks off.
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Hammer, MapPin, Calendar, ExternalLink, CheckCircle2, Loader2,
+  AlertTriangle, Hourglass, ShieldAlert, Search, ChevronDown, ChevronUp,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { Permit } from "@/lib/contractors";
+
+type Approval = { code: string; label: string; status: 'complete' | 'in_progress' | 'pending' | 'unknown'; raw: string };
+type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'unknown';
+
+type InspectionResult = {
+  folder_number: string;
+  found: boolean;
+  sj_url: string;
+  address?: string | null;
+  work_name?: string | null;
+  valuation?: number | null;
+  issued_date?: string | null;
+  final_date?: string | null;
+  months_since_issued?: number | null;
+  lifecycle?: Lifecycle;
+  owner_builder?: boolean;
+  approvals?: Approval[];
+};
+
+const formatDate = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
+  switch (lc) {
+    case 'closed':
+      return { Icon: CheckCircle2, label: 'Closed — final inspection passed', tone: 'bg-sage/15 text-sage border-sage/30' };
+    case 'stalled':
+      return { Icon: AlertTriangle, label: `Open ${months ?? '?'}+ months — never finalized`, tone: 'bg-destructive/15 text-destructive border-destructive/30' };
+    case 'expired_open':
+      return { Icon: ShieldAlert, label: 'Expired without final inspection', tone: 'bg-destructive/15 text-destructive border-destructive/30' };
+    case 'in_inspection':
+      return { Icon: Hourglass, label: 'In inspection now', tone: 'bg-accent/15 text-accent border-accent/30' };
+    default:
+      return { Icon: Hourglass, label: 'Status unknown', tone: 'bg-muted text-muted-foreground border-border' };
+  }
+};
+
+const approvalClasses = (s: Approval['status']) => {
+  switch (s) {
+    case 'complete': return 'bg-sage/15 text-sage border-sage/30';
+    case 'in_progress': return 'bg-accent/15 text-accent border-accent/30';
+    default: return 'bg-muted text-muted-foreground border-border';
+  }
+};
+
+export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit; contractorId: string }) => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<InspectionResult | null>(null);
+
+  const canCheck = !!permit.permit_number;
+
+  const handleCheck = async () => {
+    // Toggle behavior: if we already have data, just collapse/expand.
+    if (result || error) {
+      setOpen(o => !o);
+      return;
+    }
+    setOpen(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('fetch-permit-inspections', {
+        body: { contractor_id: contractorId, permit_numbers: [permit.permit_number], limit: 1 },
+      });
+      if (fnErr) throw fnErr;
+      const r = (data?.results ?? [])[0] as InspectionResult | undefined;
+      setResult(r ?? { folder_number: permit.permit_number, found: false, sj_url: '' });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chip = result?.found ? lifecycleChip(result.lifecycle, result.months_since_issued) : null;
+  const Chip = chip?.Icon;
+
+  return (
+    <li className="rounded-2xl border border-border/60 bg-background p-3">
+      <div className="flex items-start gap-3">
+        <Hammer className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-tight">{permit.work_type ?? "Permit"}</p>
+          {permit.description && <p className="mt-0.5 text-xs text-muted-foreground">{permit.description}</p>}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            {permit.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {permit.address}</span>}
+            {permit.issued_date && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDate(permit.issued_date)}</span>}
+            {permit.status && <span className="rounded-full bg-secondary px-2 py-0.5">{permit.status}</span>}
+            {permit.permit_number && <span className="font-mono opacity-70">#{permit.permit_number}</span>}
+          </div>
+
+          {canCheck && (
+            <button
+              type="button"
+              onClick={handleCheck}
+              disabled={loading}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary disabled:opacity-60"
+            >
+              {loading ? (
+                <><Loader2 className="h-3 w-3 animate-spin" /> Checking City of San José…</>
+              ) : result || error ? (
+                open
+                  ? <><ChevronUp className="h-3 w-3" /> Hide inspection record</>
+                  : <><ChevronDown className="h-3 w-3" /> Show inspection record</>
+              ) : (
+                <><Search className="h-3 w-3" /> Check inspection record</>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Inspection detail panel */}
+      {open && !loading && (error || result) && (
+        <div className="mt-3 rounded-xl border border-border/60 bg-card p-3">
+          {error && (
+            <p className="text-xs text-destructive">Couldn't reach SJ Open Data: {error}</p>
+          )}
+          {result && !result.found && (
+            <div className="text-xs text-muted-foreground">
+              <p>No detailed inspection record returned by SJ Open Data for this permit.</p>
+              {result.sj_url && (
+                <a href={result.sj_url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-accent underline-offset-4 hover:underline">
+                  Open on SJPermits <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          )}
+          {result && result.found && (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                {chip && Chip && (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${chip.tone}`}>
+                    <Chip className="h-3 w-3" /> {chip.label}
+                  </span>
+                )}
+                {result.owner_builder && (
+                  <Tooltip delayDuration={120}>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-0.5 text-[11px] font-medium text-destructive">
+                        <ShieldAlert className="h-3 w-3" /> Owner-Builder permit
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                      The homeowner — not the contractor — pulled this permit as "Owner-Builder,"
+                      shifting liability for code compliance and worker injury onto the homeowner.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {result.final_date && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-sage">
+                    <CheckCircle2 className="h-3 w-3" /> Finalized {formatDate(result.final_date)}
+                  </span>
+                )}
+                {result.sj_url && (
+                  <a href={result.sj_url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-[11px] text-accent underline-offset-4 hover:underline">
+                    City record <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+
+              {result.approvals && result.approvals.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Inspection progress by trade
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {result.approvals.map((a, i) => (
+                      <Tooltip key={i} delayDuration={120}>
+                        <TooltipTrigger asChild>
+                          <span className={`inline-flex cursor-help items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${approvalClasses(a.status)}`}>
+                            {a.status === 'complete' ? <CheckCircle2 className="h-3 w-3" /> : <Hourglass className="h-3 w-3" />}
+                            {a.label}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                          <strong>{a.label}:</strong> {a.raw}
+                          {a.status !== 'complete' && (
+                            <span className="mt-1 block text-muted-foreground">
+                              This trade still needs sign-off before the permit can be finalized.
+                            </span>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </li>
+  );
+};
+
+export default PermitInspectionItem;
