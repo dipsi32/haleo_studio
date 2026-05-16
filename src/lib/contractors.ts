@@ -69,21 +69,18 @@ export const cslbDeepLink = (license: string) =>
 //   20  Local track record         (≥20 permits in area = full credit)
 //   15  Recent activity            (last 12 months, 8+ jobs = full)
 //   12  Right kind of work         (project-type keyword match)
-//   12  Finishes what they start   (closed ÷ opened)
-//   13  No abandoned permits       (only when permits_old_enough > 0)
 //
 //  CSLB-derived (only when license scrape succeeded)
 //   18  License standing           (active=18, expiring=14, expired/suspended=0)
 //    5  Bond on file
 //    5  Workers' Comp on file
 //
+//  Permit-site checks
+//    5  No code violations on past jobs (when addresses checked > 0)
+//
 //  Penalties (subtracted from final 0–100 score, then clamped)
 //  −15  CSLB has disciplinary actions on record
 //  −10  Business name mismatch (CSLB record vs. permits)
-//
-//  Phase-2 informational rows (weight 0 — shown but do not move the score)
-//   ·  Inspection pass rate
-//   ·  Code violations on past job sites (becomes live once we've checked addresses)
 export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
 
 export type TrustScoreBreakdown = {
@@ -160,39 +157,9 @@ export const computeTrustScore = (
     status: 'live',
   });
 
-  // 4. Finishes what they start — 12 pts
-  const opened = permits.filter(p => p.issued_date).length;
-  const closed = permits.filter(p => p.completed_date).length;
-  const completionRate = opened > 0 ? closed / opened : 0;
-  const completionScore = Math.round(completionRate * 12);
-  components.push({
-    label: 'Finishes what they start',
-    what: "Of the permits they've opened, how many they've closed out properly. Low % = a pattern of leaving jobs hanging.",
-    weight: 12, earned: completionScore,
-    detail: `${Math.round(completionRate * 100)}% closed permits`,
-    status: 'live',
-  });
-
-  // 5. No abandoned permits — 13 pts. Excluded from denominator if no signals.
-  if (signals && signals.permits_old_enough > 0) {
-    const rate = signals.expired_without_final / signals.permits_old_enough;
-    const expiredScore = Math.max(0, Math.round(13 * (1 - rate / 0.5)));
-    components.push({
-      label: 'No abandoned permits',
-      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
-      weight: 13, earned: expiredScore,
-      detail: `${signals.expired_without_final} of ${signals.permits_old_enough} older permits never finalized`,
-      status: 'live',
-    });
-  } else {
-    components.push({
-      label: 'No abandoned permits',
-      what: "Permits older than 18 months that never got a final inspection. These leave YOU on the hook with the city when you sell.",
-      weight: 0, earned: 0,
-      detail: signals ? 'Not enough older permits to evaluate' : 'Pulling permit history…',
-      status: 'pending',
-    });
-  }
+  // (Removed: "Finishes what they start" and "No abandoned permits" —
+  // SJ Open Data drops finalized permits from its feeds, so completed_date
+  // is unreliable and these metrics were misleading.)
 
   // ── CSLB-derived signals (only when scrape succeeded) ───────────────────
   const cslbReady = !!(license && license.scrape_succeeded);
@@ -275,13 +242,9 @@ export const computeTrustScore = (
     });
   }
 
-  components.push({
-    label: 'Inspection pass rate',
-    what: "How often city inspectors pass their work on the first try. A high re-inspection rate signals corner-cutting on code.",
-    weight: 0, earned: 0,
-    detail: 'Coming soon — pulling pass/fail history from city inspections',
-    status: 'coming_soon',
-  });
+  // (Removed: "Inspection pass rate" — city portal doesn't publish a clean
+  // pass/fail per-inspection feed, so we can't measure this honestly yet.)
+
 
   // ── Normalize to 100, then apply CSLB penalties ─────────────────────────
   const weightSum = components.reduce((s, c) => s + c.weight, 0);
