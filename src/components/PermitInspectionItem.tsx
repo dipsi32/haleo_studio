@@ -241,12 +241,8 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                         </Tooltip>
                       ))}
                     </div>
-                    {result.lifecycle === 'in_inspection' &&
-                      result.approvals.every(a => a.status === 'complete') && (
-                        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                          All trade inspections have passed — the city just hasn't recorded a final sign-off yet. This is common in the days/weeks after the last inspection.
-                        </p>
-                      )}
+                    {/* The "all trades passed, no final" case is now surfaced by the
+                        'trades_passed' lifecycle chip + its explanation above. */}
                   </>
                 ) : (
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
