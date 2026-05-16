@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { Permit } from "@/lib/contractors";
 
 type Approval = { code: string; label: string; status: 'complete' | 'in_progress' | 'pending' | 'unknown'; raw: string };
-type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'unknown';
+type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'trades_passed' | 'unknown';
 
 type InspectionResult = {
   folder_number: string;
@@ -60,6 +60,13 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
         label: 'Active — awaiting final inspection',
         explanation: 'The permit is open and inspections are still in progress. Normal for jobs less than ~18 months old.',
         tone: 'bg-accent/15 text-accent border-accent/30',
+      };
+    case 'trades_passed':
+      return {
+        Icon: CheckCircle2,
+        label: 'All trades passed — final sign-off pending',
+        explanation: 'Every trade inspection (electrical, plumbing, etc.) has been signed off. The contractor just needs to call in the final inspection for the city to close the permit. This is normal in the days/weeks after the last trade visit.',
+        tone: 'bg-sage/15 text-sage border-sage/30',
       };
     default:
       return {
@@ -110,8 +117,18 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
     }
   };
 
-  const chip = result?.found ? lifecycleChip(result.lifecycle, result.months_since_issued) : null;
+  // Promote "all trades passed but no final yet" to its own friendlier state —
+  // SJ marks the permit as still under inspection until the contractor calls
+  // in the final, so the raw lifecycle would otherwise read "Active."
+  const allTradesPassed =
+    !!result?.approvals?.length && result.approvals.every(a => a.status === 'complete');
+  const effectiveLifecycle: Lifecycle | 'trades_passed' =
+    result?.found && result.lifecycle === 'in_inspection' && allTradesPassed && !result.final_date
+      ? 'trades_passed'
+      : (result?.lifecycle ?? 'unknown');
+  const chip = result?.found ? lifecycleChip(effectiveLifecycle, result.months_since_issued) : null;
   const Chip = chip?.Icon;
+
 
   return (
     <li className="rounded-2xl border border-border/60 bg-background p-3">
@@ -224,12 +241,8 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                         </Tooltip>
                       ))}
                     </div>
-                    {result.lifecycle === 'in_inspection' &&
-                      result.approvals.every(a => a.status === 'complete') && (
-                        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                          All trade inspections have passed — the city just hasn't recorded a final sign-off yet. This is common in the days/weeks after the last inspection.
-                        </p>
-                      )}
+                    {/* The "all trades passed, no final" case is now surfaced by the
+                        'trades_passed' lifecycle chip + its explanation above. */}
                   </>
                 ) : (
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
