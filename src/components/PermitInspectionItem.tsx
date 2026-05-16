@@ -185,11 +185,6 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                     </TooltipContent>
                   </Tooltip>
                 )}
-                {result.final_date && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-sage">
-                    <CheckCircle2 className="h-3 w-3" /> Finalized {formatDate(result.final_date)}
-                  </span>
-                )}
                 {result.sj_url && (
                   <a href={result.sj_url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-[11px] text-accent underline-offset-4 hover:underline">
                     City record <ExternalLink className="h-3 w-3" />
@@ -197,33 +192,51 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                 )}
               </div>
 
-              {result.approvals && result.approvals.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Inspection progress by trade
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {result.approvals.map((a, i) => (
-                      <Tooltip key={i} delayDuration={120}>
-                        <TooltipTrigger asChild>
-                          <span className={`inline-flex cursor-help items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${approvalClasses(a.status)}`}>
-                            {a.status === 'complete' ? <CheckCircle2 className="h-3 w-3" /> : <Hourglass className="h-3 w-3" />}
-                            {a.label}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                          <strong>{a.label}:</strong> {a.raw}
-                          {a.status !== 'complete' && (
-                            <span className="mt-1 block text-muted-foreground">
-                              This trade still needs sign-off before the permit can be finalized.
-                            </span>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
-                  </div>
-                </div>
+              {/* Plain-English explanation of the lifecycle chip */}
+              {chip?.explanation && (
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{chip.explanation}</p>
               )}
+
+              {/* Trade-by-trade approvals OR a clear "not published" message */}
+              <div className="mt-3">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Inspection progress by trade
+                </p>
+                {result.approvals && result.approvals.length > 0 ? (
+                  <>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {result.approvals.map((a, i) => (
+                        <Tooltip key={i} delayDuration={120}>
+                          <TooltipTrigger asChild>
+                            <span className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${approvalClasses(a.status)}`}>
+                              {a.status === 'complete' ? <CheckCircle2 className="h-3 w-3" /> : <Hourglass className="h-3 w-3" />}
+                              {a.label} · {a.status === 'complete' ? 'Passed' : a.status === 'in_progress' ? 'In progress' : a.status === 'pending' ? 'Not started' : a.raw}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                            <strong>{a.label} inspection:</strong> {a.raw}
+                            {a.status !== 'complete' && (
+                              <span className="mt-1 block text-muted-foreground">
+                                Still needs sign-off before the permit can be finalized.
+                              </span>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    {result.lifecycle === 'in_inspection' &&
+                      result.approvals.every(a => a.status === 'complete') && (
+                        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                          All trade inspections have passed — the city just hasn't recorded a final sign-off yet. This is common in the days/weeks after the last inspection.
+                        </p>
+                      )}
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    The city hasn't published a per-trade breakdown for this permit. Use the "City record" link above to see what's filed.
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>
