@@ -12,6 +12,7 @@ import {
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
+import RecentSiteInspections from "@/components/RecentSiteInspections";
 
 type ContractorPublicProfile = {
   company_name: string | null;
