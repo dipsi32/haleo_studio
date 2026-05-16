@@ -247,6 +247,11 @@ const ContractorProfile = () => {
                   </div>
                 </section>
 
+                {/* Live 3-Address inspection lookup — NOT scored, shown verbatim
+                    so a homeowner can do the same due diligence a city-hall
+                    visit would surface. */}
+                <RecentSiteInspections contractorId={contractor.id} permits={permits} />
+
                 {/* Permit timeline */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                   <h2 className="font-display text-xl font-medium">Recent permit history</h2>
