@@ -75,7 +75,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: CheckCircle2,
         label: 'All trade inspections passed',
-        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file is marked Complete. The city\'s open-data feed only tracks open permits and doesn\'t publish a final-inspection date — use the "Check final-inspection status on city portal" link below to confirm the permit has been fully closed.',
+        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file with the city is marked Complete. The open-data feed doesn\'t publish the final sign-off date, so we can\'t confirm the permit is fully closed — only that every individual trade has passed.',
         tone: 'bg-sage/15 text-sage border-sage/30',
       };
     default:
