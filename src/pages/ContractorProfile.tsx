@@ -304,21 +304,32 @@ const ContractorProfile = () => {
                   </div>
                 </section>
 
-                {/* Permit timeline — each row has an on-demand "Check inspection
-                    record" button that pulls live SJ inspection data for that
-                    one address (the per-address 3-Address Strategy). */}
+                {/* Permit timeline — show 3, expand for rest. */}
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                   <h2 className="font-display text-xl font-medium">Recent permit history</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Last 10 permits pulled by this contractor — directly from City of San Jose records.
-                    Click any address to pull its live inspection record and spot stalled permits, owner-builder filings, or incomplete trade sign-offs.
+                    Pulled directly from City of San José records. Tap any address to check its live inspection record.
                   </p>
                   <ul className="mt-4 space-y-3">
-                    {permits.slice(0, 10).map(p => (
+                    {permits.slice(0, 3).map(p => (
                       <PermitInspectionItem key={p.id} permit={p} contractorId={contractor.id} />
                     ))}
                   </ul>
+                  {permits.length > 3 && (
+                    <details className="group mt-3">
+                      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-secondary">
+                        Show {Math.min(permits.length, 10) - 3} more permits
+                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <ul className="mt-3 space-y-3">
+                        {permits.slice(3, 10).map(p => (
+                          <PermitInspectionItem key={p.id} permit={p} contractorId={contractor.id} />
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                 </section>
+
               </div>
 
               {/* Right rail */}
