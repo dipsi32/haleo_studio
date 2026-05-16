@@ -21,10 +21,12 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// Each feed has a CKAN dataset slug so we can deep-link the user back to the
+// exact record they're looking at on the City of San José open data portal.
 const FEEDS = [
-  { id: '89ccdad9-7309-4826-a5f3-2fcf1fcb20fa', source: 'under_inspection' },
-  { id: '761b7ae8-3be1-4ad6-923d-c7af6404a904', source: 'active' },
-  { id: 'df4b8461-0c7a-4d16-b85d-ff7f71c5fed5', source: 'expired' },
+  { id: '89ccdad9-7309-4826-a5f3-2fcf1fcb20fa', source: 'under_inspection', slug: 'building-permits-under-inspection' },
+  { id: '761b7ae8-3be1-4ad6-923d-c7af6404a904', source: 'active', slug: 'active-building-permits' },
+  { id: 'df4b8461-0c7a-4d16-b85d-ff7f71c5fed5', source: 'expired', slug: 'expired-building-permits' },
 ]
 const SJ_API = 'https://data.sanjoseca.gov/api/3/action/datastore_search'
 
