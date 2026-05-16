@@ -251,7 +251,7 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                   </>
                 ) : (
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    The city hasn't published a per-trade breakdown for this permit. Use the city links below to see what's filed.
+                    The city hasn't published a per-trade breakdown for this permit.
                   </p>
                 )}
               </div>
