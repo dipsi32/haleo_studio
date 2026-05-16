@@ -16,7 +16,9 @@ type Lifecycle = 'closed' | 'in_inspection' | 'stalled' | 'expired_open' | 'trad
 type InspectionResult = {
   folder_number: string;
   found: boolean;
-  sj_url: string;
+  // Both links are address/folder-specific — see edge fn fetch-permit-inspections.
+  open_data_url?: string;     // Stable deep-link into SJ open-data record
+  accela_search_url?: string; // Google search scoped to Accela for final status
   address?: string | null;
   work_name?: string | null;
   valuation?: number | null;
@@ -52,7 +54,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: AlertTriangle,
         label: `Open ${months ?? '?'}+ months on city's open list`,
-        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up. Check the City record link to confirm.',
+        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up. Use the "Check final-inspection status on city portal" link below to confirm.',
         tone: 'bg-accent/15 text-accent border-accent/30',
       };
     case 'expired_open':
@@ -73,7 +75,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: CheckCircle2,
         label: 'All trade inspections passed',
-        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file is marked Complete. Note: the city\'s open-data feed only tracks open permits and doesn\'t publish a final-inspection date, so to confirm the permit has been fully closed, click the City record link below.',
+        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file is marked Complete. The city\'s open-data feed only tracks open permits and doesn\'t publish a final-inspection date — use the "Check final-inspection status on city portal" link below to confirm the permit has been fully closed.',
         tone: 'bg-sage/15 text-sage border-sage/30',
       };
     default:
@@ -117,7 +119,7 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
       });
       if (fnErr) throw fnErr;
       const r = (data?.results ?? [])[0] as InspectionResult | undefined;
-      setResult(r ?? { folder_number: permit.permit_number, found: false, sj_url: '' });
+      setResult(r ?? { folder_number: permit.permit_number, found: false });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -181,10 +183,10 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
           )}
           {result && !result.found && (
             <div className="text-xs text-muted-foreground">
-              <p>No detailed inspection record returned by SJ Open Data for this permit.</p>
-              {result.sj_url && (
-                <a href={result.sj_url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-accent underline-offset-4 hover:underline">
-                  Open on SJPermits <ExternalLink className="h-3 w-3" />
+              <p>The City of San José open-data feeds (Active / Under Inspection / Expired) don't currently list this permit. Most often that means it was finaled and dropped off the open list — confirm on the city portal:</p>
+              {result.accela_search_url && (
+                <a href={result.accela_search_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-foreground hover:bg-secondary">
+                  Search permit #{result.folder_number} on city portal <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
@@ -209,11 +211,6 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                       shifting liability for code compliance and worker injury onto the homeowner.
                     </TooltipContent>
                   </Tooltip>
-                )}
-                {result.sj_url && (
-                  <a href={result.sj_url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-[11px] text-accent underline-offset-4 hover:underline">
-                    City record <ExternalLink className="h-3 w-3" />
-                  </a>
                 )}
               </div>
 
@@ -254,8 +251,35 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                   </>
                 ) : (
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    The city hasn't published a per-trade breakdown for this permit. Use the "City record" link above to see what's filed.
+                    The city hasn't published a per-trade breakdown for this permit. Use the city links below to see what's filed.
                   </p>
+                )}
+              </div>
+
+              {/* Two clearly-labeled, address-specific links so the homeowner
+                  can verify everything themselves. Open Data = the exact row
+                  we just read. Accela search = the human-friendly portal that
+                  shows real final-inspection status. */}
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
+                {result.open_data_url && (
+                  <a
+                    href={result.open_data_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
+                  >
+                    View this permit on SJ Open Data <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+                {result.accela_search_url && (
+                  <a
+                    href={result.accela_search_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
+                  >
+                    Check final-inspection status on city portal <ExternalLink className="h-3 w-3" />
+                  </a>
                 )}
               </div>
             </>
