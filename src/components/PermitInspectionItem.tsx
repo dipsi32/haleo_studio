@@ -31,6 +31,14 @@ type InspectionResult = {
 const formatDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
+// Important data caveat: SJ Open Data's Active / Under-Inspection / Expired
+// feeds DO NOT contain finalized permits — once a permit is finaled it drops
+// out of all three feeds. That means FINALDATE is effectively always null in
+// what we can see, so we can never positively assert "finaled" from this
+// data. We CAN say: "the city still lists this as open" or "open and stalled
+// past N months" or "trade inspections all signed off — confirm final on city
+// record." We must never imply a permit isn't finaled when the truth is just
+// "open data doesn't say."
 const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
   switch (lc) {
     case 'closed':
@@ -43,9 +51,9 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
     case 'stalled':
       return {
         Icon: AlertTriangle,
-        label: `Stalled — open ${months ?? '?'}+ months`,
-        explanation: 'This permit has been open well past a typical job and never received a final inspection. Ask the contractor what happened here before hiring.',
-        tone: 'bg-destructive/15 text-destructive border-destructive/30',
+        label: `Open ${months ?? '?'}+ months on city's open list`,
+        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up. Check the City record link to confirm.',
+        tone: 'bg-accent/15 text-accent border-accent/30',
       };
     case 'expired_open':
       return {
@@ -57,15 +65,15 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
     case 'in_inspection':
       return {
         Icon: Hourglass,
-        label: 'Active — awaiting final inspection',
-        explanation: 'The permit is open and inspections are still in progress. Normal for jobs less than ~18 months old.',
+        label: 'Listed as open on city\'s active permits',
+        explanation: 'The city\'s open-data feed still lists this as an active/under-inspection permit. Either inspections are genuinely still in progress, or the permit was finaled but hasn\'t cleared the open list yet.',
         tone: 'bg-accent/15 text-accent border-accent/30',
       };
     case 'trades_passed':
       return {
         Icon: CheckCircle2,
-        label: 'All trades passed — final sign-off pending',
-        explanation: 'Every trade inspection (electrical, plumbing, etc.) has been signed off. The contractor just needs to call in the final inspection for the city to close the permit. This is normal in the days/weeks after the last trade visit.',
+        label: 'All trade inspections passed',
+        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file is marked Complete. Note: the city\'s open-data feed only tracks open permits and doesn\'t publish a final-inspection date, so to confirm the permit has been fully closed, click the City record link below.',
         tone: 'bg-sage/15 text-sage border-sage/30',
       };
     default:
