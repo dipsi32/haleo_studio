@@ -54,7 +54,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: AlertTriangle,
         label: `Open ${months ?? '?'}+ months on city's open list`,
-        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up. Use the "Check final-inspection status on city portal" link below to confirm.',
+        explanation: 'This permit has been on the city\'s active/under-inspection list for well over a year. That usually means it was either abandoned without a final, OR it was finaled but the city\'s open-data feed hasn\'t caught up.',
         tone: 'bg-accent/15 text-accent border-accent/30',
       };
     case 'expired_open':
@@ -75,7 +75,7 @@ const lifecycleChip = (lc?: Lifecycle, months?: number | null) => {
       return {
         Icon: CheckCircle2,
         label: 'All trade inspections passed',
-        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file is marked Complete. The city\'s open-data feed only tracks open permits and doesn\'t publish a final-inspection date — use the "Check final-inspection status on city portal" link below to confirm the permit has been fully closed.',
+        explanation: 'Every trade inspection (building, electrical, plumbing, mechanical) on file with the city is marked Complete. The open-data feed doesn\'t publish the final sign-off date, so we can\'t confirm the permit is fully closed — only that every individual trade has passed.',
         tone: 'bg-sage/15 text-sage border-sage/30',
       };
     default:
@@ -251,37 +251,11 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                   </>
                 ) : (
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    The city hasn't published a per-trade breakdown for this permit. Use the city links below to see what's filed.
+                    The city hasn't published a per-trade breakdown for this permit.
                   </p>
                 )}
               </div>
 
-              {/* Two clearly-labeled, address-specific links so the homeowner
-                  can verify everything themselves. Open Data = the exact row
-                  we just read. Accela search = the human-friendly portal that
-                  shows real final-inspection status. */}
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
-                {result.open_data_url && (
-                  <a
-                    href={result.open_data_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
-                  >
-                    View this permit on SJ Open Data <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-                {result.accela_search_url && (
-                  <a
-                    href={result.accela_search_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
-                  >
-                    Check final-inspection status on city portal <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-              </div>
             </>
           )}
         </div>
