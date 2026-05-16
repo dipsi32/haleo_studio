@@ -256,32 +256,6 @@ export const PermitInspectionItem = ({ permit, contractorId }: { permit: Permit;
                 )}
               </div>
 
-              {/* Two clearly-labeled, address-specific links so the homeowner
-                  can verify everything themselves. Open Data = the exact row
-                  we just read. Accela search = the human-friendly portal that
-                  shows real final-inspection status. */}
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
-                {result.open_data_url && (
-                  <a
-                    href={result.open_data_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
-                  >
-                    View this permit on SJ Open Data <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-                {result.accela_search_url && (
-                  <a
-                    href={result.accela_search_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-secondary"
-                  >
-                    Check final-inspection status on city portal <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-              </div>
             </>
           )}
         </div>
