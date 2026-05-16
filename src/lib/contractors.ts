@@ -245,13 +245,9 @@ export const computeTrustScore = (
     });
   }
 
-  components.push({
-    label: 'Inspection pass rate',
-    what: "How often city inspectors pass their work on the first try. A high re-inspection rate signals corner-cutting on code.",
-    weight: 0, earned: 0,
-    detail: 'Coming soon — pulling pass/fail history from city inspections',
-    status: 'coming_soon',
-  });
+  // (Removed: "Inspection pass rate" — city portal doesn't publish a clean
+  // pass/fail per-inspection feed, so we can't measure this honestly yet.)
+
 
   // ── Normalize to 100, then apply CSLB penalties ─────────────────────────
   const weightSum = components.reduce((s, c) => s + c.weight, 0);
