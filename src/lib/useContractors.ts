@@ -164,6 +164,15 @@ export const useContractors = (data: IntakeData) => {
           supabase.from("cslb_licenses").select("*").in("license_number", licenseNumbers),
           supabase.from("contractor_license_cache").select("*").in("license_number", licenseNumbers),
         ]);
+        // Trust signals (code violations etc.) — same source the profile page uses,
+        // so list-page and profile-page scores stay in sync.
+        const { data: signalsRows } = await supabase
+          .from("contractor_trust_signals")
+          .select("*")
+          .in("contractor_id", ids);
+        const signalsById = new Map<string, NonNullable<typeof signalsRows>[number]>();
+        (signalsRows ?? []).forEach(r => signalsById.set(r.contractor_id, r));
+
         const newByNum = new Map<string, NonNullable<typeof newRows>[number]>();
         (newRows ?? []).forEach(r => newByNum.set(r.license_number, r));
         const legacyByNum = new Map<string, NonNullable<typeof legacyRows>[number]>();
@@ -218,7 +227,8 @@ export const useContractors = (data: IntakeData) => {
           const out: RankedContractor[] = contractors.map(c => {
             const cPermits = permits.filter(p => p.contractor_id === c.id);
             const license = licensesByNum.get(c.license_number) ?? null;
-            const score = computeTrustScore(c, cPermits, license, keywords);
+            const signals = signalsById.get(c.id) ?? null;
+            const score = computeTrustScore(c, cPermits, license, keywords, signals);
             const matchCount = cPermits.filter(p => {
               const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
               return keywords.some(k => hay.includes(k.toLowerCase()));
