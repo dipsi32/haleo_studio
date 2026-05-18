@@ -227,7 +227,8 @@ export const useContractors = (data: IntakeData) => {
           const out: RankedContractor[] = contractors.map(c => {
             const cPermits = permits.filter(p => p.contractor_id === c.id);
             const license = licensesByNum.get(c.license_number) ?? null;
-            const score = computeTrustScore(c, cPermits, license, keywords);
+            const signals = signalsById.get(c.id) ?? null;
+            const score = computeTrustScore(c, cPermits, license, keywords, signals);
             const matchCount = cPermits.filter(p => {
               const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
               return keywords.some(k => hay.includes(k.toLowerCase()));
