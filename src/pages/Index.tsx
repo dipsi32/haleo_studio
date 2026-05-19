@@ -383,77 +383,15 @@ const Hero = () => (
             <PhoneMockup />
           </div>
 
-          {/* RIGHT — the payoff: a real bid comparison panel */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE, delay: 0.55 }}
-            className="rounded-2xl border border-border bg-card p-5 shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                The payoff
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                <CheckCircle2 className="h-3 w-3" />
-                Same scope
-              </span>
-            </div>
-
-            <p className="mt-2 font-display text-3xl font-light leading-none">
-              $84k <span className="text-muted-foreground">→</span> $112k
-            </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Two permit-proven builders. One brief. We show you the gap.
-            </p>
-
-            {/* Trade breakdown bars */}
-            <div className="mt-4 space-y-2.5">
-              {[
-                { trade: "Cabinets", a: 22, b: 38, hi: true },
-                { trade: "Plumbing", a: 14, b: 16, hi: false },
-                { trade: "Tile + floor", a: 11, b: 19, hi: true },
-                { trade: "Electrical", a: 9, b: 11, hi: false },
-              ].map((row) => {
-                const max = Math.max(row.a, row.b);
-                return (
-                  <div key={row.trade}>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-foreground/80">{row.trade}</span>
-                      <span className={`tabular-nums ${row.hi ? "font-medium text-accent" : "text-muted-foreground"}`}>
-                        ${row.a}k <span className="text-muted-foreground">vs</span> ${row.b}k
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-1">
-                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                        <div
-                          className="h-full rounded-full bg-foreground/70"
-                          style={{ width: `${(row.a / max) * 100}%` }}
-                        />
-                      </div>
-                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                        <div
-                          className={`h-full rounded-full ${row.hi ? "bg-accent" : "bg-foreground/40"}`}
-                          style={{ width: `${(row.b / max) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="mt-4 border-t border-border pt-3 text-[11px] text-foreground/70">
-              <span className="font-medium text-accent">+73% on cabinets.</span>{" "}
-              You'll know what to ask before you sign.
-            </p>
-
+          {/* RIGHT — second phone: step 03 in the actual app */}
+          <div className="relative mx-auto">
+            <ProposalPhoneMockup />
             {/* Inbound connector arrow (desktop) */}
             <span
               aria-hidden
               className="absolute left-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
             />
-          </motion.div>
+          </div>
         </div>
 
         {/* CTAs */}
