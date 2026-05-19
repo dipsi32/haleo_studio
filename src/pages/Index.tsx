@@ -9,6 +9,13 @@ import {
   Scale,
   Eye,
   HelpCircle,
+  CheckCircle2,
+  MapPin,
+  Sparkles,
+  TrendingDown,
+  Inbox,
+  Wrench,
+  ShieldCheck,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -24,74 +31,331 @@ const fadeUp = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/*  HERO — name the pain in one breath, then say what we do plainly.          */
+/*  HERO — Flighty-style. The product demonstrates itself. Cards orbit phone. */
 /* -------------------------------------------------------------------------- */
+
+// A single floating product card. Gentle, slow drift — not jittery.
+const FloatCard = ({
+  className = "",
+  delay = 0,
+  drift = 8,
+  children,
+}: {
+  className?: string;
+  delay?: number;
+  drift?: number;
+  children: React.ReactNode;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20, scale: 0.96 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.9, ease: EASE, delay }}
+    className={className}
+  >
+    <motion.div
+      animate={{ y: [0, -drift, 0] }}
+      transition={{ duration: 6 + delay, repeat: Infinity, ease: "easeInOut" }}
+      className="rounded-2xl border border-border/70 bg-card/95 px-4 py-3 shadow-lift backdrop-blur-md"
+    >
+      {children}
+    </motion.div>
+  </motion.div>
+);
+
+// CSS-built iPhone frame. No image asset needed.
+const PhoneMockup = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
+    className="relative mx-auto"
+    style={{ width: 280 }}
+  >
+    {/* Phone shell */}
+    <div className="relative rounded-[2.75rem] border border-foreground/15 bg-foreground/95 p-[10px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.08)_inset]">
+      {/* Screen */}
+      <div className="relative overflow-hidden rounded-[2.25rem] bg-gradient-to-b from-background to-secondary/60">
+        {/* Notch */}
+        <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+
+        {/* App content — a tiny Haleo "My project" screen */}
+        <div className="px-4 pb-5 pt-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                Your project
+              </p>
+              <p className="mt-0.5 font-display text-sm font-medium">Willow St kitchen</p>
+            </div>
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-accent-soft">
+              <Sparkles className="h-3 w-3 text-accent" />
+            </div>
+          </div>
+
+          {/* Brief snapshot */}
+          <div className="mt-4 rounded-xl border border-border bg-card p-3">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Brief</p>
+            <p className="mt-1 text-[11px] leading-snug text-foreground">
+              Full kitchen remodel · island · gas → induction · permits required
+            </p>
+            <div className="mt-2 flex gap-1.5">
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
+                95128
+              </span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
+                ~$140k
+              </span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
+                8 wks
+              </span>
+            </div>
+          </div>
+
+          {/* Matched contractors */}
+          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
+            Permit-matched · 4
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {[
+              { name: "Mehdi Builders", meta: "23 permits · 1.2mi", score: 94 },
+              { name: "Lozano Construction", meta: "17 permits · 0.8mi", score: 91 },
+              { name: "Rivera & Co.", meta: "12 permits · 2.1mi", score: 88 },
+            ].map((c) => (
+              <div
+                key={c.name}
+                className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] font-medium text-foreground">{c.name}</p>
+                  <p className="text-[9px] text-muted-foreground">{c.meta}</p>
+                </div>
+                <div className="flex items-center gap-1 rounded-full bg-accent-soft px-1.5 py-0.5">
+                  <ShieldCheck className="h-2.5 w-2.5 text-accent" />
+                  <span className="text-[9px] font-medium text-accent">{c.score}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Soft glow under phone */}
+    <div
+      className="absolute -bottom-10 left-1/2 -z-10 h-24 w-[120%] -translate-x-1/2 rounded-full bg-accent/20 blur-3xl"
+      aria-hidden
+    />
+  </motion.div>
+);
+
 const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
     <div className="absolute inset-0 bg-gradient-hero" aria-hidden />
+    {/* Ambient orbs */}
+    <div
+      className="pointer-events-none absolute -left-32 top-1/3 h-96 w-96 rounded-full bg-accent/10 blur-[120px]"
+      aria-hidden
+    />
+    <div
+      className="pointer-events-none absolute -right-32 top-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[120px]"
+      aria-hidden
+    />
+
     <SiteHeader />
-    <div className="container relative pt-36 pb-20 md:pt-44 md:pb-24">
+
+    <div className="container relative pt-28 pb-24 md:pt-36 md:pb-32">
+      {/* Heading block */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: EASE }}
-        className="mx-auto max-w-3xl text-center"
+        className="mx-auto max-w-4xl text-center"
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           For first-time remodelers
         </span>
 
-        {/* 1. The question in their head at 11pm */}
-        <h1 className="mt-8 font-display text-5xl font-light leading-[1.05] text-balance md:text-7xl">
-          Why does finding a contractor <br className="hidden md:inline" />
-          take <em className="font-normal italic text-accent">months?</em>
+        <h1 className="mt-7 font-display text-[2.75rem] font-light leading-[1.02] text-balance md:text-[5.5rem]">
+          Hire your contractor in <em className="font-normal italic text-accent">days,</em>
+          <br className="hidden md:inline" />
+          not <em className="font-normal italic text-accent">months.</em>
         </h1>
 
-        {/* 2. The pain — named in one breath */}
-        <p className="mx-auto mt-7 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          Because you have to interview dozens of builders, wait weeks for replies, and try to
-          decode bids that range{" "}
-          <span className="font-medium text-foreground">10% to 50% apart</span> for the exact
-          same kitchen.
+        <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
+          One brief. A permit-proven shortlist. Bids you can actually compare —
+          line by line, trade by trade.
         </p>
+      </motion.div>
 
-        {/* 3. The answer — one line, no qualifiers */}
-        <p className="mx-auto mt-8 font-display text-2xl font-light text-foreground md:text-3xl">
-          Haleo fixes this.
-        </p>
+      {/* The stage: phone + floating cards */}
+      <div className="relative mx-auto mt-16 h-[640px] max-w-6xl md:h-[680px]">
+        {/* Phone — center stage */}
+        <div className="absolute left-1/2 top-0 -translate-x-1/2">
+          <PhoneMockup />
+        </div>
 
-        {/* 4. The how — three lines, scannable in 4 seconds */}
-        <ul className="mx-auto mt-10 max-w-2xl space-y-3 text-left">
-          {[
-            {
-              k: "One unified brief",
-              v: "instead of endless repetitive meetings.",
-            },
-            {
-              k: "A permit-proven shortlist",
-              v: "of contractors who've passed inspections for similar projects in your city.",
-            },
-            {
-              k: "Smart trade analysis",
-              v: "that invites competitive bids and breaks down every quote by price and trade value.",
-            },
-          ].map((row) => (
-            <li
-              key={row.k}
-              className="flex items-start gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 backdrop-blur"
-            >
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-              <p className="text-sm leading-relaxed text-foreground/85 md:text-base">
-                <span className="font-medium text-foreground">{row.k}</span>{" "}
-                <span className="text-muted-foreground">{row.v}</span>
+        {/* LEFT — desktop only (md+). Mobile hides these to keep the phone hero clean. */}
+        <FloatCard
+          delay={0.4}
+          drift={10}
+          className="absolute left-0 top-8 hidden w-[260px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500/15">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Permit verified
               </p>
-            </li>
-          ))}
-        </ul>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                Mehdi Builders · 23 kitchen permits
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                95128 · last inspection passed Mar 2024
+              </p>
+            </div>
+          </div>
+        </FloatCard>
 
-        {/* 5. Action — primary path emphasized; secondary path quiet but visible */}
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <FloatCard
+          delay={0.7}
+          drift={12}
+          className="absolute left-6 top-[260px] hidden w-[280px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft">
+              <Wrench className="h-4 w-4 text-accent" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Trade analysis
+              </p>
+              <p className="mt-1 text-sm font-medium text-foreground">Cabinets</p>
+              <div className="mt-1.5 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-14 text-[11px] text-muted-foreground">Bid A</span>
+                  <div className="h-1.5 flex-1 rounded-full bg-secondary">
+                    <div className="h-full w-[55%] rounded-full bg-accent" />
+                  </div>
+                  <span className="text-[11px] font-medium tabular-nums">$22k</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-14 text-[11px] text-muted-foreground">Bid B</span>
+                  <div className="h-1.5 flex-1 rounded-full bg-secondary">
+                    <div className="h-full w-[92%] rounded-full bg-foreground/60" />
+                  </div>
+                  <span className="text-[11px] font-medium tabular-nums">$38k</span>
+                </div>
+              </div>
+              <p className="mt-2 text-[11px] text-foreground/70">
+                <span className="font-medium">+73% on cabinets.</span> Ask why.
+              </p>
+            </div>
+          </div>
+        </FloatCard>
+
+        <FloatCard
+          delay={1.0}
+          drift={8}
+          className="absolute left-12 top-[500px] hidden w-[240px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary">
+              <Inbox className="h-4 w-4 text-foreground/70" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Bids in
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                3 of 4 contractors replied
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Avg response: 2 days · not 2 weeks
+              </p>
+            </div>
+          </div>
+        </FloatCard>
+
+        {/* RIGHT */}
+        <FloatCard
+          delay={0.55}
+          drift={11}
+          className="absolute right-0 top-12 hidden w-[270px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft">
+              <MapPin className="h-4 w-4 text-accent" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Nearby project
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                Kitchen + island · 0.6 mi away
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Permitted 2023 · same scope as yours
+              </p>
+            </div>
+          </div>
+        </FloatCard>
+
+        <FloatCard
+          delay={0.85}
+          drift={9}
+          className="absolute right-4 top-[240px] hidden w-[290px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15">
+              <TrendingDown className="h-4 w-4 text-amber-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Bid spread
+              </p>
+              <p className="mt-0.5 font-display text-2xl font-light leading-none">
+                $84k <span className="text-muted-foreground">→</span> $112k
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Same scope. Two builders. We'll show you where the gap is.
+              </p>
+            </div>
+          </div>
+        </FloatCard>
+
+        <FloatCard
+          delay={1.15}
+          drift={10}
+          className="absolute right-10 top-[500px] hidden w-[250px] md:block"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
+              <ScrollText className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Brief sent
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                Same scope to all 4 builders
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                You'll never re-explain it again.
+              </p>
+            </div>
+          </div>
+        </FloatCard>
+
+        {/* CTAs — fixed below the stage */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: EASE, delay: 1.3 }}
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+        >
           <Link
             to="/brief"
             className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90 hover:shadow-accent"
@@ -106,14 +370,13 @@ const Hero = () => (
           >
             <FileSearch className="h-4 w-4" />
             I have a proposal to review
-            <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
           </Link>
-        </div>
+        </motion.div>
+      </div>
 
-        <p className="mt-6 text-xs text-muted-foreground">
-          Free to start. We only charge when you actually save time or money.
-        </p>
-      </motion.div>
+      <p className="mx-auto -mt-4 max-w-md text-center text-xs text-muted-foreground">
+        Free to start. We only charge when you actually save time or money.
+      </p>
     </div>
   </section>
 );
