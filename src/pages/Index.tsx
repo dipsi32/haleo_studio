@@ -10,7 +10,6 @@ import {
   Eye,
   HelpCircle,
   CheckCircle2,
-  CheckCircle2,
   Sparkles,
   ShieldCheck,
 } from "lucide-react";
