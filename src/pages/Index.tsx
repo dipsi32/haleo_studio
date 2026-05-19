@@ -10,11 +10,8 @@ import {
   Eye,
   HelpCircle,
   CheckCircle2,
-  MapPin,
+  CheckCircle2,
   Sparkles,
-  TrendingDown,
-  Inbox,
-  Wrench,
   ShieldCheck,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
