@@ -875,6 +875,7 @@ const Index = () => {
     <main>
       <Hero />
       <Reality />
+      <BeforeAfter />
       <WhatWeDo />
       <HowItWorks />
       <Honest />
