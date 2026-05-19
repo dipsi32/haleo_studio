@@ -161,6 +161,106 @@ const PhoneMockup = () => (
   </motion.div>
 );
 
+// Second phone — what step 03 actually looks like in the app:
+// proposal under review with a fair-price verdict and the payment schedule.
+const ProposalPhoneMockup = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 1.1, ease: EASE, delay: 0.4 }}
+    className="relative mx-auto"
+    style={{ width: 280 }}
+  >
+    <div className="relative rounded-[2.75rem] border border-foreground/15 bg-foreground/95 p-[10px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.08)_inset]">
+      <div className="relative overflow-hidden rounded-[2.25rem] bg-gradient-to-b from-background to-secondary/60">
+        <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+
+        <div className="px-4 pb-5 pt-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                Proposal review
+              </p>
+              <p className="mt-0.5 font-display text-sm font-medium">Mehdi Builders</p>
+            </div>
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-emerald-500/15">
+              <CheckCircle2 className="h-3 w-3 text-emerald-700" />
+            </div>
+          </div>
+
+          {/* Fair-price verdict */}
+          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] uppercase tracking-wider text-emerald-700/80">Fair price</p>
+              <span className="text-[9px] font-medium text-emerald-700">62nd %</span>
+            </div>
+            <p className="mt-1 font-display text-lg leading-none">$96,400</p>
+            <p className="mt-1 text-[9px] text-muted-foreground">
+              Market: $84k–$112k · 18 similar permits
+            </p>
+          </div>
+
+          {/* Trade-by-trade breakdown */}
+          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
+            By trade
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {[
+              { trade: "Cabinets", amt: "$22k", flag: "fair" },
+              { trade: "Plumbing", amt: "$14k", flag: "fair" },
+              { trade: "Tile + floor", amt: "$19k", flag: "high" },
+              { trade: "Electrical", amt: "$9k", flag: "fair" },
+            ].map((r) => (
+              <div
+                key={r.trade}
+                className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5"
+              >
+                <span className="text-[11px] text-foreground">{r.trade}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] tabular-nums text-muted-foreground">{r.amt}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[8px] font-medium ${
+                      r.flag === "high"
+                        ? "bg-accent-soft text-accent"
+                        : "bg-emerald-500/15 text-emerald-700"
+                    }`}
+                  >
+                    {r.flag === "high" ? "+12%" : "fair"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Payment schedule */}
+          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
+            Payment schedule
+          </p>
+          <div className="mt-2 rounded-xl border border-border bg-card p-2.5">
+            <div className="flex h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full bg-accent" style={{ width: "10%" }} />
+              <div className="h-full bg-accent/70" style={{ width: "30%" }} />
+              <div className="h-full bg-accent/50" style={{ width: "40%" }} />
+              <div className="h-full bg-accent/30" style={{ width: "20%" }} />
+            </div>
+            <div className="mt-2 flex justify-between text-[9px] text-muted-foreground tabular-nums">
+              <span>10% sign</span>
+              <span>30% rough</span>
+              <span>40% mid</span>
+              <span>20% final</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      className="absolute -bottom-10 left-1/2 -z-10 h-24 w-[120%] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl"
+      aria-hidden
+    />
+  </motion.div>
+);
+
 const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
     <div className="absolute inset-0 bg-gradient-hero" aria-hidden />
@@ -283,77 +383,15 @@ const Hero = () => (
             <PhoneMockup />
           </div>
 
-          {/* RIGHT — the payoff: a real bid comparison panel */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE, delay: 0.55 }}
-            className="rounded-2xl border border-border bg-card p-5 shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                The payoff
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                <CheckCircle2 className="h-3 w-3" />
-                Same scope
-              </span>
-            </div>
-
-            <p className="mt-2 font-display text-3xl font-light leading-none">
-              $84k <span className="text-muted-foreground">→</span> $112k
-            </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Two permit-proven builders. One brief. We show you the gap.
-            </p>
-
-            {/* Trade breakdown bars */}
-            <div className="mt-4 space-y-2.5">
-              {[
-                { trade: "Cabinets", a: 22, b: 38, hi: true },
-                { trade: "Plumbing", a: 14, b: 16, hi: false },
-                { trade: "Tile + floor", a: 11, b: 19, hi: true },
-                { trade: "Electrical", a: 9, b: 11, hi: false },
-              ].map((row) => {
-                const max = Math.max(row.a, row.b);
-                return (
-                  <div key={row.trade}>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-foreground/80">{row.trade}</span>
-                      <span className={`tabular-nums ${row.hi ? "font-medium text-accent" : "text-muted-foreground"}`}>
-                        ${row.a}k <span className="text-muted-foreground">vs</span> ${row.b}k
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-1">
-                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                        <div
-                          className="h-full rounded-full bg-foreground/70"
-                          style={{ width: `${(row.a / max) * 100}%` }}
-                        />
-                      </div>
-                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                        <div
-                          className={`h-full rounded-full ${row.hi ? "bg-accent" : "bg-foreground/40"}`}
-                          style={{ width: `${(row.b / max) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="mt-4 border-t border-border pt-3 text-[11px] text-foreground/70">
-              <span className="font-medium text-accent">+73% on cabinets.</span>{" "}
-              You'll know what to ask before you sign.
-            </p>
-
+          {/* RIGHT — second phone: step 03 in the actual app */}
+          <div className="relative mx-auto">
+            <ProposalPhoneMockup />
             {/* Inbound connector arrow (desktop) */}
             <span
               aria-hidden
               className="absolute left-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
             />
-          </motion.div>
+          </div>
         </div>
 
         {/* CTAs */}
