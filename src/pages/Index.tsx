@@ -396,7 +396,7 @@ const stats = [
     sub: "$560k vs $1.3M — same scope, different stories.",
   },
   {
-    n: "~2 yrs",
+    n: "months",
     label: "from first sketch to signed contract",
     sub: "Open houses, magazines, referrals, plan checks, repeat.",
   },
