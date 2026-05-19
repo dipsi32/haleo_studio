@@ -451,6 +451,174 @@ const Reality = () => (
 );
 
 /* -------------------------------------------------------------------------- */
+/*  BEFORE / AFTER — the same homeowner, same kitchen, two realities.         */
+/* -------------------------------------------------------------------------- */
+const BeforeAfter = () => (
+  <section className="bg-gradient-warm py-24 md:py-32">
+    <div className="container">
+      <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
+          Same kitchen. Same budget.
+        </p>
+        <h2 className="mt-4 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+          Two completely different <em className="italic text-foreground/70">experiences.</em>
+        </h2>
+      </motion.div>
+
+      <div className="relative mx-auto mt-14 grid max-w-6xl gap-5 md:grid-cols-2">
+        {/* BEFORE — chaos, scattered, slightly off-kilter */}
+        <motion.div
+          {...fadeUp}
+          className="relative overflow-hidden rounded-3xl border border-border bg-secondary/40 p-7 md:p-9"
+        >
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 rounded-full bg-foreground/5 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+              Without Haleo
+            </span>
+            <span className="font-display text-xs italic text-muted-foreground">Week 14</span>
+          </div>
+
+          <p className="mt-4 font-display text-xl font-light leading-snug text-foreground/70 md:text-2xl">
+            "I have nine bids, no idea which to trust, and I've explained the project twelve times."
+          </p>
+
+          {/* Messy scattered cards */}
+          <div className="relative mt-8 h-[280px]">
+            <div className="absolute left-2 top-0 w-44 -rotate-6 rounded-lg border border-border bg-card/85 p-3 shadow-soft">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Yelp ad</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground/80">"Premier Kitchens"</p>
+              <p className="text-[11px] text-muted-foreground line-through">$84,000</p>
+            </div>
+            <div className="absolute right-4 top-4 w-44 rotate-3 rounded-lg border border-border bg-card/85 p-3 shadow-soft">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cousin's guy</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground/80">"Mike — call him"</p>
+              <p className="text-[11px] text-muted-foreground">$140,000?</p>
+            </div>
+            <div className="absolute left-12 top-[88px] w-48 -rotate-2 rounded-lg border border-border bg-card/85 p-3 shadow-soft">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Referral</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground/80">A&amp;G Construction</p>
+              <p className="text-[11px] text-muted-foreground">$112k · vague scope</p>
+            </div>
+            <div className="absolute right-2 top-[112px] w-44 rotate-6 rounded-lg border border-border bg-card/85 p-3 shadow-soft">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Open house</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground/80 line-through">Bayside Builders</p>
+              <p className="text-[11px] text-muted-foreground">"never replied"</p>
+            </div>
+            <div className="absolute left-6 top-[200px] w-52 -rotate-3 rounded-lg border border-border bg-card/85 p-3 shadow-soft">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Magazine</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground/80">Ridgeline Co.</p>
+              <p className="text-[11px] text-muted-foreground">$56k? "missing plumbing"</p>
+            </div>
+            <div className="absolute right-8 top-[208px] w-36 rotate-[-8deg] rounded-sm bg-amber-100 p-2.5 shadow-soft">
+              <p className="text-[11px] leading-tight text-amber-950/80">ask about permits??</p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-5 text-center">
+            <div>
+              <p className="font-display text-2xl font-light text-muted-foreground">60</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">interviewed</p>
+            </div>
+            <div>
+              <p className="font-display text-2xl font-light text-muted-foreground">12×</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">re-explained</p>
+            </div>
+            <div>
+              <p className="font-display text-xl font-light text-muted-foreground">$84–140k</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">bid spread</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* AFTER — clean, ordered, branded */}
+        <motion.div
+          {...fadeUp}
+          transition={{ ...fadeUp.transition, delay: 0.1 }}
+          className="relative overflow-hidden rounded-3xl border border-accent/30 bg-card p-7 shadow-lift md:p-9"
+        >
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-accent">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              With Haleo
+            </span>
+            <span className="font-display text-xs italic text-accent">Day 3</span>
+          </div>
+
+          <p className="mt-4 font-display text-xl font-light leading-snug text-foreground md:text-2xl">
+            "Four permit-verified builders. One brief. Bids lined up side by side."
+          </p>
+
+          <div className="mt-8 space-y-2.5">
+            <div className="rounded-xl border border-border bg-secondary/40 p-3">
+              <div className="flex items-center gap-2">
+                <ScrollText className="h-3.5 w-3.5 text-accent" />
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Your brief — sent once
+                </p>
+              </div>
+              <p className="mt-1 text-sm text-foreground">
+                Full kitchen · island · gas → induction · 95128
+              </p>
+            </div>
+
+            <p className="pt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Permit-matched · ranked
+            </p>
+            {[
+              { name: "Mehdi Builders", bid: "$92k", score: 94, hi: true },
+              { name: "Lozano Construction", bid: "$88k", score: 91, hi: false },
+              { name: "Rivera & Co.", bid: "$96k", score: 88, hi: false },
+              { name: "Ridgeline Co.", bid: "$84k", score: 85, hi: false },
+            ].map((c) => (
+              <div
+                key={c.name}
+                className={`flex items-center justify-between rounded-xl border bg-card px-3 py-2.5 ${
+                  c.hi ? "border-accent/40 shadow-soft" : "border-border"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-accent" />
+                  <p className="text-sm font-medium text-foreground">{c.name}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm tabular-nums text-foreground/80">{c.bid}</span>
+                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent">
+                    {c.score}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-5 text-center">
+            <div>
+              <p className="font-display text-2xl font-light text-accent">4</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">shortlisted</p>
+            </div>
+            <div>
+              <p className="font-display text-2xl font-light text-accent">1×</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">explained</p>
+            </div>
+            <div>
+              <p className="font-display text-xl font-light text-accent">$84–96k</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">tight spread</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Dividing arrow — desktop only */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
+          <div className="grid h-12 w-12 place-items-center rounded-full border border-border bg-card shadow-lift">
+            <ArrowRight className="h-5 w-5 text-accent" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/* -------------------------------------------------------------------------- */
 /*  WHAT HALEO DOES — three concrete capabilities in plain language.          */
 /* -------------------------------------------------------------------------- */
 const capabilities = [
