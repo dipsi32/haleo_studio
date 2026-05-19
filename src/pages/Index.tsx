@@ -48,13 +48,10 @@ const Hero = () => (
         </h1>
 
         <p className="mx-auto mt-7 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          Because the average homeowner interviews dozens of builders, waits weeks for replies, and
-          ends up with bids that range 2× apart for the exact same kitchen.
+          Because you shouldn't have to chase dozens of builders just to get mismatched bids.
         </p>
-        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-foreground/90 md:text-lg">
-          <span className="font-medium">Haleo fixes this.</span> We turn the mess into one unified
-          project brief, a shortlist of builders who've actually worked in your neighborhood, and
-          transparent, line-by-line bid comparisons.
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-foreground md:text-xl">
+          <span className="font-medium">Haleo fixes this.</span>
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -159,21 +156,21 @@ const Reality = () => (
 const capabilities = [
   {
     icon: ScrollText,
-    label: "One brief, one language",
+    label: "One Unified Brief",
     body:
-      "Tell us about your project once. We turn your photos, dimensions, and notes into the same kind of brief contractors normally build in private — so every bid you get starts from the same scope.",
+      "Skip the endless repetitive meetings. We build one master plan for your project — the same scope, photos, and dimensions go to every contractor.",
   },
   {
     icon: Eye,
-    label: "Contractors with a real track record here",
+    label: "Permit-Proven Builders",
     body:
-      "We rank by who has actually pulled permits for similar work in your city — not who paid for the top spot. Reviews can be bought. Permit history can't.",
+      "Get a shortlist of contractors who have successfully passed local inspections for projects just like yours. Reviews can be bought. Permit history can't.",
   },
   {
     icon: Scale,
-    label: "Bids you can actually compare",
+    label: "Smart Trade Analysis",
     body:
-      "When proposals come back, we line them up side by side and flag the outliers — where one contractor is $14k high on framing, or another is suspiciously round.",
+      "We invite multiple competitive bids and automatically break down every quote by price and trade — so you can see exactly where one builder is high, low, or hiding something.",
   },
 ];
 
