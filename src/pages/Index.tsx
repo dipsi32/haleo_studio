@@ -205,173 +205,167 @@ const Hero = () => (
         </p>
       </motion.div>
 
-      {/* The stage: phone + floating cards */}
-      <div className="relative mx-auto mt-16 h-[640px] max-w-6xl md:h-[680px]">
-        {/* Phone — center stage */}
-        <div className="absolute left-1/2 top-0 -translate-x-1/2">
-          <PhoneMockup />
+      {/* The stage: 3-step sequence → phone shows the result */}
+      <div className="relative mx-auto mt-16 max-w-6xl">
+        <div className="grid items-center gap-10 md:grid-cols-[1fr_auto_1fr] md:gap-6">
+          {/* LEFT — three numbered steps, top→bottom sequence */}
+          <ol className="relative space-y-4 md:space-y-5">
+            {/* Vertical connector line behind the cards */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-7 top-8 bottom-8 hidden w-px bg-gradient-to-b from-accent/40 via-accent/30 to-accent/40 md:block"
+            />
+
+            <li className="relative">
+              <StepCard
+                step="01"
+                title="You write one brief"
+                icon={ScrollText}
+                accent="accent"
+                delay={0.1}
+                body={
+                  <>
+                    <span className="font-medium">Willow St kitchen</span> · island · gas → induction · permits required.
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Five minutes. No more repeating yourself to every builder.
+                    </span>
+                  </>
+                }
+              />
+              {/* Connector arrow → phone (desktop only) */}
+              <span
+                aria-hidden
+                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
+              />
+            </li>
+
+            <li className="relative">
+              <StepCard
+                step="02"
+                title="We match permit-proven builders"
+                icon={ShieldCheck}
+                accent="sage"
+                delay={0.25}
+                body={
+                  <>
+                    <span className="font-medium">4 builders</span> who've passed inspections for kitchens in your zip.
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Not Yelp ads. Real permit history, within 2 miles.
+                    </span>
+                  </>
+                }
+              />
+              <span
+                aria-hidden
+                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
+              />
+            </li>
+
+            <li className="relative">
+              <StepCard
+                step="03"
+                title="You compare line by line"
+                icon={Scale}
+                accent="primary"
+                delay={0.4}
+                body={
+                  <>
+                    Every bid broken down by trade. Cabinets, plumbing, tile —
+                    <span className="font-medium"> see exactly where each builder is high or low.</span>
+                  </>
+                }
+              />
+              <span
+                aria-hidden
+                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
+              />
+            </li>
+          </ol>
+
+          {/* CENTER — phone */}
+          <div className="mx-auto">
+            <PhoneMockup />
+          </div>
+
+          {/* RIGHT — the payoff: a real bid comparison panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: EASE, delay: 0.55 }}
+            className="rounded-2xl border border-border bg-card p-5 shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                The payoff
+              </p>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                <CheckCircle2 className="h-3 w-3" />
+                Same scope
+              </span>
+            </div>
+
+            <p className="mt-2 font-display text-3xl font-light leading-none">
+              $84k <span className="text-muted-foreground">→</span> $112k
+            </p>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Two permit-proven builders. One brief. We show you the gap.
+            </p>
+
+            {/* Trade breakdown bars */}
+            <div className="mt-4 space-y-2.5">
+              {[
+                { trade: "Cabinets", a: 22, b: 38, hi: true },
+                { trade: "Plumbing", a: 14, b: 16, hi: false },
+                { trade: "Tile + floor", a: 11, b: 19, hi: true },
+                { trade: "Electrical", a: 9, b: 11, hi: false },
+              ].map((row) => {
+                const max = Math.max(row.a, row.b);
+                return (
+                  <div key={row.trade}>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-foreground/80">{row.trade}</span>
+                      <span className={`tabular-nums ${row.hi ? "font-medium text-accent" : "text-muted-foreground"}`}>
+                        ${row.a}k <span className="text-muted-foreground">vs</span> ${row.b}k
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-foreground/70"
+                          style={{ width: `${(row.a / max) * 100}%` }}
+                        />
+                      </div>
+                      <div className="h-1.5 flex-1 rounded-full bg-secondary">
+                        <div
+                          className={`h-full rounded-full ${row.hi ? "bg-accent" : "bg-foreground/40"}`}
+                          style={{ width: `${(row.b / max) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 border-t border-border pt-3 text-[11px] text-foreground/70">
+              <span className="font-medium text-accent">+73% on cabinets.</span>{" "}
+              You'll know what to ask before you sign.
+            </p>
+
+            {/* Inbound connector arrow (desktop) */}
+            <span
+              aria-hidden
+              className="absolute left-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
+            />
+          </motion.div>
         </div>
 
-        {/* LEFT — desktop only (md+). Mobile hides these to keep the phone hero clean. */}
-        <FloatCard
-          delay={0.4}
-          drift={10}
-          className="absolute left-0 top-8 hidden w-[260px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500/15">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Permit verified
-              </p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                Mehdi Builders · 23 kitchen permits
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                95128 · last inspection passed Mar 2024
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        <FloatCard
-          delay={0.7}
-          drift={12}
-          className="absolute left-6 top-[260px] hidden w-[280px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft">
-              <Wrench className="h-4 w-4 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Trade analysis
-              </p>
-              <p className="mt-1 text-sm font-medium text-foreground">Cabinets</p>
-              <div className="mt-1.5 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-14 text-[11px] text-muted-foreground">Bid A</span>
-                  <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                    <div className="h-full w-[55%] rounded-full bg-accent" />
-                  </div>
-                  <span className="text-[11px] font-medium tabular-nums">$22k</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-14 text-[11px] text-muted-foreground">Bid B</span>
-                  <div className="h-1.5 flex-1 rounded-full bg-secondary">
-                    <div className="h-full w-[92%] rounded-full bg-foreground/60" />
-                  </div>
-                  <span className="text-[11px] font-medium tabular-nums">$38k</span>
-                </div>
-              </div>
-              <p className="mt-2 text-[11px] text-foreground/70">
-                <span className="font-medium">+73% on cabinets.</span> Ask why.
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        <FloatCard
-          delay={1.0}
-          drift={8}
-          className="absolute left-12 top-[500px] hidden w-[240px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary">
-              <Inbox className="h-4 w-4 text-foreground/70" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Bids in
-              </p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                3 of 4 contractors replied
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Avg response: 2 days · not 2 weeks
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        {/* RIGHT */}
-        <FloatCard
-          delay={0.55}
-          drift={11}
-          className="absolute right-0 top-12 hidden w-[270px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft">
-              <MapPin className="h-4 w-4 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Nearby project
-              </p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                Kitchen + island · 0.6 mi away
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Permitted 2023 · same scope as yours
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        <FloatCard
-          delay={0.85}
-          drift={9}
-          className="absolute right-4 top-[240px] hidden w-[290px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15">
-              <TrendingDown className="h-4 w-4 text-amber-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Bid spread
-              </p>
-              <p className="mt-0.5 font-display text-2xl font-light leading-none">
-                $84k <span className="text-muted-foreground">→</span> $112k
-              </p>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Same scope. Two builders. We'll show you where the gap is.
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        <FloatCard
-          delay={1.15}
-          drift={10}
-          className="absolute right-10 top-[500px] hidden w-[250px] md:block"
-        >
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
-              <ScrollText className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Brief sent
-              </p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                Same scope to all 4 builders
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                You'll never re-explain it again.
-              </p>
-            </div>
-          </div>
-        </FloatCard>
-
-        {/* CTAs — fixed below the stage */}
+        {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE, delay: 1.3 }}
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+          transition={{ duration: 0.8, ease: EASE, delay: 0.8 }}
+          className="mt-14 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
         >
           <Link
             to="/brief"
@@ -391,7 +385,7 @@ const Hero = () => (
         </motion.div>
       </div>
 
-      <p className="mx-auto -mt-4 max-w-md text-center text-xs text-muted-foreground">
+      <p className="mx-auto mt-6 max-w-md text-center text-xs text-muted-foreground">
         Free to start. We only charge when you actually save time or money.
       </p>
     </div>
