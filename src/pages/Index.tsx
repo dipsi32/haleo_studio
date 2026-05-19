@@ -30,7 +30,7 @@ const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
     <div className="absolute inset-0 bg-gradient-hero" aria-hidden />
     <SiteHeader />
-    <div className="container relative pt-40 pb-24 md:pt-48 md:pb-28">
+    <div className="container relative pt-36 pb-20 md:pt-44 md:pb-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -42,18 +42,55 @@ const Hero = () => (
           For first-time remodelers
         </span>
 
+        {/* 1. The question in their head at 11pm */}
         <h1 className="mt-8 font-display text-5xl font-light leading-[1.05] text-balance md:text-7xl">
           Why does finding a contractor <br className="hidden md:inline" />
           take <em className="font-normal italic text-accent">months?</em>
         </h1>
 
-        <p className="mx-auto mt-7 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          Because you shouldn't have to chase dozens of builders just to get mismatched bids.
-        </p>
-        <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-foreground md:text-xl">
-          <span className="font-medium">Haleo fixes this.</span>
+        {/* 2. The pain — named in one breath */}
+        <p className="mx-auto mt-7 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
+          Because you have to interview dozens of builders, wait weeks for replies, and try to
+          decode bids that range{" "}
+          <span className="font-medium text-foreground">10% to 50% apart</span> for the exact
+          same kitchen.
         </p>
 
+        {/* 3. The answer — one line, no qualifiers */}
+        <p className="mx-auto mt-8 font-display text-2xl font-light text-foreground md:text-3xl">
+          Haleo fixes this.
+        </p>
+
+        {/* 4. The how — three lines, scannable in 4 seconds */}
+        <ul className="mx-auto mt-10 max-w-2xl space-y-3 text-left">
+          {[
+            {
+              k: "One unified brief",
+              v: "instead of endless repetitive meetings.",
+            },
+            {
+              k: "A permit-proven shortlist",
+              v: "of contractors who've passed inspections for similar projects in your city.",
+            },
+            {
+              k: "Smart trade analysis",
+              v: "that invites competitive bids and breaks down every quote by price and trade value.",
+            },
+          ].map((row) => (
+            <li
+              key={row.k}
+              className="flex items-start gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 backdrop-blur"
+            >
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              <p className="text-sm leading-relaxed text-foreground/85 md:text-base">
+                <span className="font-medium text-foreground">{row.k}</span>{" "}
+                <span className="text-muted-foreground">{row.v}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {/* 5. Action — primary path emphasized; secondary path quiet but visible */}
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/brief"
@@ -65,7 +102,7 @@ const Hero = () => (
           </Link>
           <Link
             to="/proposal"
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90 hover:shadow-accent"
+            className="group inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-7 py-4 text-sm font-medium text-foreground transition-smooth hover:border-accent/40 hover:bg-secondary"
           >
             <FileSearch className="h-4 w-4" />
             I have a proposal to review
