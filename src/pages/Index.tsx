@@ -34,33 +34,50 @@ const fadeUp = {
 /*  HERO — Flighty-style. The product demonstrates itself. Cards orbit phone. */
 /* -------------------------------------------------------------------------- */
 
-// A single floating product card. Gentle, slow drift — not jittery.
-const FloatCard = ({
-  className = "",
+// A numbered step card. Solid, crisp, no blur — meant to read instantly.
+const StepCard = ({
+  step,
+  title,
+  body,
+  icon: Icon,
+  accent = "accent",
   delay = 0,
-  drift = 8,
-  children,
+  className = "",
 }: {
-  className?: string;
+  step: string;
+  title: string;
+  body: React.ReactNode;
+  icon: React.ComponentType<{ className?: string }>;
+  accent?: "accent" | "sage" | "primary";
   delay?: number;
-  drift?: number;
-  children: React.ReactNode;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20, scale: 0.96 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: 0.9, ease: EASE, delay }}
-    className={className}
-  >
+  className?: string;
+}) => {
+  const tone =
+    accent === "sage"
+      ? "bg-emerald-500/15 text-emerald-700"
+      : accent === "primary"
+      ? "bg-primary/10 text-primary"
+      : "bg-accent-soft text-accent";
+  return (
     <motion.div
-      animate={{ y: [0, -drift, 0] }}
-      transition={{ duration: 6 + delay, repeat: Infinity, ease: "easeInOut" }}
-      className="rounded-2xl border border-border/70 bg-card/95 px-4 py-3 shadow-lift backdrop-blur-md"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE, delay }}
+      className={`rounded-2xl border border-border bg-card p-4 shadow-soft ${className}`}
     >
-      {children}
+      <div className="flex items-center gap-2">
+        <span className={`inline-grid h-6 w-6 place-items-center rounded-full ${tone} text-[11px] font-semibold tabular-nums`}>
+          {step}
+        </span>
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <Icon className="h-3 w-3" />
+          {title}
+        </div>
+      </div>
+      <div className="mt-2.5 text-sm leading-snug text-foreground">{body}</div>
     </motion.div>
-  </motion.div>
-);
+  );
+};
 
 // CSS-built iPhone frame. No image asset needed.
 const PhoneMockup = () => (
