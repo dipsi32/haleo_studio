@@ -43,14 +43,18 @@ const Hero = () => (
         </span>
 
         <h1 className="mt-8 font-display text-5xl font-light leading-[1.05] text-balance md:text-7xl">
-          Finding a contractor <br className="hidden md:inline" />
-          shouldn't take <em className="font-normal italic text-accent">two years.</em>
+          Why does finding a contractor <br className="hidden md:inline" />
+          take <em className="font-normal italic text-accent">months?</em>
         </h1>
 
         <p className="mx-auto mt-7 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          Most homeowners we talk to interviewed 30–60 contractors and waited months for bids that ranged
-          2× apart for the same kitchen. Haleo turns that mess into one clear brief, a short list of
-          contractors who've actually built nearby, and bids you can read line by line.
+          Because the average homeowner interviews dozens of builders, waits weeks for replies, and
+          ends up with bids that range 2× apart for the exact same kitchen.
+        </p>
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-foreground/90 md:text-lg">
+          <span className="font-medium">Haleo fixes this.</span> We turn the mess into one unified
+          project brief, a shortlist of builders who've actually worked in your neighborhood, and
+          transparent, line-by-line bid comparisons.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
