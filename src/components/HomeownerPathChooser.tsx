@@ -46,24 +46,27 @@ export default function HomeownerPathChooser() {
   return (
     <section aria-labelledby="paths-heading" className="mt-10">
       <h2 id="paths-heading" className="font-display text-xl font-medium">
-        How can we help today?
+        Where are you in the process?
       </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Two doors. Both free to start.
+      </p>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         {[
           {
             to: "/proposal",
             icon: FileSearch,
-            eyebrow: "You have a proposal",
-            title: "Review it",
-            sub: "Line-by-line audit in about a minute.",
+            eyebrow: "I have a bid in hand",
+            title: "Audit my proposal",
+            sub: "Line-by-line check against local pricing. ~1 minute.",
           },
           {
             to: "/brief?fresh=1",
             icon: Hammer,
-            eyebrow: "You need a contractor",
-            title: "Find one",
-            sub: "Permitted, licensed, near you.",
+            eyebrow: "I'm still looking",
+            title: "Find the right contractor",
+            sub: "Ranked by who's actually built nearby — not Yelp ads.",
           },
         ].map((p, i) => (
           <motion.div
