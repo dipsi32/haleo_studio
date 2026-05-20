@@ -47,29 +47,31 @@ const SPACE = {
   timeline: "8 wks",
 };
 
+/* Pain options match PAIN_BY_ROOM.kitchen from /brief exactly */
 const BUG_OPTIONS = [
-  "cramped layout",        // 0 ✓
-  "no island",             // 1 ✓
-  "gas stove",             // 2
-  "dark, no light",        // 3 ✓
-  "wasted corners",        // 4
-  "low storage",           // 5 ✓
-  "closed off from living",// 6 ✓
-  "old appliances",        // 7
-  "awkward fridge spot",   // 8
-  "no prep space",         // 9
+  "Too dark",                  // 0 ✓
+  "Cramped",                   // 1 ✓
+  "Layout doesn't work",       // 2 ✓
+  "Not enough counter space",  // 3
+  "No room to cook together",  // 4
+  "Dated cabinets",            // 5
+  "No storage",                // 6 ✓
+  "Appliances need upgrading", // 7
+  "No island",                 // 8 ✓
 ];
 
-const SELECTION_ORDER = [0, 3, 6, 5, 1];
+const SELECTION_ORDER = [1, 0, 2, 6, 8];
 
-/* Each picked bug → what Haleo sees in the photos + what lands in the brief */
+/* Each picked pain → what Haleo sees + what becomes the brief line */
 const BUG_MAP: Record<number, { sees: string; brief: string }> = {
-  0: { sees: "Tight galley, ~3'6\" aisle", brief: "Open galley, widen aisle to 4'+" },
-  3: { sees: "Single small window — low daylight", brief: "Enlarge window, add recessed + pendants" },
-  6: { sees: "Solid wall separating living room", brief: "Remove wall to living, half-height bar" },
-  5: { sees: "Uppers on one wall only — limited storage", brief: "Full-height pantry wall + drawer base" },
-  1: { sees: "No island, prep on counter edge", brief: "New 7' island, 3-stool seating" },
+  1: { sees: "Tight galley, ~3'6\" aisle", brief: "Open galley, widen aisle to 4'+" },
+  0: { sees: "Single small window — low daylight", brief: "Enlarge window, add recessed + pendants" },
+  2: { sees: "Wall blocks flow to living room", brief: "Remove wall to living, half-height bar" },
+  6: { sees: "Uppers on one wall only", brief: "Full-height pantry wall + drawer bases" },
+  8: { sees: "No island, prep on counter edge", brief: "New 7' island, 3-stool seating" },
 };
+
+const ROOMS = ["Kitchen", "Bathroom", "Living", "Addition"] as const;
 
 const ScreenSpace = () => {
   const [picked, setPicked] = useState<number[]>([]);
@@ -79,22 +81,20 @@ const ScreenSpace = () => {
     setPicked([]);
     setPhotos(0);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    // Upload photos one by one first
     [1, 2, 3].forEach((n, i) => {
-      timers.push(setTimeout(() => setPhotos(n), 250 + i * 280));
+      timers.push(setTimeout(() => setPhotos(n), 300 + i * 280));
     });
-    // Then start picking bugs
     SELECTION_ORDER.forEach((idx, i) => {
       timers.push(
         setTimeout(() => {
           setPicked((p) => (p.includes(idx) ? p : [...p, idx]));
-        }, 1300 + i * 340),
+        }, 1350 + i * 340),
       );
     });
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const labels = picked.map((i) => BUG_OPTIONS[i]);
+  const labels = picked.map((i) => BUG_OPTIONS[i].toLowerCase());
   const sentence =
     labels.length === 0
       ? "Tap what's bugging you…"
@@ -104,15 +104,32 @@ const ScreenSpace = () => {
 
   return (
     <div className="flex h-full flex-col">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-        Remodeling
+      <p className="font-display text-[14px] leading-tight">
+        Where's the dream taking shape?
       </p>
-      <div className="mt-0.5 flex items-baseline gap-2">
-        <p className="font-display text-[15px] leading-tight">{SPACE.room}</p>
-        <span className="text-[10px] text-muted-foreground">
-          {SPACE.sqft} · {SPACE.layout}
-        </span>
+      <p className="mt-0.5 text-[9.5px] text-muted-foreground">
+        Tap one. You can swap rooms anytime.
+      </p>
+
+      {/* Room picker — Kitchen selected */}
+      <div className="mt-2 grid grid-cols-4 gap-1">
+        {ROOMS.map((r) => {
+          const active = r === SPACE.room;
+          return (
+            <div
+              key={r}
+              className={`rounded-md border px-1 py-1.5 text-center text-[9px] transition-all ${
+                active
+                  ? "border-accent bg-accent/10 text-foreground"
+                  : "border-border bg-card text-muted-foreground"
+              }`}
+            >
+              {r}
+            </div>
+          );
+        })}
       </div>
+
 
       {/* Upload row — 3 photo slots that fill in */}
       <p className="mt-2.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
