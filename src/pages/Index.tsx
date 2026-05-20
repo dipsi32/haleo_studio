@@ -76,19 +76,32 @@ const ROOMS = ["Kitchen", "Bathroom", "Living", "Addition"] as const;
 const ScreenSpace = () => {
   const [picked, setPicked] = useState<number[]>([]);
   const [photos, setPhotos] = useState(0);
+  const [uploading, setUploading] = useState<number | null>(null);
 
   useEffect(() => {
     setPicked([]);
     setPhotos(0);
+    setUploading(null);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    [1, 2, 3].forEach((n, i) => {
-      timers.push(setTimeout(() => setPhotos(n), 300 + i * 280));
+
+    /* Upload sequence: show uploading indicator, then fill each slot */
+    [0, 1, 2].forEach((i) => {
+      timers.push(
+        setTimeout(() => setUploading(i), 300 + i * 420),
+      );
+      timers.push(
+        setTimeout(() => {
+          setUploading(null);
+          setPhotos(i + 1);
+        }, 750 + i * 420),
+      );
     });
+
     SELECTION_ORDER.forEach((idx, i) => {
       timers.push(
         setTimeout(() => {
           setPicked((p) => (p.includes(idx) ? p : [...p, idx]));
-        }, 1350 + i * 340),
+        }, 2000 + i * 340),
       );
     });
     return () => timers.forEach(clearTimeout);
@@ -138,6 +151,7 @@ const ScreenSpace = () => {
       <div className="mt-1 grid grid-cols-3 gap-1.5">
         {[0, 1, 2].map((i) => {
           const filled = photos > i;
+          const isUploading = uploading === i;
           return (
             <div
               key={i}
@@ -145,7 +159,29 @@ const ScreenSpace = () => {
                 filled ? "border-border" : "border-dashed border-foreground/20 bg-secondary/40"
               }`}
             >
-              {filled ? (
+              {isUploading ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex h-full flex-col items-center justify-center gap-1"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ repeat: Infinity, duration: 0.9 }}
+                  >
+                    <ImageIcon className="h-4 w-4 text-accent" />
+                  </motion.div>
+                  <span className="text-[8px] text-muted-foreground">Uploading…</span>
+                  <div className="mx-3 h-1 w-16 overflow-hidden rounded-full bg-secondary">
+                    <motion.div
+                      className="h-full bg-accent"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 0.45, ease: "easeInOut" }}
+                    />
+                  </div>
+                </motion.div>
+              ) : filled ? (
                 <div
                   className={`h-full w-full ${
                     i === 0
