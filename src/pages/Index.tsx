@@ -12,10 +12,11 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldCheck,
-  Mic,
   Image as ImageIcon,
-  PenLine,
-  ArrowDown,
+  Video as VideoIcon,
+  FileText,
+  Ruler,
+  Upload,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -34,297 +35,269 @@ const fadeUp = {
 /*  HERO — Flighty-style. The product demonstrates itself. Cards orbit phone. */
 /* -------------------------------------------------------------------------- */
 
-// A numbered step card. Solid, crisp, no blur — meant to read instantly.
-const StepCard = ({
+/* -------------------------------------------------------------------------- */
+/*  HERO — Persona-driven 5-frame walkthrough of the actual app.              */
+/*  Maya, first kitchen remodel. Every frame mirrors a real screen.           */
+/* -------------------------------------------------------------------------- */
+
+// A single phone frame. Used five times across the walkthrough — one per step.
+const PhoneFrame = ({
   step,
-  title,
-  body,
-  icon: Icon,
-  accent = "accent",
+  label,
+  caption,
   delay = 0,
-  className = "",
+  tone = "accent",
+  children,
 }: {
   step: string;
-  title: string;
-  body: React.ReactNode;
-  icon: React.ComponentType<{ className?: string }>;
-  accent?: "accent" | "sage" | "primary";
+  label: string;
+  caption: string;
   delay?: number;
-  className?: string;
+  tone?: "accent" | "sage" | "primary";
+  children: React.ReactNode;
 }) => {
-  const tone =
-    accent === "sage"
-      ? "bg-emerald-500/15 text-emerald-700"
-      : accent === "primary"
-      ? "bg-primary/10 text-primary"
-      : "bg-accent-soft text-accent";
+  const dot =
+    tone === "sage" ? "bg-emerald-500" : tone === "primary" ? "bg-primary" : "bg-accent";
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: EASE, delay }}
-      className={`rounded-2xl border border-border bg-card p-4 shadow-soft ${className}`}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.8, ease: EASE, delay }}
+      className="relative flex flex-col items-center"
     >
-      <div className="flex items-center gap-2">
-        <span className={`inline-grid h-6 w-6 place-items-center rounded-full ${tone} text-[11px] font-semibold tabular-nums`}>
-          {step}
-        </span>
-        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          <Icon className="h-3 w-3" />
-          {title}
+      {/* Caption above */}
+      <div className="mb-4 max-w-[240px] text-center">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground backdrop-blur">
+          <span className={`h-1 w-1 rounded-full ${dot}`} />
+          Step {step}
+        </div>
+        <p className="mt-2 font-display text-base leading-tight text-foreground md:text-lg">
+          {label}
+        </p>
+        <p className="mt-1 text-xs leading-snug text-muted-foreground">{caption}</p>
+      </div>
+
+      {/* Phone */}
+      <div
+        className="relative rounded-[2.25rem] border border-foreground/15 bg-foreground/95 p-[8px] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
+        style={{ width: 240 }}
+      >
+        <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-background to-secondary/60">
+          <div className="absolute left-1/2 top-1.5 z-10 h-4 w-20 -translate-x-1/2 rounded-full bg-foreground/95" />
+          <div className="px-3.5 pb-4 pt-8">{children}</div>
         </div>
       </div>
-      <div className="mt-2.5 text-sm leading-snug text-foreground">{body}</div>
+
+      {/* Soft glow */}
+      <div
+        className="pointer-events-none absolute -bottom-6 left-1/2 -z-10 h-20 w-[110%] -translate-x-1/2 rounded-full bg-accent/15 blur-3xl"
+        aria-hidden
+      />
     </motion.div>
   );
 };
 
-// Vision-capture phone: messy real-world inputs (photo, voice memo, scribbled
-// wishes) get distilled into a clean structured brief. The transformation is
-// the whole point — show the "before" and "after" inside one screen.
-const PhoneMockup = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 24, scale: 0.96 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
-    className="relative mx-auto"
-    style={{ width: 280 }}
-  >
-    {/* Phone shell */}
-    <div className="relative rounded-[2.75rem] border border-foreground/15 bg-foreground/95 p-[10px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.08)_inset]">
-      {/* Screen */}
-      <div className="relative overflow-hidden rounded-[2.25rem] bg-gradient-to-b from-background to-secondary/60">
-        {/* Notch */}
-        <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+// Connector between frames (desktop only)
+const StepArrow = () => (
+  <div className="hidden shrink-0 items-center justify-center self-center md:flex" aria-hidden>
+    <ArrowRight className="h-5 w-5 text-accent/60" />
+  </div>
+);
 
-        <div className="px-4 pb-5 pt-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-                Your vision
-              </p>
-              <p className="mt-0.5 font-display text-sm font-medium">Willow St kitchen</p>
-            </div>
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-accent-soft">
-              <Sparkles className="h-3 w-3 text-accent" />
-            </div>
-          </div>
+// ── Frame 1 — Upload: photos, video walkthrough, floor plan, architect plan
+const Frame1Upload = () => (
+  <>
+    <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Maya's kitchen</p>
+    <p className="mt-0.5 font-display text-sm font-medium">Show us the space</p>
 
-          {/* Raw inputs — what the homeowner actually has in their head */}
-          <p className="mt-3 text-[9px] uppercase tracking-wider text-muted-foreground">
-            What you gave us
-          </p>
-          <div className="mt-1.5 space-y-1.5">
-            {/* Inspiration photo */}
-            <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: 0.5 }}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
-            >
-              <div className="h-8 w-8 shrink-0 rounded-md bg-gradient-to-br from-amber-200 via-rose-200 to-stone-300" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-medium text-foreground">2 inspo photos</p>
-                <p className="text-[8.5px] text-muted-foreground">"warm, open, island"</p>
-              </div>
-              <ImageIcon className="h-3 w-3 text-muted-foreground" />
-            </motion.div>
-
-            {/* Voice memo */}
-            <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: 0.65 }}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
-            >
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-accent/10">
-                <Mic className="h-3.5 w-3.5 text-accent" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-medium text-foreground">0:47 voice memo</p>
-                <div className="mt-0.5 flex items-end gap-[1.5px]">
-                  {[3, 6, 4, 8, 5, 9, 4, 7, 5, 8, 3, 6, 4, 7, 5, 3].map((h, i) => (
-                    <span
-                      key={i}
-                      className="w-[2px] rounded-full bg-accent/60"
-                      style={{ height: `${h}px` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Scribbled wish */}
-            <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: 0.8 }}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
-            >
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-secondary">
-                <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1 font-display italic text-[10.5px] leading-tight text-foreground/80">
-                "no more gas. room for the kids to sit while I cook."
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Transformation moment */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: EASE, delay: 1.0 }}
-            className="my-2.5 flex items-center gap-2"
-          >
-            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-accent/40" />
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[8.5px] font-medium uppercase tracking-wider text-accent">
-              <ArrowDown className="h-2.5 w-2.5" /> Haleo brief
-            </span>
-            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-accent/40" />
-          </motion.div>
-
-          {/* Distilled brief — what contractors actually receive */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 1.15 }}
-            className="rounded-xl border border-accent/30 bg-card p-3 shadow-soft"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] uppercase tracking-wider text-accent">Brief · ready to send</p>
-              <CheckCircle2 className="h-3 w-3 text-accent" />
-            </div>
-            <p className="mt-1 text-[11px] leading-snug text-foreground">
-              Full kitchen remodel · island seating for 3 · gas → induction · permits required
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {["95128", "~$140k", "8 wks", "warm-modern"].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          </motion.div>
+    <div className="mt-3 grid grid-cols-2 gap-1.5">
+      {[
+        { icon: ImageIcon, label: "Room photos", count: "12" },
+        { icon: VideoIcon, label: "Walkthrough video", count: "0:42" },
+        { icon: Ruler, label: "Floor plan", count: "PDF" },
+        { icon: FileText, label: "Architect plans", count: "3 pg" },
+      ].map((it) => (
+        <div
+          key={it.label}
+          className="rounded-lg border border-border bg-card p-2"
+        >
+          <it.icon className="h-3.5 w-3.5 text-accent" />
+          <p className="mt-1 text-[10px] font-medium leading-tight text-foreground">{it.label}</p>
+          <p className="text-[9px] text-muted-foreground">{it.count}</p>
         </div>
+      ))}
+    </div>
+
+    <div className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-accent/40 bg-accent/5 py-2 text-[10px] font-medium text-accent">
+      <Upload className="h-3 w-3" /> Drop more
+    </div>
+  </>
+);
+
+// ── Frame 2 — Haleo reads the scope (real ConfirmReadScreen behavior)
+const Frame2Read = () => (
+  <>
+    <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Haleo sees</p>
+    <p className="mt-0.5 font-display text-sm font-medium">~140 sq ft galley</p>
+
+    <div className="mt-3 space-y-1.5">
+      {[
+        "Load-bearing wall on north side",
+        "Gas line at range — relocation likely",
+        "Recessed lighting on single circuit",
+        "Original 1962 cabinetry, no soft-close",
+      ].map((line, i) => (
+        <motion.div
+          key={line}
+          initial={{ opacity: 0, x: -6 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, ease: EASE, delay: 0.2 + i * 0.08 }}
+          className="flex items-start gap-1.5 rounded-lg border border-border bg-card px-2 py-1.5"
+        >
+          <Eye className="mt-[2px] h-3 w-3 shrink-0 text-accent" />
+          <p className="text-[10px] leading-snug text-foreground">{line}</p>
+        </motion.div>
+      ))}
+    </div>
+
+    <div className="mt-3 flex items-center justify-between rounded-lg bg-emerald-500/10 px-2 py-1.5">
+      <span className="text-[10px] font-medium text-emerald-700">Looks right?</span>
+      <span className="text-[9px] text-emerald-700/80">Maya: confirmed ✓</span>
+    </div>
+  </>
+);
+
+// ── Frame 3 — The brief
+const Frame3Brief = () => (
+  <>
+    <div className="flex items-center justify-between">
+      <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Your brief</p>
+      <CheckCircle2 className="h-3 w-3 text-accent" />
+    </div>
+    <p className="mt-0.5 font-display text-sm font-medium">Ready to send</p>
+
+    <div className="mt-3 space-y-2 text-[10px] leading-snug text-foreground">
+      <div>
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Scope</p>
+        <p>Full remodel · island seating · gas → induction</p>
+      </div>
+      <div>
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Site</p>
+        <p>95128 · 1962 build · ~140 sq ft</p>
+      </div>
+      <div>
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Permits</p>
+        <p>Electrical, plumbing relocation, structural review</p>
       </div>
     </div>
 
-    {/* Soft glow under phone */}
-    <div
-      className="absolute -bottom-10 left-1/2 -z-10 h-24 w-[120%] -translate-x-1/2 rounded-full bg-accent/20 blur-3xl"
-      aria-hidden
-    />
-  </motion.div>
+    <div className="mt-3 flex flex-wrap gap-1">
+      {["~$140k", "8 wks", "warm-modern"].map((t) => (
+        <span key={t} className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
+          {t}
+        </span>
+      ))}
+    </div>
+  </>
 );
 
-// Second phone — what step 03 actually looks like in the app:
-// proposal under review with a fair-price verdict and the payment schedule.
-const ProposalPhoneMockup = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 24, scale: 0.96 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: 1.1, ease: EASE, delay: 0.4 }}
-    className="relative mx-auto"
-    style={{ width: 280 }}
-  >
-    <div className="relative rounded-[2.75rem] border border-foreground/15 bg-foreground/95 p-[10px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.08)_inset]">
-      <div className="relative overflow-hidden rounded-[2.25rem] bg-gradient-to-b from-background to-secondary/60">
-        <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+// ── Frame 4 — Permit-proven contractor matches
+const Frame4Match = () => (
+  <>
+    <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Matched builders</p>
+    <p className="mt-0.5 font-display text-sm font-medium">4 permit-proven</p>
 
-        <div className="px-4 pb-5 pt-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-                Proposal review
-              </p>
-              <p className="mt-0.5 font-display text-sm font-medium">Mehdi Builders</p>
-            </div>
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-emerald-500/15">
-              <CheckCircle2 className="h-3 w-3 text-emerald-700" />
-            </div>
+    <div className="mt-3 space-y-1.5">
+      {[
+        { name: "Mehdi Builders", meta: "11 kitchens · 95128", dist: "1.2 mi" },
+        { name: "Westwood & Co.", meta: "8 kitchens · 95126", dist: "1.8 mi" },
+        { name: "Casa Verde", meta: "6 kitchens · 95128", dist: "0.9 mi" },
+      ].map((c) => (
+        <div key={c.name} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2">
+          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500/15">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
           </div>
-
-          {/* Fair-price verdict */}
-          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] uppercase tracking-wider text-emerald-700/80">Fair price</p>
-              <span className="text-[9px] font-medium text-emerald-700">62nd %</span>
-            </div>
-            <p className="mt-1 font-display text-lg leading-none">$96,400</p>
-            <p className="mt-1 text-[9px] text-muted-foreground">
-              Market: $84k–$112k · 18 similar permits
-            </p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[10.5px] font-medium text-foreground">{c.name}</p>
+            <p className="truncate text-[9px] text-muted-foreground">{c.meta}</p>
           </div>
+          <span className="text-[9px] tabular-nums text-muted-foreground">{c.dist}</span>
+        </div>
+      ))}
+    </div>
 
-          {/* Trade-by-trade breakdown */}
-          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
-            By trade
-          </p>
-          <div className="mt-2 space-y-1.5">
-            {[
-              { trade: "Cabinets", amt: "$22k", flag: "fair" },
-              { trade: "Plumbing", amt: "$14k", flag: "fair" },
-              { trade: "Tile + floor", amt: "$19k", flag: "high" },
-              { trade: "Electrical", amt: "$9k", flag: "fair" },
-            ].map((r) => (
-              <div
-                key={r.trade}
-                className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5"
-              >
-                <span className="text-[11px] text-foreground">{r.trade}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] tabular-nums text-muted-foreground">{r.amt}</span>
+    <div className="mt-2.5 text-center text-[9px] text-muted-foreground">
+      All passed city inspections on similar jobs
+    </div>
+  </>
+);
+
+// ── Frame 5 — Compare bids side-by-side, trade-by-trade
+const Frame5Compare = () => {
+  const trades = [
+    { t: "Cabinets", a: 22, b: 28, c: 24 },
+    { t: "Plumbing", a: 14, b: 13, c: 16 },
+    { t: "Tile", a: 11, b: 19, c: 12 },
+    { t: "Electrical", a: 9, b: 11, c: 10 },
+  ];
+  const max = 30;
+  return (
+    <>
+      <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">3 bids in</p>
+      <p className="mt-0.5 font-display text-sm font-medium">Compare line by line</p>
+
+      <div className="mt-3 grid grid-cols-[1fr_repeat(3,18px)] gap-x-1.5 text-[9px] text-muted-foreground">
+        <span />
+        <span className="text-center font-medium text-foreground">M</span>
+        <span className="text-center font-medium text-foreground">W</span>
+        <span className="text-center font-medium text-foreground">C</span>
+      </div>
+
+      <div className="mt-1.5 space-y-1.5">
+        {trades.map((row) => {
+          const vals = [row.a, row.b, row.c];
+          const lo = Math.min(...vals);
+          const hi = Math.max(...vals);
+          return (
+            <div key={row.t} className="rounded-md border border-border bg-card px-2 py-1.5">
+              <div className="grid grid-cols-[1fr_repeat(3,18px)] items-center gap-x-1.5">
+                <span className="text-[10px] text-foreground">{row.t}</span>
+                {vals.map((v, i) => (
                   <span
-                    className={`rounded-full px-1.5 py-0.5 text-[8px] font-medium ${
-                      r.flag === "high"
+                    key={i}
+                    className={`rounded text-center text-[9px] tabular-nums leading-4 ${
+                      v === lo
+                        ? "bg-emerald-500/15 text-emerald-700"
+                        : v === hi
                         ? "bg-accent-soft text-accent"
-                        : "bg-emerald-500/15 text-emerald-700"
+                        : "text-muted-foreground"
                     }`}
                   >
-                    {r.flag === "high" ? "+12%" : "fair"}
+                    {v}k
                   </span>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          {/* Payment schedule */}
-          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
-            Payment schedule
-          </p>
-          <div className="mt-2 rounded-xl border border-border bg-card p-2.5">
-            <div className="flex h-1.5 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full bg-accent" style={{ width: "10%" }} />
-              <div className="h-full bg-accent/70" style={{ width: "30%" }} />
-              <div className="h-full bg-accent/50" style={{ width: "40%" }} />
-              <div className="h-full bg-accent/30" style={{ width: "20%" }} />
+              <div className="mt-1 flex h-1 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full bg-accent/60" style={{ width: `${(row.a / max) * 100}%` }} />
+              </div>
             </div>
-            <div className="mt-2 flex justify-between text-[9px] text-muted-foreground tabular-nums">
-              <span>10% sign</span>
-              <span>30% rough</span>
-              <span>40% mid</span>
-              <span>20% final</span>
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
-    </div>
 
-    <div
-      className="absolute -bottom-10 left-1/2 -z-10 h-24 w-[120%] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl"
-      aria-hidden
-    />
-  </motion.div>
-);
+      <div className="mt-2.5 flex items-center justify-between rounded-lg bg-primary/5 px-2 py-1.5">
+        <span className="text-[10px] font-medium text-foreground">Total spread</span>
+        <span className="text-[10px] font-semibold tabular-nums text-primary">$56k → $71k</span>
+      </div>
+    </>
+  );
+};
 
 const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
     <div className="absolute inset-0 bg-gradient-hero" aria-hidden />
-    {/* Ambient orbs */}
     <div
       className="pointer-events-none absolute -left-32 top-1/3 h-96 w-96 rounded-full bg-accent/10 blur-[120px]"
       aria-hidden
@@ -336,8 +309,7 @@ const Hero = () => (
 
     <SiteHeader />
 
-    <div className="container relative pt-28 pb-24 md:pt-36 md:pb-32">
-      {/* Heading block */}
+    <div className="container relative pt-24 pb-20 md:pt-32 md:pb-28">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -349,135 +321,124 @@ const Hero = () => (
           For first-time remodelers
         </span>
 
-        <h1 className="mt-7 font-display text-[2.75rem] font-light leading-[1.02] text-balance md:text-[5.5rem]">
+        <h1 className="mt-7 font-display text-[2.5rem] font-light leading-[1.04] text-balance md:text-[5rem]">
           Hire your contractor in <em className="font-normal italic text-accent">days,</em>
           <br className="hidden md:inline" />
           not <em className="font-normal italic text-accent">months.</em>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-          One brief. A permit-proven shortlist. Bids you can actually compare —
-          line by line, trade by trade.
+          Upload what you already have. We read the scope, write the brief, match permit-proven
+          builders, and put their bids side by side.
         </p>
       </motion.div>
 
-      {/* The stage: 3-step sequence → phone shows the result */}
-      <div className="relative mx-auto mt-16 max-w-6xl">
-        <div className="grid items-center gap-10 md:grid-cols-[1fr_auto_1fr] md:gap-6">
-          {/* LEFT — three numbered steps, top→bottom sequence */}
-          <ol className="relative space-y-4 md:space-y-5">
-            {/* Vertical connector line behind the cards */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute left-7 top-8 bottom-8 hidden w-px bg-gradient-to-b from-accent/40 via-accent/30 to-accent/40 md:block"
-            />
+      {/* Persona strip */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: EASE, delay: 0.25 }}
+        className="mx-auto mt-10 flex max-w-md items-center justify-center gap-3 rounded-full border border-border bg-card/70 px-4 py-2 text-xs text-muted-foreground backdrop-blur"
+      >
+        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-amber-300 via-rose-300 to-orange-400" />
+        <p className="text-left leading-tight">
+          <span className="font-medium text-foreground">Maya, San Jose.</span> First kitchen remodel.
+          Here's what she did in <span className="font-medium text-foreground">one evening.</span>
+        </p>
+      </motion.div>
 
-            <li className="relative">
-              <StepCard
-                step="01"
-                title="You write one brief"
-                icon={ScrollText}
-                accent="accent"
-                delay={0.1}
-                body={
-                  <>
-                    <span className="font-medium">Willow St kitchen</span> · island · gas → induction · permits required.
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      Five minutes. No more repeating yourself to every builder.
-                    </span>
-                  </>
-                }
-              />
-              {/* Connector arrow → phone (desktop only) */}
-              <span
-                aria-hidden
-                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
-              />
-            </li>
-
-            <li className="relative">
-              <StepCard
-                step="02"
-                title="We match permit-proven builders"
-                icon={ShieldCheck}
-                accent="sage"
-                delay={0.25}
-                body={
-                  <>
-                    <span className="font-medium">4 builders</span> who've passed inspections for kitchens in your zip.
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      Not Yelp ads. Real permit history, within 2 miles.
-                    </span>
-                  </>
-                }
-              />
-              <span
-                aria-hidden
-                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
-              />
-            </li>
-
-            <li className="relative">
-              <StepCard
-                step="03"
-                title="You compare line by line"
-                icon={Scale}
-                accent="primary"
-                delay={0.4}
-                body={
-                  <>
-                    Every bid broken down by trade. Cabinets, plumbing, tile —
-                    <span className="font-medium"> see exactly where each builder is high or low.</span>
-                  </>
-                }
-              />
-              <span
-                aria-hidden
-                className="absolute right-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
-              />
-            </li>
-          </ol>
-
-          {/* CENTER — phone */}
-          <div className="mx-auto">
-            <PhoneMockup />
+      {/* 5-frame walkthrough — horizontal scroll on mobile, full grid on desktop */}
+      <div className="relative mx-auto mt-12 max-w-[1400px]">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] md:items-start md:gap-2 md:overflow-visible md:px-0">
+          <div className="snap-center shrink-0">
+            <PhoneFrame
+              step="01"
+              label="Show the space"
+              caption="Photos, a video walkthrough, floor plan, architect drawings — whatever you already have."
+              delay={0.0}
+            >
+              <Frame1Upload />
+            </PhoneFrame>
           </div>
-
-          {/* RIGHT — second phone: step 03 in the actual app */}
-          <div className="relative mx-auto">
-            <ProposalPhoneMockup />
-            {/* Inbound connector arrow (desktop) */}
-            <span
-              aria-hidden
-              className="absolute left-[-22px] top-1/2 hidden h-px w-5 -translate-y-1/2 bg-accent/50 md:block"
-            />
+          <StepArrow />
+          <div className="snap-center shrink-0">
+            <PhoneFrame
+              step="02"
+              label="Haleo reads the scope"
+              caption="We surface what matters — load-bearing walls, permits, gotchas. You confirm."
+              delay={0.1}
+              tone="accent"
+            >
+              <Frame2Read />
+            </PhoneFrame>
+          </div>
+          <StepArrow />
+          <div className="snap-center shrink-0">
+            <PhoneFrame
+              step="03"
+              label="Your brief, written"
+              caption="One structured brief. The same one every contractor sees. No more repeating yourself."
+              delay={0.2}
+              tone="accent"
+            >
+              <Frame3Brief />
+            </PhoneFrame>
+          </div>
+          <StepArrow />
+          <div className="snap-center shrink-0">
+            <PhoneFrame
+              step="04"
+              label="Permit-proven matches"
+              caption="Builders who've actually passed city inspections for your kind of project, in your zip."
+              delay={0.3}
+              tone="sage"
+            >
+              <Frame4Match />
+            </PhoneFrame>
+          </div>
+          <StepArrow />
+          <div className="snap-center shrink-0">
+            <PhoneFrame
+              step="05"
+              label="Compare. Decide."
+              caption="Every bid, every trade, side by side. See exactly where each builder is high or low."
+              delay={0.4}
+              tone="primary"
+            >
+              <Frame5Compare />
+            </PhoneFrame>
           </div>
         </div>
 
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE, delay: 0.8 }}
-          className="mt-14 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
-        >
-          <Link
-            to="/brief"
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90 hover:shadow-accent"
-          >
-            <Hammer className="h-4 w-4" />
-            I need a contractor
-            <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
-          </Link>
-          <Link
-            to="/proposal"
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-7 py-4 text-sm font-medium text-foreground transition-smooth hover:border-accent/40 hover:bg-secondary"
-          >
-            <FileSearch className="h-4 w-4" />
-            I have a proposal to review
-          </Link>
-        </motion.div>
+        {/* Mobile scroll hint */}
+        <p className="mt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground md:hidden">
+          ← swipe through Maya's evening →
+        </p>
       </div>
+
+      {/* CTAs */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: EASE, delay: 0.6 }}
+        className="mt-12 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+      >
+        <Link
+          to="/brief"
+          className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90 hover:shadow-accent"
+        >
+          <Hammer className="h-4 w-4" />
+          Start my brief
+          <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
+        </Link>
+        <Link
+          to="/proposal"
+          className="group inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-7 py-4 text-sm font-medium text-foreground transition-smooth hover:border-accent/40 hover:bg-secondary"
+        >
+          <FileSearch className="h-4 w-4" />
+          I have a proposal to review
+        </Link>
+      </motion.div>
 
       <p className="mx-auto mt-6 max-w-md text-center text-xs text-muted-foreground">
         Free to start. We only charge when you actually save time or money.
@@ -485,6 +446,7 @@ const Hero = () => (
     </div>
   </section>
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*  THE REALITY — make the pain undeniable. All numbers from real interviews. */
