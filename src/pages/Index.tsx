@@ -187,9 +187,9 @@ const Frame2Read = () => (
       ))}
     </div>
 
-    <div className="mt-3 flex items-center justify-between rounded-lg bg-emerald-500/10 px-2 py-1.5">
-      <span className="text-[10px] font-medium text-emerald-700">Looks right?</span>
-      <span className="text-[9px] text-emerald-700/80">Maya: confirmed ✓</span>
+    <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-secondary/60 px-2 py-1.5">
+      <span className="text-[10px] font-medium text-foreground">Looks right?</span>
+      <span className="text-[9px] text-muted-foreground">Maya: confirmed ✓</span>
     </div>
   </>
 );
