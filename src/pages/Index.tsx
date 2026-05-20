@@ -194,39 +194,58 @@ const Frame2Read = () => (
   </>
 );
 
-// ── Frame 3 — The brief
-const Frame3Brief = () => (
-  <>
-    <div className="flex items-center justify-between">
-      <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Your brief</p>
-      <CheckCircle2 className="h-3 w-3 text-accent" />
-    </div>
-    <p className="mt-0.5 font-display text-sm font-medium">Ready to send</p>
+// ── Frame 3 — The brief (chips from frame 1 translated into scope lines)
+const Frame3Brief = () => {
+  const translations: { chip: string; line: string }[] = [
+    { chip: "cramped layout", line: "Open galley → island with 3-stool seating" },
+    { chip: "no island", line: "New 7' island, waterfall edge" },
+    { chip: "gas stove", line: "Gas → induction, vent to exterior" },
+  ];
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Your brief</p>
+        <CheckCircle2 className="h-3 w-3 text-accent" />
+      </div>
+      <p className="mt-0.5 font-display text-sm font-medium">Ready to send</p>
 
-    <div className="mt-3 space-y-2 text-[10px] leading-snug text-foreground">
-      <div>
-        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Scope</p>
-        <p>Full remodel · island seating · gas → induction</p>
+      <p className="mt-3 text-[9px] uppercase tracking-wider text-muted-foreground">
+        From what's bugging you
+      </p>
+      <div className="mt-1.5 space-y-1.5">
+        {translations.map((t, i) => (
+          <motion.div
+            key={t.chip}
+            initial={{ opacity: 0, y: 4 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, ease: EASE, delay: 0.2 + i * 0.1 }}
+            className="rounded-md border border-border bg-card px-2 py-1.5"
+          >
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 leading-none text-foreground/70">
+                {t.chip}
+              </span>
+              <ArrowRight className="h-2.5 w-2.5" />
+            </div>
+            <p className="mt-1 text-[10px] leading-snug text-foreground">{t.line}</p>
+          </motion.div>
+        ))}
       </div>
-      <div>
-        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Site</p>
-        <p>95128 · 1962 build · ~140 sq ft</p>
-      </div>
-      <div>
-        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Permits</p>
-        <p>Electrical, plumbing relocation, structural review</p>
-      </div>
-    </div>
 
-    <div className="mt-3 flex flex-wrap gap-1">
-      {["~$140k", "8 wks", "warm-modern"].map((t) => (
-        <span key={t} className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
-          {t}
-        </span>
-      ))}
-    </div>
-  </>
-);
+      <div className="mt-2.5 flex flex-wrap gap-1">
+        {["95128", "~$140k", "8 wks"].map((t) => (
+          <span
+            key={t}
+            className="rounded-full border border-border bg-card px-1.5 py-0.5 text-[9px] text-muted-foreground"
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+};
 
 // ── Frame 4 — Permit-proven contractor matches
 const Frame4Match = () => (
