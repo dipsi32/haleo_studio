@@ -76,19 +76,32 @@ const ROOMS = ["Kitchen", "Bathroom", "Living", "Addition"] as const;
 const ScreenSpace = () => {
   const [picked, setPicked] = useState<number[]>([]);
   const [photos, setPhotos] = useState(0);
+  const [uploading, setUploading] = useState<number | null>(null);
 
   useEffect(() => {
     setPicked([]);
     setPhotos(0);
+    setUploading(null);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    [1, 2, 3].forEach((n, i) => {
-      timers.push(setTimeout(() => setPhotos(n), 300 + i * 280));
+
+    /* Upload sequence: show uploading indicator, then fill each slot */
+    [0, 1, 2].forEach((i) => {
+      timers.push(
+        setTimeout(() => setUploading(i), 300 + i * 420),
+      );
+      timers.push(
+        setTimeout(() => {
+          setUploading(null);
+          setPhotos(i + 1);
+        }, 750 + i * 420),
+      );
     });
+
     SELECTION_ORDER.forEach((idx, i) => {
       timers.push(
         setTimeout(() => {
           setPicked((p) => (p.includes(idx) ? p : [...p, idx]));
-        }, 1350 + i * 340),
+        }, 2000 + i * 340),
       );
     });
     return () => timers.forEach(clearTimeout);
