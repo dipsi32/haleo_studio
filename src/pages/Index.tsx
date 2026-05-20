@@ -114,7 +114,7 @@ const Frame1Upload = () => (
     <div className="mt-3 grid grid-cols-2 gap-1.5">
       {[
         { icon: ImageIcon, label: "Room photos", count: "12" },
-        { icon: VideoIcon, label: "Walkthrough video", count: "0:42" },
+        { icon: VideoIcon, label: "Walkthrough", count: "0:42" },
         { icon: Ruler, label: "Floor plan", count: "PDF" },
         { icon: FileText, label: "Architect plans", count: "3 pg" },
       ].map((it) => (
@@ -129,7 +129,32 @@ const Frame1Upload = () => (
       ))}
     </div>
 
-    <div className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-accent/40 bg-accent/5 py-2 text-[10px] font-medium text-accent">
+    <p className="mt-3 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+      What's bugging you?
+    </p>
+    <div className="mt-1.5 flex flex-wrap gap-1">
+      {[
+        "cramped layout",
+        "no island",
+        "gas stove",
+        "bad lighting",
+        "ugly cabinets",
+      ].map((chip, i) => (
+        <span
+          key={chip}
+          className={`rounded-full border px-1.5 py-0.5 text-[9px] leading-none ${
+            i < 3
+              ? "border-accent/40 bg-accent/10 text-accent"
+              : "border-border bg-card text-muted-foreground"
+          }`}
+        >
+          {i < 3 ? "✓ " : "+ "}
+          {chip}
+        </span>
+      ))}
+    </div>
+
+    <div className="mt-2.5 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-accent/40 bg-accent/5 py-1.5 text-[10px] font-medium text-accent">
       <Upload className="h-3 w-3" /> Drop more
     </div>
   </>
