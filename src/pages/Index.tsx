@@ -66,13 +66,13 @@ const PhoneFrame = ({
       transition={{ duration: 0.8, ease: EASE, delay }}
       className="relative flex flex-col items-center"
     >
-      {/* Caption above */}
-      <div className="mb-4 max-w-[240px] text-center">
+      {/* Caption above — fixed height so all phones align */}
+      <div className="mb-4 flex h-[120px] w-[240px] flex-col items-center text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground backdrop-blur">
           <span className={`h-1 w-1 rounded-full ${dot}`} />
           Step {step}
         </div>
-        <p className="mt-2 font-display text-base leading-tight text-foreground md:text-lg">
+        <p className="mt-2 font-display text-base leading-tight text-foreground lg:text-lg">
           {label}
         </p>
         <p className="mt-1 text-xs leading-snug text-muted-foreground">{caption}</p>
