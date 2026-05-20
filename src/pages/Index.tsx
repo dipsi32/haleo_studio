@@ -83,9 +83,9 @@ const PhoneFrame = ({
         className="relative rounded-[2.25rem] border border-foreground/15 bg-foreground/95 p-[8px] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
         style={{ width: 240 }}
       >
-        <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-background to-secondary/60">
+        <div className="relative h-[440px] overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-background to-secondary/60">
           <div className="absolute left-1/2 top-1.5 z-10 h-4 w-20 -translate-x-1/2 rounded-full bg-foreground/95" />
-          <div className="px-3.5 pb-4 pt-8">{children}</div>
+          <div className="h-full overflow-hidden px-3.5 pb-4 pt-8">{children}</div>
         </div>
       </div>
 
