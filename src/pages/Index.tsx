@@ -539,6 +539,84 @@ const Value = () => (
 );
 
 /* -------------------------------------------------------------------------- */
+/*  NotLike — sharp differentiation vs Yelp / Thumbtack.                       */
+/* -------------------------------------------------------------------------- */
+
+const CONTRASTS = [
+  {
+    them: "Star ratings from strangers",
+    us: "Permits pulled. Inspections passed.",
+  },
+  {
+    them: "Matched by zip code",
+    us: "Matched by what you're actually building",
+  },
+  {
+    them: "5 contractors call you in 5 minutes",
+    us: "A brief they read before they bid",
+  },
+  {
+    them: "Apples-to-oranges quotes",
+    us: "Every line item, side by side",
+  },
+];
+
+const NotLike = () => (
+  <section className="bg-foreground py-28 text-background md:py-40">
+    <div className="container mx-auto max-w-5xl">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.8, ease: EASE }}
+        className="mb-16 md:mb-24"
+      >
+        <p className="font-display text-xs tracking-[0.25em] text-accent">THE DIFFERENCE</p>
+        <h2 className="mt-5 max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
+          We're not a directory.{" "}
+          <em className="italic text-accent">We're how you actually hire.</em>
+        </h2>
+      </motion.div>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-x-6 gap-y-3 md:gap-x-12">
+        <div className="text-right">
+          <p className="font-display text-[10px] tracking-[0.25em] text-background/40 md:text-xs">YELP · THUMBTACK · ANGI</p>
+        </div>
+        <div />
+        <div>
+          <p className="font-display text-[10px] tracking-[0.25em] text-accent md:text-xs">HALEO</p>
+        </div>
+
+        {CONTRASTS.map((row, idx) => (
+          <motion.div
+            key={row.them}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
+            className="contents"
+          >
+            <div className="flex items-center justify-end border-t border-background/10 py-6">
+              <p className="text-right text-sm leading-snug text-background/40 line-through decoration-background/30 md:text-lg">
+                {row.them}
+              </p>
+            </div>
+            <div className="flex items-center border-t border-background/10 py-6 text-background/30">
+              <span className="font-display text-xs tracking-widest">→</span>
+            </div>
+            <div className="flex items-center border-t border-background/10 py-6">
+              <p className="text-sm font-light leading-snug text-background md:text-lg">
+                {row.us}
+              </p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Closing — single confident line, one CTA.                                  */
 /* -------------------------------------------------------------------------- */
 
