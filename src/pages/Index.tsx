@@ -260,8 +260,8 @@ const Frame4Match = () => (
         { name: "Casa Verde", meta: "6 kitchens · 95128", dist: "0.9 mi" },
       ].map((c) => (
         <div key={c.name} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2">
-          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500/15">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-secondary">
+            <ShieldCheck className="h-3.5 w-3.5 text-foreground/70" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[10.5px] font-medium text-foreground">{c.name}</p>
