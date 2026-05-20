@@ -313,9 +313,7 @@ const Frame5Compare = () => {
                     key={i}
                     className={`rounded text-center text-[9px] tabular-nums leading-4 ${
                       v === lo
-                        ? "bg-emerald-500/15 text-emerald-700"
-                        : v === hi
-                        ? "bg-accent-soft text-accent"
+                        ? "bg-accent/15 font-medium text-accent"
                         : "text-muted-foreground"
                     }`}
                   >
