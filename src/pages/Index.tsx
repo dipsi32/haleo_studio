@@ -83,9 +83,9 @@ const PhoneFrame = ({
         className="relative rounded-[2.25rem] border border-foreground/15 bg-foreground/95 p-[8px] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
         style={{ width: 240 }}
       >
-        <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-background to-secondary/60">
+        <div className="relative h-[440px] overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-background to-secondary/60">
           <div className="absolute left-1/2 top-1.5 z-10 h-4 w-20 -translate-x-1/2 rounded-full bg-foreground/95" />
-          <div className="px-3.5 pb-4 pt-8">{children}</div>
+          <div className="h-full overflow-hidden px-3.5 pb-4 pt-8">{children}</div>
         </div>
       </div>
 
@@ -318,7 +318,7 @@ const Hero = () => (
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          For first-time remodelers
+          First-time remodelers — save months finding the right contractor, in minutes
         </span>
 
         <h1 className="mt-7 font-display text-[2.5rem] font-light leading-[1.04] text-balance md:text-[5rem]">
@@ -342,8 +342,9 @@ const Hero = () => (
       >
         <div className="h-7 w-7 rounded-full bg-gradient-to-br from-amber-300 via-rose-300 to-orange-400" />
         <p className="text-left leading-tight">
-          <span className="font-medium text-foreground">Maya, San Jose.</span> First kitchen remodel.
-          Here's what she did in <span className="font-medium text-foreground">one evening.</span>
+          <span className="font-medium text-foreground">Maya, San Jose.</span> Went from vision to
+          bid requests in <span className="font-medium text-foreground">minutes</span> — no biased
+          reviews, just a permit-proven shortlist no one else gave her.
         </p>
       </motion.div>
 
