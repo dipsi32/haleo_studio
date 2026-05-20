@@ -79,7 +79,9 @@ const StepCard = ({
   );
 };
 
-// CSS-built iPhone frame. No image asset needed.
+// Vision-capture phone: messy real-world inputs (photo, voice memo, scribbled
+// wishes) get distilled into a clean structured brief. The transformation is
+// the whole point — show the "before" and "after" inside one screen.
 const PhoneMockup = () => (
   <motion.div
     initial={{ opacity: 0, y: 24, scale: 0.96 }}
@@ -95,12 +97,11 @@ const PhoneMockup = () => (
         {/* Notch */}
         <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
 
-        {/* App content — a tiny Haleo "My project" screen */}
         <div className="px-4 pb-5 pt-10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-                Your project
+                Your vision
               </p>
               <p className="mt-0.5 font-display text-sm font-medium">Willow St kitchen</p>
             </div>
@@ -109,50 +110,105 @@ const PhoneMockup = () => (
             </div>
           </div>
 
-          {/* Brief snapshot */}
-          <div className="mt-4 rounded-xl border border-border bg-card p-3">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Brief</p>
-            <p className="mt-1 text-[11px] leading-snug text-foreground">
-              Full kitchen remodel · island · gas → induction · permits required
-            </p>
-            <div className="mt-2 flex gap-1.5">
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
-                95128
-              </span>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
-                ~$140k
-              </span>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70">
-                8 wks
-              </span>
-            </div>
-          </div>
-
-          {/* Matched contractors */}
-          <p className="mt-4 text-[9px] uppercase tracking-wider text-muted-foreground">
-            Permit-matched · 4
+          {/* Raw inputs — what the homeowner actually has in their head */}
+          <p className="mt-3 text-[9px] uppercase tracking-wider text-muted-foreground">
+            What you gave us
           </p>
-          <div className="mt-2 space-y-1.5">
-            {[
-              { name: "Mehdi Builders", meta: "23 permits · 1.2mi", score: 94 },
-              { name: "Lozano Construction", meta: "17 permits · 0.8mi", score: 91 },
-              { name: "Rivera & Co.", meta: "12 permits · 2.1mi", score: 88 },
-            ].map((c) => (
-              <div
-                key={c.name}
-                className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-[11px] font-medium text-foreground">{c.name}</p>
-                  <p className="text-[9px] text-muted-foreground">{c.meta}</p>
-                </div>
-                <div className="flex items-center gap-1 rounded-full bg-accent-soft px-1.5 py-0.5">
-                  <ShieldCheck className="h-2.5 w-2.5 text-accent" />
-                  <span className="text-[9px] font-medium text-accent">{c.score}</span>
+          <div className="mt-1.5 space-y-1.5">
+            {/* Inspiration photo */}
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: 0.5 }}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
+            >
+              <div className="h-8 w-8 shrink-0 rounded-md bg-gradient-to-br from-amber-200 via-rose-200 to-stone-300" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-medium text-foreground">2 inspo photos</p>
+                <p className="text-[8.5px] text-muted-foreground">"warm, open, island"</p>
+              </div>
+              <ImageIcon className="h-3 w-3 text-muted-foreground" />
+            </motion.div>
+
+            {/* Voice memo */}
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: 0.65 }}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
+            >
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-accent/10">
+                <Mic className="h-3.5 w-3.5 text-accent" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-medium text-foreground">0:47 voice memo</p>
+                <div className="mt-0.5 flex items-end gap-[1.5px]">
+                  {[3, 6, 4, 8, 5, 9, 4, 7, 5, 8, 3, 6, 4, 7, 5, 3].map((h, i) => (
+                    <span
+                      key={i}
+                      className="w-[2px] rounded-full bg-accent/60"
+                      style={{ height: `${h}px` }}
+                    />
+                  ))}
                 </div>
               </div>
-            ))}
+            </motion.div>
+
+            {/* Scribbled wish */}
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: 0.8 }}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5"
+            >
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-secondary">
+                <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1 font-display italic text-[10.5px] leading-tight text-foreground/80">
+                "no more gas. room for the kids to sit while I cook."
+              </div>
+            </motion.div>
           </div>
+
+          {/* Transformation moment */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, ease: EASE, delay: 1.0 }}
+            className="my-2.5 flex items-center gap-2"
+          >
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-accent/40" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[8.5px] font-medium uppercase tracking-wider text-accent">
+              <ArrowDown className="h-2.5 w-2.5" /> Haleo brief
+            </span>
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-accent/40" />
+          </motion.div>
+
+          {/* Distilled brief — what contractors actually receive */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 1.15 }}
+            className="rounded-xl border border-accent/30 bg-card p-3 shadow-soft"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] uppercase tracking-wider text-accent">Brief · ready to send</p>
+              <CheckCircle2 className="h-3 w-3 text-accent" />
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-foreground">
+              Full kitchen remodel · island seating for 3 · gas → induction · permits required
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {["95128", "~$140k", "8 wks", "warm-modern"].map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-secondary px-2 py-0.5 text-[9px] text-foreground/70"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
