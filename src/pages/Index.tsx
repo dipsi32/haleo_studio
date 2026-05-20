@@ -6,9 +6,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   Image as ImageIcon,
-  Video as VideoIcon,
-  FileText,
-  Ruler,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
