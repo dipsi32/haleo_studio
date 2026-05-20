@@ -12,10 +12,11 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldCheck,
-  Mic,
   Image as ImageIcon,
-  PenLine,
-  ArrowDown,
+  Video as VideoIcon,
+  FileText,
+  Ruler,
+  Upload,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
