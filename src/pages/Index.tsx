@@ -98,9 +98,9 @@ const PhoneFrame = ({
   );
 };
 
-// Connector between frames (desktop only)
+// Connector between frames (desktop only — hidden until we have horizontal room)
 const StepArrow = () => (
-  <div className="hidden shrink-0 items-center justify-center self-center md:flex" aria-hidden>
+  <div className="hidden shrink-0 items-center justify-center self-center pt-[120px] lg:flex" aria-hidden>
     <ArrowRight className="h-5 w-5 text-accent/60" />
   </div>
 );
