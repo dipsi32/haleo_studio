@@ -410,8 +410,8 @@ const Hero = () => (
           </div>
         </div>
 
-        {/* Mobile scroll hint */}
-        <p className="mt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground md:hidden">
+        {/* Scroll hint on mobile + tablet */}
+        <p className="mt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground lg:hidden">
           ← swipe through Maya's evening →
         </p>
       </div>
