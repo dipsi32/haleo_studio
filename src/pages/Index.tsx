@@ -66,13 +66,13 @@ const PhoneFrame = ({
       transition={{ duration: 0.8, ease: EASE, delay }}
       className="relative flex flex-col items-center"
     >
-      {/* Caption above */}
-      <div className="mb-4 max-w-[240px] text-center">
+      {/* Caption above — fixed height so all phones align */}
+      <div className="mb-4 flex h-[120px] w-[240px] flex-col items-center text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground backdrop-blur">
           <span className={`h-1 w-1 rounded-full ${dot}`} />
           Step {step}
         </div>
-        <p className="mt-2 font-display text-base leading-tight text-foreground md:text-lg">
+        <p className="mt-2 font-display text-base leading-tight text-foreground lg:text-lg">
           {label}
         </p>
         <p className="mt-1 text-xs leading-snug text-muted-foreground">{caption}</p>
@@ -98,9 +98,9 @@ const PhoneFrame = ({
   );
 };
 
-// Connector between frames (desktop only)
+// Connector between frames (desktop only — hidden until we have horizontal room)
 const StepArrow = () => (
-  <div className="hidden shrink-0 items-center justify-center self-center md:flex" aria-hidden>
+  <div className="hidden shrink-0 items-center justify-center self-center pt-[120px] lg:flex" aria-hidden>
     <ArrowRight className="h-5 w-5 text-accent/60" />
   </div>
 );
@@ -349,7 +349,7 @@ const Hero = () => (
 
       {/* 5-frame walkthrough — horizontal scroll on mobile, full grid on desktop */}
       <div className="relative mx-auto mt-12 max-w-[1400px]">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] md:items-start md:gap-2 md:overflow-visible md:px-0">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 lg:grid lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] lg:items-start lg:justify-items-center lg:gap-2 lg:overflow-visible lg:px-0">
           <div className="snap-center shrink-0">
             <PhoneFrame
               step="01"
@@ -410,8 +410,8 @@ const Hero = () => (
           </div>
         </div>
 
-        {/* Mobile scroll hint */}
-        <p className="mt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground md:hidden">
+        {/* Scroll hint on mobile + tablet */}
+        <p className="mt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground lg:hidden">
           ← swipe through Maya's evening →
         </p>
       </div>
