@@ -349,7 +349,7 @@ const Hero = () => (
 
       {/* 5-frame walkthrough — horizontal scroll on mobile, full grid on desktop */}
       <div className="relative mx-auto mt-12 max-w-[1400px]">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] md:items-start md:gap-2 md:overflow-visible md:px-0">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 lg:grid lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] lg:items-start lg:justify-items-center lg:gap-2 lg:overflow-visible lg:px-0">
           <div className="snap-center shrink-0">
             <PhoneFrame
               step="01"
