@@ -658,6 +658,7 @@ const Index = () => {
   return (
     <main>
       <Hero />
+      <NotLike />
       <Value />
       <Closing />
       <SiteFooter />
