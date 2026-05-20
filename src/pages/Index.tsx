@@ -360,7 +360,7 @@ const Hero = () => (
       >
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          First-time remodelers — save months finding the right contractor, in minutes
+          Remodeling your home? We help you stay within time and cost
         </span>
 
         <h1 className="mt-7 font-display text-[2.5rem] font-light leading-[1.04] text-balance md:text-[5rem]">
