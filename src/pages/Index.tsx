@@ -40,32 +40,58 @@ const PhoneShell = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+/* Locked storyline so every screen stays consistent ----------------------- */
+const SPACE = {
+  room: "Kitchen",
+  sqft: "~140 sq ft",
+  layout: "galley",
+  zip: "95128",
+  budget: "~$140k",
+  timeline: "8 wks",
+};
+
 const BUG_OPTIONS = [
-  "cramped layout",
-  "no island",
-  "gas stove",
-  "dark, no light",
-  "wasted corners",
-  "low storage",
-  "closed off from living",
-  "old appliances",
-  "awkward fridge spot",
-  "no prep space",
+  "cramped layout",        // 0 ✓
+  "no island",             // 1 ✓
+  "gas stove",             // 2
+  "dark, no light",        // 3 ✓
+  "wasted corners",        // 4
+  "low storage",           // 5 ✓
+  "closed off from living",// 6 ✓
+  "old appliances",        // 7
+  "awkward fridge spot",   // 8
+  "no prep space",         // 9
 ];
 
 const SELECTION_ORDER = [0, 3, 6, 5, 1];
 
+/* Each picked bug → what Haleo sees in the photos + what lands in the brief */
+const BUG_MAP: Record<number, { sees: string; brief: string }> = {
+  0: { sees: "Tight galley, ~3'6\" aisle", brief: "Open galley, widen aisle to 4'+" },
+  3: { sees: "Single small window — low daylight", brief: "Enlarge window, add recessed + pendants" },
+  6: { sees: "Solid wall separating living room", brief: "Remove wall to living, half-height bar" },
+  5: { sees: "Uppers on one wall only — limited storage", brief: "Full-height pantry wall + drawer base" },
+  1: { sees: "No island, prep on counter edge", brief: "New 7' island, 3-stool seating" },
+};
+
 const ScreenSpace = () => {
   const [picked, setPicked] = useState<number[]>([]);
+  const [photos, setPhotos] = useState(0);
 
   useEffect(() => {
     setPicked([]);
+    setPhotos(0);
     const timers: ReturnType<typeof setTimeout>[] = [];
+    // Upload photos one by one first
+    [1, 2, 3].forEach((n, i) => {
+      timers.push(setTimeout(() => setPhotos(n), 250 + i * 280));
+    });
+    // Then start picking bugs
     SELECTION_ORDER.forEach((idx, i) => {
       timers.push(
         setTimeout(() => {
           setPicked((p) => (p.includes(idx) ? p : [...p, idx]));
-        }, 450 + i * 380),
+        }, 1300 + i * 340),
       );
     });
     return () => timers.forEach(clearTimeout);
@@ -81,22 +107,59 @@ const ScreenSpace = () => {
 
   return (
     <div className="flex h-full flex-col">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your kitchen</p>
-      <p className="mt-1 font-display text-[15px] leading-tight">Walk us through it</p>
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        Remodeling
+      </p>
+      <div className="mt-0.5 flex items-baseline gap-2">
+        <p className="font-display text-[15px] leading-tight">{SPACE.room}</p>
+        <span className="text-[10px] text-muted-foreground">
+          {SPACE.sqft} · {SPACE.layout}
+        </span>
+      </div>
 
-      {/* Video walkthrough */}
-      <div className="relative mt-2.5 overflow-hidden rounded-xl border border-border">
-        <div className="aspect-[16/9] w-full bg-gradient-to-br from-foreground/20 via-foreground/5 to-accent/15">
-          <div className="flex h-full items-center justify-center">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-background/90 shadow-soft">
-              <div className="ml-0.5 h-0 w-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-foreground" />
+      {/* Upload row — 3 photo slots that fill in */}
+      <p className="mt-2.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+        Photos
+      </p>
+      <div className="mt-1 grid grid-cols-3 gap-1.5">
+        {[0, 1, 2].map((i) => {
+          const filled = photos > i;
+          return (
+            <div
+              key={i}
+              className={`relative aspect-[4/3] overflow-hidden rounded-md border transition-all duration-300 ${
+                filled ? "border-border" : "border-dashed border-foreground/20 bg-secondary/40"
+              }`}
+            >
+              {filled ? (
+                <div
+                  className={`h-full w-full ${
+                    i === 0
+                      ? "bg-gradient-to-br from-amber-200/50 via-amber-100/30 to-stone-300/40"
+                      : i === 1
+                      ? "bg-gradient-to-br from-stone-300/50 via-stone-200/30 to-zinc-300/40"
+                      : "bg-gradient-to-br from-zinc-200/50 via-amber-100/20 to-stone-300/40"
+                  }`}
+                >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex h-full items-end justify-start p-1"
+                  >
+                    <span className="rounded bg-background/80 px-1 py-px text-[8px] text-foreground backdrop-blur">
+                      IMG_{String(i + 1).padStart(2, "0")}
+                    </span>
+                  </motion.div>
+                </div>
+              ) : (
+                <div className="grid h-full place-items-center">
+                  <ImageIcon className="h-3 w-3 text-muted-foreground/40" />
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-        <div className="absolute bottom-1 left-1 flex items-center gap-1 rounded-full bg-background/85 px-1.5 py-0.5 text-[9px] text-foreground backdrop-blur">
-          <VideoIcon className="h-2.5 w-2.5" />
-          <span>0:42</span>
-        </div>
+          );
+        })}
       </div>
 
       <p className="mt-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -142,17 +205,18 @@ const ScreenSpace = () => {
 const ScreenScope = () => (
   <div className="flex h-full flex-col">
     <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Haleo sees</p>
-    <p className="mt-1 font-display text-lg leading-tight">~140 sq ft galley</p>
+    <p className="mt-1 font-display text-lg leading-tight">
+      {SPACE.sqft} {SPACE.layout}
+    </p>
 
     <div className="mt-4 space-y-2">
-      {[
-        "Load-bearing wall on north side",
-        "Gas line at range — relocation likely",
-        "Recessed lighting on single circuit",
-      ].map((line) => (
-        <div key={line} className="flex items-start gap-2 rounded-xl border border-border bg-card px-2.5 py-2">
+      {SELECTION_ORDER.map((idx) => (
+        <div
+          key={idx}
+          className="flex items-start gap-2 rounded-xl border border-border bg-card px-2.5 py-2"
+        >
           <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-accent" />
-          <p className="text-[11px] leading-snug text-foreground">{line}</p>
+          <p className="text-[11px] leading-snug text-foreground">{BUG_MAP[idx].sees}</p>
         </div>
       ))}
     </div>
@@ -172,21 +236,22 @@ const ScreenBrief = () => (
     <p className="mt-1 font-display text-lg leading-tight">Ready to send</p>
 
     <div className="mt-4 space-y-2">
-      {[
-        { chip: "cramped layout", line: "Open galley → island, 3-stool seating" },
-        { chip: "no island", line: "New 7' island, waterfall edge" },
-        { chip: "gas stove", line: "Gas → induction, vent to exterior" },
-      ].map((t) => (
-        <div key={t.chip} className="rounded-xl border border-border bg-card px-2.5 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t.chip}</p>
-          <p className="mt-0.5 text-[11px] leading-snug text-foreground">{t.line}</p>
+      {SELECTION_ORDER.map((idx) => (
+        <div key={idx} className="rounded-xl border border-border bg-card px-2.5 py-2">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {BUG_OPTIONS[idx]}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-snug text-foreground">{BUG_MAP[idx].brief}</p>
         </div>
       ))}
     </div>
 
     <div className="mt-auto flex flex-wrap gap-1.5">
-      {["95128", "~$140k", "8 wks"].map((t) => (
-        <span key={t} className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+      {[SPACE.zip, SPACE.budget, SPACE.timeline].map((t) => (
+        <span
+          key={t}
+          className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground"
+        >
           {t}
         </span>
       ))}
