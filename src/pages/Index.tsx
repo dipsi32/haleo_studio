@@ -342,8 +342,9 @@ const Hero = () => (
       >
         <div className="h-7 w-7 rounded-full bg-gradient-to-br from-amber-300 via-rose-300 to-orange-400" />
         <p className="text-left leading-tight">
-          <span className="font-medium text-foreground">Maya, San Jose.</span> First kitchen remodel.
-          Here's what she did in <span className="font-medium text-foreground">one evening.</span>
+          <span className="font-medium text-foreground">Maya, San Jose.</span> Went from vision to
+          bid requests in <span className="font-medium text-foreground">minutes</span> — no biased
+          reviews, just a permit-proven shortlist no one else gave her.
         </p>
       </motion.div>
 
