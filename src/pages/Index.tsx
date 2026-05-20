@@ -40,41 +40,104 @@ const PhoneShell = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const ScreenSpace = () => (
-  <div className="flex h-full flex-col">
-    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your kitchen</p>
-    <p className="mt-1 font-display text-lg leading-tight">Show us the space</p>
+const BUG_OPTIONS = [
+  "cramped layout",
+  "no island",
+  "gas stove",
+  "dark, no light",
+  "wasted corners",
+  "low storage",
+  "closed off from living",
+  "old appliances",
+  "awkward fridge spot",
+  "no prep space",
+];
 
-    <div className="mt-4 grid grid-cols-2 gap-2">
-      {[
-        { icon: ImageIcon, label: "Photos", count: "12" },
-        { icon: VideoIcon, label: "Walkthrough", count: "0:42" },
-        { icon: Ruler, label: "Floor plan", count: "PDF" },
-        { icon: FileText, label: "Architect", count: "3 pg" },
-      ].map((it) => (
-        <div key={it.label} className="rounded-xl border border-border bg-card p-2.5">
-          <it.icon className="h-3.5 w-3.5 text-accent" />
-          <p className="mt-1.5 text-[11px] font-medium leading-tight text-foreground">{it.label}</p>
-          <p className="text-[10px] text-muted-foreground">{it.count}</p>
+const SELECTION_ORDER = [0, 3, 6, 5, 1];
+
+const ScreenSpace = () => {
+  const [picked, setPicked] = useState<number[]>([]);
+
+  useEffect(() => {
+    setPicked([]);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    SELECTION_ORDER.forEach((idx, i) => {
+      timers.push(
+        setTimeout(() => {
+          setPicked((p) => (p.includes(idx) ? p : [...p, idx]));
+        }, 450 + i * 380),
+      );
+    });
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const labels = picked.map((i) => BUG_OPTIONS[i]);
+  const sentence =
+    labels.length === 0
+      ? "Tap what's bugging you…"
+      : labels.length === 1
+      ? `It feels ${labels[0]}.`
+      : `It feels ${labels.slice(0, -1).join(", ")} and ${labels.slice(-1)}.`;
+
+  return (
+    <div className="flex h-full flex-col">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your kitchen</p>
+      <p className="mt-1 font-display text-[15px] leading-tight">Walk us through it</p>
+
+      {/* Video walkthrough */}
+      <div className="relative mt-2.5 overflow-hidden rounded-xl border border-border">
+        <div className="aspect-[16/9] w-full bg-gradient-to-br from-foreground/20 via-foreground/5 to-accent/15">
+          <div className="flex h-full items-center justify-center">
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-background/90 shadow-soft">
+              <div className="ml-0.5 h-0 w-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-foreground" />
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
+        <div className="absolute bottom-1 left-1 flex items-center gap-1 rounded-full bg-background/85 px-1.5 py-0.5 text-[9px] text-foreground backdrop-blur">
+          <VideoIcon className="h-2.5 w-2.5" />
+          <span>0:42</span>
+        </div>
+      </div>
 
-    <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-      What's bugging you?
-    </p>
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {["cramped layout", "no island", "gas stove"].map((c) => (
-        <span
-          key={c}
-          className="rounded-full border border-foreground/15 bg-card px-2 py-0.5 text-[10px] text-foreground"
-        >
-          {c}
-        </span>
-      ))}
+      <p className="mt-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        What's bugging you?
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        {BUG_OPTIONS.map((c, idx) => {
+          const active = picked.includes(idx);
+          return (
+            <span
+              key={c}
+              className={`rounded-full border px-1.5 py-[3px] text-[9.5px] transition-all duration-300 ${
+                active
+                  ? "border-accent bg-accent text-accent-foreground scale-[1.03]"
+                  : "border-foreground/15 bg-card text-foreground/65"
+              }`}
+            >
+              {c}
+            </span>
+          );
+        })}
+      </div>
+
+      <div className="mt-auto rounded-xl border border-border bg-secondary/60 px-2.5 py-2">
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground">In your words</p>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={sentence}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3 }}
+            className="mt-0.5 text-[11px] leading-snug text-foreground"
+          >
+            {sentence}
+          </motion.p>
+        </AnimatePresence>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ScreenScope = () => (
   <div className="flex h-full flex-col">
