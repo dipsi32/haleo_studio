@@ -6,7 +6,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   Image as ImageIcon,
+  Flame,
 } from "lucide-react";
+
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
@@ -497,8 +499,75 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
+/*  Remodel Roast — viral hook. Anonymous, fun, free.                          */
+/* -------------------------------------------------------------------------- */
+
+const RoastHook = () => (
+  <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-24 md:py-32">
+    <div className="container mx-auto max-w-5xl px-6">
+      <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: EASE }}
+        >
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
+            <Flame className="w-3.5 h-3.5" /> NEW · FREE · ANONYMOUS
+          </div>
+          <h2 className="font-display text-4xl md:text-5xl font-light leading-[1.05] text-foreground">
+            Got a quote? <span className="italic">Get it roasted.</span>
+          </h2>
+          <p className="mt-5 text-lg text-foreground/70 max-w-md">
+            Drop a screenshot of your contractor estimate. Quinn returns a brutally honest,
+            color-coded score — and a line-by-line breakdown of where the markup is hiding.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              to="/roast"
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
+            >
+              Roast my quote <ArrowRight className="w-4 h-4" />
+            </Link>
+            <span className="self-center text-xs text-foreground/50">30 seconds · No login</span>
+          </div>
+        </motion.div>
+
+        {/* Mock score card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, rotate: -2 }}
+          whileInView={{ opacity: 1, y: 0, rotate: -2 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
+          <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
+            <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-6xl font-serif font-bold leading-none">34</span>
+              <span className="text-sm opacity-90">/ 100</span>
+            </div>
+            <p className="mt-2 text-xl font-serif">Yikes Territory</p>
+            <p className="mt-3 text-sm italic leading-snug opacity-95">
+              "$12,000 for a backsplash? Are they tiling it with 24k gold?"
+            </p>
+            <div className="mt-5 flex gap-2 text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  </section>
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Three calm value lines — no chrome, just typography.                       */
 /* -------------------------------------------------------------------------- */
+
+
 
 const Value = () => (
   <section className="bg-background py-28 md:py-40">
@@ -658,12 +727,14 @@ const Index = () => {
   return (
     <main>
       <Hero />
+      <RoastHook />
       <NotLike />
       <Value />
       <Closing />
       <SiteFooter />
     </main>
   );
+
 };
 
 export default Index;
