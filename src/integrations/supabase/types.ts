@@ -600,6 +600,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_guide_cache: {
+        Row: {
+          average: number
+          created_at: string
+          fetched_at: string
+          high: number
+          id: string
+          low: number
+          scope: string
+          source_count: number
+          sources: Json
+          space_type: string
+          zip_code: string
+        }
+        Insert: {
+          average: number
+          created_at?: string
+          fetched_at?: string
+          high: number
+          id?: string
+          low: number
+          scope: string
+          source_count?: number
+          sources?: Json
+          space_type: string
+          zip_code: string
+        }
+        Update: {
+          average?: number
+          created_at?: string
+          fetched_at?: string
+          high?: number
+          id?: string
+          low?: number
+          scope?: string
+          source_count?: number
+          sources?: Json
+          space_type?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       cslb_import_runs: {
         Row: {
           errors: string | null
@@ -1050,6 +1092,42 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           verdict?: string | null
+        }
+        Relationships: []
+      }
+      proposal_benchmarks: {
+        Row: {
+          contractor_name_hash: string | null
+          created_at: string
+          id: string
+          line_items: Json
+          scope: string
+          space_type: string
+          square_footage: number | null
+          total_cost: number
+          zip_code: string | null
+        }
+        Insert: {
+          contractor_name_hash?: string | null
+          created_at?: string
+          id?: string
+          line_items?: Json
+          scope: string
+          space_type: string
+          square_footage?: number | null
+          total_cost: number
+          zip_code?: string | null
+        }
+        Update: {
+          contractor_name_hash?: string | null
+          created_at?: string
+          id?: string
+          line_items?: Json
+          scope?: string
+          space_type?: string
+          square_footage?: number | null
+          total_cost?: number
+          zip_code?: string | null
         }
         Relationships: []
       }
