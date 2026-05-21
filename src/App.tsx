@@ -55,8 +55,10 @@ const App = () => (
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
+            <Route path="/roast" element={<Roast />} />
             <Route path="/login" element={<Login />} />
             <Route path="/waitlist" element={<Waitlist />} />
+
 
             {/* Authenticated, but no pilot pass needed */}
             <Route
