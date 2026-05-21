@@ -17,3 +17,10 @@ verify_jwt = false
 verify_jwt = false
 [functions.seed-test-contractor]
 verify_jwt = false
+
+[functions.roast-proposal]
+verify_jwt = false
+
+[functions.cost-guide-lookup]
+verify_jwt = false
+
