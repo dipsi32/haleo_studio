@@ -424,7 +424,7 @@ const Hero = () => {
           </h1>
 
           <p className="mx-auto mt-6 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-            Upload what you already have. Get a clean brief and permit-proven bids — side by side.
+            Share your remodel vision with us. We'll turn it into a clear brief and line up the right bids — side by side.
           </p>
 
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
