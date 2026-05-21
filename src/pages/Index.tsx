@@ -6,7 +6,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   Image as ImageIcon,
+  Flame,
 } from "lucide-react";
+
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
