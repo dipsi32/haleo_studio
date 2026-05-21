@@ -26,6 +26,10 @@ interface PricingResult {
   marketRange: { low: number; high: number; average: number; median: number };
   sampleSize: number;
   dataSource: string;
+  confidence?: 'high' | 'medium' | 'low';
+  sources?: { name: string; url?: string; weight: number; sampleSize?: number }[];
+  sourceCitations?: { name: string; url?: string }[];
+
   extractedProposal: {
     contractorName: string;
     totalCost: number;
