@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Fraunces"', "Georgia", "serif"],
-        sans: ['"Inter"', "system-ui", "sans-serif"],
+        display: ['"Instrument Serif"', '"Iowan Old Style"', '"Apple Garamond"', "Baskerville", "Georgia", "serif"],
+        sans: ["ui-sans-serif", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', '"Inter"', "Helvetica", "Arial", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
