@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Instrument Serif"', '"Iowan Old Style"', '"Apple Garamond"', "Baskerville", "Georgia", "serif"],
+        display: ['"Fraunces"', '"Iowan Old Style"', '"Apple Garamond"', "Baskerville", "Georgia", "serif"],
         sans: ["ui-sans-serif", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', '"Inter"', "Helvetica", "Arial", "sans-serif"],
       },
       colors: {

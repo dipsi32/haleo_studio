@@ -137,17 +137,19 @@
   }
 
   h1, h2, h3, h4, .font-display {
-    font-family: "Instrument Serif", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
-    font-weight: 400;
+    font-family: "Fraunces", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
+    font-weight: 600;
     font-optical-sizing: auto;
-    letter-spacing: -0.015em;
+    font-variation-settings: "SOFT" 100, "opsz" 96;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: "Instrument Serif", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
-    font-weight: 400;
+    font-family: "Fraunces", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
+    font-weight: 600;
+    font-variation-settings: "SOFT" 100, "opsz" 96;
   }
 
   .text-balance {
