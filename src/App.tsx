@@ -16,6 +16,8 @@ import Contractors from "./pages/Contractors.tsx";
 import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
+import Roast from "./pages/Roast.tsx";
+
 import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
 import ProposalIntelligencePage from "./pages/ProposalIntelligencePage.tsx";
