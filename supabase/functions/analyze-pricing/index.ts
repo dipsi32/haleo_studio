@@ -423,45 +423,135 @@ Deno.serve(async (req) => {
     // Use extracted ZIP or default to San Jose
     const zipCode = proposal.zipCode || "95123";
 
-    // 2. Fetch comparable permit data
+    // 2. Fetch comparable permit data (San Jose only — local sanity check)
     console.log("Step 2: Fetching permit data…");
     const records = await fetchPermitsByTypeAndZip(proposal.spaceType, zipCode);
 
-    // 3. Analyze market costs
-    console.log("Step 3: Analyzing market costs…");
-    let marketRange = analyzePermitCosts(records, proposal.scope);
+    // 3a. Permit-based range (local but under-reported)
+    console.log("Step 3a: Analyzing permit valuations…");
+    const permitRange = analyzePermitCosts(records, proposal.scope);
 
-    if (!marketRange) {
+    // 3b. Public cost-guide range (HomeAdvisor + Angi + Cost vs. Value)
+    console.log("Step 3b: Fetching cost-guide ranges…");
+    let guideRange: { low: number; high: number; average: number; sources: any[]; sourceCount: number; fromCache?: boolean; fromFallback?: boolean } | null = null;
+    try {
+      const guideResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cost-guide-lookup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ zipCode, spaceType: proposal.spaceType, scope: proposal.scope }),
+      });
+      if (guideResp.ok) guideRange = await guideResp.json();
+    } catch (e) { console.error("Cost guide fetch failed:", e); }
+
+    // 3c. Own corpus (anonymized proposals from prior uploads — the moat)
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    let corpusRange: { low: number; high: number; average: number; n: number } | null = null;
+    try {
+      const { data: corpusRows } = await supabaseAdmin
+        .from("proposal_benchmarks")
+        .select("total_cost")
+        .eq("space_type", proposal.spaceType.toLowerCase())
+        .eq("scope", proposal.scope.toLowerCase())
+        .eq("zip_code", zipCode)
+        .limit(200);
+      if (corpusRows && corpusRows.length >= 5) {
+        const costs = corpusRows.map((r: any) => Number(r.total_cost)).sort((a, b) => a - b);
+        const pct = (p: number) => costs[Math.max(0, Math.ceil((p / 100) * costs.length) - 1)];
+        corpusRange = {
+          low: Math.round(pct(20)),
+          high: Math.round(pct(80)),
+          average: Math.round(costs.reduce((a, b) => a + b, 0) / costs.length),
+          n: costs.length,
+        };
+      }
+    } catch (e) { console.error("Corpus lookup failed:", e); }
+
+    // 3d. Blend the available sources
+    // Weight: own corpus (3x if n≥20, 2x if n≥5) > cost guide (2x) > permits (1x, sj only)
+    const sourceList: any[] = [];
+    const sourcesUsed: { name: string; url?: string; weight: number; sampleSize?: number }[] = [];
+    let lowSum = 0, highSum = 0, avgSum = 0, weightSum = 0;
+
+    if (guideRange) {
+      const w = 2;
+      lowSum += guideRange.low * w; highSum += guideRange.high * w; avgSum += guideRange.average * w; weightSum += w;
+      for (const s of (guideRange.sources || [])) sourceList.push(s);
+      sourcesUsed.push({
+        name: guideRange.fromFallback
+          ? "Public cost guides (HomeAdvisor, Angi, Cost vs. Value — national medians)"
+          : "Public cost guides (HomeAdvisor + Angi, live)",
+        weight: w,
+        sampleSize: guideRange.sourceCount,
+      });
+    }
+    if (permitRange && permitRange.sampleSize >= 3) {
+      const w = 1;
+      lowSum += permitRange.low * w; highSum += permitRange.high * w; avgSum += permitRange.average * w; weightSum += w;
+      sourcesUsed.push({
+        name: "San Jose permit valuations (local)",
+        url: "https://data.sanjoseca.gov/",
+        weight: w,
+        sampleSize: permitRange.sampleSize,
+      });
+    }
+    if (corpusRange) {
+      const w = corpusRange.n >= 20 ? 3 : 2;
+      lowSum += corpusRange.low * w; highSum += corpusRange.high * w; avgSum += corpusRange.average * w; weightSum += w;
+      sourcesUsed.push({
+        name: "Haleo proposal corpus (anonymized prior uploads)",
+        weight: w,
+        sampleSize: corpusRange.n,
+      });
+    }
+
+    let marketRange: { low: number; high: number; average: number; median: number; sampleSize: number };
+    if (weightSum > 0) {
+      marketRange = {
+        low: Math.round(lowSum / weightSum),
+        high: Math.round(highSum / weightSum),
+        average: Math.round(avgSum / weightSum),
+        median: Math.round(avgSum / weightSum),
+        sampleSize: (permitRange?.sampleSize || 0) + (corpusRange?.n || 0) + (guideRange?.sourceCount || 0),
+      };
+    } else {
+      // Last-resort static fallback
       const industryAvg: Record<string, number> = {
         kitchen: 52000, bathroom: 28000, bedroom: 18000,
         "living room": 22000, "whole home": 120000, addition: 85000, outdoor: 15000,
       };
       const base = industryAvg[proposal.spaceType.toLowerCase()] || 40000;
       const scopeMult = proposal.scope === "refresh" ? 0.5 : proposal.scope === "redesign" ? 1.0 : 1.6;
-      const sqftMult = proposal.squareFootage ? Math.max(0.5, proposal.squareFootage / 150) : 1.0;
-      const adjusted = Math.round(base * scopeMult * sqftMult);
-      marketRange = {
-        low: Math.round(adjusted * 0.75),
-        high: Math.round(adjusted * 1.25),
-        average: adjusted,
-        median: adjusted,
-        sampleSize: 0,
-      };
+      const adjusted = Math.round(base * scopeMult);
+      marketRange = { low: Math.round(adjusted * 0.75), high: Math.round(adjusted * 1.25), average: adjusted, median: adjusted, sampleSize: 0 };
+      sourcesUsed.push({ name: "Industry averages (fallback)", weight: 1 });
     }
 
-    // Adjust for sqft if available
-    if (proposal.squareFootage && marketRange.sampleSize > 0) {
-      const sqftFactor = Math.max(0.5, Math.min(2.5, proposal.squareFootage / 150));
+    // Sqft adjustment when provided
+    if (proposal.squareFootage) {
+      const sqftFactor = Math.max(0.6, Math.min(2.2, proposal.squareFootage / 150));
       marketRange.low = Math.round(marketRange.low * sqftFactor);
       marketRange.high = Math.round(marketRange.high * sqftFactor);
       marketRange.average = Math.round(marketRange.average * sqftFactor);
       marketRange.median = Math.round(marketRange.median * sqftFactor);
     }
 
+    // Confidence: more independent sources + larger n → higher
+    const distinctSources = sourcesUsed.length;
+    const confidence: "high" | "medium" | "low" =
+      (corpusRange && corpusRange.n >= 20) || distinctSources >= 3 ? "high"
+      : distinctSources >= 2 ? "medium"
+      : "low";
+
     // 4. Component breakdown
     const componentRanges = estimateComponentRanges(proposal.spaceType, marketRange);
 
-    // 5. Comparable projects (filtered by type + ±30% price range)
+    // 5. Comparable projects (still from SJ permits when available)
     const comparableProjects = extractComparableProjects(records, proposal.totalCost, `${proposal.spaceType} ${proposal.scope}`);
 
     // 6. Quinn's verdict
@@ -470,7 +560,23 @@ Deno.serve(async (req) => {
       proposal, marketRange, proposal.spaceType, proposal.scope, marketRange.sampleSize, apiKey
     );
 
-    // 7. Build response
+    // 7. Capture-the-moat: persist anonymized benchmark row
+    try {
+      const nameHash = proposal.contractorName
+        ? btoa(unescape(encodeURIComponent(proposal.contractorName.toLowerCase().trim()))).slice(0, 24)
+        : null;
+      await supabaseAdmin.from("proposal_benchmarks").insert({
+        zip_code: zipCode,
+        space_type: proposal.spaceType.toLowerCase(),
+        scope: proposal.scope.toLowerCase(),
+        square_footage: proposal.squareFootage,
+        total_cost: proposal.totalCost,
+        line_items: proposal.lineItems,
+        contractor_name_hash: nameHash,
+      });
+    } catch (e) { console.error("Benchmark capture failed (non-fatal):", e); }
+
+    // 8. Build response
     const result = {
       marketRange: {
         low: marketRange.low,
@@ -479,9 +585,10 @@ Deno.serve(async (req) => {
         median: marketRange.median,
       },
       sampleSize: marketRange.sampleSize,
-      dataSource: marketRange.sampleSize > 0
-        ? "City of San Jose Open Data Portal — Real Permit Records"
-        : "Industry averages for your area",
+      confidence,
+      sources: sourcesUsed,
+      sourceCitations: sourceList,
+      dataSource: sourcesUsed.map(s => s.name).join(" + "),
       extractedProposal: {
         contractorName: proposal.contractorName,
         totalCost: proposal.totalCost,
@@ -502,6 +609,7 @@ Deno.serve(async (req) => {
       componentRanges,
       quinnInsight: quinnVerdict.reasoning,
     };
+
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
