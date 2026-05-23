@@ -793,18 +793,18 @@ export default function ProposalIntelligencePage() {
                     <Sparkles className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="font-serif text-xl text-foreground mb-2">
-                    Great start! Now let's make sure everything else checks out 🔍
+                    Pricing is one part of the picture.
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-                    We'll verify their license, dig into their permit history, spot any contract red flags, and map out your project timeline — so you can sign with confidence.
+                    The full audit checks the contractor's license with CSLB, pulls their permit history, scans the contract for missing clauses and risky terms, and lays out a realistic timeline. No new upload required.
                   </p>
                   <Button onClick={handleUnlockFullReport} className="gap-2 px-8 py-6 text-base" size="lg">
                     <Shield className="w-4 h-4" />
-                    Review Full Proposal
+                    Run the full audit
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                   <p className="text-[10px] text-muted-foreground/60 mt-4">
-                    Same proposal, deeper analysis · License verification · Permit history · Risk scoring
+                    License verification · Permit history · Contract risks · Project timeline
                   </p>
                 </div>
 
@@ -813,12 +813,12 @@ export default function ProposalIntelligencePage() {
                   <Link to="/coming-soon?stage=contractors" className="flex-1">
                     <Button variant="outline" className="w-full gap-2 py-5" size="lg">
                       <Users className="w-4 h-4" />
-                      Find Vetted Contractors
+                      Find vetted contractors
                     </Button>
                   </Link>
                   <Button variant="ghost" onClick={() => { setPricingResult(null); setFile(null); setFileBase64(null); setStep('upload'); }} className="gap-1.5 text-muted-foreground">
                     <Upload className="w-4 h-4" />
-                    Let's Analyze Another Proposal
+                    Check another proposal
                   </Button>
                 </div>
               </motion.div>
