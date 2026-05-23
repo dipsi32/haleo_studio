@@ -601,13 +601,13 @@ Deno.serve(async (req) => {
       },
       proposalAnalysis: {
         providedCost: proposal.totalCost,
-        percentileRank: quinnVerdict.percentileRank,
-        verdict: quinnVerdict.verdict,
-        reasoning: quinnVerdict.reasoning,
+        percentileRank: haleoVerdict.percentileRank,
+        verdict: haleoVerdict.verdict,
+        reasoning: haleoVerdict.reasoning,
       },
       comparableProjects,
       componentRanges,
-      quinnInsight: quinnVerdict.reasoning,
+      haleoInsight: haleoVerdict.reasoning,
     };
 
 
