@@ -59,7 +59,7 @@ interface PricingResult {
     squareFootage?: number | null;
   }[];
   componentRanges: Record<string, { low: number; high: number; average: number }>;
-  quinnInsight: string;
+  haleoInsight: string;
 }
 
 interface RedFlag {
@@ -112,7 +112,7 @@ interface ContractResult {
   };
   red_flags: RedFlag[];
   insights: Insight[];
-  quinn_tips: HaleoTip[];
+  haleo_tips: HaleoTip[];
   questions_to_ask: string[];
   roadmap: Array<{
     stage: string;
