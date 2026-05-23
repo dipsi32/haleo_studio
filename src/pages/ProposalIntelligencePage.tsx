@@ -654,39 +654,35 @@ export default function ProposalIntelligencePage() {
                   <div className="flex items-start gap-2 mb-2">
                     <Building2 className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                        <span className="text-xs font-semibold text-foreground">How we got this range</span>
-                        {pricingResult.confidence && (
-                          <span className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                            pricingResult.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
-                            pricingResult.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
-                            'bg-muted text-muted-foreground'
-                          }`}>
-                            {pricingResult.confidence} confidence
-                          </span>
-                        )}
-                      </div>
-                      <ul className="text-xs text-muted-foreground space-y-0.5">
-                        {(pricingResult.sources && pricingResult.sources.length > 0
+                      {(() => {
+                        const srcs = (pricingResult.sources && pricingResult.sources.length > 0)
                           ? pricingResult.sources
-                          : [{ name: pricingResult.dataSource, weight: 1 }]
-                        ).map((s, i) => (
-                          <li key={i} className="flex items-start gap-1.5">
-                            <span className="text-foreground/40">•</span>
-                            <span>
-                              {s.name}
-                              {s.sampleSize ? ` (n=${s.sampleSize})` : ''}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-[11px] text-muted-foreground/80 mt-2 italic">
-                        We blend public cost guides, local permit data, and (when available) prior Haleo proposals.
-                        This is an estimate to help you negotiate — not an appraisal.
-                      </p>
+                          : [{ name: pricingResult.dataSource, weight: 1 } as any];
+                        return (
+                          <>
+                            <div className="text-xs font-semibold text-foreground mb-1.5">
+                              Fair range based on {srcs.length} source{srcs.length === 1 ? '' : 's'}:
+                            </div>
+                            <ul className="text-xs text-muted-foreground space-y-0.5">
+                              {srcs.map((s, i) => (
+                                <li key={i} className="flex items-start gap-1.5">
+                                  <span className="text-foreground/40">•</span>
+                                  <span>
+                                    {s.sampleSize ? `${s.sampleSize.toLocaleString()} ` : ''}{s.name}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-[11px] text-muted-foreground/80 mt-2 italic">
+                              An estimate to help you negotiate — not an appraisal.
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </Card>
+
 
 
                 {/* Section 3: Haleo's Take */}
