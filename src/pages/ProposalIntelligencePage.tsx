@@ -704,9 +704,10 @@ export default function ProposalIntelligencePage() {
                 <SectionLabel number={3} label="Haleo's Take" />
                 <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
+                {/* Section 4: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
-                    <SectionLabel number={5} label="Closest Real Project to Yours" />
+                    <SectionLabel number={4} label="Closest Real Project to Yours" />
                     <Card className="p-5">
                       <p className="text-xs text-muted-foreground mb-4">
                         Pulled live from City of San José permit records — the nearest match to your scope, size, and neighborhood.
