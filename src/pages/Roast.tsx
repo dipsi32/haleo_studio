@@ -504,6 +504,99 @@ export default function Roast() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Offscreen polished share scorecard (1200×630) for PNG export */}
+      {result && (
+        <div style={{ position: "fixed", top: 0, left: -10000, pointerEvents: "none", zIndex: -1 }}>
+          <div
+            ref={shareCardRef}
+            style={{
+              width: 1200,
+              height: 630,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding: 64,
+              fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+              color: "#ffffff",
+              background:
+                ({
+                  emerald: "linear-gradient(135deg,#059669,#10b981 45%,#5eead4)",
+                  lime: "linear-gradient(135deg,#65a30d,#34d399 45%,#fde047)",
+                  amber: "linear-gradient(135deg,#f59e0b,#fbbf24 45%,#fdba74)",
+                  orange: "linear-gradient(135deg,#f97316,#fbbf24 45%,#fde047)",
+                  red: "linear-gradient(135deg,#dc2626,#f43f5e 50%,#fb923c)",
+                } as Record<string, string>)[result.tier.color] ||
+                "linear-gradient(135deg,#fbbf24,#fb923c)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 22, letterSpacing: 4, textTransform: "uppercase", opacity: 0.9, fontWeight: 600 }}>
+                Haleo · Quote Score
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  padding: "8px 18px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.18)",
+                  backdropFilter: "blur(8px)",
+                  fontWeight: 500,
+                }}
+              >
+                haleo.studio/roast
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 8 }}>
+                <span style={{ fontSize: 220, fontWeight: 800, lineHeight: 0.9, letterSpacing: -6, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                  {result.score}
+                </span>
+                <span style={{ fontSize: 44, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
+              </div>
+              <div style={{ fontSize: 56, fontFamily: "Georgia, 'Times New Roman', serif", marginBottom: 18, lineHeight: 1.05 }}>
+                {result.tier.label}
+              </div>
+              <div style={{ fontSize: 28, lineHeight: 1.3, opacity: 0.95, maxWidth: 980 }}>
+                {result.roast.headline}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: 28,
+                borderTop: "1px solid rgba(255,255,255,0.25)",
+                fontSize: 20,
+              }}
+            >
+              <div style={{ display: "flex", gap: 36 }}>
+                <div>
+                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Your quote</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Local fair range</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>
+                    {fmt(result.summary.marketLow)}–{fmt(result.summary.marketHigh)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Where you land</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{result.summary.percentileRank}th %</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 16, opacity: 0.8, textAlign: "right" }}>
+                Check yours free →<br />haleo.studio
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+
   );
 }
