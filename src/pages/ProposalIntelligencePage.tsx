@@ -657,7 +657,7 @@ export default function ProposalIntelligencePage() {
 
                 {/* Section 3: Haleo's Take */}
                 <SectionLabel number={3} label="Haleo's Take" />
-                <HaleoInsightCard insight={pricingResult.quinnInsight} />
+                <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
                 {/* Section 4: Cost Breakdown */}
                 <SectionLabel number={4} label="Your Costs vs. Typical" />
@@ -783,7 +783,7 @@ export default function ProposalIntelligencePage() {
             {step === 'full-report' && contractResult && (
               <>
                 {/* Tips opt-in prompt */}
-                {!tipsAsked && (contractResult.quinn_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
+                {!tipsAsked && (contractResult.haleo_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1022,8 +1022,8 @@ function FullReportView({
   savedAnalysisId: string | null;
   user: any;
 }) {
-  const { extracted, risk_score, permit_intelligence, license_verification, roadmap, next_actions, red_flags, insights, quinn_tips, questions_to_ask } = contractResult;
-  const tipForSection = (placement: string) => quinn_tips?.find(t => t.placement === placement);
+  const { extracted, risk_score, permit_intelligence, license_verification, roadmap, next_actions, red_flags, insights, haleo_tips, questions_to_ask } = contractResult;
+  const tipForSection = (placement: string) => haleo_tips?.find(t => t.placement === placement);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   return (
