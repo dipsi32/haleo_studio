@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Upload, FileText, BarChart3, Sparkles, Building2, X,
@@ -143,6 +144,7 @@ function fmt(n: number) {
 export default function ProposalIntelligencePage() {
   useActivityTracker('proposal_intelligence');
   const navigate = useNavigate();
+  const location = useLocation();
   const { reportId } = useParams<{ reportId?: string }>();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('upload');
@@ -162,6 +164,36 @@ export default function ProposalIntelligencePage() {
   const [tipsAsked, setTipsAsked] = useState(false);
   const [proposalTips, setProposalTips] = useState<TipType[]>([]);
   const [tipsDismissedToFab, setTipsDismissedToFab] = useState(false);
+
+  // ─── Handoff from Roast ─────────────────────────────────────────
+  // If the user came from /roast, we already have the file + pricing analysis.
+  // Skip the upload step entirely and drop them at the pricing summary so they
+  // can decide whether to unlock the full report.
+  useEffect(() => {
+    const state = (location.state || {}) as {
+      fromRoast?: boolean;
+      fileBase64?: string;
+      fileName?: string;
+      fileType?: string;
+      pricingResult?: PricingResult;
+    };
+    if (!state.fromRoast || !state.pricingResult || !state.fileBase64) return;
+    setPricingResult(state.pricingResult);
+    setFileBase64(state.fileBase64);
+    // Reconstruct a File-like object so re-analysis works.
+    try {
+      const bytes = Uint8Array.from(atob(state.fileBase64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: state.fileType || 'application/octet-stream' });
+      const f = new File([blob], state.fileName || 'quote.pdf', { type: state.fileType || 'application/pdf' });
+      setFile(f);
+    } catch (e) {
+      console.warn('Roast handoff: could not reconstruct file', e);
+    }
+    setStep('pricing');
+    // Clear state so a refresh doesn't loop the handoff.
+    window.history.replaceState({}, document.title);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load saved report if navigating with reportId
   useEffect(() => {
     if (!reportId || !user) return;
@@ -429,13 +461,13 @@ export default function ProposalIntelligencePage() {
               Back
             </button>
             <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-2">
-              {step === 'full-report' ? 'Your Full Intelligence Report' : step === 'pricing' ? 'Here\'s What the Data Says' : 'Let\'s Check Your Proposal'}
+              {step === 'full-report' ? 'Your full audit' : step === 'pricing' ? 'Here is what the data says' : 'Audit a contractor proposal'}
             </h1>
             <p className="text-muted-foreground">
-              {step === 'upload' && 'Let\'s start by checking the price you\'re being offered'}
-              {step === 'analyzing' && 'Analyzing…'}
-              {step === 'pricing' && 'We compared your quote against real projects in your area'}
-              {step === 'full-report' && 'The complete picture — pricing, trust, and what to do next'}
+              {step === 'upload' && 'Drop the proposal in. We check the price first, then go deeper if you want.'}
+              {step === 'analyzing' && 'Working on it.'}
+              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals.'}
+              {step === 'full-report' && 'Pricing, scope, contract risks, contractor signals, and what to do this week.'}
             </p>
           </div>
 
@@ -449,7 +481,7 @@ export default function ProposalIntelligencePage() {
                   </div>
                   <div className="pt-1.5">
                     <p className="text-sm text-foreground leading-relaxed">
-                      <span className="font-semibold">Haleo:</span> Drop your contractor's proposal here and I'll check the pricing against real projects in your area. Let's make sure you're not overpaying.
+                      <span className="font-semibold">Haleo:</span> Drop the proposal in. I will check the pricing against local comps first, then we can go deeper into scope and contract risks.
                     </p>
                   </div>
                 </div>
