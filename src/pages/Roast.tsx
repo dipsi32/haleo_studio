@@ -547,46 +547,42 @@ export default function Roast() {
               <div style={{ fontSize: 22, letterSpacing: 4, textTransform: "uppercase", opacity: 0.9, fontWeight: 600 }}>
                 Haleo · Quote Score
               </div>
-              <div
-                style={{
-                  fontSize: 18,
-                  padding: "8px 18px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.18)",
-                  backdropFilter: "blur(8px)",
-                  fontWeight: 500,
-                }}
-              >
-                haleo.studio/roast
+              <div style={{ fontSize: 18, opacity: 0.9, fontWeight: 500, textTransform: "capitalize" }}>
+                {result.summary.spaceType} {result.summary.scope}
+                {result.summary.zipCode ? ` · ${result.summary.zipCode}` : ""}
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: 18, letterSpacing: 3, textTransform: "uppercase", opacity: 0.85, marginBottom: 12, fontWeight: 600 }}>
-                {result.tier.label}
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
-                <span style={{ fontSize: 240, fontWeight: 800, lineHeight: 0.85, letterSpacing: -8, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                  {result.score}
-                </span>
-                <span style={{ fontSize: 48, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
-              </div>
-              {(() => {
-                const diff = result.summary.total - result.summary.marketAverage;
-                const pct = Math.round(Math.abs(diff) / Math.max(1, result.summary.marketAverage) * 100);
-                const within = result.summary.total >= result.summary.marketLow && result.summary.total <= result.summary.marketHigh;
-                const line = within
-                  ? `Within the local fair range for this scope`
-                  : diff > 0
-                    ? `About ${fmt(Math.abs(diff))} (${pct}%) above the local average`
-                    : `About ${fmt(Math.abs(diff))} (${pct}%) below the local average`;
-                return (
-                  <div style={{ fontSize: 38, lineHeight: 1.2, fontWeight: 500, maxWidth: 980 }}>
-                    {line}.
+            {(() => {
+              const diff = result.summary.total - result.summary.marketAverage;
+              const pct = Math.round(Math.abs(diff) / Math.max(1, result.summary.marketAverage) * 100);
+              const within = result.summary.total >= result.summary.marketLow && result.summary.total <= result.summary.marketHigh;
+              const verdict = within
+                ? `Priced fair for this scope`
+                : diff > 0
+                  ? `${fmt(Math.abs(diff))} over fair, about ${pct}% above local`
+                  : `${fmt(Math.abs(diff))} under fair, about ${pct}% below local`;
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 56 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{ fontSize: 220, fontWeight: 800, lineHeight: 0.85, letterSpacing: -8, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                      {result.score}
+                    </span>
+                    <span style={{ fontSize: 20, opacity: 0.85, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginTop: 10 }}>
+                      {result.tier.label}
+                    </span>
                   </div>
-                );
-              })()}
-            </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75, marginBottom: 10 }}>
+                      The verdict
+                    </div>
+                    <div style={{ fontSize: 50, lineHeight: 1.12, fontWeight: 700 }}>
+                      {verdict}.
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div
               style={{
