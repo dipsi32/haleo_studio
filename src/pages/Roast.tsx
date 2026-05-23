@@ -355,38 +355,32 @@ export default function Roast() {
 
               {/* How Haleo got this number — the evidence block */}
               <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <h3 className="font-serif text-xl text-foreground">How Haleo got this number</h3>
-                  {result.confidence && (
-                    <span className={`text-[11px] uppercase font-semibold px-2.5 py-1 rounded-full ${
-                      result.confidence === "high" ? "bg-emerald-100 text-emerald-700"
-                      : result.confidence === "medium" ? "bg-amber-100 text-amber-700"
-                      : "bg-foreground/10 text-foreground/70"
-                    }`}>
-                      {result.confidence} confidence
-                    </span>
-                  )}
-                </div>
+                <h3 className="font-serif text-xl text-foreground mb-4">How Haleo got this number</h3>
 
                 {result.sources && result.sources.length > 0 ? (
-                  <ul className="space-y-2.5">
-                    {result.sources.map((s, i) => {
-                      const Icon = sourceIcon(s.name);
-                      return (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                          <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-foreground font-medium">{s.name}</p>
-                            <p className="text-foreground/55 text-xs">
-                              Weight {s.weight}×{typeof s.sampleSize === "number" ? ` · ${s.sampleSize} comps` : ""}
-                            </p>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <>
+                    <p className="text-sm text-foreground/70 mb-3">
+                      Fair range based on {result.sources.length} source{result.sources.length === 1 ? "" : "s"}:
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      {result.sources.map((s, i) => {
+                        const cleanName = cleanSourceName(s.name);
+                        const Icon = sourceIcon(cleanName);
+                        const detail = sourceDetail(cleanName, s.sampleSize);
+                        return (
+                          <li key={i} className="flex items-start gap-3">
+                            <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
+                            <span className="text-foreground/85">
+                              {detail ? <><span className="font-medium text-foreground">{detail}</span> from </> : null}
+                              {cleanName}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
                 ) : (
-                  <p className="text-sm text-foreground/60">Pulled from public cost guides and our internal corpus.</p>
+                  <p className="text-sm text-foreground/60">Pulled from public cost guides and recent local permits.</p>
                 )}
 
                 {result.comparableProjects && result.comparableProjects.length > 0 && (
