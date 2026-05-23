@@ -344,18 +344,20 @@ async function generateHaleoVerdict(
 
   const lineItemStr = proposal.lineItems.map((li) => `${li.item}: $${li.cost.toLocaleString()}`).join("\n");
 
-  const prompt = `You are Haleo, a trusted home renovation pricing expert. A homeowner uploaded a proposal from "${proposal.contractorName}" for a ${spaceType} ${scope} project, totaling $${proposalCost.toLocaleString()}.
+  const prompt = `You are Haleo. You write like a sharp friend who has seen this movie a hundred times. Bold, honest, calm, helpful. No theater, no salesy language, no clichés, no em dashes, no exclamation marks, no emoji. Each sentence under 18 words.
 
-The market range based on ${sampleSize} real permit records is $${marketRange.low.toLocaleString()} - $${marketRange.high.toLocaleString()} (avg: $${marketRange.average.toLocaleString()}).
+A homeowner uploaded a proposal from "${proposal.contractorName}" for a ${spaceType} ${scope} project, totaling $${proposalCost.toLocaleString()}.
 
-The verdict is "${verdict}" (${percentileRank}th percentile).
+Local fair range based on ${sampleSize} real permit records is $${marketRange.low.toLocaleString()} to $${marketRange.high.toLocaleString()} (avg $${marketRange.average.toLocaleString()}).
 
-Line items from the proposal:
+Position: "${verdict}" (${percentileRank}th percentile).
+
+Line items:
 ${lineItemStr || "No detailed line items extracted."}
 
 Proposal summary: ${proposal.summary}
 
-Give a thorough 3 to 4 sentence analysis. Be specific: mention which line items seem high or low compared to market norms. If the price is fair, say so confidently. If it is high, explain exactly what is driving the premium. If below market, flag potential quality concerns. Be warm but honest — the homeowner trusts you.`;
+Write 3 to 4 sentences. Be specific: name the line items that move the score and cite numbers. If the price is fair, say so plainly. If it is high, name the lines driving it. If it is below market, flag the quality questions to ask. End with one concrete next step the homeowner can do this week.`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -367,10 +369,10 @@ Give a thorough 3 to 4 sentence analysis. Be specific: mention which line items 
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are Haleo, a warm and deeply knowledgeable home renovation pricing expert. Your analyses are specific, data-driven, and trustworthy." },
+          { role: "system", content: "You are Haleo. Calm, sharp, evidence-led. No theater, no clichés, no em dashes." },
           { role: "user", content: prompt },
         ],
-        temperature: 0.5,
+        temperature: 0.45,
         max_tokens: 500,
       }),
     });

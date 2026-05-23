@@ -60,45 +60,53 @@ Deno.serve(async (req) => {
     score = Math.max(1, Math.min(100, score));
 
     const tier =
-      score >= 80 ? { label: "Steal of the Century", color: "emerald", emoji: "🟢" }
-      : score >= 60 ? { label: "Fair & Square", color: "lime", emoji: "🟢" }
-      : score >= 40 ? { label: "Hmm… Negotiable", color: "amber", emoji: "🟡" }
-      : score >= 20 ? { label: "Yikes Territory", color: "orange", emoji: "🟠" }
-      : { label: "Full-On Ripped Off", color: "red", emoji: "🔴" };
+      score >= 80 ? { label: "Below market", color: "emerald" }
+      : score >= 60 ? { label: "Fair", color: "lime" }
+      : score >= 40 ? { label: "A little high", color: "amber" }
+      : score >= 20 ? { label: "Notably high", color: "orange" }
+      : { label: "Way over", color: "red" };
 
-    // 3. Ask Gemini for the actual roast — line-by-line burns + one-liner + share text
+    // 3. Ask Gemini for the roast in Haleo's voice — calm, evidence-led, no theater.
     const lineItemBlock = (extractedProposal.lineItems || [])
       .slice(0, 12)
       .map((li: any) => `- ${li.item}: $${Number(li.cost).toLocaleString()}`)
       .join("\n");
 
-    const roastPrompt = `You are Haleo, the renovation roastmaster. Brutally honest, very funny, never mean spirited, never personal. You roast PRICES and SCOPE, not people. Sharp wit, fast lines, occasional dad joke. No emojis in your text (we add them in UI).
+    const roastPrompt = `You are Haleo. You write like a sharp friend who has seen this movie a hundred times. Bold, honest, calm, helpful. You roast PRICES and SCOPE, never people. You back claims with the actual market range, not adjectives.
+
+VOICE RULES (strict):
+- No theater. No "ripped off", "WTF", "are they tiling it with gold", "yikes", "paranoid", "saint", "criminal", "shady", "scam".
+- No exclamation marks. No emoji. No em dashes or hyphenated flourishes. No rhetorical questions.
+- No salesy or cliche phrases ("trust me", "let's be real", "honestly", "the truth is").
+- Cite numbers. When you call something high or low, say what the local fair range is for that line ("Local fair range for this scope is $X to $Y").
+- Each sentence under 18 words. Calm, direct, useful.
 
 CONTEXT:
 - Project: ${extractedProposal.spaceType} ${extractedProposal.scope}
 - Quote total: $${total.toLocaleString()}
-- Market range for this work: $${marketRange.low.toLocaleString()} – $${marketRange.high.toLocaleString()} (avg $${avg.toLocaleString()})
+- Local fair range: $${marketRange.low.toLocaleString()} to $${marketRange.high.toLocaleString()} (avg $${avg.toLocaleString()})
 - Verdict tier: "${tier.label}" (score ${score}/100)
 - Line items:
-${lineItemBlock || "(no line items extracted — quote was a single number)"}
+${lineItemBlock || "(no line items extracted, quote was a single number)"}
 
 Return ONLY valid JSON, no markdown, with this exact shape:
 {
-  "headline": "<6-10 word punchy verdict. e.g. 'You are not getting ripped off. Sign it.'>",
-  "oneLiner": "<25-40 word roast that captures the overall vibe. Specific to THIS quote. Reference a real number or item.>",
+  "headline": "<6-12 word calm verdict. State the position, not the drama.>",
+  "oneLiner": "<25-40 word neutral summary. Reference one real number from above.>",
   "lineRoasts": [
-    { "item": "<line item name>", "cost": <number>, "burn": "<one sentence, 12-25 words, comparing the price to the market or to something absurd. Be SPECIFIC and funny.>", "verdict": "fair" | "high" | "low" | "wtf" }
+    { "item": "<line item>", "cost": <number>, "burn": "<one calm sentence, 12-22 words, citing the local fair range or comparable for THIS line.>", "verdict": "fair" | "high" | "low" | "wtf" }
   ],
-  "shareCaption": "<60-100 char tweet-style share line WITHOUT hashtags. Should make people want to click. Include the score.>",
-  "advice": "<one sentence of actual, useful advice the homeowner can act on tomorrow.>"
+  "shareCaption": "<60-100 char matter-of-fact share line WITHOUT hashtags. Include the score and where it lands.>",
+  "advice": "<2 short concrete next steps a homeowner can do this week. One sentence each, separated by a period.>"
 }
 
-Rules:
-- Generate 3 to 5 lineRoasts max, picking the most interesting items (highest, lowest, or weirdest).
-- If no line items, return lineRoasts: [] and pour the wit into oneLiner.
-- "wtf" verdict is for items more than 50% over market norms.
-- Never mention specific contractor names.
-- Tone: think Anthony Bourdain reviewing a contractor quote. Honest, warm, sharp.`;
+Verdict rules:
+- "fair" if within local fair range.
+- "low" if below local fair range.
+- "high" if above the fair range by up to 30%.
+- "wtf" only if above the fair range by more than 30%.
+
+Generate 3 to 5 lineRoasts, picking the items that move the score most. If no line items, return lineRoasts: [] and put analysis in oneLiner. Never name the contractor.`;
 
     const roastResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -106,20 +114,20 @@ Rules:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are Haleo, the renovation roastmaster. Output ONLY valid JSON." },
+          { role: "system", content: "You are Haleo. Calm, sharp, evidence-led. Output ONLY valid JSON." },
           { role: "user", content: roastPrompt },
         ],
-        temperature: 0.85,
+        temperature: 0.6,
         max_tokens: 1200,
       }),
     });
 
     let roast = {
-      headline: tier.label,
-      oneLiner: `Your $${total.toLocaleString()} quote lands in the ${tier.label.toLowerCase()} zone for a ${extractedProposal.spaceType} ${extractedProposal.scope}.`,
+      headline: `${tier.label} for a ${extractedProposal.spaceType} ${extractedProposal.scope}.`,
+      oneLiner: `Your $${total.toLocaleString()} quote lands in the ${tier.label.toLowerCase()} band. Local fair range for this scope is $${marketRange.low.toLocaleString()} to $${marketRange.high.toLocaleString()}.`,
       lineRoasts: [] as any[],
-      shareCaption: `My contractor quote scored ${score}/100 on Haleo's Remodel Roast. ${tier.label}.`,
-      advice: "Compare against at least two more quotes before you sign anything.",
+      shareCaption: `My contractor quote scored ${score}/100 on Haleo. ${tier.label}.`,
+      advice: "Get two more itemized bids on the same scope. Ask your contractor to walk through any line above the local fair range.",
     };
 
     if (roastResp.ok) {
@@ -140,7 +148,7 @@ Rules:
       tier,
       roast,
       summary: {
-        contractor: "Anonymous Contractor", // we strip the name in the UI for the public roast
+        contractor: "Anonymous Contractor",
         spaceType: extractedProposal.spaceType,
         scope: extractedProposal.scope,
         total,
@@ -153,7 +161,10 @@ Rules:
       },
       lineItems: extractedProposal.lineItems || [],
       sources: pricing.sources || [],
+      comparableProjects: pricing.comparableProjects || [],
       confidence: pricing.confidence,
+      // Full pricing payload so the audit page can pick up without re-uploading.
+      pricing,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("roast-proposal error", e);
