@@ -182,10 +182,10 @@ export default function Roast() {
             <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="text-center mb-10">
                 <h1 className="text-5xl sm:text-6xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
-                  See if your <span className="italic">quote</span> is fair.
+                  Got a quote? <span className="italic">Get it roasted.</span>
                 </h1>
                 <p className="text-lg text-foreground/70 max-w-xl mx-auto">
-                  Upload the quote. Haleo checks it against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand.
+                  Drop it in. Haleo checks every line against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand. No drama, just the numbers.
                 </p>
               </div>
 
