@@ -602,30 +602,36 @@ export default function ProposalIntelligencePage() {
                   </Card>
                 )}
 
-                {/* Section 2: Is the Price Fair? */}
-                <SectionLabel number={2} label="Is This Price Fair?" />
+                {/* Section 2: Is the Price Fair? — the TL;DR */}
+                <SectionLabel number={2} label="Is this price fair?" />
                 {pricingResult.proposalAnalysis && (
-                  <Card className={cn('p-6', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-2xl">{verdictConfig[pricingResult.proposalAnalysis.verdict]?.icon || '📊'}</span>
-                      <div>
-                        <h2 className={cn('font-serif text-xl font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
-                          {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis Complete'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Your proposal is in the {pricingResult.proposalAnalysis.percentileRank}th percentile of similar projects
-                        </p>
-                      </div>
+                  <Card className={cn('p-6 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <span className={cn('w-2.5 h-2.5 rounded-full', verdictConfig[pricingResult.proposalAnalysis.verdict]?.dot || 'bg-muted')} />
+                      <h2 className={cn('font-serif text-xl font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
+                        {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis complete'}
+                      </h2>
+                      {pricingResult.confidence && (
+                        <span className={cn(
+                          'text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-medium',
+                          pricingResult.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                          pricingResult.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          {pricingResult.confidence} confidence
+                          {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="bg-background/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Your Quote</p>
+                        <p className="text-xs text-muted-foreground mb-1">Your quote</p>
                         <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.proposalAnalysis.providedCost)}</p>
                       </div>
                       <div className="bg-background/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Market Average</p>
-                        <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.marketRange.average)}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Local fair range</p>
+                        <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.marketRange.low)}–{fmtFull(pricingResult.marketRange.high)}</p>
                       </div>
                     </div>
 
@@ -633,6 +639,7 @@ export default function ProposalIntelligencePage() {
                     <div className="mb-2">
                       <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                         <span>{fmtFull(pricingResult.marketRange.low)}</span>
+                        <span>avg {fmtFull(pricingResult.marketRange.average)}</span>
                         <span>{fmtFull(pricingResult.marketRange.high)}</span>
                       </div>
                       <div className="relative h-3 bg-background/50 rounded-full overflow-hidden">
@@ -640,11 +647,17 @@ export default function ProposalIntelligencePage() {
                         <div
                           className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary border-2 border-primary-foreground shadow-md"
                           style={{
-                            left: `${Math.min(100, Math.max(0, ((pricingResult.proposalAnalysis.providedCost - pricingResult.marketRange.low) / (pricingResult.marketRange.high - pricingResult.marketRange.low)) * 100))}%`,
+                            left: `${Math.min(100, Math.max(0, ((pricingResult.proposalAnalysis.providedCost - pricingResult.marketRange.low) / Math.max(1, pricingResult.marketRange.high - pricingResult.marketRange.low)) * 100))}%`,
                           }}
                         />
                       </div>
                     </div>
+
+                    {pricingResult.confidence === 'low' && (
+                      <p className="mt-3 text-[11px] text-muted-foreground italic">
+                        Heads up: we found limited local data for this exact scope. Treat the range as directional, not definitive.
+                      </p>
+                    )}
                   </Card>
                 )}
 
