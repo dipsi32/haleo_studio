@@ -228,7 +228,7 @@ function keywordMatchScore(record: any, keywords: string[]): number {
 }
 
 // ─── Step 5: Comparable projects ────────────────────────────────────
-function extractComparableProjects(records: any[], proposalCost: number, proposalScope: string, limit = 8) {
+function extractComparableProjects(records: any[], proposalCost: number, proposalScope: string, limit = 1) {
   const lowerBound = proposalCost * 0.7;
   const upperBound = proposalCost * 1.3;
 
