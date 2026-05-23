@@ -611,17 +611,6 @@ export default function ProposalIntelligencePage() {
                       <h2 className={cn('font-serif text-xl font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
                         {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis complete'}
                       </h2>
-                      {pricingResult.confidence && (
-                        <span className={cn(
-                          'text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-medium',
-                          pricingResult.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
-                          pricingResult.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
-                          'bg-muted text-muted-foreground'
-                        )}>
-                          {pricingResult.confidence} confidence
-                          {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
-                        </span>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
