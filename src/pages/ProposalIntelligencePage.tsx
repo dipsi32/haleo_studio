@@ -368,7 +368,7 @@ export default function ProposalIntelligencePage() {
     'significantly-above': { label: 'Significantly Above Market', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30', icon: '🚨' },
   };
 
-  // Generate contextual tips from red_flags, insights, and quinn_tips
+  // Generate contextual tips from red_flags, insights, and haleo_tips
   useEffect(() => {
     if (!contractResult || !tipsOptedIn) return;
     const allTips: TipType[] = [];
