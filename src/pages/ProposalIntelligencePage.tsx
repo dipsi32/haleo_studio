@@ -202,7 +202,7 @@ export default function ProposalIntelligencePage() {
           },
           red_flags: row.extracted_data?.red_flags || [],
           insights: row.extracted_data?.insights || [],
-          quinn_tips: row.extracted_data?.quinn_tips || [],
+          haleo_tips: row.extracted_data?.haleo_tips || row.extracted_data?.quinn_tips || [],
           questions_to_ask: row.extracted_data?.questions_to_ask || [],
           roadmap: Array.isArray(row.roadmap) ? row.roadmap : [],
           next_actions: Array.isArray(row.next_actions) ? row.next_actions : [],
