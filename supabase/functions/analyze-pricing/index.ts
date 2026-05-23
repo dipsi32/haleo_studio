@@ -22,7 +22,7 @@ async function extractProposalDetails(fileBase64: string, fileType: string, apiK
   const isImage = fileType.startsWith("image/");
   const mimeType = fileType;
 
-  const systemPrompt = `You are Quinn, an expert construction cost analyst. You are given a contractor proposal document. 
+  const systemPrompt = `You are Haleo, an expert construction cost analyst. You are given a contractor proposal document. 
 Extract ALL of the following details with extreme precision. If a value is not found, use your best inference from context.
 
 Return a JSON object with exactly these fields:
@@ -314,8 +314,8 @@ function extractComparableProjects(records: any[], proposalCost: number, proposa
     });
 }
 
-// ─── Step 6: Quinn's verdict + analysis via LLM ────────────────────
-async function generateQuinnVerdict(
+// ─── Step 6: Haleo's verdict + analysis via LLM ────────────────────
+async function generateHaleoVerdict(
   proposal: { totalCost: number; contractorName: string; lineItems: { item: string; cost: number }[]; summary: string },
   marketRange: { low: number; high: number; average: number; median: number },
   spaceType: string,
@@ -344,7 +344,7 @@ async function generateQuinnVerdict(
 
   const lineItemStr = proposal.lineItems.map((li) => `${li.item}: $${li.cost.toLocaleString()}`).join("\n");
 
-  const prompt = `You are Quinn, a trusted home renovation pricing expert. A homeowner uploaded a proposal from "${proposal.contractorName}" for a ${spaceType} ${scope} project, totaling $${proposalCost.toLocaleString()}.
+  const prompt = `You are Haleo, a trusted home renovation pricing expert. A homeowner uploaded a proposal from "${proposal.contractorName}" for a ${spaceType} ${scope} project, totaling $${proposalCost.toLocaleString()}.
 
 The market range based on ${sampleSize} real permit records is $${marketRange.low.toLocaleString()} - $${marketRange.high.toLocaleString()} (avg: $${marketRange.average.toLocaleString()}).
 
@@ -355,7 +355,7 @@ ${lineItemStr || "No detailed line items extracted."}
 
 Proposal summary: ${proposal.summary}
 
-Give a thorough 3-4 sentence analysis. Be specific: mention which line items seem high or low compared to market norms. If the price is fair, say so confidently. If it's high, explain exactly what's driving the premium. If below market, flag potential quality concerns. Be warm but honest — the homeowner trusts you.`;
+Give a thorough 3 to 4 sentence analysis. Be specific: mention which line items seem high or low compared to market norms. If the price is fair, say so confidently. If it is high, explain exactly what is driving the premium. If below market, flag potential quality concerns. Be warm but honest — the homeowner trusts you.`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -367,7 +367,7 @@ Give a thorough 3-4 sentence analysis. Be specific: mention which line items see
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are Quinn, a warm and deeply knowledgeable home renovation pricing expert. Your analyses are specific, data-driven, and trustworthy." },
+          { role: "system", content: "You are Haleo, a warm and deeply knowledgeable home renovation pricing expert. Your analyses are specific, data-driven, and trustworthy." },
           { role: "user", content: prompt },
         ],
         temperature: 0.5,
@@ -381,7 +381,7 @@ Give a thorough 3-4 sentence analysis. Be specific: mention which line items see
 
     return { verdict, percentileRank, reasoning };
   } catch (e) {
-    console.error("Quinn verdict error:", e);
+    console.error("Haleo verdict error:", e);
     return {
       verdict,
       percentileRank,
