@@ -562,18 +562,30 @@ export default function Roast() {
             </div>
 
             <div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 8 }}>
-                <span style={{ fontSize: 220, fontWeight: 800, lineHeight: 0.9, letterSpacing: -6, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                  {result.score}
-                </span>
-                <span style={{ fontSize: 44, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
-              </div>
-              <div style={{ fontSize: 56, fontFamily: "Georgia, 'Times New Roman', serif", marginBottom: 18, lineHeight: 1.05 }}>
+              <div style={{ fontSize: 18, letterSpacing: 3, textTransform: "uppercase", opacity: 0.85, marginBottom: 12, fontWeight: 600 }}>
                 {result.tier.label}
               </div>
-              <div style={{ fontSize: 28, lineHeight: 1.3, opacity: 0.95, maxWidth: 980 }}>
-                {result.roast.headline}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
+                <span style={{ fontSize: 240, fontWeight: 800, lineHeight: 0.85, letterSpacing: -8, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                  {result.score}
+                </span>
+                <span style={{ fontSize: 48, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
               </div>
+              {(() => {
+                const diff = result.summary.total - result.summary.marketAverage;
+                const pct = Math.round(Math.abs(diff) / Math.max(1, result.summary.marketAverage) * 100);
+                const within = result.summary.total >= result.summary.marketLow && result.summary.total <= result.summary.marketHigh;
+                const line = within
+                  ? `Within the local fair range for this scope`
+                  : diff > 0
+                    ? `About ${fmt(Math.abs(diff))} (${pct}%) above the local average`
+                    : `About ${fmt(Math.abs(diff))} (${pct}%) below the local average`;
+                return (
+                  <div style={{ fontSize: 38, lineHeight: 1.2, fontWeight: 500, maxWidth: 980 }}>
+                    {line}.
+                  </div>
+                );
+              })()}
             </div>
 
             <div
@@ -586,23 +598,19 @@ export default function Roast() {
                 fontSize: 20,
               }}
             >
-              <div style={{ display: "flex", gap: 36 }}>
+              <div style={{ display: "flex", gap: 48 }}>
                 <div>
                   <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Your quote</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Local fair range</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>
                     {fmt(result.summary.marketLow)}–{fmt(result.summary.marketHigh)}
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Where you land</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{result.summary.percentileRank}th %</div>
-                </div>
               </div>
-              <div style={{ fontSize: 16, opacity: 0.8, textAlign: "right" }}>
+              <div style={{ fontSize: 16, opacity: 0.85, textAlign: "right" }}>
                 Check yours free →<br />haleo.studio
               </div>
             </div>
