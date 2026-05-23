@@ -498,7 +498,7 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Remodel Roast — viral hook. Anonymous, fun, free.                          */
+/*  Remodel Roast — quick, free quote check.                                   */
 /* -------------------------------------------------------------------------- */
 
 const RoastHook = () => (
@@ -512,7 +512,7 @@ const RoastHook = () => (
           transition={{ duration: 0.7, ease: EASE }}
         >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
-            FREE · ANONYMOUS · 30 SECONDS
+            FREE · 30 SECONDS · NO SIGNUP
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-light leading-[1.05] text-foreground">
             Got a quote? <span className="italic">Get it roasted.</span>
@@ -527,7 +527,7 @@ const RoastHook = () => (
             >
               Roast my quote <ArrowRight className="w-4 h-4" />
             </Link>
-            <span className="self-center text-xs text-foreground/50">No login. We never store contractor names.</span>
+            <span className="self-center text-xs text-foreground/50">No signup. Numbers come from real local data.</span>
           </div>
         </motion.div>
 

@@ -393,11 +393,11 @@ export default function ProposalIntelligencePage() {
     }
   };
 
-  const verdictConfig: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    'below-market': { label: 'Below Market', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30', icon: '⚠️' },
-    fair: { label: 'Fair Pricing', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', icon: '✅' },
-    'above-market': { label: 'Above Market', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30', icon: '📈' },
-    'significantly-above': { label: 'Significantly Above Market', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30', icon: '🚨' },
+  const verdictConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+    'below-market': { label: 'Below market', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    fair: { label: 'Fair', color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
+    'above-market': { label: 'A little high', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    'significantly-above': { label: 'Notably high', color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
   };
 
   // Generate contextual tips from red_flags, insights, and haleo_tips
@@ -466,7 +466,7 @@ export default function ProposalIntelligencePage() {
             <p className="text-muted-foreground">
               {step === 'upload' && 'Drop the proposal in. We check the price first, then go deeper if you want.'}
               {step === 'analyzing' && 'Working on it.'}
-              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals.'}
+              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals. Every number on this page comes from one of those.'}
               {step === 'full-report' && 'Pricing, scope, contract risks, contractor signals, and what to do this week.'}
             </p>
           </div>
@@ -537,11 +537,11 @@ export default function ProposalIntelligencePage() {
 
                 <Button onClick={handleAnalyze} disabled={!file} className="w-full gap-2 py-6 text-base" size="lg">
                   <Shield className="w-4 h-4" />
-                  Let's Check Pricing First
+                  Check the pricing first
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  🔒 Analyzed securely, never shared · No signup required · Powered by real permit data
+                  No signup required. Numbers come from real permit records, public cost guides, and prior Haleo proposals.
                 </p>
               </motion.div>
             )}
@@ -602,30 +602,36 @@ export default function ProposalIntelligencePage() {
                   </Card>
                 )}
 
-                {/* Section 2: Is the Price Fair? */}
-                <SectionLabel number={2} label="Is This Price Fair?" />
+                {/* Section 2: Is the Price Fair? — the TL;DR */}
+                <SectionLabel number={2} label="Is this price fair?" />
                 {pricingResult.proposalAnalysis && (
-                  <Card className={cn('p-6', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-2xl">{verdictConfig[pricingResult.proposalAnalysis.verdict]?.icon || '📊'}</span>
-                      <div>
-                        <h2 className={cn('font-serif text-xl font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
-                          {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis Complete'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Your proposal is in the {pricingResult.proposalAnalysis.percentileRank}th percentile of similar projects
-                        </p>
-                      </div>
+                  <Card className={cn('p-6 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <span className={cn('w-2.5 h-2.5 rounded-full', verdictConfig[pricingResult.proposalAnalysis.verdict]?.dot || 'bg-muted')} />
+                      <h2 className={cn('font-serif text-xl font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
+                        {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis complete'}
+                      </h2>
+                      {pricingResult.confidence && (
+                        <span className={cn(
+                          'text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-medium',
+                          pricingResult.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                          pricingResult.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          {pricingResult.confidence} confidence
+                          {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="bg-background/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Your Quote</p>
+                        <p className="text-xs text-muted-foreground mb-1">Your quote</p>
                         <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.proposalAnalysis.providedCost)}</p>
                       </div>
                       <div className="bg-background/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Market Average</p>
-                        <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.marketRange.average)}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Local fair range</p>
+                        <p className="text-xl font-bold text-foreground">{fmtFull(pricingResult.marketRange.low)}–{fmtFull(pricingResult.marketRange.high)}</p>
                       </div>
                     </div>
 
@@ -633,6 +639,7 @@ export default function ProposalIntelligencePage() {
                     <div className="mb-2">
                       <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                         <span>{fmtFull(pricingResult.marketRange.low)}</span>
+                        <span>avg {fmtFull(pricingResult.marketRange.average)}</span>
                         <span>{fmtFull(pricingResult.marketRange.high)}</span>
                       </div>
                       <div className="relative h-3 bg-background/50 rounded-full overflow-hidden">
@@ -640,11 +647,17 @@ export default function ProposalIntelligencePage() {
                         <div
                           className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary border-2 border-primary-foreground shadow-md"
                           style={{
-                            left: `${Math.min(100, Math.max(0, ((pricingResult.proposalAnalysis.providedCost - pricingResult.marketRange.low) / (pricingResult.marketRange.high - pricingResult.marketRange.low)) * 100))}%`,
+                            left: `${Math.min(100, Math.max(0, ((pricingResult.proposalAnalysis.providedCost - pricingResult.marketRange.low) / Math.max(1, pricingResult.marketRange.high - pricingResult.marketRange.low)) * 100))}%`,
                           }}
                         />
                       </div>
                     </div>
+
+                    {pricingResult.confidence === 'low' && (
+                      <p className="mt-3 text-[11px] text-muted-foreground italic">
+                        Heads up: we found limited local data for this exact scope. Treat the range as directional, not definitive.
+                      </p>
+                    )}
                   </Card>
                 )}
 
@@ -780,18 +793,18 @@ export default function ProposalIntelligencePage() {
                     <Sparkles className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="font-serif text-xl text-foreground mb-2">
-                    Great start! Now let's make sure everything else checks out 🔍
+                    Pricing is one part of the picture.
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-                    We'll verify their license, dig into their permit history, spot any contract red flags, and map out your project timeline — so you can sign with confidence.
+                    The full audit checks the contractor's license with CSLB, pulls their permit history, scans the contract for missing clauses and risky terms, and lays out a realistic timeline. No new upload required.
                   </p>
                   <Button onClick={handleUnlockFullReport} className="gap-2 px-8 py-6 text-base" size="lg">
                     <Shield className="w-4 h-4" />
-                    Review Full Proposal
+                    Run the full audit
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                   <p className="text-[10px] text-muted-foreground/60 mt-4">
-                    Same proposal, deeper analysis · License verification · Permit history · Risk scoring
+                    License verification · Permit history · Contract risks · Project timeline
                   </p>
                 </div>
 
@@ -800,12 +813,12 @@ export default function ProposalIntelligencePage() {
                   <Link to="/coming-soon?stage=contractors" className="flex-1">
                     <Button variant="outline" className="w-full gap-2 py-5" size="lg">
                       <Users className="w-4 h-4" />
-                      Find Vetted Contractors
+                      Find vetted contractors
                     </Button>
                   </Link>
                   <Button variant="ghost" onClick={() => { setPricingResult(null); setFile(null); setFileBase64(null); setStep('upload'); }} className="gap-1.5 text-muted-foreground">
                     <Upload className="w-4 h-4" />
-                    Let's Analyze Another Proposal
+                    Check another proposal
                   </Button>
                 </div>
               </motion.div>
@@ -1064,15 +1077,19 @@ function FullReportView({
       {/* ─── Section 1: Pricing Summary (from pricing phase) ─── */}
       {pricingResult?.proposalAnalysis && (
         <>
-          <SectionLabel number={1} label="Pricing Check" />
-          <Card className={cn('p-5', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xl">{verdictConfig[pricingResult.proposalAnalysis.verdict]?.icon || '📊'}</span>
+          <SectionLabel number={1} label="Pricing check" />
+          <Card className={cn('p-5 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
+            <div className="flex items-center gap-3">
+              <span className={cn('w-2.5 h-2.5 rounded-full', verdictConfig[pricingResult.proposalAnalysis.verdict]?.dot || 'bg-muted')} />
               <div>
                 <h2 className={cn('font-serif text-lg font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
-                  {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis Complete'}
+                  {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis complete'}
                 </h2>
-                <p className="text-xs text-muted-foreground">{pricingResult.proposalAnalysis.percentileRank}th percentile · {fmtFull(pricingResult.proposalAnalysis.providedCost)} vs {fmtFull(pricingResult.marketRange.average)} avg</p>
+                <p className="text-xs text-muted-foreground">
+                  {fmtFull(pricingResult.proposalAnalysis.providedCost)} vs local fair range {fmtFull(pricingResult.marketRange.low)}–{fmtFull(pricingResult.marketRange.high)}
+                  {pricingResult.confidence ? ` · ${pricingResult.confidence} confidence` : ''}
+                  {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
+                </p>
               </div>
             </div>
           </Card>
