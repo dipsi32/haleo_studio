@@ -86,8 +86,8 @@ export default function Roast() {
     "Reading the quote.",
     "Pulling local cost guides.",
     "Checking permit comps in your zip.",
-    "Comparing against prior Haleo proposals.",
-    "Scoring.",
+    "Lining it up against prior Haleo proposals.",
+    "Doing the math. No vibes, just numbers.",
   ];
 
   const handleFile = async (file: File) => {
@@ -182,10 +182,10 @@ export default function Roast() {
             <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="text-center mb-10">
                 <h1 className="text-5xl sm:text-6xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
-                  See if your <span className="italic">quote</span> is fair.
+                  Got a quote? <span className="italic">Get it roasted.</span>
                 </h1>
                 <p className="text-lg text-foreground/70 max-w-xl mx-auto">
-                  Upload the quote. Haleo checks it against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand.
+                  Drop it in. Haleo checks every line against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand. No drama, just the numbers.
                 </p>
               </div>
 
@@ -419,9 +419,9 @@ export default function Roast() {
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-[200px]">
-                    <p className="font-serif text-xl mb-1">Want the full picture?</p>
+                    <p className="font-serif text-xl mb-1">Want the deeper read?</p>
                     <p className="text-sm opacity-80 leading-snug">
-                      The audit goes deeper. Red flags in the scope, contract risks, contractor license signals, missing line items, comparable projects. Uses the file you already uploaded.
+                      The full audit digs into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
                     </p>
                   </div>
                   <Button

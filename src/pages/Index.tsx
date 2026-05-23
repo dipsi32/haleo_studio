@@ -515,17 +515,17 @@ const RoastHook = () => (
             FREE · ANONYMOUS · 30 SECONDS
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-light leading-[1.05] text-foreground">
-            Got a quote? <span className="italic">See if it's fair.</span>
+            Got a quote? <span className="italic">Get it roasted.</span>
           </h2>
           <p className="mt-5 text-lg text-foreground/70 max-w-md">
-            Upload the quote. Haleo checks it against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand.
+            Drop in your contractor's estimate. Haleo lines it up against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to="/roast"
               className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
             >
-              Check my quote <ArrowRight className="w-4 h-4" />
+              Roast my quote <ArrowRight className="w-4 h-4" />
             </Link>
             <span className="self-center text-xs text-foreground/50">No login. We never store contractor names.</span>
           </div>
