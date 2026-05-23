@@ -704,51 +704,6 @@ export default function ProposalIntelligencePage() {
                 <SectionLabel number={3} label="Haleo's Take" />
                 <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
-                {/* Section 4: Cost Breakdown */}
-                <SectionLabel number={4} label="Your Costs vs. Typical" />
-                <Card className="p-5">
-                  <p className="text-xs text-muted-foreground mb-4">How your proposal compares to typical costs in your area</p>
-                  {/* Header row */}
-                  <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 pb-2 border-b border-border">
-                    <span>Category</span>
-                    <div className="flex items-center gap-6">
-                      <span className="w-16 text-right">Your Cost</span>
-                      <span className="w-16 text-right">Typical</span>
-                      <span className="w-14 text-right">Diff</span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    {Object.entries(pricingResult.componentRanges).map(([component, range]) => {
-                      const proposalItem = pricingResult.extractedProposal?.lineItems.find(
-                        li => li.item.toLowerCase().includes(component.toLowerCase()) || component.toLowerCase().includes(li.item.toLowerCase().split(' ')[0])
-                      );
-                      const yourCost = proposalItem?.cost;
-                      const diff = yourCost ? ((yourCost - range.average) / range.average) * 100 : null;
-                      return (
-                        <div key={component} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                          <span className="text-sm text-foreground capitalize flex-1">{component}</span>
-                          <div className="flex items-center gap-6">
-                            <span className="text-sm font-semibold text-foreground w-16 text-right">
-                              {yourCost ? fmt(yourCost) : <span className="text-muted-foreground text-xs">—</span>}
-                            </span>
-                            <span className="text-sm text-muted-foreground w-16 text-right">{fmt(range.average)}</span>
-                            <span className={cn(
-                              'text-xs font-medium w-14 text-right',
-                              diff === null ? 'text-muted-foreground'
-                                : diff > 15 ? 'text-[hsl(var(--warning))]'
-                                : diff < -15 ? 'text-[hsl(var(--success))]'
-                                : 'text-muted-foreground'
-                            )}>
-                              {diff === null ? '—' : diff > 0 ? `+${Math.round(diff)}%` : `${Math.round(diff)}%`}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-
-                {/* Section 5: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
                     <SectionLabel number={5} label="Closest Real Project to Yours" />
