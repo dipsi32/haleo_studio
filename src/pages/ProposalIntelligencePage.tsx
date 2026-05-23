@@ -1040,9 +1040,8 @@ function FullReportView({
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {fmtFull(pricingResult.proposalAnalysis.providedCost)} vs local fair range {fmtFull(pricingResult.marketRange.low)}–{fmtFull(pricingResult.marketRange.high)}
-                  {pricingResult.confidence ? ` · ${pricingResult.confidence} confidence` : ''}
-                  {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
                 </p>
+
               </div>
             </div>
           </Card>
