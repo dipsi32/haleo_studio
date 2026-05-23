@@ -748,41 +748,53 @@ export default function ProposalIntelligencePage() {
                   </div>
                 </Card>
 
-                {/* Section 5: Similar Projects */}
+                {/* Section 5: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
-                    <SectionLabel number={5} label="Similar Projects Nearby" />
+                    <SectionLabel number={5} label="Comparable Project" />
                     <Card className="p-5">
-                      <p className="text-xs text-muted-foreground mb-4">Real permitted projects in your area with similar scope</p>
-                      <div className="space-y-3">
-                        {pricingResult.comparableProjects.slice(0, 5).map((p, i) => (
-                          <div key={i} className="py-2.5 border-b border-border last:border-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground mb-4">
+                        City of San José permit data — closest match by scope and valuation
+                      </p>
+                      {(() => {
+                        const p = pricingResult.comparableProjects[0];
+                        return (
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <Building2 className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-3">
                                 <p className="text-sm font-medium text-foreground">{p.address}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                                  {p.workDescription || p.type}
-                                  {p.squareFootage && p.squareFootage > 0 && (
-                                    <span className="ml-1 text-muted-foreground/70">· {p.squareFootage.toLocaleString()} sqft</span>
-                                  )}
-                                </p>
-                                {p.dwellingType && <span className="text-[10px] text-muted-foreground/60 italic">{p.dwellingType}</span>}
-                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                  <span className={cn(
-                                    'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                                    p.status === 'completed' || p.status === 'Completed'
-                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                      : 'bg-muted text-muted-foreground'
-                                  )}>{p.status}</span>
-                                  {p.daysToComplete && <span className="text-[10px] text-muted-foreground">{Math.round(p.daysToComplete / 7)} weeks</span>}
-                                  {p.completionDate && <span className="text-[10px] text-muted-foreground">{new Date(p.completionDate).getFullYear()}</span>}
-                                </div>
+                                <span className="text-sm font-bold text-foreground whitespace-nowrap">{fmtFull(p.cost)}</span>
                               </div>
-                              <span className="text-sm font-bold text-foreground whitespace-nowrap">{fmtFull(p.cost)}</span>
+                              <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                                {p.workDescription || p.type}
+                                {p.squareFootage && p.squareFootage > 0 && (
+                                  <span className="ml-1 text-muted-foreground/70">· {p.squareFootage.toLocaleString()} sqft</span>
+                                )}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                <span className={cn(
+                                  'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
+                                  p.status === 'completed' || p.status === 'Completed'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                    : 'bg-muted text-muted-foreground'
+                                )}>{p.status}</span>
+                                {p.daysToComplete && (
+                                  <span className="text-[10px] text-muted-foreground">{Math.round(p.daysToComplete / 7)} weeks</span>
+                                )}
+                                {p.completionDate && (
+                                  <span className="text-[10px] text-muted-foreground">{new Date(p.completionDate).getFullYear()}</span>
+                                )}
+                                {p.dwellingType && (
+                                  <span className="text-[10px] text-muted-foreground/60">{p.dwellingType}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </Card>
                   </>
                 )}
