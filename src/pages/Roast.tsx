@@ -419,9 +419,9 @@ export default function Roast() {
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-[200px]">
-                    <p className="font-serif text-xl mb-1">Want the full picture?</p>
+                    <p className="font-serif text-xl mb-1">Want the deeper read?</p>
                     <p className="text-sm opacity-80 leading-snug">
-                      The audit goes deeper. Red flags in the scope, contract risks, contractor license signals, missing line items, comparable projects. Uses the file you already uploaded.
+                      The full audit digs into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
                     </p>
                   </div>
                   <Button
