@@ -397,8 +397,8 @@ export default function ProposalIntelligencePage() {
       });
     });
 
-    // Quinn tips as info
-    (contractResult.quinn_tips || []).forEach((qt, i) => {
+    // Haleo tips as info
+    (contractResult.haleo_tips || []).forEach((qt, i) => {
       allTips.push({
         id: qt.id || `qt-${i}`,
         title: qt.headline,
