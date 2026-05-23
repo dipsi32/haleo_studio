@@ -86,8 +86,8 @@ export default function Roast() {
     "Reading the quote.",
     "Pulling local cost guides.",
     "Checking permit comps in your zip.",
-    "Comparing against prior Haleo proposals.",
-    "Scoring.",
+    "Lining it up against prior Haleo proposals.",
+    "Doing the math. No vibes, just numbers.",
   ];
 
   const handleFile = async (file: File) => {
