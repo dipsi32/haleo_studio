@@ -1077,15 +1077,19 @@ function FullReportView({
       {/* ─── Section 1: Pricing Summary (from pricing phase) ─── */}
       {pricingResult?.proposalAnalysis && (
         <>
-          <SectionLabel number={1} label="Pricing Check" />
-          <Card className={cn('p-5', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xl">{verdictConfig[pricingResult.proposalAnalysis.verdict]?.icon || '📊'}</span>
+          <SectionLabel number={1} label="Pricing check" />
+          <Card className={cn('p-5 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
+            <div className="flex items-center gap-3">
+              <span className={cn('w-2.5 h-2.5 rounded-full', verdictConfig[pricingResult.proposalAnalysis.verdict]?.dot || 'bg-muted')} />
               <div>
                 <h2 className={cn('font-serif text-lg font-semibold', verdictConfig[pricingResult.proposalAnalysis.verdict]?.color || 'text-foreground')}>
-                  {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis Complete'}
+                  {verdictConfig[pricingResult.proposalAnalysis.verdict]?.label || 'Analysis complete'}
                 </h2>
-                <p className="text-xs text-muted-foreground">{pricingResult.proposalAnalysis.percentileRank}th percentile · {fmtFull(pricingResult.proposalAnalysis.providedCost)} vs {fmtFull(pricingResult.marketRange.average)} avg</p>
+                <p className="text-xs text-muted-foreground">
+                  {fmtFull(pricingResult.proposalAnalysis.providedCost)} vs local fair range {fmtFull(pricingResult.marketRange.low)}–{fmtFull(pricingResult.marketRange.high)}
+                  {pricingResult.confidence ? ` · ${pricingResult.confidence} confidence` : ''}
+                  {pricingResult.sampleSize ? ` · n=${pricingResult.sampleSize}` : ''}
+                </p>
               </div>
             </div>
           </Card>
