@@ -1156,7 +1156,7 @@ Deno.serve(async (req) => {
       risk_score: riskScore,
       red_flags: redFlags,
       insights,
-      quinn_tips: haleoTips,
+      haleo_tips: haleoTips,
       questions_to_ask: questionsToAsk,
       roadmap,
       next_actions: nextActions,
