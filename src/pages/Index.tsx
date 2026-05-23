@@ -519,8 +519,7 @@ const RoastHook = () => (
             Got a quote? <span className="italic">Get it roasted.</span>
           </h2>
           <p className="mt-5 text-lg text-foreground/70 max-w-md">
-            Drop a screenshot of your contractor estimate. Quinn returns a brutally honest,
-            color-coded score — and a line-by-line breakdown of where the markup is hiding.
+            Upload your contractor's quote or estimate. Haleo returns a brutally honest, color-coded score and a line-by-line breakdown of where the markup is hiding.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
