@@ -393,11 +393,11 @@ export default function ProposalIntelligencePage() {
     }
   };
 
-  const verdictConfig: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    'below-market': { label: 'Below Market', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30', icon: '⚠️' },
-    fair: { label: 'Fair Pricing', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', icon: '✅' },
-    'above-market': { label: 'Above Market', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30', icon: '📈' },
-    'significantly-above': { label: 'Significantly Above Market', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30', icon: '🚨' },
+  const verdictConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+    'below-market': { label: 'Below market', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    fair: { label: 'Fair', color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
+    'above-market': { label: 'A little high', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    'significantly-above': { label: 'Notably high', color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
   };
 
   // Generate contextual tips from red_flags, insights, and haleo_tips
@@ -466,7 +466,7 @@ export default function ProposalIntelligencePage() {
             <p className="text-muted-foreground">
               {step === 'upload' && 'Drop the proposal in. We check the price first, then go deeper if you want.'}
               {step === 'analyzing' && 'Working on it.'}
-              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals.'}
+              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals. Every number on this page comes from one of those.'}
               {step === 'full-report' && 'Pricing, scope, contract risks, contractor signals, and what to do this week.'}
             </p>
           </div>
@@ -537,11 +537,11 @@ export default function ProposalIntelligencePage() {
 
                 <Button onClick={handleAnalyze} disabled={!file} className="w-full gap-2 py-6 text-base" size="lg">
                   <Shield className="w-4 h-4" />
-                  Let's Check Pricing First
+                  Check the pricing first
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  🔒 Analyzed securely, never shared · No signup required · Powered by real permit data
+                  No signup required. Numbers come from real permit records, public cost guides, and prior Haleo proposals.
                 </p>
               </motion.div>
             )}
