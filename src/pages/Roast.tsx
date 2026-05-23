@@ -143,6 +143,29 @@ export default function Roast() {
     }
   };
 
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const downloadShareCard = async () => {
+    if (!shareCardRef.current || !result) return;
+    setDownloading(true);
+    try {
+      const dataUrl = await toPng(shareCardRef.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `haleo-score-${result.score}.png`;
+      a.click();
+      toast({ title: "Downloaded", description: "Your scorecard is saved." });
+    } catch (e) {
+      toast({ title: "Couldn't generate image", description: "Try again in a moment.", variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+
+
   const goToFullAudit = () => {
     if (!result || !uploadedFile || !fileBase64Cache) {
       navigate("/proposal");
