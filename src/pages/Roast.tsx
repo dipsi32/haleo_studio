@@ -173,7 +173,7 @@ export default function Roast() {
         <Link to="/" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" /> Haleo
         </Link>
-        <div className="text-xs text-foreground/50">Free. Anonymous. We never store contractor names.</div>
+        <div className="text-xs text-foreground/50">Free. No signup. Real local data.</div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-20">
