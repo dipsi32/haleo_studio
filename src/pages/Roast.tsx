@@ -70,8 +70,8 @@ export default function Roast() {
     "Squinting at your quote…",
     "Cross-checking with HomeAdvisor + Angi…",
     "Pulling local permit comps…",
-    "Quinn is sharpening her pencil…",
-    "Composing the roast…",
+    "Running the numbers…",
+    "Composing your roast…",
   ];
 
   const handleFile = async (file: File) => {
