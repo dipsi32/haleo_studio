@@ -467,6 +467,15 @@ export default function Roast() {
                   <Share2 className="w-3.5 h-3.5" /> Share this check
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={downloadShareCard}
+                    disabled={downloading}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  >
+                    <Download className="w-4 h-4 mr-1.5" />
+                    {downloading ? "Generating…" : "Download scorecard"}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => share("twitter")} className="rounded-full">
                     <Twitter className="w-4 h-4 mr-1.5" /> Twitter / X
                   </Button>
@@ -482,6 +491,7 @@ export default function Roast() {
                     </Button>
                   )}
                 </div>
+
                 <p className="text-[11px] text-foreground/50 mt-3">{result.roast.shareCaption}</p>
               </Card>
 
