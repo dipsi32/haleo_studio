@@ -783,12 +783,41 @@ export default function ProposalIntelligencePage() {
 
                 {/* Secondary CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Link to="/coming-soon?stage=contractors" className="flex-1">
-                    <Button variant="outline" className="w-full gap-2 py-5" size="lg">
-                      <Users className="w-4 h-4" />
-                      Find permit-proven contractors
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 py-5"
+                    size="lg"
+                    onClick={() => {
+                      // Seed intake with what we already know from the proposal so the
+                      // contractors list filters to the right zip + project type.
+                      try {
+                        const ep = pricingResult.extractedProposal;
+                        const raw = localStorage.getItem('haleo:intake:v2');
+                        const prev = raw ? JSON.parse(raw) : {};
+                        const roomMap: Record<string, string> = {
+                          kitchen: 'kitchen', bathroom: 'bathroom', bath: 'bathroom',
+                          living: 'living', bedroom: 'bedroom', office: 'office',
+                          addition: 'addition', adu: 'addition',
+                        };
+                        const room = roomMap[(ep.spaceType || '').toLowerCase()] || prev.room;
+                        const next = {
+                          painPoints: [],
+                          media: [],
+                          ...prev,
+                          ...(room ? { room } : {}),
+                          address: {
+                            ...(prev.address || {}),
+                            ...(ep.zipCode ? { zip: ep.zipCode } : {}),
+                          },
+                        };
+                        localStorage.setItem('haleo:intake:v2', JSON.stringify(next));
+                      } catch { /* ignore — contractors page handles empty intake */ }
+                      navigate('/contractors');
+                    }}
+                  >
+                    <Users className="w-4 h-4" />
+                    Find permit-proven contractors
+                  </Button>
                   <Button variant="ghost" onClick={() => { setPricingResult(null); setFile(null); setFileBase64(null); setStep('upload'); }} className="gap-1.5 text-muted-foreground">
                     <Upload className="w-4 h-4" />
                     Check another proposal
