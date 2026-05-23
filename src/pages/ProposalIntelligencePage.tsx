@@ -655,23 +655,43 @@ export default function ProposalIntelligencePage() {
                     <Building2 className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
                     <div className="flex-1">
                       {(() => {
-                        const srcs = (pricingResult.sources && pricingResult.sources.length > 0)
+                        const rawSrcs = (pricingResult.sources && pricingResult.sources.length > 0)
                           ? pricingResult.sources
                           : [{ name: pricingResult.dataSource, weight: 1 } as any];
+                        // Strip brand names — homeowners don't recognize "HomeAdvisor, Angi, Cost vs. Value".
+                        const cleanName = (raw: string) => {
+                          const stripped = raw.replace(/\s*\([^)]*\)\s*/g, '').trim();
+                          const n = stripped.toLowerCase();
+                          if (n.includes('cost guide') || n.includes('homeadvisor') || n.includes('angi') || n.includes('cost vs'))
+                            return 'Public cost guides';
+                          return stripped || raw;
+                        };
+                        const detail = (name: string, n?: number) => {
+                          if (!n) return null;
+                          const lc = name.toLowerCase();
+                          if (lc.includes('permit')) return `${n.toLocaleString()} nearby permits`;
+                          if (lc.includes('haleo')) return `${n.toLocaleString()} prior Haleo projects`;
+                          return `${n.toLocaleString()} similar projects`;
+                        };
+                        // Dedupe by clean name
+                        const seen = new Set<string>();
+                        const srcs = rawSrcs.map((s: any) => ({ name: cleanName(s.name), sampleSize: s.sampleSize }))
+                          .filter((s) => { if (seen.has(s.name)) return false; seen.add(s.name); return true; });
                         return (
                           <>
                             <div className="text-xs font-semibold text-foreground mb-1.5">
                               Fair range based on {srcs.length} source{srcs.length === 1 ? '' : 's'}:
                             </div>
-                            <ul className="text-xs text-muted-foreground space-y-0.5">
-                              {srcs.map((s, i) => (
-                                <li key={i} className="flex items-start gap-1.5">
-                                  <span className="text-foreground/40">•</span>
-                                  <span>
-                                    {s.sampleSize ? `${s.sampleSize.toLocaleString()} ` : ''}{s.name}
-                                  </span>
-                                </li>
-                              ))}
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {srcs.map((s, i) => {
+                                const d = detail(s.name, s.sampleSize);
+                                return (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <span className="text-foreground/40">•</span>
+                                    <span>{d ? <><span className="text-foreground font-medium">{d}</span> from </> : null}{s.name}</span>
+                                  </li>
+                                );
+                              })}
                             </ul>
                             <p className="text-[11px] text-muted-foreground/80 mt-2 italic">
                               An estimate to help you negotiate — not an appraisal.
