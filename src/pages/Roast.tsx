@@ -164,6 +164,9 @@ export default function Roast() {
     } finally {
       setDownloading(false);
     }
+  };
+
+
 
 
   const goToFullAudit = () => {
