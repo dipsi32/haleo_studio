@@ -59,7 +59,7 @@ interface PricingResult {
     squareFootage?: number | null;
   }[];
   componentRanges: Record<string, { low: number; high: number; average: number }>;
-  quinnInsight: string;
+  haleoInsight: string;
 }
 
 interface RedFlag {
@@ -112,7 +112,7 @@ interface ContractResult {
   };
   red_flags: RedFlag[];
   insights: Insight[];
-  quinn_tips: HaleoTip[];
+  haleo_tips: HaleoTip[];
   questions_to_ask: string[];
   roadmap: Array<{
     stage: string;
@@ -202,7 +202,7 @@ export default function ProposalIntelligencePage() {
           },
           red_flags: row.extracted_data?.red_flags || [],
           insights: row.extracted_data?.insights || [],
-          quinn_tips: row.extracted_data?.quinn_tips || [],
+          haleo_tips: row.extracted_data?.haleo_tips || row.extracted_data?.quinn_tips || [],
           questions_to_ask: row.extracted_data?.questions_to_ask || [],
           roadmap: Array.isArray(row.roadmap) ? row.roadmap : [],
           next_actions: Array.isArray(row.next_actions) ? row.next_actions : [],
@@ -368,7 +368,7 @@ export default function ProposalIntelligencePage() {
     'significantly-above': { label: 'Significantly Above Market', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30', icon: '🚨' },
   };
 
-  // Generate contextual tips from red_flags, insights, and quinn_tips
+  // Generate contextual tips from red_flags, insights, and haleo_tips
   useEffect(() => {
     if (!contractResult || !tipsOptedIn) return;
     const allTips: TipType[] = [];
@@ -397,8 +397,8 @@ export default function ProposalIntelligencePage() {
       });
     });
 
-    // Quinn tips as info
-    (contractResult.quinn_tips || []).forEach((qt, i) => {
+    // Haleo tips as info
+    (contractResult.haleo_tips || []).forEach((qt, i) => {
       allTips.push({
         id: qt.id || `qt-${i}`,
         title: qt.headline,
@@ -657,7 +657,7 @@ export default function ProposalIntelligencePage() {
 
                 {/* Section 3: Haleo's Take */}
                 <SectionLabel number={3} label="Haleo's Take" />
-                <HaleoInsightCard insight={pricingResult.quinnInsight} />
+                <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
                 {/* Section 4: Cost Breakdown */}
                 <SectionLabel number={4} label="Your Costs vs. Typical" />
@@ -783,7 +783,7 @@ export default function ProposalIntelligencePage() {
             {step === 'full-report' && contractResult && (
               <>
                 {/* Tips opt-in prompt */}
-                {!tipsAsked && (contractResult.quinn_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
+                {!tipsAsked && (contractResult.haleo_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1022,8 +1022,8 @@ function FullReportView({
   savedAnalysisId: string | null;
   user: any;
 }) {
-  const { extracted, risk_score, permit_intelligence, license_verification, roadmap, next_actions, red_flags, insights, quinn_tips, questions_to_ask } = contractResult;
-  const tipForSection = (placement: string) => quinn_tips?.find(t => t.placement === placement);
+  const { extracted, risk_score, permit_intelligence, license_verification, roadmap, next_actions, red_flags, insights, haleo_tips, questions_to_ask } = contractResult;
+  const tipForSection = (placement: string) => haleo_tips?.find(t => t.placement === placement);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   return (

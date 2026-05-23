@@ -70,8 +70,8 @@ export default function Roast() {
     "Squinting at your quote…",
     "Cross-checking with HomeAdvisor + Angi…",
     "Pulling local permit comps…",
-    "Quinn is sharpening her pencil…",
-    "Composing the roast…",
+    "Running the numbers…",
+    "Composing your roast…",
   ];
 
   const handleFile = async (file: File) => {
@@ -151,7 +151,7 @@ export default function Roast() {
                   Am I getting <span className="italic">ripped off?</span>
                 </h1>
                 <p className="text-lg text-foreground/70 max-w-xl mx-auto">
-                  Drop your contractor quote. Get a brutally honest, color-coded roast in 30 seconds.
+                  Upload your contractor's quote or estimate. Haleo returns a brutally honest, color-coded score and a line-by-line breakdown of where the markup is hiding.
                   Free, anonymous, and weirdly fun.
                 </p>
               </div>
@@ -172,22 +172,22 @@ export default function Roast() {
                 <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center mb-5 shadow-lg shadow-orange-200">
                   <Upload className="w-7 h-7 text-white" />
                 </div>
-                <p className="text-lg font-semibold text-foreground mb-1">Drop your quote here</p>
+                <p className="text-lg font-semibold text-foreground mb-1">Upload your quote here</p>
                 <p className="text-sm text-foreground/60">Screenshot, photo, or PDF · Up to 20 MB</p>
                 <Button className="mt-6 bg-foreground hover:bg-foreground/90 text-background rounded-full px-6">
                   Choose a file
                 </Button>
                 <p className="text-[11px] text-foreground/50 mt-5 max-w-sm mx-auto">
                   Black out the contractor name if you want. We don't store it.
-                  We do store anonymized prices to keep getting smarter.
+                  We do save anonymized prices to keep getting smarter.
                 </p>
               </Card>
 
               {/* How it works */}
               <div className="grid sm:grid-cols-3 gap-4 mt-10 text-sm">
                 {[
-                  { n: "1", t: "Drop the quote", d: "Photo or PDF, doesn't matter." },
-                  { n: "2", t: "Quinn does the math", d: "Cost guides + permits + our corpus." },
+                  { n: "1", t: "Upload the quote", d: "Photo or PDF, doesn't matter." },
+                  { n: "2", t: "Haleo does the math", d: "Cost guides + permits + our corpus." },
                   { n: "3", t: "Share the roast", d: "Your paranoid friends will thank you." },
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">

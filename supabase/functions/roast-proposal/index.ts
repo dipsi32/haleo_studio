@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       .map((li: any) => `- ${li.item}: $${Number(li.cost).toLocaleString()}`)
       .join("\n");
 
-    const roastPrompt = `You are Quinn — Haleo's renovation roastmaster. Brutally honest, very funny, never mean-spirited, never personal. You roast PRICES and SCOPE, not people. Sharp wit, fast lines, occasional dad joke. No emojis in your text (we add them in UI).
+    const roastPrompt = `You are Haleo, the renovation roastmaster. Brutally honest, very funny, never mean spirited, never personal. You roast PRICES and SCOPE, not people. Sharp wit, fast lines, occasional dad joke. No emojis in your text (we add them in UI).
 
 CONTEXT:
 - Project: ${extractedProposal.spaceType} ${extractedProposal.scope}
@@ -94,9 +94,9 @@ Return ONLY valid JSON, no markdown, with this exact shape:
 }
 
 Rules:
-- Generate 3-5 lineRoasts max, picking the most interesting items (highest, lowest, or weirdest).
+- Generate 3 to 5 lineRoasts max, picking the most interesting items (highest, lowest, or weirdest).
 - If no line items, return lineRoasts: [] and pour the wit into oneLiner.
-- "wtf" verdict is for items >50% over market norms.
+- "wtf" verdict is for items more than 50% over market norms.
 - Never mention specific contractor names.
 - Tone: think Anthony Bourdain reviewing a contractor quote. Honest, warm, sharp.`;
 
@@ -106,7 +106,7 @@ Rules:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are Quinn, Haleo's renovation roastmaster. Output ONLY valid JSON." },
+          { role: "system", content: "You are Haleo, the renovation roastmaster. Output ONLY valid JSON." },
           { role: "user", content: roastPrompt },
         ],
         temperature: 0.85,
