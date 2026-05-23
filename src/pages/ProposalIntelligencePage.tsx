@@ -781,7 +781,7 @@ export default function ProposalIntelligencePage() {
                   <Link to="/coming-soon?stage=contractors" className="flex-1">
                     <Button variant="outline" className="w-full gap-2 py-5" size="lg">
                       <Users className="w-4 h-4" />
-                      Find vetted contractors
+                      Find permit-proven contractors
                     </Button>
                   </Link>
                   <Button variant="ghost" onClick={() => { setPricingResult(null); setFile(null); setFileBase64(null); setStep('upload'); }} className="gap-1.5 text-muted-foreground">
