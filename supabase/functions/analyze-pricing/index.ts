@@ -346,18 +346,25 @@ async function generateHaleoVerdict(
 
   const prompt = `You are Haleo. You write like a sharp friend who has seen this movie a hundred times. Bold, honest, calm, helpful. No theater, no salesy language, no clichés, no em dashes, no exclamation marks, no emoji. Each sentence under 18 words.
 
-A homeowner uploaded a proposal from "${proposal.contractorName}" for a ${spaceType} ${scope} project, totaling $${proposalCost.toLocaleString()}.
+HONESTY RULES (strict, non-negotiable):
+- You may ONLY cite numbers that appear in the inputs below. Do not invent square footage, percentages, per-unit prices, brand names, or local averages.
+- Do not estimate component-level prices (cabinets, tile, labor, etc.) unless that exact line appears below.
+- If a number is not in the inputs, write the qualitative observation without a number.
+- If the line-item list is empty, do not pretend to know what is driving the total. Say the quote is a single number and recommend asking for an itemized breakdown.
+- If sample size is under 10, soften with "limited local data" and avoid percentile claims.
+- Do not name the contractor in your output.
 
-Local fair range based on ${sampleSize} real permit records is $${marketRange.low.toLocaleString()} to $${marketRange.high.toLocaleString()} (avg $${marketRange.average.toLocaleString()}).
+INPUTS:
+- Project: ${spaceType} ${scope}
+- Quote total: $${proposalCost.toLocaleString()}
+- Local fair range: $${marketRange.low.toLocaleString()} to $${marketRange.high.toLocaleString()} (avg $${marketRange.average.toLocaleString()})
+- Sample size: ${sampleSize} comparable records
+- Position: "${verdict}" (${percentileRank}th percentile)
+- Line items:
+${lineItemStr || "(none — quote is a single number, no itemization)"}
+- Proposal summary: ${proposal.summary}
 
-Position: "${verdict}" (${percentileRank}th percentile).
-
-Line items:
-${lineItemStr || "No detailed line items extracted."}
-
-Proposal summary: ${proposal.summary}
-
-Write 3 to 4 sentences. Be specific: name the line items that move the score and cite numbers. If the price is fair, say so plainly. If it is high, name the lines driving it. If it is below market, flag the quality questions to ask. End with one concrete next step the homeowner can do this week.`;
+Write 3 to 4 sentences. State the position plainly with the actual numbers above. If line items exist, name the one or two that move the score most and cite their cost from the list. If they do not exist, say so and recommend asking for an itemized breakdown. End with one concrete next step the homeowner can do this week.`;
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
