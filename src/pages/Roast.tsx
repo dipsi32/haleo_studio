@@ -75,6 +75,25 @@ const sourceIcon = (name: string) => {
   return FileText;
 };
 
+// Strip brand names ("HomeAdvisor, Angi, Cost vs. Value") from source labels —
+// homeowners don't recognize them and they read as noise.
+const cleanSourceName = (name: string): string => {
+  const stripped = name.replace(/\s*\([^)]*\)\s*/g, "").trim();
+  const n = stripped.toLowerCase();
+  if (n.includes("cost guide") || n.includes("homeadvisor") || n.includes("angi") || n.includes("cost vs"))
+    return "Public cost guides";
+  return stripped || name;
+};
+
+// Plain-English count phrase for each source.
+const sourceDetail = (cleanName: string, sampleSize?: number): string | null => {
+  if (!sampleSize) return null;
+  const n = cleanName.toLowerCase();
+  if (n.includes("permit")) return `${sampleSize.toLocaleString()} nearby permits`;
+  if (n.includes("haleo")) return `${sampleSize.toLocaleString()} prior Haleo projects`;
+  return `${sampleSize.toLocaleString()} similar projects`;
+};
+
 export default function Roast() {
   const navigate = useNavigate();
   const [stage, setStage] = useState<"upload" | "loading" | "result">("upload");
@@ -355,38 +374,32 @@ export default function Roast() {
 
               {/* How Haleo got this number — the evidence block */}
               <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <h3 className="font-serif text-xl text-foreground">How Haleo got this number</h3>
-                  {result.confidence && (
-                    <span className={`text-[11px] uppercase font-semibold px-2.5 py-1 rounded-full ${
-                      result.confidence === "high" ? "bg-emerald-100 text-emerald-700"
-                      : result.confidence === "medium" ? "bg-amber-100 text-amber-700"
-                      : "bg-foreground/10 text-foreground/70"
-                    }`}>
-                      {result.confidence} confidence
-                    </span>
-                  )}
-                </div>
+                <h3 className="font-serif text-xl text-foreground mb-4">How Haleo got this number</h3>
 
                 {result.sources && result.sources.length > 0 ? (
-                  <ul className="space-y-2.5">
-                    {result.sources.map((s, i) => {
-                      const Icon = sourceIcon(s.name);
-                      return (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                          <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-foreground font-medium">{s.name}</p>
-                            <p className="text-foreground/55 text-xs">
-                              Weight {s.weight}×{typeof s.sampleSize === "number" ? ` · ${s.sampleSize} comps` : ""}
-                            </p>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <>
+                    <p className="text-sm text-foreground/70 mb-3">
+                      Fair range based on {result.sources.length} source{result.sources.length === 1 ? "" : "s"}:
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      {result.sources.map((s, i) => {
+                        const cleanName = cleanSourceName(s.name);
+                        const Icon = sourceIcon(cleanName);
+                        const detail = sourceDetail(cleanName, s.sampleSize);
+                        return (
+                          <li key={i} className="flex items-start gap-3">
+                            <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
+                            <span className="text-foreground/85">
+                              {detail ? <><span className="font-medium text-foreground">{detail}</span> from </> : null}
+                              {cleanName}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
                 ) : (
-                  <p className="text-sm text-foreground/60">Pulled from public cost guides and our internal corpus.</p>
+                  <p className="text-sm text-foreground/60">Pulled from public cost guides and recent local permits.</p>
                 )}
 
                 {result.comparableProjects && result.comparableProjects.length > 0 && (
@@ -549,18 +562,30 @@ export default function Roast() {
             </div>
 
             <div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 8 }}>
-                <span style={{ fontSize: 220, fontWeight: 800, lineHeight: 0.9, letterSpacing: -6, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                  {result.score}
-                </span>
-                <span style={{ fontSize: 44, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
-              </div>
-              <div style={{ fontSize: 56, fontFamily: "Georgia, 'Times New Roman', serif", marginBottom: 18, lineHeight: 1.05 }}>
+              <div style={{ fontSize: 18, letterSpacing: 3, textTransform: "uppercase", opacity: 0.85, marginBottom: 12, fontWeight: 600 }}>
                 {result.tier.label}
               </div>
-              <div style={{ fontSize: 28, lineHeight: 1.3, opacity: 0.95, maxWidth: 980 }}>
-                {result.roast.headline}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
+                <span style={{ fontSize: 240, fontWeight: 800, lineHeight: 0.85, letterSpacing: -8, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                  {result.score}
+                </span>
+                <span style={{ fontSize: 48, opacity: 0.85, fontWeight: 500 }}>/ 100</span>
               </div>
+              {(() => {
+                const diff = result.summary.total - result.summary.marketAverage;
+                const pct = Math.round(Math.abs(diff) / Math.max(1, result.summary.marketAverage) * 100);
+                const within = result.summary.total >= result.summary.marketLow && result.summary.total <= result.summary.marketHigh;
+                const line = within
+                  ? `Within the local fair range for this scope`
+                  : diff > 0
+                    ? `About ${fmt(Math.abs(diff))} (${pct}%) above the local average`
+                    : `About ${fmt(Math.abs(diff))} (${pct}%) below the local average`;
+                return (
+                  <div style={{ fontSize: 38, lineHeight: 1.2, fontWeight: 500, maxWidth: 980 }}>
+                    {line}.
+                  </div>
+                );
+              })()}
             </div>
 
             <div
@@ -573,23 +598,19 @@ export default function Roast() {
                 fontSize: 20,
               }}
             >
-              <div style={{ display: "flex", gap: 36 }}>
+              <div style={{ display: "flex", gap: 48 }}>
                 <div>
                   <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Your quote</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Local fair range</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>
                     {fmt(result.summary.marketLow)}–{fmt(result.summary.marketHigh)}
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Where you land</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{result.summary.percentileRank}th %</div>
-                </div>
               </div>
-              <div style={{ fontSize: 16, opacity: 0.8, textAlign: "right" }}>
+              <div style={{ fontSize: 16, opacity: 0.85, textAlign: "right" }}>
                 Check yours free →<br />haleo.studio
               </div>
             </div>
