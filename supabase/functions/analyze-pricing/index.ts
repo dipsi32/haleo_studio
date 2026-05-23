@@ -554,9 +554,9 @@ Deno.serve(async (req) => {
     // 5. Comparable projects (still from SJ permits when available)
     const comparableProjects = extractComparableProjects(records, proposal.totalCost, `${proposal.spaceType} ${proposal.scope}`);
 
-    // 6. Quinn's verdict
-    console.log("Step 4: Generating Quinn's verdict…");
-    const quinnVerdict = await generateQuinnVerdict(
+    // 6. Haleo's verdict
+    console.log("Step 4: Generating Haleo's verdict...");
+    const haleoVerdict = await generateHaleoVerdict(
       proposal, marketRange, proposal.spaceType, proposal.scope, marketRange.sampleSize, apiKey
     );
 
