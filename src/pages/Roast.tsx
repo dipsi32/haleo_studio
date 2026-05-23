@@ -75,6 +75,25 @@ const sourceIcon = (name: string) => {
   return FileText;
 };
 
+// Strip brand names ("HomeAdvisor, Angi, Cost vs. Value") from source labels —
+// homeowners don't recognize them and they read as noise.
+const cleanSourceName = (name: string): string => {
+  const stripped = name.replace(/\s*\([^)]*\)\s*/g, "").trim();
+  const n = stripped.toLowerCase();
+  if (n.includes("cost guide") || n.includes("homeadvisor") || n.includes("angi") || n.includes("cost vs"))
+    return "Public cost guides";
+  return stripped || name;
+};
+
+// Plain-English count phrase for each source.
+const sourceDetail = (cleanName: string, sampleSize?: number): string | null => {
+  if (!sampleSize) return null;
+  const n = cleanName.toLowerCase();
+  if (n.includes("permit")) return `${sampleSize.toLocaleString()} nearby permits`;
+  if (n.includes("haleo")) return `${sampleSize.toLocaleString()} prior Haleo projects`;
+  return `${sampleSize.toLocaleString()} similar projects`;
+};
+
 export default function Roast() {
   const navigate = useNavigate();
   const [stage, setStage] = useState<"upload" | "loading" | "result">("upload");
