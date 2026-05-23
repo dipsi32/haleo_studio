@@ -751,10 +751,10 @@ export default function ProposalIntelligencePage() {
                 {/* Section 5: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
-                    <SectionLabel number={5} label="Comparable Project" />
+                    <SectionLabel number={5} label="Closest Real Project to Yours" />
                     <Card className="p-5">
                       <p className="text-xs text-muted-foreground mb-4">
-                        City of San José permit data — closest match by scope and valuation
+                        Pulled live from City of San José permit records — the nearest match to your scope, size, and neighborhood.
                       </p>
                       {(() => {
                         const p = pricingResult.comparableProjects[0];
