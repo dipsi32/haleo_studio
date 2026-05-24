@@ -307,65 +307,89 @@ export default function Roast() {
 
           {stage === "result" && result && (
             <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              {/* Score card */}
+              {/* Verdict card — lead with the call, not a numeric score */}
               <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-8 sm:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
                 <div className="relative z-10">
-                  <p className="text-xs uppercase tracking-widest opacity-90 mb-2">Haleo quote score</p>
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <span className="text-7xl sm:text-8xl font-serif font-bold leading-none">{result.score}</span>
-                    <span className="text-xl opacity-90">/ 100</span>
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-serif mb-3">{result.tier.label}</p>
+                  <p className="text-xs uppercase tracking-widest opacity-90 mb-3">The verdict</p>
+                  <p className="text-4xl sm:text-5xl font-serif font-semibold leading-[1.05] mb-3">{result.tier.label}.</p>
                   <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95">{result.roast.headline}</p>
-                  <div className="mt-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur text-xs font-medium">
-                    haleo.studio/roast
-                  </div>
                 </div>
                 <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
               </Card>
 
-              {/* Evidence trio + number line */}
+              {/* Where your quote lands — the intuitive bar */}
               <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-foreground/50">Your quote</p>
-                    <p className="text-lg font-semibold text-foreground">{fmt(result.summary.total)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-foreground/50">Local fair range</p>
-                    <p className="text-lg font-semibold text-foreground">{fmt(result.summary.marketLow)}–{fmt(result.summary.marketHigh)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-foreground/50">Where you land</p>
-                    <p className="text-lg font-semibold text-foreground">{result.summary.percentileRank}th %</p>
-                  </div>
-                </div>
+                <p className="text-xs uppercase tracking-widest text-foreground/50 mb-5">Where your quote lands</p>
 
-                {/* Number line */}
-                <div className="mt-6">
-                  <div className="relative h-2 rounded-full bg-foreground/10 overflow-hidden">
-                    <div className="absolute inset-y-0 left-[15%] right-[15%] bg-gradient-to-r from-emerald-300 via-amber-300 to-rose-400 opacity-70" />
-                    {(() => {
-                      const lo = result.summary.marketLow;
-                      const hi = result.summary.marketHigh;
-                      const span = Math.max(hi - lo, 1);
-                      const min = lo - span * 0.4;
-                      const max = hi + span * 0.4;
-                      const pct = Math.max(2, Math.min(98, ((result.summary.total - min) / (max - min)) * 100));
-                      return (
+                {(() => {
+                  const lo = result.summary.marketLow;
+                  const hi = result.summary.marketHigh;
+                  const total = result.summary.total;
+                  const span = Math.max(hi - lo, 1);
+                  const min = lo - span * 0.5;
+                  const max = hi + span * 0.5;
+                  const fullSpan = max - min;
+                  const fairLeft = ((lo - min) / fullSpan) * 100;
+                  const fairRight = ((hi - min) / fullSpan) * 100;
+                  const quotePct = Math.max(1, Math.min(99, ((total - min) / fullSpan) * 100));
+                  const within = total >= lo && total <= hi;
+                  const above = total > hi;
+                  const labelLeft = Math.max(10, Math.min(90, quotePct));
+                  const anchorTranslate = quotePct < 12 ? "0%" : quotePct > 88 ? "-100%" : "-50%";
+
+                  return (
+                    <>
+                      <div className="relative pt-14 pb-12">
+                        {/* Quote marker label */}
                         <div
-                          className="absolute -top-1.5 -ml-2 w-4 h-5 rounded-sm bg-foreground shadow-md"
-                          style={{ left: `${pct}%` }}
-                        />
-                      );
-                    })()}
-                  </div>
-                  <div className="flex justify-between mt-2 text-[10px] text-foreground/50">
-                    <span>Below market</span>
-                    <span>Fair range</span>
-                    <span>Above market</span>
-                  </div>
-                </div>
+                          className="absolute top-0"
+                          style={{ left: `${labelLeft}%`, transform: `translateX(${anchorTranslate})` }}
+                        >
+                          <div className="flex flex-col items-center">
+                            <div className="px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold shadow-md whitespace-nowrap">
+                              Your quote · {fmt(total)}
+                            </div>
+                            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-foreground" />
+                          </div>
+                        </div>
+
+                        {/* The bar */}
+                        <div className="relative h-10 rounded-xl bg-rose-100 overflow-hidden">
+                          <div className="absolute inset-y-0 bg-sky-100" style={{ left: 0, width: `${fairLeft}%` }} />
+                          <div className="absolute inset-y-0 bg-emerald-200" style={{ left: `${fairLeft}%`, width: `${fairRight - fairLeft}%` }} />
+                          <div className="absolute inset-y-0 w-px bg-foreground/30" style={{ left: `${fairLeft}%` }} />
+                          <div className="absolute inset-y-0 w-px bg-foreground/30" style={{ left: `${fairRight}%` }} />
+                          {/* Quote pin overlay */}
+                          <div
+                            className="absolute inset-y-[-6px] w-[3px] bg-foreground rounded-full shadow"
+                            style={{ left: `calc(${quotePct}% - 1.5px)` }}
+                          />
+                        </div>
+
+                        {/* Zone labels */}
+                        <div className="relative mt-2 h-4 text-[11px] text-foreground/60">
+                          <div className="absolute text-center" style={{ left: 0, width: `${fairLeft}%` }}>Below market</div>
+                          <div className="absolute text-center font-semibold text-emerald-700" style={{ left: `${fairLeft}%`, width: `${fairRight - fairLeft}%` }}>Fair range</div>
+                          <div className="absolute text-center" style={{ left: `${fairRight}%`, width: `${100 - fairRight}%` }}>Above market</div>
+                        </div>
+
+                        {/* Fair range bounds */}
+                        <div className="relative mt-4 h-4 text-[11px] text-foreground/70 font-medium tabular-nums">
+                          <div className="absolute" style={{ left: `${fairLeft}%`, transform: "translateX(-50%)" }}>{fmt(lo)}</div>
+                          <div className="absolute" style={{ left: `${fairRight}%`, transform: "translateX(-50%)" }}>{fmt(hi)}</div>
+                        </div>
+                      </div>
+
+                      <div className={`rounded-2xl px-4 py-3 text-sm font-medium ${within ? "bg-emerald-50 text-emerald-800" : above ? "bg-rose-50 text-rose-800" : "bg-sky-50 text-sky-800"}`}>
+                        {within
+                          ? `Your ${fmt(total)} quote sits inside the local fair range of ${fmt(lo)}–${fmt(hi)}.`
+                          : above
+                            ? `Your quote is ${fmt(total - hi)} above the top of the local fair range (${fmt(lo)}–${fmt(hi)}).`
+                            : `Your quote is ${fmt(lo - total)} below the bottom of the local fair range (${fmt(lo)}–${fmt(hi)}).`}
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <p className="mt-5 text-sm text-foreground/75 leading-relaxed">
                   {result.roast.oneLiner}
