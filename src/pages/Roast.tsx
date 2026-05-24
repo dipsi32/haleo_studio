@@ -587,22 +587,15 @@ export default function Roast() {
                   ? `${fmt(Math.abs(diff))} over fair, about ${pct}% above local`
                   : `${fmt(Math.abs(diff))} under fair, about ${pct}% below local`;
               return (
-                <div style={{ display: "flex", alignItems: "center", gap: 56 }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{ fontSize: 220, fontWeight: 800, lineHeight: 0.85, letterSpacing: -8, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                      {result.score}
-                    </span>
-                    <span style={{ fontSize: 20, opacity: 0.85, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginTop: 10 }}>
-                      {result.tier.label}
-                    </span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div style={{ fontSize: 22, letterSpacing: 3, textTransform: "uppercase", opacity: 0.85, fontWeight: 600 }}>
+                    The verdict
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75, marginBottom: 10 }}>
-                      The verdict
-                    </div>
-                    <div style={{ fontSize: 50, lineHeight: 1.12, fontWeight: 700 }}>
-                      {verdict}.
-                    </div>
+                  <div style={{ fontSize: 92, lineHeight: 1.02, fontWeight: 800, letterSpacing: -2, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                    {result.tier.label}.
+                  </div>
+                  <div style={{ fontSize: 44, lineHeight: 1.18, fontWeight: 600, opacity: 0.95, maxWidth: 980 }}>
+                    {verdict}.
                   </div>
                 </div>
               );
