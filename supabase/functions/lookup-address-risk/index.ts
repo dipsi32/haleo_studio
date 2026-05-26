@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
     }
 
     const [fire, flood, seismic] = await Promise.all([
-      queryFireHazard(coords.lat, coords.lng),
+      queryFireHazard(coords.lat, coords.lng, geocodeLevel === "zip" ? 3000 : 0),
       queryFlood(coords.lat, coords.lng),
       querySeismic(coords.lat, coords.lng),
     ]);
