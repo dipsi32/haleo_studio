@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
       in_special_flood_hazard_area: !!flood?.sfha,
       seismic_hazard_zone: seismic?.zone ?? null,
       seismic_hazard_type: seismic?.type ?? null,
-      raw_response: { fire, flood, seismic },
+      raw_response: { fire, flood, seismic, geocodeLevel },
       lookup_succeeded: true,
       last_checked_at: new Date().toISOString(),
     };
