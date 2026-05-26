@@ -1,0 +1,260 @@
+// Phase 1 City Intelligence — Address risk lookup.
+// Public function (verify_jwt = false). Given a street+city+state+zip, geocodes
+// via the free US Census geocoder, then queries public ArcGIS endpoints for:
+//   - CAL FIRE Fire Hazard Severity Zones (FHSZ) — SRA + LRA
+//   - FEMA NFHL flood hazard zones
+//   - CA Geological Survey Seismic Hazard Zones
+// Best-effort: a failure in one source doesn't block the others. Results are
+// cached in public.address_risk_signals keyed on a normalized address string.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
+
+function normalizeKey(a: Address): string {
+  return [a.street, a.city, a.state, a.zip]
+    .map((s) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " "))
+    .join("|");
+}
+
+async function geocode(a: Address): Promise<{ lat: number; lng: number } | null> {
+  const oneLine = [a.street, a.city, a.state, a.zip].filter(Boolean).join(", ");
+  if (!oneLine) return null;
+  const url =
+    "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?" +
+    new URLSearchParams({
+      address: oneLine,
+      benchmark: "Public_AR_Current",
+      format: "json",
+    });
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const match = json?.result?.addressMatches?.[0];
+    if (!match) return null;
+    return { lat: match.coordinates.y, lng: match.coordinates.x };
+  } catch (e) {
+    console.error("geocode failed", e);
+    return null;
+  }
+}
+
+// CAL FIRE Fire Hazard Severity Zones — combined SRA + LRA layer.
+// https://services.gis.ca.gov/arcgis/rest/services/Environment/Wildfire_Hazard_Potential/MapServer
+// We use the public CAL FIRE FHSZ hosted layer.
+async function queryFireHazard(lat: number, lng: number) {
+  const url =
+    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/ArcGIS/rest/services/FHSZ_SRA_LRA_Combined/FeatureServer/0/query?" +
+    new URLSearchParams({
+      f: "json",
+      geometry: JSON.stringify({ x: lng, y: lat, spatialReference: { wkid: 4326 } }),
+      geometryType: "esriGeometryPoint",
+      inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects",
+      outFields: "*",
+      returnGeometry: "false",
+    });
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const f = json?.features?.[0]?.attributes;
+    if (!f) return null;
+    // FHSZ codes commonly: 1=Moderate, 2=High, 3=Very High
+    const codeRaw =
+      f.HAZ_CLASS ?? f.HAZ_CODE ?? f.FHSZ ?? f.haz_class ?? f.haz_code ?? null;
+    const codeStr = String(codeRaw ?? "").toUpperCase();
+    let hazardClass: string | null = null;
+    if (/VERY HIGH|^3$|VH/.test(codeStr)) hazardClass = "Very High";
+    else if (/HIGH|^2$/.test(codeStr)) hazardClass = "High";
+    else if (/MODERATE|^1$|MOD/.test(codeStr)) hazardClass = "Moderate";
+    return {
+      zone: f.SRA === "Y" || f.SRA === "YES" ? "State Responsibility Area" : "Local Responsibility Area",
+      hazardClass,
+      raw: f,
+    };
+  } catch (e) {
+    console.error("fhsz query failed", e);
+    return null;
+  }
+}
+
+// FEMA NFHL — flood hazard zones layer 28.
+async function queryFlood(lat: number, lng: number) {
+  const url =
+    "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?" +
+    new URLSearchParams({
+      f: "json",
+      geometry: `${lng},${lat}`,
+      geometryType: "esriGeometryPoint",
+      inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects",
+      outFields: "FLD_ZONE,ZONE_SUBTY,SFHA_TF",
+      returnGeometry: "false",
+    });
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const f = json?.features?.[0]?.attributes;
+    if (!f) return null;
+    const zone = f.FLD_ZONE ?? null;
+    const sfha = f.SFHA_TF === "T" || f.SFHA_TF === true;
+    let description: string | null = null;
+    if (zone === "X") description = "Minimal flood hazard area.";
+    else if (zone && /^A/.test(zone)) description = "1% annual chance flood (100-year floodplain).";
+    else if (zone && /^V/.test(zone)) description = "Coastal high-hazard area with wave action.";
+    else if (zone) description = `FEMA flood zone ${zone}.`;
+    return { zone, description, sfha, raw: f };
+  } catch (e) {
+    console.error("flood query failed", e);
+    return null;
+  }
+}
+
+// CGS Seismic Hazard Zones — liquefaction & landslide overlays.
+async function querySeismic(lat: number, lng: number) {
+  const url =
+    "https://gis.conservation.ca.gov/server/rest/services/CGS/MS48_SeismicHazardZones/MapServer/0/query?" +
+    new URLSearchParams({
+      f: "json",
+      geometry: `${lng},${lat}`,
+      geometryType: "esriGeometryPoint",
+      inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects",
+      outFields: "*",
+      returnGeometry: "false",
+    });
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const f = json?.features?.[0]?.attributes;
+    if (!f) return null;
+    const type = f.ZONE ?? f.HAZARD ?? f.Hazard ?? null;
+    const typeStr = String(type ?? "").toLowerCase();
+    let kind: string | null = null;
+    if (typeStr.includes("liquefaction")) kind = "Liquefaction";
+    else if (typeStr.includes("landslide")) kind = "Landslide";
+    return { zone: type ? String(type) : "Mapped seismic hazard zone", type: kind, raw: f };
+  } catch (e) {
+    console.error("seismic query failed", e);
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    const body = await req.json().catch(() => ({}));
+    const address: Address = body.address ?? {};
+    const force = body.force === true;
+
+    if (!address.street || !address.city) {
+      return new Response(JSON.stringify({ error: "address.street and address.city are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const key = normalizeKey(address);
+
+    // Cache check
+    if (!force) {
+      const { data: cached } = await supabase
+        .from("address_risk_signals")
+        .select("*")
+        .eq("address_key", key)
+        .maybeSingle();
+      if (cached) {
+        return new Response(JSON.stringify({ cached: true, signals: cached }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const coords = await geocode(address);
+    if (!coords) {
+      const fallback = {
+        address_key: key,
+        street: address.street ?? null,
+        city: address.city ?? null,
+        state: address.state ?? null,
+        zip: address.zip ?? null,
+        lookup_succeeded: false,
+        raw_response: { error: "geocoding_failed" },
+      };
+      await supabase.from("address_risk_signals").upsert(fallback, { onConflict: "address_key" });
+      return new Response(JSON.stringify({ cached: false, signals: fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const [fire, flood, seismic] = await Promise.all([
+      queryFireHazard(coords.lat, coords.lng),
+      queryFlood(coords.lat, coords.lng),
+      querySeismic(coords.lat, coords.lng),
+    ]);
+
+    const row = {
+      address_key: key,
+      street: address.street ?? null,
+      city: address.city ?? null,
+      state: address.state ?? null,
+      zip: address.zip ?? null,
+      lat: coords.lat,
+      lng: coords.lng,
+      fire_hazard_zone: fire?.zone ?? null,
+      fire_hazard_class: fire?.hazardClass ?? null,
+      flood_zone: flood?.zone ?? null,
+      flood_zone_description: flood?.description ?? null,
+      in_special_flood_hazard_area: !!flood?.sfha,
+      seismic_hazard_zone: seismic?.zone ?? null,
+      seismic_hazard_type: seismic?.type ?? null,
+      raw_response: { fire, flood, seismic },
+      lookup_succeeded: true,
+      last_checked_at: new Date().toISOString(),
+    };
+
+    const { data: saved, error: saveErr } = await supabase
+      .from("address_risk_signals")
+      .upsert(row, { onConflict: "address_key" })
+      .select()
+      .single();
+
+    if (saveErr) {
+      console.error("save failed", saveErr);
+      return new Response(JSON.stringify({ cached: false, signals: row, save_error: saveErr.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ cached: false, signals: saved }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "unknown_error";
+    console.error("lookup-address-risk failed", msg);
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
