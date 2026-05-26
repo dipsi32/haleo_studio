@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
-  DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info,
+  DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info, Flame, Waves, Mountain,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
