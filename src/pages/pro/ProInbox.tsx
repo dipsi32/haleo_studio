@@ -43,6 +43,15 @@ type BriefSnapshot = {
   addition_size_sqft?: number;
   permit_status?: "yes" | "in-progress" | "not-yet";
   is_addition?: boolean;
+  address_risk?: {
+    fire_hazard_class?: string | null;
+    fire_hazard_zone?: string | null;
+    flood_zone?: string | null;
+    flood_zone_description?: string | null;
+    in_special_flood_hazard_area?: boolean | null;
+    seismic_hazard_type?: string | null;
+    seismic_hazard_zone?: string | null;
+  };
 };
 
 const permitLabel = (p?: BriefSnapshot["permit_status"]) =>
