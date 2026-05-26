@@ -351,6 +351,17 @@ export type BriefSnapshot = {
   addition_size_sqft?: number;
   permit_status?: "yes" | "in-progress" | "not-yet";
   is_addition?: boolean;
+  // City intelligence — surfaced so the contractor catches hazard-zone
+  // implications (materials, insurance, soils reports) before they bid.
+  address_risk?: {
+    fire_hazard_class?: string | null;
+    fire_hazard_zone?: string | null;
+    flood_zone?: string | null;
+    flood_zone_description?: string | null;
+    in_special_flood_hazard_area?: boolean | null;
+    seismic_hazard_type?: string | null;
+    seismic_hazard_zone?: string | null;
+  };
 };
 
 const fmtMoney = (v?: number) => (v == null ? '' : v >= 500 ? '$500K+' : `$${v}K`);
