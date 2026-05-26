@@ -201,7 +201,7 @@ const Contractors = () => {
 
       // Pull cached address risk so contractors see the same hazard signals
       // the homeowner saw on their brief. Best-effort — never block the send.
-      let addressRisk: typeof snapshot.address_risk | undefined;
+      let addressRisk: NonNullable<BriefSnapshot["address_risk"]> | undefined;
       const addr = data.address;
       if (addr && !addr.skipped && addr.street && addr.city) {
         const key = [addr.street, addr.city, addr.state, addr.zip]
