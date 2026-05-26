@@ -205,18 +205,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Try full address first, fall back to ZIP centroid so vague streets
-    // ("almaden hills") still surface something useful for a real ZIP.
+    // Try full address first, fall back to ZIP centroid (zippopotam.us) so
+    // vague streets ("almaden hills") still surface something useful when the
+    // ZIP is real.
     let coords = await geocode(address);
     let geocodeLevel: "address" | "zip" = "address";
-    if (!coords && address.zip) {
-      coords = await geocode({
-        street: address.zip,
-        city: address.state ?? "CA",
-        state: "",
-        zip: "",
-      });
-      if (coords) geocodeLevel = "zip";
+    if (!coords && address.zip && /^\d{5}$/.test(address.zip)) {
+      try {
+        const r = await fetch(`https://api.zippopotam.us/us/${address.zip}`);
+        if (r.ok) {
+          const j = await r.json();
+          const p = j?.places?.[0];
+          if (p?.latitude && p?.longitude) {
+            coords = { lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) };
+            geocodeLevel = "zip";
+          }
+        }
+      } catch (e) {
+        console.warn("zip fallback failed", e);
+      }
     }
     if (!coords) {
       const fallback = {
