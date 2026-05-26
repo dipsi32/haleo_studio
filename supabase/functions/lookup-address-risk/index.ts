@@ -50,43 +50,46 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
   }
 }
 
-// CAL FIRE Fire Hazard Severity Zones via the public CA GIS hub.
-// Layer 0 = State Responsibility Areas, Layer 1 = Local Responsibility Areas.
-// We query both and take whichever returns a feature.
+// CAL FIRE Fire Hazard Severity Zones — current (2023) authoritative service
+// hosted by CAL FIRE on the public ArcGIS hub. SRA (state lands) and the LRA
+// rollout layer cover the state between them.
 async function queryFireHazard(lat: number, lng: number) {
-  const base =
-    "https://services.gis.ca.gov/arcgis/rest/services/Environment/Fire_Severity_Zones/MapServer";
-  async function hit(layer: number) {
-    const url =
-      `${base}/${layer}/query?` +
-      new URLSearchParams({
-        f: "json",
-        geometry: `${lng},${lat}`,
-        geometryType: "esriGeometryPoint",
-        inSR: "4326",
-        spatialRel: "esriSpatialRelIntersects",
-        outFields: "*",
-        returnGeometry: "false",
-      });
+  const params = new URLSearchParams({
+    f: "json",
+    geometry: `${lng},${lat}`,
+    geometryType: "esriGeometryPoint",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    outFields: "*",
+    returnGeometry: "false",
+  });
+  async function hit(url: string) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(`${url}?${params}`);
       if (!res.ok) return null;
       const json = await res.json();
       return json?.features?.[0]?.attributes ?? null;
     } catch (e) {
-      console.error("fhsz layer", layer, "failed", e);
+      console.error("fhsz query failed", url, e);
       return null;
     }
   }
-  const [sra, lra] = await Promise.all([hit(0), hit(1)]);
+  const SRA =
+    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZSRA_23_3/FeatureServer/0/query";
+  const LRA =
+    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZLRA0711_ByPhase/FeatureServer/0/query";
+  const [sra, lra] = await Promise.all([hit(SRA), hit(LRA)]);
   const f = sra ?? lra;
   if (!f) return null;
-  const codeRaw = f.HAZ_CLASS ?? f.HAZ_CODE ?? null;
-  const codeStr = String(codeRaw ?? "").toUpperCase();
+  // Modern service exposes FHSZ_Description ("Moderate" | "High" | "Very High")
+  // and FHSZ (1|2|3). Older fallbacks: HAZ_CLASS / HAZ_CODE.
+  const desc = String(
+    f.FHSZ_Description ?? f.HAZ_CLASS ?? f.FHSZ ?? f.HAZ_CODE ?? "",
+  ).toUpperCase();
   let hazardClass: string | null = null;
-  if (/VERY HIGH|^3$/.test(codeStr)) hazardClass = "Very High";
-  else if (/^HIGH$|^2$/.test(codeStr)) hazardClass = "High";
-  else if (/MODERATE|^1$|^MOD/.test(codeStr)) hazardClass = "Moderate";
+  if (/VERY HIGH|^3$/.test(desc)) hazardClass = "Very High";
+  else if (/^HIGH$|^2$/.test(desc)) hazardClass = "High";
+  else if (/MODERATE|^1$|MOD/.test(desc)) hazardClass = "Moderate";
   return {
     zone: sra ? "State Responsibility Area" : "Local Responsibility Area",
     hazardClass,
