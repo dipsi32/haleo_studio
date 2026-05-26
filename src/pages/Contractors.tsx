@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
-import { projectTypeLabel, buildBriefSnapshot, getSessionId } from "@/lib/contractors";
+import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
 import { supabase } from "@/integrations/supabase/client";
