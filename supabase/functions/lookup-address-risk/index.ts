@@ -53,7 +53,7 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
 // CAL FIRE Fire Hazard Severity Zones — current (2023) authoritative service
 // hosted by CAL FIRE on the public ArcGIS hub. SRA (state lands) and the LRA
 // rollout layer cover the state between them.
-async function queryFireHazard(lat: number, lng: number) {
+async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
   const params = new URLSearchParams({
     f: "json",
     geometry: `${lng},${lat}`,
@@ -63,12 +63,30 @@ async function queryFireHazard(lat: number, lng: number) {
     outFields: "*",
     returnGeometry: "false",
   });
+  if (bufferMeters > 0) {
+    params.set("distance", String(bufferMeters));
+    params.set("units", "esriSRUnit_Meter");
+  }
   async function hit(url: string) {
     try {
       const res = await fetch(`${url}?${params}`);
       if (!res.ok) return null;
       const json = await res.json();
-      return json?.features?.[0]?.attributes ?? null;
+      const feats = json?.features ?? [];
+      if (!feats.length) return null;
+      // Pick the most severe class if multiple polygons matched (buffer query).
+      const rank = (a: Record<string, unknown>) => {
+        const d = String(
+          a.FHSZ_Description ?? a.HAZ_CLASS ?? a.FHSZ ?? a.HAZ_CODE ?? "",
+        ).toUpperCase();
+        if (/VERY HIGH|^3$/.test(d)) return 3;
+        if (/^HIGH$|^2$/.test(d)) return 2;
+        if (/MODERATE|^1$|MOD/.test(d)) return 1;
+        return 0;
+      };
+      return feats
+        .map((f: { attributes: Record<string, unknown> }) => f.attributes)
+        .sort((a: Record<string, unknown>, b: Record<string, unknown>) => rank(b) - rank(a))[0];
     } catch (e) {
       console.error("fhsz query failed", url, e);
       return null;
@@ -81,8 +99,6 @@ async function queryFireHazard(lat: number, lng: number) {
   const [sra, lra] = await Promise.all([hit(SRA), hit(LRA)]);
   const f = sra ?? lra;
   if (!f) return null;
-  // Modern service exposes FHSZ_Description ("Moderate" | "High" | "Very High")
-  // and FHSZ (1|2|3). Older fallbacks: HAZ_CLASS / HAZ_CODE.
   const desc = String(
     f.FHSZ_Description ?? f.HAZ_CLASS ?? f.FHSZ ?? f.HAZ_CODE ?? "",
   ).toUpperCase();
@@ -94,7 +110,9 @@ async function queryFireHazard(lat: number, lng: number) {
     zone: sra ? "State Responsibility Area" : "Local Responsibility Area",
     hazardClass,
     raw: f,
+    approximate: bufferMeters > 0,
   };
+}
 }
 
 // FEMA NFHL — flood hazard zones layer 28.
