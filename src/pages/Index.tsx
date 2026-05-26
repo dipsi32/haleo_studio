@@ -402,48 +402,47 @@ const Hero = () => {
 
   return (
     <section className="relative overflow-hidden bg-background">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[80vh] bg-gradient-warm" aria-hidden />
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/4 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-accent/8 blur-[140px]"
-        aria-hidden
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-gradient-warm" aria-hidden />
 
       <SiteHeader />
 
-      <div className="container relative pt-28 pb-20 md:pt-36 md:pb-28">
+      <div className="container relative pt-28 pb-16 md:pt-32 md:pb-20">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: EASE }}
-          className="mx-auto max-w-3xl text-center"
+          transition={{ duration: 0.7, ease: EASE }}
+          className="mx-auto max-w-2xl"
         >
-          <h1 className="font-display text-[2.75rem] font-light leading-[1.04] tracking-tight text-balance md:text-[5.25rem]">
-            Hire your contractor in{" "}
-            <em className="font-normal italic text-accent">days,</em>
-            <br className="hidden md:inline" /> not{" "}
-            <em className="font-normal italic text-accent">months.</em>
+          <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="h-px w-6 bg-foreground/30" aria-hidden />
+            For homeowners
+          </div>
+
+          <h1 className="mt-5 font-display text-[2rem] font-normal leading-[1.1] tracking-tight text-balance md:text-[2.75rem]">
+            Hire your contractor in <span className="text-accent">days</span>, not months.
           </h1>
 
-          <p className="mx-auto mt-6 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-            Share your remodel vision with us. We'll turn it into a clear brief and line up the right bids — side by side.
+          <p className="mt-5 max-w-xl text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
+            Share your remodel vision. We turn it into a clear brief and line up the right bids — side by side.
           </p>
 
-          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               to="/brief"
-              className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
+              className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
             >
               Start my brief
-              <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-1" />
+              <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-0.5" />
             </Link>
             <Link
               to="/proposal"
-              className="text-sm font-medium text-muted-foreground transition-smooth hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
             >
               I have a proposal to review
             </Link>
           </div>
         </motion.div>
+
 
         {/* Single focal phone */}
         <motion.div
