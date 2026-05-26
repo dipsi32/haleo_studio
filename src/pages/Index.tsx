@@ -406,39 +406,33 @@ const Hero = () => {
 
       <SiteHeader />
 
-      <div className="container relative pt-28 pb-16 md:pt-32 md:pb-20">
+      <div className="container relative pt-32 pb-20 md:pt-40 md:pb-28">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: EASE }}
-          className="mx-auto max-w-2xl"
+          transition={{ duration: 0.6, ease: EASE }}
+          className="mx-auto max-w-2xl text-center"
         >
-          <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            <span className="h-px w-6 bg-foreground/30" aria-hidden />
-            For homeowners
-          </div>
-
-          <h1 className="mt-5 font-display text-[2rem] font-normal leading-[1.1] tracking-tight text-balance md:text-[2.75rem]">
-            Hire your contractor in <span className="text-accent">days</span>, not months.
+          <h1 className="font-display text-[2.25rem] font-normal leading-[1.08] tracking-tight text-balance text-foreground md:text-[3.25rem]">
+            Hire your contractor in days, not months.
           </h1>
 
-          <p className="mt-5 max-w-xl text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
+          <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
             Share your remodel vision. We turn it into a clear brief and line up the right bids — side by side.
           </p>
 
-          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-7">
             <Link
               to="/brief"
-              className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
             >
               Start my brief
-              <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-0.5" />
             </Link>
             <Link
               to="/proposal"
-              className="text-sm font-medium text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
+              className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
             >
-              I have a proposal to review
+              I have a proposal to review →
             </Link>
           </div>
         </motion.div>
