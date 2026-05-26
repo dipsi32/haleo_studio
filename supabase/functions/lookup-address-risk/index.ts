@@ -174,11 +174,11 @@ Deno.serve(async (req) => {
     const address: Address = body.address ?? {};
     const force = body.force === true;
 
-    if (!address.street || !address.city) {
-      return new Response(JSON.stringify({ error: "address.street and address.city are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!address.zip && (!address.street || !address.city)) {
+      return new Response(
+        JSON.stringify({ error: "address.zip or (street + city) is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const key = normalizeKey(address);
@@ -205,7 +205,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    const coords = await geocode(address);
+    // Try full address first, fall back to ZIP centroid so vague streets
+    // ("almaden hills") still surface something useful for a real ZIP.
+    let coords = await geocode(address);
+    let geocodeLevel: "address" | "zip" = "address";
+    if (!coords && address.zip) {
+      coords = await geocode({
+        street: address.zip,
+        city: address.state ?? "CA",
+        state: "",
+        zip: "",
+      });
+      if (coords) geocodeLevel = "zip";
+    }
     if (!coords) {
       const fallback = {
         address_key: key,
