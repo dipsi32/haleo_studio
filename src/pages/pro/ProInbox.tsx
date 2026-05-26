@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
-  DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info,
+  DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info, Flame, Waves, Mountain,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,15 @@ type BriefSnapshot = {
   addition_size_sqft?: number;
   permit_status?: "yes" | "in-progress" | "not-yet";
   is_addition?: boolean;
+  address_risk?: {
+    fire_hazard_class?: string | null;
+    fire_hazard_zone?: string | null;
+    flood_zone?: string | null;
+    flood_zone_description?: string | null;
+    in_special_flood_hazard_area?: boolean | null;
+    seismic_hazard_type?: string | null;
+    seismic_hazard_zone?: string | null;
+  };
 };
 
 const permitLabel = (p?: BriefSnapshot["permit_status"]) =>
@@ -547,6 +556,72 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
                 {snap.vision && <p className="mt-2 text-sm italic leading-relaxed text-foreground/70">"{snap.vision}"</p>}
               </section>
             )}
+
+            {/* City intelligence — hazard zones for this address */}
+            {snap.address_risk && (
+              snap.address_risk.fire_hazard_class ||
+              snap.address_risk.flood_zone ||
+              snap.address_risk.seismic_hazard_type
+            ) && (
+              <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
+                  <Sparkles className="h-3 w-3" /> Site intelligence for this address
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Pulled from public hazard maps. Confirm with the city before you bid.
+                </p>
+                <ul className="mt-3 space-y-2.5">
+                  {(snap.address_risk.fire_hazard_class === "High" ||
+                    snap.address_risk.fire_hazard_class === "Very High" ||
+                    snap.address_risk.fire_hazard_class === "Moderate") && (
+                    <li className="flex items-start gap-2.5 rounded-xl bg-card p-3">
+                      <Flame className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                      <div className="min-w-0 text-sm">
+                        <p className="font-medium">
+                          {snap.address_risk.fire_hazard_class} Fire Hazard Severity Zone
+                          <span className="ml-2 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">CAL FIRE</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          Expect WUI-driven material requirements (Class A roofing, ember-resistant vents, ignition-resistant exterior) and insurance scrutiny on this scope.
+                        </p>
+                      </div>
+                    </li>
+                  )}
+                  {snap.address_risk.in_special_flood_hazard_area && snap.address_risk.flood_zone && (
+                    <li className="flex items-start gap-2.5 rounded-xl bg-card p-3">
+                      <Waves className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                      <div className="min-w-0 text-sm">
+                        <p className="font-medium">
+                          FEMA flood zone {snap.address_risk.flood_zone}
+                          <span className="ml-2 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">FEMA NFHL</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {snap.address_risk.flood_zone_description ?? "Special Flood Hazard Area — elevation, venting, or materials requirements may apply."}
+                        </p>
+                      </div>
+                    </li>
+                  )}
+                  {snap.address_risk.seismic_hazard_type && (
+                    <li className="flex items-start gap-2.5 rounded-xl bg-card p-3">
+                      <Mountain className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                      <div className="min-w-0 text-sm">
+                        <p className="font-medium">
+                          Mapped seismic hazard: {snap.address_risk.seismic_hazard_type}
+                          <span className="ml-2 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">CGS</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {snap.address_risk.seismic_hazard_type === "Liquefaction"
+                            ? "State-mapped liquefaction zone — structural additions and foundation work typically require a soils report."
+                            : "State-mapped landslide hazard zone — structural and grading work typically need geotechnical review."}
+                        </p>
+                      </div>
+                    </li>
+                  )}
+                </ul>
+              </section>
+            )}
+
+
 
             {/* Frustrations */}
             {snap.frustrations && snap.frustrations.length > 0 && (
