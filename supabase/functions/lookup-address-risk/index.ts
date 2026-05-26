@@ -50,44 +50,48 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
   }
 }
 
-// CAL FIRE Fire Hazard Severity Zones — combined SRA + LRA layer.
-// https://services.gis.ca.gov/arcgis/rest/services/Environment/Wildfire_Hazard_Potential/MapServer
-// We use the public CAL FIRE FHSZ hosted layer.
+// CAL FIRE Fire Hazard Severity Zones via the public CA GIS hub.
+// Layer 0 = State Responsibility Areas, Layer 1 = Local Responsibility Areas.
+// We query both and take whichever returns a feature.
 async function queryFireHazard(lat: number, lng: number) {
-  const url =
-    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/ArcGIS/rest/services/FHSZ_SRA_LRA_Combined/FeatureServer/0/query?" +
-    new URLSearchParams({
-      f: "json",
-      geometry: JSON.stringify({ x: lng, y: lat, spatialReference: { wkid: 4326 } }),
-      geometryType: "esriGeometryPoint",
-      inSR: "4326",
-      spatialRel: "esriSpatialRelIntersects",
-      outFields: "*",
-      returnGeometry: "false",
-    });
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const f = json?.features?.[0]?.attributes;
-    if (!f) return null;
-    // FHSZ codes commonly: 1=Moderate, 2=High, 3=Very High
-    const codeRaw =
-      f.HAZ_CLASS ?? f.HAZ_CODE ?? f.FHSZ ?? f.haz_class ?? f.haz_code ?? null;
-    const codeStr = String(codeRaw ?? "").toUpperCase();
-    let hazardClass: string | null = null;
-    if (/VERY HIGH|^3$|VH/.test(codeStr)) hazardClass = "Very High";
-    else if (/HIGH|^2$/.test(codeStr)) hazardClass = "High";
-    else if (/MODERATE|^1$|MOD/.test(codeStr)) hazardClass = "Moderate";
-    return {
-      zone: f.SRA === "Y" || f.SRA === "YES" ? "State Responsibility Area" : "Local Responsibility Area",
-      hazardClass,
-      raw: f,
-    };
-  } catch (e) {
-    console.error("fhsz query failed", e);
-    return null;
+  const base =
+    "https://services.gis.ca.gov/arcgis/rest/services/Environment/Fire_Severity_Zones/MapServer";
+  async function hit(layer: number) {
+    const url =
+      `${base}/${layer}/query?` +
+      new URLSearchParams({
+        f: "json",
+        geometry: `${lng},${lat}`,
+        geometryType: "esriGeometryPoint",
+        inSR: "4326",
+        spatialRel: "esriSpatialRelIntersects",
+        outFields: "*",
+        returnGeometry: "false",
+      });
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json?.features?.[0]?.attributes ?? null;
+    } catch (e) {
+      console.error("fhsz layer", layer, "failed", e);
+      return null;
+    }
   }
+  const [sra, lra] = await Promise.all([hit(0), hit(1)]);
+  const f = sra ?? lra;
+  if (!f) return null;
+  const codeRaw = f.HAZ_CLASS ?? f.HAZ_CODE ?? null;
+  const codeStr = String(codeRaw ?? "").toUpperCase();
+  let hazardClass: string | null = null;
+  if (/VERY HIGH|^3$/.test(codeStr)) hazardClass = "Very High";
+  else if (/^HIGH$|^2$/.test(codeStr)) hazardClass = "High";
+  else if (/MODERATE|^1$|^MOD/.test(codeStr)) hazardClass = "Moderate";
+  return {
+    zone: sra ? "State Responsibility Area" : "Local Responsibility Area",
+    hazardClass,
+    raw: f,
+  };
 }
 
 // FEMA NFHL — flood hazard zones layer 28.
