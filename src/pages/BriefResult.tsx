@@ -483,6 +483,13 @@ const BriefResult = () => {
           onEdit={() => setEditOpen(true)}
         />
 
+        {/* City intelligence — quiet card surfacing fire / flood / seismic
+            signals once the address is on file. Only renders when there's real
+            signal. Voice: friend who happens to know SJ construction. */}
+        <div className="mt-6">
+          <AddressIntelligenceCard address={data.address} />
+        </div>
+
         {/* Slim, elegant nudge — only when something meaningful is missing */}
         <ReadinessNudge readiness={readiness} onAdd={() => setEditOpen(true)} />
 
