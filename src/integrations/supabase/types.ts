@@ -71,6 +71,75 @@ export type Database = {
         }
         Relationships: []
       }
+      address_risk_signals: {
+        Row: {
+          address_key: string
+          city: string | null
+          created_at: string
+          fire_hazard_class: string | null
+          fire_hazard_zone: string | null
+          flood_zone: string | null
+          flood_zone_description: string | null
+          id: string
+          in_special_flood_hazard_area: boolean | null
+          last_checked_at: string
+          lat: number | null
+          lng: number | null
+          lookup_succeeded: boolean
+          raw_response: Json | null
+          seismic_hazard_type: string | null
+          seismic_hazard_zone: string | null
+          state: string | null
+          street: string | null
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          address_key: string
+          city?: string | null
+          created_at?: string
+          fire_hazard_class?: string | null
+          fire_hazard_zone?: string | null
+          flood_zone?: string | null
+          flood_zone_description?: string | null
+          id?: string
+          in_special_flood_hazard_area?: boolean | null
+          last_checked_at?: string
+          lat?: number | null
+          lng?: number | null
+          lookup_succeeded?: boolean
+          raw_response?: Json | null
+          seismic_hazard_type?: string | null
+          seismic_hazard_zone?: string | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          address_key?: string
+          city?: string | null
+          created_at?: string
+          fire_hazard_class?: string | null
+          fire_hazard_zone?: string | null
+          flood_zone?: string | null
+          flood_zone_description?: string | null
+          id?: string
+          in_special_flood_hazard_area?: boolean | null
+          last_checked_at?: string
+          lat?: number | null
+          lng?: number | null
+          lookup_succeeded?: boolean
+          raw_response?: Json | null
+          seismic_hazard_type?: string | null
+          seismic_hazard_zone?: string | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
       brief_annotations: {
         Row: {
           content: string

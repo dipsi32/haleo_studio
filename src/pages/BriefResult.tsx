@@ -55,6 +55,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
+import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard";
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
@@ -482,6 +483,13 @@ const BriefResult = () => {
           onApprove={() => setApproved((v) => !v)}
           onEdit={() => setEditOpen(true)}
         />
+
+        {/* City intelligence — quiet card surfacing fire / flood / seismic
+            signals once the address is on file. Only renders when there's real
+            signal. Voice: friend who happens to know SJ construction. */}
+        <div className="mt-6">
+          <AddressIntelligenceCard address={data.address} />
+        </div>
 
         {/* Slim, elegant nudge — only when something meaningful is missing */}
         <ReadinessNudge readiness={readiness} onAdd={() => setEditOpen(true)} />
