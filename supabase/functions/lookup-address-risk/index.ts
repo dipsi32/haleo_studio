@@ -113,7 +113,6 @@ async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
     approximate: bufferMeters > 0,
   };
 }
-}
 
 // FEMA NFHL — flood hazard zones layer 28.
 async function queryFlood(lat: number, lng: number) {
