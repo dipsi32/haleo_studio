@@ -90,13 +90,21 @@ export default function AddressIntelligenceCard({ address }: Props) {
     chip: string;
   }> = [];
 
-  // Fire — surface High or Very High only (Moderate is too noisy across most of SJ).
+  // Fire — High/Very High shown prominently; Moderate as a soft note.
   if (signal.fire_hazard_class === "High" || signal.fire_hazard_class === "Very High") {
     items.push({
       icon: Flame,
       title: `${signal.fire_hazard_class} Fire Hazard Severity Zone`,
       body:
         "This changes what exterior materials are permitted, your insurance options, and the contractor requirements you should expect. Worth knowing before the first bid.",
+      chip: "CAL FIRE",
+    });
+  } else if (signal.fire_hazard_class === "Moderate") {
+    items.push({
+      icon: Flame,
+      title: "Moderate Fire Hazard Severity Zone",
+      body:
+        "Not a WUI zone, but still on the CAL FIRE map. Ember-resistant vents and Class A roofing are smart calls on any reroof or exterior work.",
       chip: "CAL FIRE",
     });
   }
@@ -126,7 +134,9 @@ export default function AddressIntelligenceCard({ address }: Props) {
     });
   }
 
-  if (items.length === 0) return null;
+  // Hide entirely if the lookup didn't even succeed (e.g. geocode failed).
+  if (items.length === 0 && !signal.lookup_succeeded) return null;
+  const allClear = items.length === 0;
 
   return (
     <motion.section
@@ -146,8 +156,18 @@ export default function AddressIntelligenceCard({ address }: Props) {
       </div>
 
       <p className="mt-3 font-display text-lg font-light leading-snug text-foreground">
-        A few things worth knowing before you talk to anyone.
+        {allClear
+          ? "Nothing flagged on your parcel. That's a good baseline."
+          : "A few things worth knowing before you talk to anyone."}
       </p>
+
+      {allClear ? (
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+          We checked CAL FIRE fire hazard zones, FEMA flood maps, and California
+          Geological Survey seismic overlays. None flagged your address — so no
+          special permitting or insurance gotchas to plan around upfront.
+        </p>
+      ) : null}
 
       <ul className="mt-5 space-y-4">
         {items.map((item) => {
