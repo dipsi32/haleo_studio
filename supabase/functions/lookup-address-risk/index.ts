@@ -187,7 +187,15 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("address_key", key)
         .maybeSingle();
-      if (cached) {
+      // Treat fully-empty results as stale (probably a broken endpoint last
+      // time) and re-run the lookup rather than serving the empty cache.
+      const stale =
+        cached &&
+        !cached.fire_hazard_class &&
+        !cached.flood_zone &&
+        !cached.seismic_hazard_type &&
+        !cached.seismic_hazard_zone;
+      if (cached && !stale) {
         return new Response(JSON.stringify({ cached: true, signals: cached }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
