@@ -59,13 +59,22 @@ export default function ContractorSubmit() {
   useEffect(() => {
     if (!outreachSendId) return;
     (async () => {
+      // Require contractor sign-in before reading the brief — outreach data
+      // is now scoped by RLS to the assigned contractor account.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const next = encodeURIComponent(`/contractor/submit/${outreachSendId}`);
+        navigate(`/pro/login?next=${next}`, { replace: true });
+        return;
+      }
+
       const { data: sendData, error: sErr } = await supabase
         .from("outreach_sends")
         .select("id, contractor_name, contractor_email, batch_id, status, proposal_submitted_at")
         .eq("id", outreachSendId)
         .maybeSingle();
       if (sErr || !sendData) {
-        toast({ title: "Submission link not found", description: "Ask the homeowner to resend it.", variant: "destructive" });
+        toast({ title: "Submission link not found", description: "Sign in with the contractor account this brief was sent to.", variant: "destructive" });
         setLoading(false);
         return;
       }
@@ -79,7 +88,8 @@ export default function ContractorSubmit() {
       if (batchData) setBatch(batchData as Batch);
       setLoading(false);
     })();
-  }, [outreachSendId]);
+  }, [outreachSendId, navigate]);
+
 
   const addLine = () => setLines((l) => [...l, blankLine()]);
   const updateLine = (i: number, field: keyof LineItem, value: string) =>
