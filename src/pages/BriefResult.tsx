@@ -55,6 +55,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import EditBriefDrawer from "@/components/EditBriefDrawer";
+import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard";
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
