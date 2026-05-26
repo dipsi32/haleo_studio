@@ -20,6 +20,7 @@ type Signal = {
   seismic_hazard_type: string | null;
   lookup_succeeded: boolean | null;
   last_checked_at: string | null;
+  raw_response?: { geocodeLevel?: string; fire?: { approximate?: boolean } } | null;
 };
 
 function normalizeKey(a: Address): string {
