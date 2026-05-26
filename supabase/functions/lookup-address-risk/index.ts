@@ -50,47 +50,67 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
   }
 }
 
-// CAL FIRE Fire Hazard Severity Zones via the public CA GIS hub.
-// Layer 0 = State Responsibility Areas, Layer 1 = Local Responsibility Areas.
-// We query both and take whichever returns a feature.
-async function queryFireHazard(lat: number, lng: number) {
-  const base =
-    "https://services.gis.ca.gov/arcgis/rest/services/Environment/Fire_Severity_Zones/MapServer";
-  async function hit(layer: number) {
-    const url =
-      `${base}/${layer}/query?` +
-      new URLSearchParams({
-        f: "json",
-        geometry: `${lng},${lat}`,
-        geometryType: "esriGeometryPoint",
-        inSR: "4326",
-        spatialRel: "esriSpatialRelIntersects",
-        outFields: "*",
-        returnGeometry: "false",
-      });
+// CAL FIRE Fire Hazard Severity Zones — current (2023) authoritative service
+// hosted by CAL FIRE on the public ArcGIS hub. SRA (state lands) and the LRA
+// rollout layer cover the state between them.
+async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
+  const params = new URLSearchParams({
+    f: "json",
+    geometry: `${lng},${lat}`,
+    geometryType: "esriGeometryPoint",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    outFields: "*",
+    returnGeometry: "false",
+  });
+  if (bufferMeters > 0) {
+    params.set("distance", String(bufferMeters));
+    params.set("units", "esriSRUnit_Meter");
+  }
+  async function hit(url: string) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(`${url}?${params}`);
       if (!res.ok) return null;
       const json = await res.json();
-      return json?.features?.[0]?.attributes ?? null;
+      const feats = json?.features ?? [];
+      if (!feats.length) return null;
+      // Pick the most severe class if multiple polygons matched (buffer query).
+      const rank = (a: Record<string, unknown>) => {
+        const d = String(
+          a.FHSZ_Description ?? a.HAZ_CLASS ?? a.FHSZ ?? a.HAZ_CODE ?? "",
+        ).toUpperCase();
+        if (/VERY HIGH|^3$/.test(d)) return 3;
+        if (/^HIGH$|^2$/.test(d)) return 2;
+        if (/MODERATE|^1$|MOD/.test(d)) return 1;
+        return 0;
+      };
+      return feats
+        .map((f: { attributes: Record<string, unknown> }) => f.attributes)
+        .sort((a: Record<string, unknown>, b: Record<string, unknown>) => rank(b) - rank(a))[0];
     } catch (e) {
-      console.error("fhsz layer", layer, "failed", e);
+      console.error("fhsz query failed", url, e);
       return null;
     }
   }
-  const [sra, lra] = await Promise.all([hit(0), hit(1)]);
+  const SRA =
+    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZSRA_23_3/FeatureServer/0/query";
+  const LRA =
+    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZLRA0711_ByPhase/FeatureServer/0/query";
+  const [sra, lra] = await Promise.all([hit(SRA), hit(LRA)]);
   const f = sra ?? lra;
   if (!f) return null;
-  const codeRaw = f.HAZ_CLASS ?? f.HAZ_CODE ?? null;
-  const codeStr = String(codeRaw ?? "").toUpperCase();
+  const desc = String(
+    f.FHSZ_Description ?? f.HAZ_CLASS ?? f.FHSZ ?? f.HAZ_CODE ?? "",
+  ).toUpperCase();
   let hazardClass: string | null = null;
-  if (/VERY HIGH|^3$/.test(codeStr)) hazardClass = "Very High";
-  else if (/^HIGH$|^2$/.test(codeStr)) hazardClass = "High";
-  else if (/MODERATE|^1$|^MOD/.test(codeStr)) hazardClass = "Moderate";
+  if (/VERY HIGH|^3$/.test(desc)) hazardClass = "Very High";
+  else if (/^HIGH$|^2$/.test(desc)) hazardClass = "High";
+  else if (/MODERATE|^1$|MOD/.test(desc)) hazardClass = "Moderate";
   return {
     zone: sra ? "State Responsibility Area" : "Local Responsibility Area",
     hazardClass,
     raw: f,
+    approximate: bufferMeters > 0,
   };
 }
 
@@ -171,11 +191,11 @@ Deno.serve(async (req) => {
     const address: Address = body.address ?? {};
     const force = body.force === true;
 
-    if (!address.street || !address.city) {
-      return new Response(JSON.stringify({ error: "address.street and address.city are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!address.zip && (!address.street || !address.city)) {
+      return new Response(
+        JSON.stringify({ error: "address.zip or (street + city) is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const key = normalizeKey(address);
@@ -202,7 +222,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    const coords = await geocode(address);
+    // Try full address first, fall back to ZIP centroid (zippopotam.us) so
+    // vague streets ("almaden hills") still surface something useful when the
+    // ZIP is real.
+    let coords = await geocode(address);
+    let geocodeLevel: "address" | "zip" = "address";
+    if (!coords && address.zip && /^\d{5}$/.test(address.zip)) {
+      try {
+        const r = await fetch(`https://api.zippopotam.us/us/${address.zip}`);
+        if (r.ok) {
+          const j = await r.json();
+          const p = j?.places?.[0];
+          if (p?.latitude && p?.longitude) {
+            coords = { lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) };
+            geocodeLevel = "zip";
+          }
+        }
+      } catch (e) {
+        console.warn("zip fallback failed", e);
+      }
+    }
     if (!coords) {
       const fallback = {
         address_key: key,
@@ -220,7 +259,7 @@ Deno.serve(async (req) => {
     }
 
     const [fire, flood, seismic] = await Promise.all([
-      queryFireHazard(coords.lat, coords.lng),
+      queryFireHazard(coords.lat, coords.lng, geocodeLevel === "zip" ? 3000 : 0),
       queryFlood(coords.lat, coords.lng),
       querySeismic(coords.lat, coords.lng),
     ]);
@@ -240,7 +279,7 @@ Deno.serve(async (req) => {
       in_special_flood_hazard_area: !!flood?.sfha,
       seismic_hazard_zone: seismic?.zone ?? null,
       seismic_hazard_type: seismic?.type ?? null,
-      raw_response: { fire, flood, seismic },
+      raw_response: { fire, flood, seismic, geocodeLevel },
       lookup_succeeded: true,
       last_checked_at: new Date().toISOString(),
     };
