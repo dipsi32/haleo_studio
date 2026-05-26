@@ -198,7 +198,30 @@ const Contractors = () => {
     setSending(true);
     try {
       const sessionId = getSessionId();
-      const snapshot = briefSummary;
+
+      // Pull cached address risk so contractors see the same hazard signals
+      // the homeowner saw on their brief. Best-effort — never block the send.
+      let addressRisk: typeof snapshot.address_risk | undefined;
+      const addr = data.address;
+      if (addr && !addr.skipped && addr.street && addr.city) {
+        const key = [addr.street, addr.city, addr.state, addr.zip]
+          .map((s) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " "))
+          .join("|");
+        try {
+          const { data: risk } = await supabase
+            .from("address_risk_signals")
+            .select("fire_hazard_class, fire_hazard_zone, flood_zone, flood_zone_description, in_special_flood_hazard_area, seismic_hazard_type, seismic_hazard_zone")
+            .eq("address_key", key)
+            .maybeSingle();
+          if (risk && (risk.fire_hazard_class || risk.flood_zone || risk.seismic_hazard_type)) {
+            addressRisk = risk;
+          }
+        } catch (e) {
+          console.warn("address risk lookup for snapshot failed", e);
+        }
+      }
+
+      const snapshot = { ...briefSummary, ...(addressRisk ? { address_risk: addressRisk } : {}) };
       const { data: batch, error: bErr } = await supabase
         .from("outreach_batches")
         .insert({
