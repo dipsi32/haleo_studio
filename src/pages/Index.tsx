@@ -496,41 +496,32 @@ const Hero = () => {
           transition={{ duration: 0.6, ease: EASE }}
           className="mx-auto max-w-2xl text-center"
         >
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-3 py-1 text-[11px] font-medium text-foreground/70 backdrop-blur">
-            FREE · 30 SECONDS · NO SIGNUP
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            Free · 30 seconds · no signup
           </div>
-          <h1 className="mt-5 font-display text-[2.25rem] font-normal leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
-            Got a contractor quote?{" "}
-            <em className="italic text-accent">Get it roasted.</em>
+          <h1 className="mt-6 text-[2.25rem] font-semibold leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.75rem]">
+            Read between<br className="hidden sm:block" /> the line items.
           </h1>
 
           <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            Drop in the PDF. Haleo lines every line item up against local permit comps and cost guides — and tells you, plainly, what's fair and what's a stretch.
+            Upload your contractor's proposal. We fact-check every number against real permit history on your block — and tell you, plainly, what's fair and what's a stretch.
           </p>
 
-          <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-7">
-            <div className="flex flex-col items-center gap-2">
-              <Link
-                to="/roast"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
-              >
-                Got a contractor quote? Get it roasted <ArrowRight className="h-4 w-4" />
+          <div className="mt-10 flex flex-col items-center gap-4">
+            <Link
+              to="/roast"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-[14px] font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
+            >
+              Audit my proposal
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <p className="text-[13px] text-muted-foreground">
+              No quote yet?{" "}
+              <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
+                Find your contractor →
               </Link>
-              <p className="max-w-[260px] text-center text-xs leading-relaxed text-muted-foreground">
-                Drop your estimate. We'll tell you what's off, and how to fix it.
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Link
-                to="/brief"
-                className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
-              >
-                No quote yet? Let's find your contractor.
-              </Link>
-              <p className="max-w-[260px] text-center text-xs leading-relaxed text-muted-foreground">
-                Matched to contractors with real permit history near you. Not star ratings, actual proof.
-              </p>
-            </div>
+            </p>
           </div>
 
         </motion.div>
@@ -788,25 +779,24 @@ const Closing = () => (
       transition={{ duration: 0.9, ease: EASE }}
       className="container relative text-center"
     >
-      <h2 className="mx-auto max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
-        Start with the quote in your hand.{" "}
-        <em className="italic text-accent">We'll take it from there.</em>
+      <h2 className="mx-auto max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl">
+        Start with the quote in your hand.
       </h2>
+      <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
+        Thirty seconds. Every line item, fact-checked against permits on your block.
+      </p>
       <Link
         to="/roast"
-        className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
+        className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
       >
-        Got a contractor quote? Get it roasted
-        <ArrowRight className="h-4 w-4" />
+        Audit my proposal
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
-      <p className="mt-4 max-w-md mx-auto text-sm text-muted-foreground">
-        Drop your estimate. We'll tell you what's off, and how to fix it.
-      </p>
-      <p className="mt-5 text-xs text-muted-foreground">
+      <p className="mt-5 text-[13px] text-muted-foreground">
         No quote yet?{" "}
-        <Link to="/brief" className="underline underline-offset-4 hover:text-foreground">
-          Let's find your contractor
-        </Link>.
+        <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
+          Find your contractor →
+        </Link>
       </p>
     </motion.div>
   </section>
