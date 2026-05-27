@@ -141,7 +141,7 @@ const EditBriefDrawer = ({
 
               {/* Media */}
               <Section title="Photos, video & floor plan">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <input ref={videoRef} type="file" accept="video/*" onChange={addFiles("video")} className="hidden" />
                   <input ref={photoRef} type="file" accept="image/*" multiple onChange={addFiles("photo")} className="hidden" />
                   <input ref={planRef} type="file" accept="image/*,application/pdf" onChange={addFiles("floorplan")} className="hidden" />
@@ -222,7 +222,7 @@ const EditBriefDrawer = ({
                     onChange={(e) => onPatch({ address: { ...(data.address ?? {}), street: e.target.value, skipped: false } })}
                     className="rounded-xl bg-card text-sm"
                   />
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Input
                       placeholder="City"
                       value={data.address?.city ?? ""}

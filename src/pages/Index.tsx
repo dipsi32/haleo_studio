@@ -127,7 +127,7 @@ const ScreenSpace = () => {
       </p>
 
       {/* Room picker — Kitchen selected */}
-      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1">
+      <div className="mt-2 grid grid-cols-4 gap-1">
         {ROOMS.map((r) => {
           const active = r === SPACE.room;
           return (
@@ -150,7 +150,7 @@ const ScreenSpace = () => {
       <p className="mt-2.5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
         Photos
       </p>
-      <div className="mt-1 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+      <div className="mt-1 grid grid-cols-3 gap-1.5">
         {[0, 1, 2].map((i) => {
           const filled = photos > i;
           const isUploading = uploading === i;
