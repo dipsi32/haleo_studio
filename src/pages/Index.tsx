@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Image as ImageIcon,
+  Upload,
+  FileText,
 } from "lucide-react";
 
 import SiteHeader from "@/components/SiteHeader";
@@ -15,13 +17,12 @@ import { useAuth } from "@/context/AuthContext";
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Single phone — five quiet steps, one focal point.                          */
+/*  Single phone — the painkiller flow. Audit first, then everything else.    */
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "space",   label: "Show the space" },
-  { key: "scope",   label: "Haleo reads it" },
-  { key: "brief",   label: "Your brief" },
+  { key: "audit",   label: "Audit the quote" },
+  { key: "brief",   label: "Brief, written for you" },
   { key: "matches", label: "Permit-proven matches" },
   { key: "bids",    label: "Bids, side by side" },
 ] as const;
@@ -388,7 +389,89 @@ const ScreenBids = () => {
   );
 };
 
-const SCREENS = [ScreenSpace, ScreenScope, ScreenBrief, ScreenMatches, ScreenBids];
+/* Audit screen — the painkiller. Drop a quote, see where it lands. */
+const ScreenAudit = () => {
+  const [phase, setPhase] = useState<"drop" | "scan" | "verdict">("drop");
+  useEffect(() => {
+    setPhase("drop");
+    const t1 = setTimeout(() => setPhase("scan"), 900);
+    const t2 = setTimeout(() => setPhase("verdict"), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  return (
+    <div className="flex h-full flex-col">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Audit a proposal</p>
+      <p className="mt-1 font-display text-lg leading-tight">Where does it land?</p>
+
+      {/* Upload tile */}
+      <div className="mt-3 rounded-xl border border-dashed border-foreground/20 bg-secondary/40 p-3">
+        <div className="flex items-center gap-2">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
+            <FileText className="h-3.5 w-3.5 text-accent" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-medium text-foreground">kitchen-quote.pdf</p>
+            <p className="text-[9px] text-muted-foreground">3 pages · 18 line items</p>
+          </div>
+          {phase === "drop" && <Upload className="h-3.5 w-3.5 text-muted-foreground" />}
+          {phase !== "drop" && <CheckCircle2 className="h-3.5 w-3.5 text-accent" />}
+        </div>
+        {phase === "scan" && (
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
+            <motion.div
+              className="h-full bg-accent"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.1, ease: "easeInOut" }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Verdict */}
+      <AnimatePresence>
+        {phase === "verdict" && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mt-3 space-y-2"
+          >
+            <div className="rounded-xl border border-border bg-card p-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Verdict</p>
+                <span className="rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-medium text-amber-700">High</span>
+              </div>
+              <p className="mt-1 font-display text-base leading-tight text-foreground">$148k quote</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Local fair range $112k – $134k</p>
+            </div>
+
+            {[
+              { t: "Backsplash", v: "$12k", n: "fair $3.8–5.2k", flag: true },
+              { t: "Cabinets", v: "$38k", n: "in range", flag: false },
+              { t: "Demo + haul", v: "$9k", n: "high for 140 sqft", flag: true },
+            ].map((row) => (
+              <div key={row.t} className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-foreground">{row.t}</p>
+                  <p className="text-[9px] text-muted-foreground">{row.n}</p>
+                </div>
+                <span className={`text-[10px] tabular-nums ${row.flag ? "font-medium text-amber-700" : "text-muted-foreground"}`}>{row.v}</span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="mt-auto rounded-xl bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground">
+        Free · 30 seconds · <span className="text-foreground">no signup</span>
+      </div>
+    </div>
+  );
+};
+
+const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
 
 const Hero = () => {
   const [i, setI] = useState(0);
@@ -413,28 +496,33 @@ const Hero = () => {
           transition={{ duration: 0.6, ease: EASE }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h1 className="font-display text-[2.25rem] font-normal leading-[1.08] tracking-tight text-balance text-foreground md:text-[3.25rem]">
-            Hire your contractor in days, not months.
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-3 py-1 text-[11px] font-medium text-foreground/70 backdrop-blur">
+            FREE · 30 SECONDS · NO SIGNUP
+          </div>
+          <h1 className="mt-5 font-display text-[2.25rem] font-normal leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
+            Got a contractor quote?{" "}
+            <em className="italic text-accent">See where it really lands.</em>
           </h1>
 
           <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            Share your remodel vision. We turn it into a clear brief and line up the right bids — side by side.
+            Drop in the PDF. Haleo lines every line item up against local permit comps and cost guides — and tells you, plainly, what's fair and what's a stretch.
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-7">
             <Link
-              to="/brief"
-              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
+              to="/roast"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
             >
-              Start my brief
+              Audit my proposal <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/proposal"
+              to="/brief"
               className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
             >
-              I have a proposal to review →
+              No quote yet — build my brief →
             </Link>
           </div>
+
         </motion.div>
 
 
@@ -567,12 +655,12 @@ const Value = () => (
         {[
           {
             n: "01",
-            t: "One brief.",
-            b: "We read your photos, walkthrough and plans, then write the scope once — so you never repeat yourself.",
+            t: "Audit the quote.",
+            b: "Every line item against local permit comps and cost guides. You see fair, high, and 'what are they thinking' in 30 seconds.",
           },
           {
             n: "02",
-            t: "Permit-proven.",
+            t: "Permit-proven matches.",
             b: "Only builders who've actually passed inspections for projects like yours in your zip. Reviews can be bought; permit history can't.",
           },
           {
@@ -691,17 +779,17 @@ const Closing = () => (
       className="container relative text-center"
     >
       <h2 className="mx-auto max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
-        You shouldn't have to become a contractor{" "}
-        <em className="italic text-accent">to hire one.</em>
+        Start with the quote in your hand.{" "}
+        <em className="italic text-accent">We'll take it from there.</em>
       </h2>
       <Link
-        to="/brief"
+        to="/roast"
         className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
       >
-        Start with a brief
+        Audit my proposal
         <ArrowRight className="h-4 w-4" />
       </Link>
-      <p className="mt-5 text-xs text-muted-foreground">Free to start. About 5 minutes.</p>
+      <p className="mt-5 text-xs text-muted-foreground">Free · 30 seconds · no signup. No quote yet? <Link to="/brief" className="underline underline-offset-4 hover:text-foreground">Build a brief instead</Link>.</p>
     </motion.div>
   </section>
 );
@@ -718,7 +806,6 @@ const Index = () => {
   return (
     <main>
       <Hero />
-      <RoastHook />
       <NotLike />
       <Value />
       <Closing />
