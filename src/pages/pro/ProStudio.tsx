@@ -336,7 +336,7 @@ const ProStudio = () => {
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/15 via-accent/5 to-transparent p-8 shadow-soft md:p-10"
+          className="overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/15 via-accent/5 to-transparent p-6 md:p-8 shadow-soft md:p-10"
         >
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
@@ -626,7 +626,7 @@ const ProStudio = () => {
         </section>
 
         {/* Footer CTA */}
-        <section className="mt-12 rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
+        <section className="mt-8 md:mt-12 rounded-3xl border border-border bg-card p-6 md:p-8 text-center shadow-soft">
           <Bell className="mx-auto h-6 w-6 text-accent" />
           <h3 className="mt-3 font-display text-2xl font-light">Ready when they are.</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">

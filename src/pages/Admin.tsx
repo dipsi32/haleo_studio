@@ -119,7 +119,7 @@ const Admin = () => {
         </div>
       </header>
 
-      <main className="container max-w-5xl py-10">
+      <main className="container max-w-5xl py-7 md:py-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Founder console</p>
           <h1 className="mt-3 font-display text-2xl font-light leading-tight">Mission control</h1>
@@ -182,7 +182,7 @@ const Admin = () => {
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : pilots.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">No users yet — add one above.</p>
+              <p className="rounded-2xl border border-dashed border-border bg-card p-6 md:p-10 text-center text-sm text-muted-foreground">No users yet — add one above.</p>
             ) : (
               <div className="space-y-2">
                 {pilots.map((p) => (
@@ -220,7 +220,7 @@ const Admin = () => {
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : waitlist.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">No waitlist requests yet.</p>
+              <p className="rounded-2xl border border-dashed border-border bg-card p-6 md:p-10 text-center text-sm text-muted-foreground">No waitlist requests yet.</p>
             ) : (
               <div className="space-y-2">
                 {waitlist.map((w) => {

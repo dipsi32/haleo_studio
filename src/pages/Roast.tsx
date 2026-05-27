@@ -223,7 +223,7 @@ export default function Roast() {
         <div className="text-xs text-foreground/50">Free. No signup. Real local data.</div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-20">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pb-20">
         <AnimatePresence mode="wait">
           {stage === "upload" && (
             <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -237,7 +237,7 @@ export default function Roast() {
               </div>
 
               <Card
-                className="border-2 border-dashed border-orange-300/60 bg-white/70 backdrop-blur p-10 sm:p-14 text-center hover:border-orange-400 transition cursor-pointer rounded-3xl"
+                className="border-2 border-dashed border-orange-300/60 bg-white/70 backdrop-blur p-6 md:p-10 sm:p-14 text-center hover:border-orange-400 transition cursor-pointer rounded-3xl"
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => fileInputRef.current?.click()}
@@ -282,7 +282,7 @@ export default function Roast() {
           )}
 
           {stage === "loading" && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-24">
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-14 md:py-24">
               <motion.div
                 animate={{ scale: [1, 1.04, 1] }}
                 transition={{ duration: 1.8, repeat: Infinity }}
@@ -308,7 +308,7 @@ export default function Roast() {
           {stage === "result" && result && (
             <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Verdict card — lead with the call, not a numeric score */}
-              <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-8 sm:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
+              <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-6 md:p-8 sm:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
                 <div className="relative z-10">
                   <p className="text-xs uppercase tracking-widest opacity-90 mb-3">The verdict</p>
                   <p className="text-4xl sm:text-5xl font-serif font-semibold leading-[1.05] mb-3">{result.tier.label}.</p>

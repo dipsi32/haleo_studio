@@ -222,7 +222,7 @@ const PublicContractorProfile = () => {
         </motion.div>
       )}
 
-      <main className="container max-w-5xl py-10">
+      <main className="container max-w-5xl py-7 md:py-10">
         {/* Hero */}
         <div className="mb-10">
           <h1 className="font-display text-2xl font-light tracking-tight md:text-5xl">{displayName}</h1>
@@ -477,7 +477,7 @@ const PublicContractorProfile = () => {
 
         {/* Bottom CTA — repeat for unclaimed */}
         {showBanner && (
-          <section className="rounded-3xl border border-accent/30 bg-accent/5 p-8 text-center">
+          <section className="rounded-3xl border border-accent/30 bg-accent/5 p-6 md:p-8 text-center">
             <Sparkles className="mx-auto h-6 w-6 text-accent" />
             <h2 className="mt-3 font-display text-2xl font-light">
               Everything above already exists. We just made it visible.

@@ -161,7 +161,7 @@ export default function HomeownerConversationDrawer({
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
           ) : messages.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">No messages yet.</p>
+            <p className="py-8 md:py-12 text-center text-sm text-muted-foreground">No messages yet.</p>
           ) : (
             messages.map((m) => {
               const mine = m.sender_role === "homeowner";

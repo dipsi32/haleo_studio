@@ -281,7 +281,7 @@ export default function ProposalsCompare() {
         </div>
       </header>
 
-      <main className="container max-w-6xl py-10">
+      <main className="container max-w-6xl py-7 md:py-10">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Side by side</p>
         <h1 className="mt-3 font-display text-4xl font-light leading-tight md:text-5xl">
           Your proposals, compared honestly.
@@ -354,7 +354,7 @@ export default function ProposalsCompare() {
 
         {/* ─── LAYER 3 — DRILL DOWN ─── */}
         {scored.length >= 2 && (
-          <section className="mt-12">
+          <section className="mt-8 md:mt-12">
             <h2 className="font-display text-xl font-medium">The full analysis, per proposal</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Expand any proposal to see every flag in detail, or open the full analysis page.
@@ -376,7 +376,7 @@ export default function ProposalsCompare() {
 
         {/* ─── NEGOTIATION LAUNCH PAD ─── */}
         {scored.length >= 2 && (
-          <section className="mt-12">
+          <section className="mt-8 md:mt-12">
             <h2 className="font-display text-2xl font-light">Ready to push back?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               We've drafted what to say. Edit before sending — your changes save automatically.
@@ -926,7 +926,7 @@ function PushbackCard({
 
 function EmptyState() {
   return (
-    <div className="mt-8 rounded-3xl border border-dashed border-border bg-card/60 p-10 text-center">
+    <div className="mt-8 rounded-3xl border border-dashed border-border bg-card/60 p-6 md:p-10 text-center">
       <Sparkles className="mx-auto h-6 w-6 text-accent" />
       <p className="mt-3 font-display text-lg">No proposals yet</p>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -938,7 +938,7 @@ function EmptyState() {
 
 function PendingFirstAnalysisState({ count }: { count: number }) {
   return (
-    <div className="mt-8 rounded-3xl border border-accent/20 bg-accent-soft p-10 text-center">
+    <div className="mt-8 rounded-3xl border border-accent/20 bg-accent-soft p-6 md:p-10 text-center">
       <Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" />
       <p className="mt-3 font-display text-lg">Your Advocate is reading {count === 1 ? "the proposal" : `${count} proposals`}.</p>
       <p className="mt-1 text-sm text-accent-soft-foreground/80">

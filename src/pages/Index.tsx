@@ -489,7 +489,7 @@ const Hero = () => {
 
       <SiteHeader />
 
-      <div className="container relative pt-32 pb-20 md:pt-40 md:pb-28">
+      <div className="container relative pt-24 md:pt-32 pb-12 md:pb-20 md:pt-40 md:pb-28">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -530,7 +530,7 @@ const Hero = () => {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: EASE, delay: 0.15 }}
-          className="relative mt-16"
+          className="relative mt-10 md:mt-16"
         >
           <h2 className="mx-auto mb-8 max-w-xl text-center font-display text-[1.25rem] font-medium leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
             Matched to contractors with real permit history near you. Not star ratings. Actual proof.
@@ -586,7 +586,7 @@ const Hero = () => {
 /* -------------------------------------------------------------------------- */
 
 const RoastHook = () => (
-  <section className="relative overflow-hidden bg-secondary/30 py-24 md:py-32">
+  <section className="relative overflow-hidden bg-secondary/30 py-14 md:py-24 md:py-32">
     <div className="container mx-auto max-w-5xl px-6">
       <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
         <motion.div

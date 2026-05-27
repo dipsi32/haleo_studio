@@ -172,7 +172,7 @@ export default function ContractorSubmit() {
     return (
       <div className="min-h-screen bg-gradient-warm">
         <SiteHeader />
-        <main className="container max-w-2xl py-24 text-center text-muted-foreground">Loading…</main>
+        <main className="container max-w-2xl py-14 md:py-24 text-center text-muted-foreground">Loading…</main>
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function ContractorSubmit() {
     return (
       <div className="min-h-screen bg-gradient-warm">
         <SiteHeader />
-        <main className="container max-w-2xl py-24 text-center">
+        <main className="container max-w-2xl py-14 md:py-24 text-center">
           <p className="font-display text-2xl">This submission link isn't valid.</p>
           <p className="mt-2 text-sm text-muted-foreground">Ask the homeowner to resend it from their Haleo project.</p>
         </main>
@@ -194,7 +194,7 @@ export default function ContractorSubmit() {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <SiteHeader />
-      <main className="container max-w-3xl py-12">
+      <main className="container max-w-3xl py-8 md:py-12">
         <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" /> Back
         </button>
@@ -231,7 +231,7 @@ export default function ContractorSubmit() {
         )}
 
         {alreadySubmitted ? (
-          <div className="mt-10 rounded-2xl border border-sage/40 bg-sage-soft p-8 text-center">
+          <div className="mt-10 rounded-2xl border border-sage/40 bg-sage-soft p-6 md:p-8 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-sage" />
             <p className="mt-3 font-display text-xl">Your proposal is on the record.</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -265,7 +265,7 @@ export default function ContractorSubmit() {
             </div>
 
             {mode === "pdf" ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-card p-6 md:p-10 text-center">
                 <input
                   id="pdf"
                   type="file"
