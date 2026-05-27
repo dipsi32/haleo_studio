@@ -389,7 +389,89 @@ const ScreenBids = () => {
   );
 };
 
-const SCREENS = [ScreenSpace, ScreenScope, ScreenBrief, ScreenMatches, ScreenBids];
+/* Audit screen — the painkiller. Drop a quote, see where it lands. */
+const ScreenAudit = () => {
+  const [phase, setPhase] = useState<"drop" | "scan" | "verdict">("drop");
+  useEffect(() => {
+    setPhase("drop");
+    const t1 = setTimeout(() => setPhase("scan"), 900);
+    const t2 = setTimeout(() => setPhase("verdict"), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  return (
+    <div className="flex h-full flex-col">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Audit a proposal</p>
+      <p className="mt-1 font-display text-lg leading-tight">Where does it land?</p>
+
+      {/* Upload tile */}
+      <div className="mt-3 rounded-xl border border-dashed border-foreground/20 bg-secondary/40 p-3">
+        <div className="flex items-center gap-2">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
+            <FileText className="h-3.5 w-3.5 text-accent" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-medium text-foreground">kitchen-quote.pdf</p>
+            <p className="text-[9px] text-muted-foreground">3 pages · 18 line items</p>
+          </div>
+          {phase === "drop" && <Upload className="h-3.5 w-3.5 text-muted-foreground" />}
+          {phase !== "drop" && <CheckCircle2 className="h-3.5 w-3.5 text-accent" />}
+        </div>
+        {phase === "scan" && (
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
+            <motion.div
+              className="h-full bg-accent"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.1, ease: "easeInOut" }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Verdict */}
+      <AnimatePresence>
+        {phase === "verdict" && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mt-3 space-y-2"
+          >
+            <div className="rounded-xl border border-border bg-card p-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Verdict</p>
+                <span className="rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-medium text-amber-700">High</span>
+              </div>
+              <p className="mt-1 font-display text-base leading-tight text-foreground">$148k quote</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Local fair range $112k – $134k</p>
+            </div>
+
+            {[
+              { t: "Backsplash", v: "$12k", n: "fair $3.8–5.2k", flag: true },
+              { t: "Cabinets", v: "$38k", n: "in range", flag: false },
+              { t: "Demo + haul", v: "$9k", n: "high for 140 sqft", flag: true },
+            ].map((row) => (
+              <div key={row.t} className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-foreground">{row.t}</p>
+                  <p className="text-[9px] text-muted-foreground">{row.n}</p>
+                </div>
+                <span className={`text-[10px] tabular-nums ${row.flag ? "font-medium text-amber-700" : "text-muted-foreground"}`}>{row.v}</span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="mt-auto rounded-xl bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground">
+        Free · 30 seconds · <span className="text-foreground">no signup</span>
+      </div>
+    </div>
+  );
+};
+
+const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
 
 const Hero = () => {
   const [i, setI] = useState(0);
