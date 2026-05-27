@@ -521,7 +521,7 @@ const Hero = () => {
                 No quote yet? Find your contractor →
               </Link>
               <p className="max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-                Matched to contractors with real permit history near you. Not star ratings — actual proof.
+                Matched to contractors with real permit history near you. Not star ratings. Actual proof.
               </p>
             </div>
           </div>
