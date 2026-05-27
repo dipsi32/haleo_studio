@@ -513,12 +513,6 @@ const Hero = () => {
               </Link>
               <span className="text-xs text-foreground/50">No login. Just answers.</span>
             </div>
-            <p className="mt-6 text-[13.5px] text-foreground/60">
-              No quote yet?{" "}
-              <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
-                Find your contractor →
-              </Link>
-            </p>
           </motion.div>
 
           {/* Mock score card */}
@@ -546,6 +540,19 @@ const Hero = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* No quote yet CTA — now below the roast card */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="mt-10 text-center text-[13.5px] text-foreground/60"
+        >
+          No quote yet?{" "}
+          <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
+            Find your contractor →
+          </Link>
+        </motion.p>
       </div>
     </section>
   );
