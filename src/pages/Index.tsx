@@ -595,7 +595,7 @@ const Hero = () => {
 /* -------------------------------------------------------------------------- */
 
 const RoastHook = () => (
-  <section className="relative overflow-hidden bg-secondary/30 py-14 md:py-24 md:py-32">
+  <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-14 md:py-24 lg:py-32">
     <div className="container mx-auto max-w-5xl px-6">
       <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
         <motion.div
@@ -604,11 +604,11 @@ const RoastHook = () => (
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.7, ease: EASE }}
         >
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-5">
-            Free. No signup.
-          </p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
+            <Flame className="w-3.5 h-3.5" /> FREE · NO SIGNUP · 30 SECONDS
+          </div>
           <h2 className="font-display text-3xl md:text-4xl font-medium leading-[1.1] text-foreground">
-            Got a quote? Get it roasted.
+            Got a quote? <span className="italic">Get it roasted.</span>
           </h2>
           <p className="mt-5 text-lg text-foreground/70 max-w-md">
             Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
@@ -616,35 +616,36 @@ const RoastHook = () => (
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to="/roast"
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-smooth"
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
             >
               Roast my quote <ArrowRight className="w-4 h-4" />
             </Link>
-            <span className="self-center text-xs text-foreground/50">Drop your estimate. We will tell you what is off and how to fix it.</span>
+            <span className="self-center text-xs text-foreground/50">No login. Just answers.</span>
           </div>
         </motion.div>
 
         {/* Mock score card */}
         <motion.div
-          initial={{ opacity: 0, y: 20, rotate: -1 }}
-          whileInView={{ opacity: 1, y: 0, rotate: -1 }}
+          initial={{ opacity: 0, y: 20, rotate: -2 }}
+          whileInView={{ opacity: 1, y: 0, rotate: -2 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
           className="relative"
         >
-          <div className="rounded-2xl border border-border bg-card p-7 shadow-soft">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Haleo quote score</p>
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
+          <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
+            <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-5xl font-display font-semibold leading-none text-foreground">38</span>
-              <span className="text-sm text-muted-foreground">/ 100</span>
+              <span className="text-6xl font-serif font-bold leading-none">34</span>
+              <span className="text-sm opacity-90">/ 100</span>
             </div>
-            <p className="mt-2 text-lg font-medium text-foreground">Notably high</p>
-            <p className="mt-3 text-sm leading-snug text-muted-foreground">
-              Backsplash line is $12,000. Local fair range for this size is $3,800 to $5,200.
+            <p className="mt-2 text-xl font-serif">Yikes Territory</p>
+            <p className="mt-3 text-sm italic leading-snug opacity-95">
+              "$12,000 for a backsplash? Are they tiling it with 24k gold?"
             </p>
-            <div className="mt-5 flex gap-2 text-[10px]">
-              <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground/70">Cabinets high</span>
-              <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground/70">Labor fair</span>
+            <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
+              <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
             </div>
           </div>
         </motion.div>
