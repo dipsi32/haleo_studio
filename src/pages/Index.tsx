@@ -658,17 +658,17 @@ const Value = () => (
           {
             n: "01",
             t: "Audit the quote.",
-            b: "Every line item against local permit comps and cost guides. You see fair, high, and 'what are they thinking' in 30 seconds.",
+            b: "We check every line item against real local costs and permit history. You see what is fair, what is high, and what makes no sense. About 30 seconds.",
           },
           {
             n: "02",
             t: "Permit-proven matches.",
-            b: "Only builders who've actually passed inspections for projects like yours in your zip. Reviews can be bought; permit history can't.",
+            b: "Only builders who have passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
           },
           {
             n: "03",
             t: "Bids, compared.",
-            b: "Every trade, every line — side by side. See exactly where each builder is high or low before you decide.",
+            b: "Every trade and every line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
           },
         ].map((s, idx) => (
           <motion.div
