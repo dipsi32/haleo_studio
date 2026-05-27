@@ -498,7 +498,7 @@ const Hero = () => {
           className="mx-auto max-w-2xl text-center"
         >
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            For homeowners mid-remodel
+            Built for homeowners remodeling right now
           </p>
           <h1 className="mt-5 font-display text-[1.875rem] font-medium leading-[1.1] tracking-tight text-balance text-foreground md:text-[2.75rem]">
             Got a contractor quote?<br className="hidden sm:block" />{" "}
