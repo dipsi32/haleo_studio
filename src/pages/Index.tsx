@@ -806,7 +806,6 @@ const Index = () => {
   return (
     <main>
       <Hero />
-      <RoastHook />
       <NotLike />
       <Value />
       <Closing />
