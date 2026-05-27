@@ -7,79 +7,79 @@
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 38 30% 96%;        /* warm bone */
-    --foreground: 20 14% 14%;        /* deep ink */
+    /* Surfaces — pure white, Airbnb-meets-Linear */
+    --background: 0 0% 100%;
+    --foreground: 222 14% 11%;       /* near-black ink */
 
-    --card: 38 40% 98%;
-    --card-foreground: 20 14% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 14% 11%;
 
-    --popover: 38 40% 98%;
-    --popover-foreground: 20 14% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 14% 11%;
 
-    /* Brand */
-    --primary: 18 14% 18%;           /* near-black ink, slightly warm */
-    --primary-foreground: 38 30% 96%;
+    /* Brand — ink primary, amber accent */
+    --primary: 222 14% 11%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 36 22% 90%;         /* warm linen */
-    --secondary-foreground: 20 14% 14%;
+    --secondary: 220 14% 96%;        /* cool linen */
+    --secondary-foreground: 222 14% 11%;
 
-    --muted: 36 18% 92%;
-    --muted-foreground: 25 8% 42%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 14 55% 52%;            /* terracotta — the warm signature */
-    --accent-foreground: 38 30% 96%;
+    --accent: 38 92% 50%;            /* warm amber #F59E0B */
+    --accent-foreground: 222 14% 11%;
 
-    --accent-soft: 14 60% 94%;       /* terracotta tint */
-    --accent-soft-foreground: 14 55% 32%;
+    --accent-soft: 38 100% 96%;
+    --accent-soft-foreground: 30 70% 32%;
 
-    --sage: 95 14% 48%;              /* support color */
-    --sage-foreground: 38 30% 96%;
-    --sage-soft: 95 18% 92%;
+    --sage: 152 28% 44%;
+    --sage-foreground: 0 0% 100%;
+    --sage-soft: 152 30% 95%;
 
-    --gold: 36 55% 52%;              /* permit/score accent */
+    --gold: 38 92% 50%;
 
-    /* Semantic risk colors (ported for ProposalIntelligencePage) */
+    /* Semantic risk colors */
     --success: 152 35% 42%;
     --success-bg: 152 30% 95%;
     --success-foreground: 152 35% 18%;
-    --warning: 38 70% 55%;
-    --warning-bg: 40 60% 95%;
-    --warning-foreground: 38 40% 25%;
-    --danger: 0 50% 55%;
-    --danger-bg: 0 45% 96%;
-    --danger-foreground: 0 40% 25%;
+    --warning: 38 92% 50%;
+    --warning-bg: 38 100% 96%;
+    --warning-foreground: 30 70% 28%;
+    --danger: 0 72% 55%;
+    --danger-bg: 0 70% 97%;
+    --danger-foreground: 0 60% 30%;
 
-    --destructive: 0 62% 48%;
-    --destructive-foreground: 38 30% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 30 14% 86%;
-    --input: 30 14% 86%;
-    --ring: 14 55% 52%;
+    --border: 220 13% 93%;
+    --input: 220 13% 93%;
+    --ring: 38 92% 50%;
 
     --radius: 0.875rem;
 
-    /* Gradients & shadows */
-    --gradient-warm: linear-gradient(180deg, hsl(38 35% 97%) 0%, hsl(36 28% 93%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(14 55% 52%) 0%, hsl(20 60% 58%) 100%);
-    --gradient-hero: radial-gradient(ellipse at 70% 0%, hsl(14 55% 52% / 0.10), transparent 55%),
-                     radial-gradient(ellipse at 0% 80%, hsl(95 18% 70% / 0.18), transparent 60%);
+    /* Gradients & shadows — quiet, soft */
+    --gradient-warm: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(32 95% 56%) 100%);
+    --gradient-hero: radial-gradient(ellipse at 70% -10%, hsl(38 92% 50% / 0.08), transparent 55%),
+                     radial-gradient(ellipse at 0% 80%, hsl(220 14% 92% / 0.5), transparent 60%);
 
-    --shadow-soft: 0 1px 2px hsl(20 14% 14% / 0.04), 0 8px 24px -12px hsl(20 14% 14% / 0.10);
-    --shadow-lift: 0 2px 4px hsl(20 14% 14% / 0.04), 0 24px 48px -20px hsl(20 14% 14% / 0.18);
-    --shadow-accent: 0 12px 32px -12px hsl(14 55% 52% / 0.45);
-    --shadow-warm: 0 1px 2px hsl(20 14% 14% / 0.04), 0 12px 28px -16px hsl(14 55% 52% / 0.22);
+    --shadow-soft: 0 1px 2px hsl(222 14% 11% / 0.04), 0 8px 24px -12px hsl(222 14% 11% / 0.08);
+    --shadow-lift: 0 2px 4px hsl(222 14% 11% / 0.04), 0 24px 48px -20px hsl(222 14% 11% / 0.12);
+    --shadow-accent: 0 12px 32px -12px hsl(38 92% 50% / 0.35);
+    --shadow-warm: 0 1px 2px hsl(222 14% 11% / 0.04), 0 12px 28px -16px hsl(38 92% 50% / 0.18);
 
     --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
-    --sidebar-background: 38 30% 96%;
-    --sidebar-foreground: 20 14% 14%;
-    --sidebar-primary: 18 14% 18%;
-    --sidebar-primary-foreground: 38 30% 96%;
-    --sidebar-accent: 36 22% 90%;
-    --sidebar-accent-foreground: 20 14% 14%;
-    --sidebar-border: 30 14% 86%;
-    --sidebar-ring: 14 55% 52%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 14% 11%;
+    --sidebar-primary: 222 14% 11%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 14% 11%;
+    --sidebar-border: 220 13% 93%;
+    --sidebar-ring: 38 92% 50%;
   }
 
   .dark {
@@ -132,24 +132,22 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji";
-    font-feature-settings: "ss01";
+    font-family: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-feature-settings: "ss01", "cv11";
   }
 
   h1, h2, h3, h4, .font-display {
-    font-family: "Fraunces", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
+    font-family: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     font-weight: 600;
-    font-optical-sizing: auto;
-    font-variation-settings: "SOFT" 100, "opsz" 96;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: "Fraunces", "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
+    font-family: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     font-weight: 600;
-    font-variation-settings: "SOFT" 100, "opsz" 96;
+    letter-spacing: -0.025em;
   }
 
   .text-balance {
