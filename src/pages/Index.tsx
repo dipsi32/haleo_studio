@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldCheck,
+  Image as ImageIcon,
   Upload,
   FileText,
 } from "lucide-react";
