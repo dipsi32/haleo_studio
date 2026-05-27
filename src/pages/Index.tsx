@@ -616,9 +616,9 @@ const RoastHook = () => (
               to="/roast"
               className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
             >
-              Roast my quote <ArrowRight className="w-4 h-4" />
+              Got a contractor quote? Get it roasted <ArrowRight className="w-4 h-4" />
             </Link>
-            <span className="self-center text-xs text-foreground/50">No signup. Numbers come from real local data.</span>
+            <span className="self-center text-xs text-foreground/50">Drop your estimate. We'll tell you what's off, and how to fix it.</span>
           </div>
         </motion.div>
 
