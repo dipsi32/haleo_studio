@@ -501,7 +501,7 @@ const Hero = () => {
           </div>
           <h1 className="mt-5 font-display text-[2.25rem] font-normal leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
             Got a contractor quote?{" "}
-            <em className="italic text-accent">See where it really lands.</em>
+            <em className="italic text-accent">Get it roasted.</em>
           </h1>
 
           <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
@@ -509,18 +509,28 @@ const Hero = () => {
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-7">
-            <Link
-              to="/roast"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
-            >
-              Audit my proposal <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/brief"
-              className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
-            >
-              No quote yet — build my brief →
-            </Link>
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                to="/roast"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
+              >
+                Got a contractor quote? Get it roasted <ArrowRight className="h-4 w-4" />
+              </Link>
+              <p className="max-w-[260px] text-center text-xs leading-relaxed text-muted-foreground">
+                Drop your estimate. We'll tell you what's off, and how to fix it.
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                to="/brief"
+                className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
+              >
+                No quote yet? Let's find your contractor.
+              </Link>
+              <p className="max-w-[260px] text-center text-xs leading-relaxed text-muted-foreground">
+                Matched to contractors with real permit history near you. Not star ratings, actual proof.
+              </p>
+            </div>
           </div>
 
         </motion.div>
@@ -786,10 +796,18 @@ const Closing = () => (
         to="/roast"
         className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
       >
-        Audit my proposal
+        Got a contractor quote? Get it roasted
         <ArrowRight className="h-4 w-4" />
       </Link>
-      <p className="mt-5 text-xs text-muted-foreground">Free · 30 seconds · no signup. No quote yet? <Link to="/brief" className="underline underline-offset-4 hover:text-foreground">Build a brief instead</Link>.</p>
+      <p className="mt-4 max-w-md mx-auto text-sm text-muted-foreground">
+        Drop your estimate. We'll tell you what's off, and how to fix it.
+      </p>
+      <p className="mt-5 text-xs text-muted-foreground">
+        No quote yet?{" "}
+        <Link to="/brief" className="underline underline-offset-4 hover:text-foreground">
+          Let's find your contractor
+        </Link>.
+      </p>
     </motion.div>
   </section>
 );
