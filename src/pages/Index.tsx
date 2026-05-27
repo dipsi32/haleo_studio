@@ -501,27 +501,29 @@ const Hero = () => {
             Free · 30 seconds · no signup
           </div>
           <h1 className="mt-6 text-[2.25rem] font-semibold leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.75rem]">
-            Read between<br className="hidden sm:block" /> the line items.
+            Got a contractor quote?<br className="hidden sm:block" /> <span className="text-accent">Get it roasted.</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            Upload your contractor's proposal. We fact-check every number against real permit history on your block — and tell you, plainly, what's fair and what's a stretch.
+            We read between the line items. Fact-check every number against real permit history on your block — and tell you, plainly, what's fair and what's a stretch.
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-4">
+          <div className="mt-10 flex flex-col items-center gap-5">
             <Link
               to="/roast"
               className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-[14px] font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
             >
-              Audit my proposal
+              Get it roasted
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <p className="text-[13px] text-muted-foreground">
-              No quote yet?{" "}
-              <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
-                Find your contractor →
+            <div className="flex flex-col items-center gap-1.5">
+              <Link to="/brief" className="text-[14px] font-medium text-foreground underline-offset-4 hover:underline">
+                No quote yet? Find your contractor →
               </Link>
-            </p>
+              <p className="max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
+                Matched to contractors with real permit history near you. Not star ratings, actual proof.
+              </p>
+            </div>
           </div>
 
         </motion.div>

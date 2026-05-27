@@ -28,9 +28,8 @@ const SiteHeader = () => {
       <div className="container flex h-20 items-center justify-between">
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href="#how" className="transition-smooth hover:text-foreground">How it works</a>
-          <a href="#pricing" className="transition-smooth hover:text-foreground">Pricing</a>
-          <Link to="/brief" className="transition-smooth hover:text-foreground">For homeowners</Link>
+          <Link to="/roast" className="transition-smooth hover:text-foreground">Get it roasted</Link>
+          <Link to="/brief" className="transition-smooth hover:text-foreground">Find your contractor</Link>
           <Link to="/pro/login" className="transition-smooth hover:text-foreground">For contractors</Link>
           {isAdmin && (
             <Link to="/admin" className="transition-smooth hover:text-foreground">Admin</Link>
