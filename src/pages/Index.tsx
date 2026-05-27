@@ -779,17 +779,17 @@ const Closing = () => (
       className="container relative text-center"
     >
       <h2 className="mx-auto max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
-        You shouldn't have to become a contractor{" "}
-        <em className="italic text-accent">to hire one.</em>
+        Start with the quote in your hand.{" "}
+        <em className="italic text-accent">We'll take it from there.</em>
       </h2>
       <Link
-        to="/brief"
+        to="/roast"
         className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
       >
-        Start with a brief
+        Audit my proposal
         <ArrowRight className="h-4 w-4" />
       </Link>
-      <p className="mt-5 text-xs text-muted-foreground">Free to start. About 5 minutes.</p>
+      <p className="mt-5 text-xs text-muted-foreground">Free · 30 seconds · no signup. No quote yet? <Link to="/brief" className="underline underline-offset-4 hover:text-foreground">Build a brief instead</Link>.</p>
     </motion.div>
   </section>
 );
