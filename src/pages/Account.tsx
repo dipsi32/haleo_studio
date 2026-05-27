@@ -157,11 +157,12 @@ const Account = () => {
             {projects.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-accent" />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="h-4 w-4 shrink-0 text-accent" />
                     <p className="truncate font-display text-base font-medium">{p.title || "Untitled project"}</p>
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/60">{p.status}</span>
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/60">{p.status}</span>
                   </div>
+
                   <p className="mt-1 text-xs text-muted-foreground">Updated {fmtDate(p.updated_at)}</p>
                 </div>
                 <div className="flex items-center gap-2">
