@@ -532,7 +532,11 @@ const Hero = () => {
           transition={{ duration: 1, ease: EASE, delay: 0.15 }}
           className="relative mt-16"
         >
+          <h2 className="mx-auto mb-8 max-w-xl text-center font-display text-[1.25rem] font-medium leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
+            Matched to contractors with real permit history near you. Not star ratings. Actual proof.
+          </h2>
           <PhoneShell>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={i}
