@@ -722,9 +722,8 @@ const NotLike = () => (
         className="mb-16 md:mb-24"
       >
         <p className="font-display text-xs tracking-[0.25em] text-accent">THE DIFFERENCE</p>
-        <h2 className="mt-5 max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
-          We're not a directory.{" "}
-          <em className="italic text-accent">We're how you actually hire.</em>
+        <h2 className="mt-5 max-w-3xl font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
+          We are not a directory. We are how you actually hire.
         </h2>
       </motion.div>
 
