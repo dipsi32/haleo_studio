@@ -321,7 +321,7 @@ const Contractors = () => {
       <main className="container max-w-6xl py-7 md:py-10">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Verified contractors near you</p>
-          <h1 className="mt-3 font-display text-4xl font-light leading-tight md:text-5xl text-balance">
+          <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl text-balance">
             These contractors have actually done <em className="italic">{projectLabel}</em> work near you.
           </h1>
           <p className="mt-4 max-w-2xl text-base text-muted-foreground">

@@ -283,7 +283,7 @@ export default function ProposalsCompare() {
 
       <main className="container max-w-6xl py-7 md:py-10">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Side by side</p>
-        <h1 className="mt-3 font-display text-4xl font-light leading-tight md:text-5xl">
+        <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl">
           Your proposals, compared honestly.
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
@@ -769,7 +769,7 @@ function MobileProposalCard({
           <span className={`text-sm font-semibold tabular-nums ${sc.text}`}>{scored.haleoScore}</span>
           <span className={`text-[11px] ${sc.text}`}>· {sc.label}</span>
         </div>
-        <p className="mt-3 font-display text-3xl font-light tabular-nums">{fmtMoney(scored.proposal.total_cost)}</p>
+        <p className="mt-3 font-display text-2xl font-light tabular-nums">{fmtMoney(scored.proposal.total_cost)}</p>
 
         <StandoutStrip chips={standouts} />
 
