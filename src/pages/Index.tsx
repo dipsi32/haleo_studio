@@ -655,12 +655,12 @@ const Value = () => (
         {[
           {
             n: "01",
-            t: "One brief.",
-            b: "We read your photos, walkthrough and plans, then write the scope once — so you never repeat yourself.",
+            t: "Audit the quote.",
+            b: "Every line item against local permit comps and cost guides. You see fair, high, and 'what are they thinking' in 30 seconds.",
           },
           {
             n: "02",
-            t: "Permit-proven.",
+            t: "Permit-proven matches.",
             b: "Only builders who've actually passed inspections for projects like yours in your zip. Reviews can be bought; permit history can't.",
           },
           {
