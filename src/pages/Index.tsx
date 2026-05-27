@@ -506,7 +506,7 @@ const Hero = () => {
           </h1>
 
           <p className="mx-auto mt-6 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-[16px]">
-            We go line by line and check every number against real permit history on your block — not guesswork, not vibes. You'll know exactly what's fair, what's padded, and where to push back. Like having a contractor friend who actually has your back.
+            Every line checked against real permits on your block. Know what's fair, what's padded, and where to push back — like a contractor friend who actually has your back.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4">
