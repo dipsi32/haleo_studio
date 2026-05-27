@@ -486,106 +486,66 @@ const Hero = () => {
   const Screen = SCREENS[i];
 
   return (
-    <section className="relative overflow-hidden bg-background">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-gradient-warm" aria-hidden />
-
+    <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50">
       <SiteHeader />
-
-      <div className="container relative pt-24 md:pt-32 pb-12 md:pb-20 md:pt-40 md:pb-28">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: EASE }}
-          className="mx-auto max-w-2xl text-center"
-        >
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Built for homeowners remodeling right now
-          </p>
-          <h1 className="mt-5 font-display text-[1.875rem] font-medium leading-[1.1] tracking-tight text-balance text-foreground md:text-[2.75rem]">
-            Got a contractor quote?<br className="hidden sm:block" />{" "}
-            Get it roasted.
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-[16px]">
-            Every line checked against real permits on your block. Know what's fair, what's padded, and where to push back — like a contractor friend who actually has your back.
-          </p>
-
-          <div className="mt-10 flex flex-col items-center gap-4">
-            <Link
-              to="/roast"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background transition-smooth hover:bg-foreground/90"
-            >
-              Audit my proposal
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link to="/brief" className="text-[13.5px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-              No quote yet? Find your contractor →
-            </Link>
-
-          </div>
-
-        </motion.div>
-
-
-        {/* Single focal phone */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: EASE, delay: 0.15 }}
-          className="relative mt-10 md:mt-16"
-        >
-          <div className="mx-auto mb-8 flex max-w-xl flex-col items-center gap-3 text-center">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent shadow-warm ring-1 ring-accent/20">
-              <MapPinCheck className="h-5 w-5" strokeWidth={2} />
-            </span>
-            <h2 className="font-display text-[1.25rem] font-semibold leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
-              Get matched with contractors who've pulled real permits near you.
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground md:text-[15px]">
-              Not star ratings. Actual proof.
+      <div className="container mx-auto max-w-5xl px-6 pt-20 md:pt-28 pb-16 md:pb-24">
+        <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+          >
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
+              <Flame className="w-3.5 h-3.5" /> FREE · NO SIGNUP · 30 SECONDS
+            </div>
+            <h1 className="font-display text-[2rem] md:text-5xl font-medium leading-[1.05] tracking-tight text-foreground">
+              Got a quote? <span className="italic">Get it roasted.</span>
+            </h1>
+            <p className="mt-5 text-base md:text-lg text-foreground/70 max-w-md">
+              Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
             </p>
-          </div>
-          <PhoneShell>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.5, ease: EASE }}
-                className="h-full"
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link
+                to="/roast"
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
               >
-                <Screen />
-              </motion.div>
-            </AnimatePresence>
-          </PhoneShell>
+                Roast my quote <ArrowRight className="w-4 h-4" />
+              </Link>
+              <span className="text-xs text-foreground/50">No login. Just answers.</span>
+            </div>
+            <p className="mt-6 text-[13.5px] text-foreground/60">
+              No quote yet?{" "}
+              <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
+                Find your contractor →
+              </Link>
+            </p>
+          </motion.div>
 
-          {/* Step indicator — quiet rail */}
-          <div className="mt-10 flex items-center justify-center gap-6">
-            {STEPS.map((s, idx) => (
-              <button
-                key={s.key}
-                onClick={() => setI(idx)}
-                className="group flex flex-col items-center gap-2"
-                aria-label={s.label}
-              >
-                <span
-                  className={`h-1 rounded-full transition-all duration-500 ${
-                    idx === i ? "w-8 bg-accent" : "w-4 bg-border group-hover:bg-foreground/30"
-                  }`}
-                />
-                <span
-                  className={`hidden text-[10px] uppercase tracking-[0.14em] transition-colors md:block ${
-                    idx === i ? "text-foreground" : "text-muted-foreground/60"
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
+          {/* Mock score card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotate: -2 }}
+            animate={{ opacity: 1, y: 0, rotate: -2 }}
+            transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
+            <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
+              <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-6xl font-serif font-bold leading-none">34</span>
+                <span className="text-sm opacity-90">/ 100</span>
+              </div>
+              <p className="mt-2 text-xl font-serif">Yikes Territory</p>
+              <p className="mt-3 text-sm italic leading-snug opacity-95">
+                "$12,000 for a backsplash? Are they tiling it with 24k gold?"
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
