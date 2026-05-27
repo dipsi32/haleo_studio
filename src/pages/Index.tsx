@@ -516,14 +516,10 @@ const Hero = () => {
               Audit my proposal
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <div className="flex flex-col items-center gap-3">
-              <p className="max-w-xs text-[13px] leading-snug text-foreground/90">
-                Matched to contractors with real permit history near you. Not star ratings. Actual proof.
-              </p>
-              <Link to="/brief" className="text-[13.5px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-                No quote yet? Find your contractor →
-              </Link>
-            </div>
+            <Link to="/brief" className="text-[13.5px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+              No quote yet? Find your contractor →
+            </Link>
+
           </div>
 
         </motion.div>
