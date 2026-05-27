@@ -161,7 +161,7 @@ const PlansStrip = ({ plans }: { plans: MediaAsset[] }) => {
         <Map className="h-3.5 w-3.5 text-accent" />
         Plans Haleo is reading · {plans.length}
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {plans.map((p) => {
           const isImage = p.mime?.startsWith("image/");
           return isImage ? (

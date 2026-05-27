@@ -327,7 +327,7 @@ const PlansStep = ({
         </AnimatePresence>
 
         {plans.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:grid-cols-4">
             <AnimatePresence>
               {plans.map((p) => (
                 <Thumb key={p.id} asset={p} onRemove={() => onRemove(p.id)} />
@@ -519,7 +519,7 @@ const InspirationStep = ({
         </div>
 
         {shots.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:grid-cols-4">
             <AnimatePresence>
               {shots.map((s) => (
                 <Thumb key={s.id} asset={s} onRemove={() => onRemove(s.id)} />

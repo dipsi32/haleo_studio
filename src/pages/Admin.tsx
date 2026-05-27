@@ -126,7 +126,7 @@ const Admin = () => {
           <p className="mt-2 text-sm text-muted-foreground">Add pilots, grant early or test access, and triage the waitlist.</p>
         </motion.div>
 
-        <div className="mt-8 grid grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Total pilots", value: pilots.length, icon: Users },
             { label: "Active passes", value: pilots.filter((p) => p.is_active).length, icon: Shield },

@@ -19,7 +19,7 @@ const NeighborhoodViolationsSection = () => {
       </p>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <div className="bg-background rounded-lg p-3 text-center">
           <p className="text-2xl font-serif text-foreground">427</p>
           <p className="text-xs text-muted-foreground">Properties within 0.5 mi</p>
