@@ -118,7 +118,7 @@ const ContractorProfile = () => {
           <>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{contractor.specialty ?? "General contractor"}</p>
-              <h1 className="mt-2 font-display text-4xl font-light leading-tight md:text-5xl">
+              <h1 className="mt-2 font-display text-2xl font-light leading-tight md:text-3xl">
                 {profile?.company_name ?? contractor.company ?? contractor.name}
               </h1>
               {profile?.tagline && (

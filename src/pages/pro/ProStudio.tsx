@@ -343,7 +343,7 @@ const ProStudio = () => {
               <p className="inline-flex items-center gap-1.5 rounded-full bg-background/70 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
                 <Sparkles className="h-3 w-3" /> Welcome back
               </p>
-              <h1 className="mt-4 font-display text-4xl font-light leading-[1.1] md:text-5xl">
+              <h1 className="mt-4 font-display text-2xl font-light leading-tight md:text-3xl">
                 Hey {company.split(" ")[0]} —<br />
                 {totalLeads > 0 ? (
                   <span>

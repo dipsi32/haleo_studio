@@ -17,7 +17,7 @@ const Audit = () => (
         <FileSearch className="h-6 w-6" />
       </div>
       <p className="mt-6 text-xs font-medium uppercase tracking-[0.2em] text-accent">The forensic audit</p>
-      <h1 className="mt-3 font-display text-5xl font-light leading-tight text-balance md:text-6xl">
+      <h1 className="mt-3 font-display text-2xl font-light leading-tight text-balance md:text-3xl">
         Coming online <em className="italic text-accent">next.</em>
       </h1>
       <p className="mx-auto mt-6 max-w-xl text-pretty text-base text-muted-foreground">

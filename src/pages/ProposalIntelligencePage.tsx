@@ -460,7 +460,7 @@ export default function ProposalIntelligencePage() {
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </button>
-            <h1 className="font-serif text-3xl sm:text-4xl text-foreground mb-2">
+            <h1 className="font-serif text-2xl sm:text-3xl text-foreground mb-2">
               {step === 'full-report' ? 'Your full audit' : step === 'pricing' ? 'Here is what the data says' : 'Audit a contractor proposal'}
             </h1>
             <p className="text-muted-foreground">

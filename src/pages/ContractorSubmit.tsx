@@ -201,7 +201,7 @@ export default function ContractorSubmit() {
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Proposal submission</p>
-          <h1 className="mt-3 font-display text-4xl font-light leading-tight">
+          <h1 className="mt-3 font-display text-2xl font-light leading-tight">
             {batch?.homeowner_name ? `${batch.homeowner_name.split(" ")[0]} is waiting on your bid.` : "Send your bid through Haleo."}
           </h1>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground">

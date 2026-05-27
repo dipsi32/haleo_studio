@@ -225,7 +225,7 @@ const PublicContractorProfile = () => {
       <main className="container max-w-5xl py-10">
         {/* Hero */}
         <div className="mb-10">
-          <h1 className="font-display text-4xl font-light tracking-tight md:text-5xl">{displayName}</h1>
+          <h1 className="font-display text-2xl font-light tracking-tight md:text-5xl">{displayName}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {contractor.specialty && <span>{contractor.specialty}</span>}
             {contractor.city && (
@@ -374,7 +374,7 @@ const PublicContractorProfile = () => {
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-xl font-light">Trust score</h2>
               <div>
-                <span className="font-display text-4xl font-light">{score.total}</span>
+                <span className="font-display text-2xl font-light">{score.total}</span>
                 <span className="text-sm text-muted-foreground">/100</span>
               </div>
             </div>
