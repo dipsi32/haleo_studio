@@ -29,7 +29,7 @@ const ProLanding = () => {
             <Sparkles className="h-3 w-3" />
             Haleo for contractors
           </span>
-          <h1 className="mt-6 font-display text-5xl font-light leading-[1.05] md:text-6xl">
+          <h1 className="mt-6 font-display text-3xl font-light leading-tight md:text-4xl">
             Win more of the <em className="text-accent">right</em> work.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">

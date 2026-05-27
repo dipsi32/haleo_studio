@@ -228,7 +228,7 @@ export default function Roast() {
           {stage === "upload" && (
             <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="text-center mb-10">
-                <h1 className="text-5xl sm:text-6xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
+                <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
                   Got a quote? <span className="italic">Get it roasted.</span>
                 </h1>
                 <p className="text-lg text-foreground/70 max-w-xl mx-auto">

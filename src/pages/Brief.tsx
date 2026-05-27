@@ -82,7 +82,7 @@ const ScreenTitle = ({
     {eyebrow && (
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{eyebrow}</p>
     )}
-    <h1 className="mt-3 font-display text-2xl font-light leading-tight text-balance md:text-5xl">
+    <h1 className="mt-3 font-display text-2xl font-light leading-tight text-balance md:text-3xl">
       {title}
     </h1>
     {sub && <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-muted-foreground">{sub}</p>}
