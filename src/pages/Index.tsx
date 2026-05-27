@@ -499,13 +499,13 @@ const Hero = () => {
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
             For homeowners mid-remodel
           </p>
-          <h1 className="mt-5 font-display text-[2.25rem] font-light leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
+          <h1 className="mt-5 font-display text-[1.875rem] font-medium leading-[1.1] tracking-tight text-balance text-foreground md:text-[2.75rem]">
             Got a contractor quote?<br className="hidden sm:block" />{" "}
-            <em className="italic font-light text-accent">Get it roasted.</em>
+            Get it roasted.
           </h1>
 
           <p className="mx-auto mt-6 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-[16px]">
-            We read between the line items. Every number, fact-checked against real permit history on your block — so you know, plainly, what's fair and what's a stretch.
+            We read every line item and check it against real permit history on your block. No guesswork. You will know exactly what is fair and what is a stretch.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4">
@@ -521,7 +521,7 @@ const Hero = () => {
                 No quote yet? Find your contractor →
               </Link>
               <p className="max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-                Matched to contractors with real permit history near you. Not star ratings — actual proof.
+                Matched to contractors with real permit history near you. Not star ratings. Actual proof.
               </p>
             </div>
           </div>
@@ -586,7 +586,7 @@ const Hero = () => {
 /* -------------------------------------------------------------------------- */
 
 const RoastHook = () => (
-  <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-24 md:py-32">
+  <section className="relative overflow-hidden bg-secondary/30 py-24 md:py-32">
     <div className="container mx-auto max-w-5xl px-6">
       <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
         <motion.div
@@ -595,48 +595,47 @@ const RoastHook = () => (
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.7, ease: EASE }}
         >
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
-            FREE · 30 SECONDS · NO SIGNUP
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl font-light leading-[1.05] text-foreground">
-            Got a quote? <span className="italic">Get it roasted.</span>
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-5">
+            Free. No signup.
+          </p>
+          <h2 className="font-display text-3xl md:text-4xl font-medium leading-[1.1] text-foreground">
+            Got a quote? Get it roasted.
           </h2>
           <p className="mt-5 text-lg text-foreground/70 max-w-md">
-            Drop in your contractor's estimate. Haleo lines it up against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand.
+            Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to="/roast"
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-smooth"
             >
-              Got a contractor quote? Get it roasted <ArrowRight className="w-4 h-4" />
+              Roast my quote <ArrowRight className="w-4 h-4" />
             </Link>
-            <span className="self-center text-xs text-foreground/50">Drop your estimate. We'll tell you what's off, and how to fix it.</span>
+            <span className="self-center text-xs text-foreground/50">Drop your estimate. We will tell you what is off and how to fix it.</span>
           </div>
         </motion.div>
 
         {/* Mock score card */}
         <motion.div
-          initial={{ opacity: 0, y: 20, rotate: -2 }}
-          whileInView={{ opacity: 1, y: 0, rotate: -2 }}
+          initial={{ opacity: 0, y: 20, rotate: -1 }}
+          whileInView={{ opacity: 1, y: 0, rotate: -1 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
           className="relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
-          <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
-            <p className="text-[10px] uppercase tracking-widest opacity-90">Haleo quote score</p>
+          <div className="rounded-2xl border border-border bg-card p-7 shadow-soft">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Haleo quote score</p>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-6xl font-serif font-bold leading-none">38</span>
-              <span className="text-sm opacity-90">/ 100</span>
+              <span className="text-5xl font-display font-semibold leading-none text-foreground">38</span>
+              <span className="text-sm text-muted-foreground">/ 100</span>
             </div>
-            <p className="mt-2 text-xl font-serif">Notably high</p>
-            <p className="mt-3 text-sm leading-snug opacity-95">
+            <p className="mt-2 text-lg font-medium text-foreground">Notably high</p>
+            <p className="mt-3 text-sm leading-snug text-muted-foreground">
               Backsplash line is $12,000. Local fair range for this size is $3,800 to $5,200.
             </p>
             <div className="mt-5 flex gap-2 text-[10px]">
-              <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
-              <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
+              <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground/70">Cabinets high</span>
+              <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground/70">Labor fair</span>
             </div>
           </div>
         </motion.div>
@@ -659,17 +658,17 @@ const Value = () => (
           {
             n: "01",
             t: "Audit the quote.",
-            b: "Every line item against local permit comps and cost guides. You see fair, high, and 'what are they thinking' in 30 seconds.",
+            b: "We check every line item against real local costs and permit history. You see what is fair, what is high, and what makes no sense. About 30 seconds.",
           },
           {
             n: "02",
             t: "Permit-proven matches.",
-            b: "Only builders who've actually passed inspections for projects like yours in your zip. Reviews can be bought; permit history can't.",
+            b: "Only builders who have passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
           },
           {
             n: "03",
             t: "Bids, compared.",
-            b: "Every trade, every line — side by side. See exactly where each builder is high or low before you decide.",
+            b: "Every trade and every line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
           },
         ].map((s, idx) => (
           <motion.div
@@ -723,9 +722,8 @@ const NotLike = () => (
         className="mb-16 md:mb-24"
       >
         <p className="font-display text-xs tracking-[0.25em] text-accent">THE DIFFERENCE</p>
-        <h2 className="mt-5 max-w-3xl font-display text-4xl font-light leading-[1.05] tracking-tight text-balance md:text-6xl">
-          We're not a directory.{" "}
-          <em className="italic text-accent">We're how you actually hire.</em>
+        <h2 className="mt-5 max-w-3xl font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
+          We are not a directory. We are how you actually hire.
         </h2>
       </motion.div>
 
@@ -781,11 +779,11 @@ const Closing = () => (
       transition={{ duration: 0.9, ease: EASE }}
       className="container relative text-center"
     >
-      <h2 className="mx-auto max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl">
+      <h2 className="mx-auto max-w-3xl text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
         Start with the quote in your hand.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. Every line item, fact-checked against permits on your block.
+        Thirty seconds. Every line item checked against permits on your block.
       </p>
       <Link
         to="/roast"
