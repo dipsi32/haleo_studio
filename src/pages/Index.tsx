@@ -534,8 +534,8 @@ const Hero = () => {
           className="relative mt-10 md:mt-16"
         >
           <div className="mx-auto mb-8 flex max-w-xl flex-col items-center gap-3 text-center">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-soft-foreground">
-              <Stamp className="h-4 w-4" strokeWidth={2} />
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent shadow-warm ring-1 ring-accent/20">
+              <MapPinCheck className="h-5 w-5" strokeWidth={2} />
             </span>
             <h2 className="font-display text-[1.25rem] font-semibold leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
               Get matched with contractors who've pulled real permits near you.
