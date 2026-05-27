@@ -779,11 +779,11 @@ const Closing = () => (
       transition={{ duration: 0.9, ease: EASE }}
       className="container relative text-center"
     >
-      <h2 className="mx-auto max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl">
+      <h2 className="mx-auto max-w-3xl text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
         Start with the quote in your hand.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. Every line item, fact-checked against permits on your block.
+        Thirty seconds. Every line item checked against permits on your block.
       </p>
       <Link
         to="/roast"
