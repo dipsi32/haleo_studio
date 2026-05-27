@@ -84,7 +84,7 @@ const ProLogin = () => {
           <span className="rounded-full border border-border bg-background/60 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Pro Workspace
           </span>
-          <h1 className="font-display text-3xl font-light">
+          <h1 className="font-display text-2xl font-light">
             {mode === "signup" ? "Create your contractor account" : "Sign in to your workspace"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">

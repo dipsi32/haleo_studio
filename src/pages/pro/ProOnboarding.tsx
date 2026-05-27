@@ -126,7 +126,7 @@ const ProOnboarding = () => {
             <Sparkles className="h-3 w-3" />
             Build your portal
           </span>
-          <h1 className="mt-5 font-display text-4xl font-light leading-tight">
+          <h1 className="mt-5 font-display text-2xl font-light leading-tight">
             Tell us who you are.<br />
             <span className="text-muted-foreground">We'll do the rest.</span>
           </h1>

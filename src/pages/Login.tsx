@@ -92,7 +92,7 @@ const Login = () => {
       >
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <Logo />
-          <h1 className="font-display text-3xl font-light">
+          <h1 className="font-display text-2xl font-light">
             {mode === "signup" ? "Create your account" : "Welcome back"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">

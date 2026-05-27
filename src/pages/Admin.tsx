@@ -122,7 +122,7 @@ const Admin = () => {
       <main className="container max-w-5xl py-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Founder console</p>
-          <h1 className="mt-3 font-display text-4xl font-light leading-tight">Mission control</h1>
+          <h1 className="mt-3 font-display text-2xl font-light leading-tight">Mission control</h1>
           <p className="mt-2 text-sm text-muted-foreground">Add pilots, grant early or test access, and triage the waitlist.</p>
         </motion.div>
 

@@ -232,7 +232,7 @@ const ClaimProfile = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="font-display text-3xl font-light leading-tight">
+              <h1 className="font-display text-2xl font-light leading-tight">
                 Verify this is your business.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -293,7 +293,7 @@ const ClaimProfile = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="font-display text-3xl font-light leading-tight">
+              <h1 className="font-display text-2xl font-light leading-tight">
                 Where should we send homeowner brief notifications?
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -340,7 +340,7 @@ const ClaimProfile = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="font-display text-3xl font-light leading-tight">
+              <h1 className="font-display text-2xl font-light leading-tight">
                 Enter the code we just sent.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -397,7 +397,7 @@ const ClaimProfile = () => {
 
               {waitingBrief && waitingBrief.count > 0 ? (
                 <>
-                  <h1 className="mt-5 font-display text-3xl font-light leading-tight">
+                  <h1 className="mt-5 font-display text-2xl font-light leading-tight">
                     Welcome to Haleo, {displayName}.
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -413,7 +413,7 @@ const ClaimProfile = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="mt-5 font-display text-3xl font-light leading-tight">
+                  <h1 className="mt-5 font-display text-2xl font-light leading-tight">
                     You're all set, {displayName}.
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">

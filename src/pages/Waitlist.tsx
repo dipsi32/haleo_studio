@@ -55,7 +55,7 @@ const Waitlist = () => {
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-sage-soft text-sage">
               <CheckCircle2 className="h-7 w-7" />
             </div>
-            <h1 className="mt-6 font-display text-3xl font-light">You're on the list 🙏</h1>
+            <h1 className="mt-6 font-display text-2xl font-light">You're on the list 🙏</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               We read every submission personally and will reach out within 24 hours. If you already have a contractor proposal in hand, reply to your confirmation email and we'll prioritize it.
             </p>
@@ -69,7 +69,7 @@ const Waitlist = () => {
               <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-accent">
                 <Sparkles className="h-3 w-3" /> Private pilot
               </p>
-              <h1 className="mt-4 font-display text-4xl font-light leading-tight md:text-5xl">
+              <h1 className="mt-4 font-display text-2xl font-light leading-tight md:text-3xl">
                 Haleo is invite-only.
               </h1>
               <p className="mt-3 text-sm text-muted-foreground">
