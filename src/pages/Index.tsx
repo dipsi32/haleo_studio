@@ -5,7 +5,8 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldCheck,
-  Image as ImageIcon,
+  Upload,
+  FileText,
 } from "lucide-react";
 
 import SiteHeader from "@/components/SiteHeader";
@@ -15,13 +16,12 @@ import { useAuth } from "@/context/AuthContext";
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Single phone — five quiet steps, one focal point.                          */
+/*  Single phone — the painkiller flow. Audit first, then everything else.    */
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "space",   label: "Show the space" },
-  { key: "scope",   label: "Haleo reads it" },
-  { key: "brief",   label: "Your brief" },
+  { key: "audit",   label: "Audit the quote" },
+  { key: "brief",   label: "Brief, written for you" },
   { key: "matches", label: "Permit-proven matches" },
   { key: "bids",    label: "Bids, side by side" },
 ] as const;
