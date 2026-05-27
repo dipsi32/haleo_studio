@@ -786,7 +786,6 @@ const Index = () => {
     <main>
       <Hero />
       <NotLike />
-      <RoastHook />
       <Value />
       <Closing />
       <SiteFooter />
