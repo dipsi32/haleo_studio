@@ -496,32 +496,32 @@ const Hero = () => {
           transition={{ duration: 0.6, ease: EASE }}
           className="mx-auto max-w-2xl text-center"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-            Free · 30 seconds · no signup
-          </div>
-          <h1 className="mt-6 text-[2.25rem] font-semibold leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.75rem]">
-            Got a contractor quote?<br className="hidden sm:block" /> <span className="text-accent">Get it roasted.</span>
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            For homeowners mid-remodel
+          </p>
+          <h1 className="mt-5 font-display text-[2.25rem] font-light leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
+            Got a contractor quote?<br className="hidden sm:block" />{" "}
+            <em className="italic font-light text-accent">Get it roasted.</em>
           </h1>
 
-          <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            We read between the line items. Fact-check every number against real permit history on your block — and tell you, plainly, what's fair and what's a stretch.
+          <p className="mx-auto mt-6 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-[16px]">
+            We read between the line items. Every number, fact-checked against real permit history on your block — so you know, plainly, what's fair and what's a stretch.
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-5">
+          <div className="mt-10 flex flex-col items-center gap-4">
             <Link
               to="/roast"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-[14px] font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background transition-smooth hover:bg-foreground/90"
             >
-              Get it roasted
+              Audit my proposal
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <div className="flex flex-col items-center gap-1.5">
-              <Link to="/brief" className="text-[14px] font-medium text-foreground underline-offset-4 hover:underline">
+            <div className="flex flex-col items-center gap-1">
+              <Link to="/brief" className="text-[13.5px] text-foreground/80 underline-offset-4 hover:text-foreground hover:underline">
                 No quote yet? Find your contractor →
               </Link>
               <p className="max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-                Matched to contractors with real permit history near you. Not star ratings, actual proof.
+                Matched to contractors with real permit history near you. Not star ratings — actual proof.
               </p>
             </div>
           </div>
