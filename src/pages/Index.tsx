@@ -533,9 +533,17 @@ const Hero = () => {
           transition={{ duration: 1, ease: EASE, delay: 0.15 }}
           className="relative mt-10 md:mt-16"
         >
-          <h2 className="mx-auto mb-8 max-w-xl text-center font-display text-[1.25rem] font-medium leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
-            Matched to contractors with real permit history near you. Not star ratings. Actual proof.
-          </h2>
+          <div className="mx-auto mb-8 flex max-w-xl flex-col items-center gap-3 text-center">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent-soft-foreground">
+              <Stamp className="h-4 w-4" strokeWidth={2} />
+            </span>
+            <h2 className="font-display text-[1.25rem] font-semibold leading-snug tracking-tight text-balance text-foreground md:text-[1.5rem]">
+              Get matched with contractors who've pulled real permits near you.
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+              Not star ratings. Actual proof.
+            </p>
+          </div>
           <PhoneShell>
 
             <AnimatePresence mode="wait">
