@@ -32,7 +32,7 @@ const Audit = () => (
         to="/brief"
         className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
       >
-        Start a brief instead
+        No quote yet? Let's find your contractor.
       </Link>
     </main>
   </div>
