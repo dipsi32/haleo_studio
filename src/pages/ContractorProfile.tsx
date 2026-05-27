@@ -111,7 +111,7 @@ const ContractorProfile = () => {
         </div>
       </header>
 
-      <main className="container max-w-5xl py-10">
+      <main className="container max-w-5xl py-7 md:py-10">
         {loading && <p className="text-sm text-muted-foreground">Loading contractor profile…</p>}
 
         {contractor && (

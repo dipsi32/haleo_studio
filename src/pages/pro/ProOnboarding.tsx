@@ -96,7 +96,7 @@ const ProOnboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm px-6 py-10">
+    <div className="min-h-screen bg-gradient-warm px-6 py-7 md:py-10">
       <header className="mx-auto flex max-w-3xl items-center justify-between">
         <Logo />
         <div className="flex items-center gap-4">
@@ -119,7 +119,7 @@ const ProOnboarding = () => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mx-auto mt-12 max-w-2xl"
+        className="mx-auto mt-8 md:mt-12 max-w-2xl"
       >
         <div className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -132,7 +132,7 @@ const ProOnboarding = () => {
           </h1>
         </div>
 
-        <div className="mt-12 space-y-8 rounded-3xl border border-border bg-card p-8 shadow-soft md:p-10">
+        <div className="mt-8 md:mt-12 space-y-8 rounded-3xl border border-border bg-card p-6 md:p-8 shadow-soft md:p-10">
           {/* Company */}
           <div>
             <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

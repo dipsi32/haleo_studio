@@ -12,7 +12,7 @@ const Audit = () => (
         </Link>
       </div>
     </header>
-    <main className="container max-w-3xl py-24 text-center">
+    <main className="container max-w-3xl py-14 md:py-24 text-center">
       <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-foreground">
         <FileSearch className="h-6 w-6" />
       </div>
@@ -30,7 +30,7 @@ const Audit = () => (
       </div>
       <Link
         to="/brief"
-        className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
+        className="mt-8 md:mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
       >
         No quote yet? Let's find your contractor.
       </Link>

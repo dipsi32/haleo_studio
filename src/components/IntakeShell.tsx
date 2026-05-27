@@ -103,7 +103,7 @@ const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => 
         </div>
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-6 py-10 md:items-center md:py-16">
+      <main className="flex flex-1 items-start justify-center px-6 py-7 md:py-10 md:items-center md:py-16">
         <motion.div
           key={step}
           initial={{ opacity: 0, y: 14 }}

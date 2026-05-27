@@ -491,7 +491,7 @@ export default function ProposalIntelligencePage() {
                   onDragLeave={() => setIsDragOver(false)}
                   onDrop={handleDrop}
                   className={cn(
-                    'relative border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer',
+                    'relative border-2 border-dashed rounded-2xl p-6 md:p-10 text-center transition-all cursor-pointer',
                     isDragOver ? 'border-primary bg-primary/5 scale-[1.01]'
                       : file ? 'border-primary/40 bg-primary/5'
                       : 'border-border hover:border-primary/40 hover:bg-muted/30'
@@ -761,7 +761,7 @@ export default function ProposalIntelligencePage() {
                 )}
 
                 {/* ═══ UPGRADE CTA — The Bridge ═══ */}
-                <div className="bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] border-2 border-primary/20 rounded-2xl p-8 text-center">
+                <div className="bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] border-2 border-primary/20 rounded-2xl p-6 md:p-8 text-center">
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-7 h-7 text-primary" />
                   </div>

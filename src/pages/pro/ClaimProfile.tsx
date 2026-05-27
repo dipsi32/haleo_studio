@@ -208,7 +208,7 @@ const ClaimProfile = () => {
         </div>
       </header>
 
-      <main className="container max-w-md py-12 md:py-20">
+      <main className="container max-w-md py-8 md:py-12 md:py-20">
         {/* progress */}
         <div className="mb-8 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           {(["license", "notify", "verify-otp", "payoff"] as const).map((s, i) => {

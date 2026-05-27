@@ -327,7 +327,7 @@ const PlansStep = ({
         </AnimatePresence>
 
         {plans.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:grid-cols-4">
             <AnimatePresence>
               {plans.map((p) => (
                 <Thumb key={p.id} asset={p} onRemove={() => onRemove(p.id)} />
@@ -380,7 +380,7 @@ const VisionStep = ({
 
       <div className="mx-auto max-w-2xl space-y-6">
         {/* Editable square footage */}
-        <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
+        <div className="rounded-3xl border border-border bg-card p-6 md:p-8 text-center shadow-soft">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Square footage
           </p>
@@ -507,7 +507,7 @@ const InspirationStep = ({
             if (e.dataTransfer.files) handle(e.dataTransfer.files);
           }}
           onClick={() => inputRef.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-8 text-center transition-smooth ${
+          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 md:p-8 text-center transition-smooth ${
             drag
               ? "border-accent bg-accent-soft/40"
               : "border-border bg-card/60 hover:border-accent/60 hover:bg-card"
@@ -519,7 +519,7 @@ const InspirationStep = ({
         </div>
 
         {shots.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:grid-cols-4">
             <AnimatePresence>
               {shots.map((s) => (
                 <Thumb key={s.id} asset={s} onRemove={() => onRemove(s.id)} />

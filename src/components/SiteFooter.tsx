@@ -3,7 +3,7 @@ import Logo from "./Logo";
 const SiteFooter = () => {
   return (
     <footer className="border-t border-border bg-secondary/40">
-      <div className="container flex flex-col gap-6 py-12 md:flex-row md:items-center md:justify-between">
+      <div className="container flex flex-col gap-6 py-8 md:py-12 md:flex-row md:items-center md:justify-between">
         <div className="space-y-3">
           <Logo />
           <p className="max-w-sm text-sm text-muted-foreground">

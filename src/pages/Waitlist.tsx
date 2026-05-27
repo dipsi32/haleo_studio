@@ -33,7 +33,7 @@ const Waitlist = () => {
   };
 
   return (
-    <div className="grid min-h-screen place-items-center bg-gradient-warm px-6 py-12">
+    <div className="grid min-h-screen place-items-center bg-gradient-warm px-6 py-8 md:py-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ const Waitlist = () => {
         </div>
 
         {submitted ? (
-          <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
+          <div className="rounded-3xl border border-border bg-card p-6 md:p-8 text-center shadow-soft">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-sage-soft text-sage">
               <CheckCircle2 className="h-7 w-7" />
             </div>

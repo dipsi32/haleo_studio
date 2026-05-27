@@ -458,7 +458,7 @@ const AdditionScreen = ({
       <div className="space-y-10">
         <StepDots step={2} />
         <ScreenTitle eyebrow="Addition · 2 of 3" title="How big?" sub="Roughly. We'll pin it down with your contractor." />
-        <div className="mx-auto max-w-xl space-y-8 rounded-3xl border border-border bg-card p-8 shadow-soft">
+        <div className="mx-auto max-w-xl space-y-8 rounded-3xl border border-border bg-card p-6 md:p-8 shadow-soft">
           <p className="text-center font-display text-5xl font-medium">
             {size >= 1000 ? "1,000+" : size}
             <span className="ml-2 text-base text-muted-foreground">sq ft</span>

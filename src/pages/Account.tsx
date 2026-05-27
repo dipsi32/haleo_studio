@@ -102,10 +102,10 @@ const Account = () => {
         </div>
       </header>
 
-      <main className="container max-w-4xl py-12">
+      <main className="container max-w-4xl py-8 md:py-12">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Your account</p>
-          <h1 className="mt-3 font-display text-4xl font-light leading-tight md:text-5xl">
+          <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl">
             {user?.user_metadata?.full_name ? `Welcome back, ${user.user_metadata.full_name.split(" ")[0]}.` : "Your saved projects."}
           </h1>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground">
@@ -134,7 +134,7 @@ const Account = () => {
 
         <HomeownerPathChooser />
 
-        <div className="mt-12 flex items-center justify-between">
+        <div className="mt-8 md:mt-12 flex items-center justify-between">
           <h2 className="font-display text-xl font-medium">Saved rooms</h2>
           <Button onClick={startNew} className="rounded-full">
             <Plus className="h-4 w-4" /> Start a new room
@@ -144,7 +144,7 @@ const Account = () => {
         {loading ? (
           <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
         ) : projects.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-border bg-card/60 p-10 text-center">
+          <div className="mt-6 rounded-3xl border border-dashed border-border bg-card/60 p-6 md:p-10 text-center">
             <Sparkles className="mx-auto h-6 w-6 text-accent" />
             <p className="mt-3 font-display text-lg">Nothing here yet</p>
             <p className="mt-1 text-sm text-muted-foreground">Start your first brief and we'll keep it safe right here.</p>
@@ -157,11 +157,12 @@ const Account = () => {
             {projects.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-accent" />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="h-4 w-4 shrink-0 text-accent" />
                     <p className="truncate font-display text-base font-medium">{p.title || "Untitled project"}</p>
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/60">{p.status}</span>
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/60">{p.status}</span>
                   </div>
+
                   <p className="mt-1 text-xs text-muted-foreground">Updated {fmtDate(p.updated_at)}</p>
                 </div>
                 <div className="flex items-center gap-2">

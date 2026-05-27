@@ -181,7 +181,7 @@ const ProInbox = () => {
         </div>
       )}
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-7 md:py-10">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-light">Your inbox</h1>
           <p className="mt-1 text-sm text-muted-foreground">Projects from homeowners, with the brief already done.</p>
@@ -427,7 +427,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
 
               {/* At-a-glance facts so the contractor can decide fast */}
               {(snap.addition_size_sqft || permitLabel(snap.permit_status) || (snap.floorplan_urls?.length ?? 0) > 0) && (
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {snap.addition_size_sqft && (
                     <div className="rounded-xl border border-border bg-card p-3">
                       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Size</p>
@@ -968,7 +968,7 @@ function PaymentSheet({
                   disabled={step === "processing"}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label htmlFor="cc-exp" className="text-xs">Expires</Label>
                   <Input
