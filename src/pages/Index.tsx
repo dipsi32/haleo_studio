@@ -496,28 +496,33 @@ const Hero = () => {
           transition={{ duration: 0.6, ease: EASE }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h1 className="font-display text-[2.25rem] font-normal leading-[1.08] tracking-tight text-balance text-foreground md:text-[3.25rem]">
-            Hire your contractor in days, not months.
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-3 py-1 text-[11px] font-medium text-foreground/70 backdrop-blur">
+            FREE · 30 SECONDS · NO SIGNUP
+          </div>
+          <h1 className="mt-5 font-display text-[2.25rem] font-normal leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
+            Got a contractor quote?{" "}
+            <em className="italic text-accent">See where it really lands.</em>
           </h1>
 
           <p className="mx-auto mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            Share your remodel vision. We turn it into a clear brief and line up the right bids — side by side.
+            Drop in the PDF. Haleo lines every line item up against local permit comps and cost guides — and tells you, plainly, what's fair and what's a stretch.
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-7">
             <Link
-              to="/brief"
-              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-smooth hover:bg-primary/90"
+              to="/roast"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lift transition-smooth hover:bg-primary/90"
             >
-              Start my brief
+              Audit my proposal <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/proposal"
+              to="/brief"
               className="text-sm font-medium text-foreground/70 transition-smooth hover:text-foreground"
             >
-              I have a proposal to review →
+              No quote yet — build my brief →
             </Link>
           </div>
+
         </motion.div>
 
 
