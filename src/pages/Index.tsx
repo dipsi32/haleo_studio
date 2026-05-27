@@ -8,7 +8,7 @@ import {
   Image as ImageIcon,
   Upload,
   FileText,
-  Stamp,
+  MapPinCheck,
 } from "lucide-react";
 
 import SiteHeader from "@/components/SiteHeader";
