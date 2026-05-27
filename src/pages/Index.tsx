@@ -499,13 +499,13 @@ const Hero = () => {
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
             For homeowners mid-remodel
           </p>
-          <h1 className="mt-5 font-display text-[2.25rem] font-light leading-[1.05] tracking-tight text-balance text-foreground md:text-[3.5rem]">
+          <h1 className="mt-5 font-display text-[1.875rem] font-medium leading-[1.1] tracking-tight text-balance text-foreground md:text-[2.75rem]">
             Got a contractor quote?<br className="hidden sm:block" />{" "}
-            <em className="italic font-light text-accent">Get it roasted.</em>
+            Get it roasted.
           </h1>
 
           <p className="mx-auto mt-6 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground md:text-[16px]">
-            We read between the line items. Every number, fact-checked against real permit history on your block — so you know, plainly, what's fair and what's a stretch.
+            We read every line item and check it against real permit history on your block. No guesswork. You will know exactly what is fair and what is a stretch.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4">
