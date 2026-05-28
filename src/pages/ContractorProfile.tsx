@@ -10,6 +10,7 @@ import { useIntake } from "@/lib/intake";
 import {
   type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
+  trustTier, trustChecks,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import PermitInspectionItem from "@/components/PermitInspectionItem";
