@@ -385,8 +385,8 @@ function RecapView({
               Want a wider pool? Unlock the full match list.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Every additional contractor is verified the same way — real permit history, clean license,
-              proven work near you.
+              Every additional contractor is sourced the same way — real permit history, CSLB license file,
+              public records only.
             </p>
           </div>
         </div>
