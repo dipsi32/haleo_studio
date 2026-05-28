@@ -82,11 +82,26 @@ const App = () => (
               }
             />
 
-            {/* Pilot/paid-gated */}
-            <Route path="/brief" element={<Gated><Brief /></Gated>} />
-            <Route path="/brief/result" element={<Gated><BriefResult /></Gated>} />
-            <Route path="/contractors" element={<Gated><Contractors /></Gated>} />
-            <Route path="/contractors/:id" element={<Gated><ContractorProfile /></Gated>} />
+            {/* Brief is self-serve — front door for "Find your contractor" */}
+            <Route path="/brief" element={<Brief />} />
+            <Route path="/brief/result" element={<BriefResult />} />
+            {/* Matches require login (paywall lives in-page at the unlock step) */}
+            <Route
+              path="/contractors"
+              element={
+                <ProtectedRoute>
+                  <Contractors />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contractors/:id"
+              element={
+                <ProtectedRoute>
+                  <ContractorProfile />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/audit" element={<Navigate to="/proposal" replace />} />
             <Route path="/proposal" element={<ProposalIntelligencePage />} />
             <Route path="/proposal/:reportId" element={<ProposalIntelligencePage />} />

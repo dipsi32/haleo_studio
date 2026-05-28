@@ -312,16 +312,19 @@ export default function Roast() {
                 <Button className="mt-6 bg-foreground hover:bg-foreground/90 text-background rounded-full px-6">
                   Choose a file
                 </Button>
-                <p className="text-[11px] text-foreground/50 mt-5 max-w-sm mx-auto">
-                  Black out the contractor name if you want. We don't keep it. We do save anonymized prices so the next check gets sharper.
-                </p>
+                <div className="mt-5 mx-auto max-w-sm rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-left">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Your privacy</p>
+                  <p className="mt-1 text-[12.5px] leading-snug text-foreground/80">
+                    Black out the contractor name if you want — we don't keep it. We only save anonymized prices, so the next homeowner's check gets sharper.
+                  </p>
+                </div>
               </Card>
 
               {/* How it works — plain English */}
               <div className="grid sm:grid-cols-3 gap-4 mt-10 text-sm">
                 {[
                   { n: "1", t: "Upload the quote", d: "Photo or PDF, any format." },
-                  { n: "2", t: "Haleo does the math", d: "Cost guides, local permits, our corpus." },
+                  { n: "2", t: "Haleo does the math", d: "Public cost guides, local permit records, and our own database of past audits." },
                   { n: "3", t: "See where you stand", d: "Fair range, line-by-line, what to do next." },
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">
