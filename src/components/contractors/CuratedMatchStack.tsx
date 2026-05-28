@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { RankedContractor } from "@/lib/useContractors";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
+import { trustTier, trustChecks } from "@/lib/contractors";
 
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
@@ -115,16 +116,31 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
       className="relative overflow-hidden rounded-[28px] border border-border bg-card shadow-lift"
     >
       {/* Amber rank ribbon */}
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-amber-50 via-card to-card px-5 py-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">{head.eyebrow}</p>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-          {score.total} Trust
-        </div>
-      </div>
+      {(() => {
+        const hasPenalty = score.components.some(c => c.status === 'penalty');
+        const tier = trustTier(score.total, hasPenalty);
+        const checks = trustChecks(score);
+        const toneClass =
+          tier.tone === 'sage' ? 'bg-sage/15 text-sage'
+          : tier.tone === 'accent' ? 'bg-accent/15 text-accent'
+          : tier.tone === 'amber' ? 'bg-amber-100 text-amber-700'
+          : tier.tone === 'destructive' ? 'bg-destructive/10 text-destructive'
+          : 'bg-secondary text-muted-foreground';
+        return (
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-amber-50 via-card to-card px-5 py-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">{head.eyebrow}</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${toneClass}`}>
+                <ShieldCheck className="h-3 w-3" /> {tier.label}
+              </span>
+              <span className="text-[11px] text-muted-foreground">{checks.passed}/{checks.total} checks</span>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="px-6 pt-6 pb-5 md:px-7">
         <h3 className="font-display text-2xl font-light leading-tight text-foreground">

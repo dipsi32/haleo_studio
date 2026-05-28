@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
-import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
+import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot, trustTier, trustChecks } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
 import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
@@ -27,13 +27,20 @@ const formatDate = (d: string | null) => {
   return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
-const ScoreRing = ({ score }: { score: number }) => {
-  const pct = Math.max(0, Math.min(100, score));
-  const tone = pct >= 80 ? "text-sage" : pct >= 60 ? "text-accent" : "text-muted-foreground";
+const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
+  const hasPenalty = rc.score.components.some(c => c.status === 'penalty');
+  const tier = trustTier(rc.score.total, hasPenalty);
+  const checks = trustChecks(rc.score);
+  const toneClass =
+    tier.tone === 'sage' ? 'border-sage/40 bg-sage/10 text-sage'
+    : tier.tone === 'accent' ? 'border-accent/40 bg-accent/10 text-accent'
+    : tier.tone === 'amber' ? 'border-amber-400/50 bg-amber-50 text-amber-700'
+    : tier.tone === 'destructive' ? 'border-destructive/40 bg-destructive/10 text-destructive'
+    : 'border-border bg-secondary text-muted-foreground';
   return (
-    <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full border-2 border-current ${tone}`}>
-      <span className="font-display text-lg font-medium leading-none">{pct}</span>
-      <span className="text-[8px] uppercase tracking-wider opacity-70">Trust</span>
+    <div className={`flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border-2 ${toneClass}`}>
+      <span className="font-display text-[13px] font-semibold leading-none">{tier.label}</span>
+      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} checks</span>
     </div>
   );
 };
@@ -71,7 +78,7 @@ const ContractorCard = ({
           aria-label="See trust score breakdown"
           className="shrink-0 rounded-full transition-smooth hover:opacity-80"
         >
-          <ScoreRing score={score.total} />
+          <TrustBadge rc={rc} />
         </button>
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-lg font-medium leading-tight text-foreground">
@@ -85,7 +92,7 @@ const ContractorCard = ({
             onClick={() => navigate(`/contractors/${contractor.id}`)}
             className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
           >
-            Why this score?
+            See what we verified →
           </button>
         </div>
       </div>
@@ -409,17 +416,20 @@ const Contractors = () => {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
-              <p className="font-display text-lg font-medium">How we score trust</p>
+              <p className="font-display text-lg font-medium">How we read trust</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                The Haleo Trust Score is a 0–100 rating based on verified permit history, license status, and real completed work near you — not reviews or paid listings.
+                We score strictly — only what we can verify in public records. No paid placements, no self-reported reviews, no five-star theatre. A contractor reaches <strong className="text-foreground">Trusted</strong> by clearing every core check, and <strong className="text-foreground">Elite</strong> by stacking real local volume on top of that.
               </p>
-              <ul className="mt-4 grid gap-2 text-sm text-foreground/80 md:grid-cols-2">
-                <li>• Local permit volume — 30 pts</li>
-                <li>• Recent activity (last 12 months) — 20 pts</li>
-                <li>• License status & history — 25 pts</li>
-                <li>• Project type match — 15 pts</li>
-                <li>• Job completion rate — 10 pts</li>
-              </ul>
+              <div className="mt-4 grid gap-2 text-sm md:grid-cols-5">
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Elite</p><p className="text-[11px] text-muted-foreground">80+ · top tier</p></div>
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Highly Trusted</p><p className="text-[11px] text-muted-foreground">65–79</p></div>
+                <div className="rounded-xl border border-accent/30 bg-accent/5 p-3"><p className="text-xs font-semibold text-accent">Trusted</p><p className="text-[11px] text-muted-foreground">50–64 · all core checks pass</p></div>
+                <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-700">Verified</p><p className="text-[11px] text-muted-foreground">35–49 · licensed, lighter record</p></div>
+                <div className="rounded-xl border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold text-muted-foreground">Limited record</p><p className="text-[11px] text-muted-foreground">Below 35</p></div>
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Tap any contractor to see exactly which checks they cleared, the raw 0–100 score, and the source records behind every signal.
+              </p>
             </div>
           </div>
         </div>

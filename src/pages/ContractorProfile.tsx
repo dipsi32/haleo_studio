@@ -10,6 +10,7 @@ import { useIntake } from "@/lib/intake";
 import {
   type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
+  trustTier, trustChecks,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import PermitInspectionItem from "@/components/PermitInspectionItem";
@@ -213,17 +214,33 @@ const ContractorProfile = () => {
                     },
                   ];
                   const penalties = score.components.filter(c => c.status === 'penalty');
+                  const hasPenalty = penalties.length > 0;
+                  const tier = trustTier(score.total, hasPenalty);
+                  const checks = trustChecks(score);
+                  const tierClass =
+                    tier.tone === 'sage' ? 'border-sage/40 bg-sage/10 text-sage'
+                    : tier.tone === 'accent' ? 'border-accent/40 bg-accent/10 text-accent'
+                    : tier.tone === 'amber' ? 'border-amber-400/50 bg-amber-50 text-amber-700'
+                    : tier.tone === 'destructive' ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                    : 'border-border bg-secondary text-muted-foreground';
                   return (
                     <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-                      <div className="flex items-baseline justify-between">
-                        <h2 className="font-display text-xl font-medium">Haleo Trust Score</h2>
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-display text-4xl font-medium text-accent">{score.total}</span>
-                          <span className="text-sm text-muted-foreground">/100</span>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h2 className="font-display text-xl font-medium">Haleo Trust</h2>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {checks.passed} of {checks.total} verifications cleared
+                          </p>
+                        </div>
+                        <div className={`rounded-2xl border-2 px-3 py-2 text-right ${tierClass}`}>
+                          <p className="font-display text-base font-semibold leading-none">{tier.label}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-wider opacity-75">
+                            Raw score {score.total}/100
+                          </p>
                         </div>
                       </div>
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                        Built from verified permits, CSLB records, and city data near you — never reviews or paid placement.
+                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                        {tier.blurb} We score strictly — only verifiable permits, CSLB records, and city data. Never reviews or paid placement.
                       </p>
 
                       <div className="mt-5 space-y-2">

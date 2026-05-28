@@ -83,6 +83,35 @@ export const cslbDeepLink = (license: string) =>
 //  −10  Business name mismatch (CSLB record vs. permits)
 export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
 
+// ───── Trust tier — how to *talk* about the score ─────
+// The numeric score is strict and conservative (verified-only public records).
+// A 55/100 isn't "barely passing" — it's a contractor with solid local history
+// and a clean license. The tier label fixes that perception.
+export type TrustTier = {
+  label: string;        // chip text  ("Trusted", "Highly Trusted", "Elite")
+  blurb: string;        // one-line meaning
+  tone: 'sage' | 'accent' | 'amber' | 'muted' | 'destructive';
+};
+export const trustTier = (score: number, hasPenalty = false): TrustTier => {
+  if (hasPenalty) return {
+    label: 'Review before hiring',
+    blurb: 'CSLB has a flag on this contractor — read the details first.',
+    tone: 'destructive',
+  };
+  if (score >= 80) return { label: 'Elite', blurb: 'Top-tier verified track record near you.', tone: 'sage' };
+  if (score >= 65) return { label: 'Highly Trusted', blurb: 'Strong verified history and clean license.', tone: 'sage' };
+  if (score >= 50) return { label: 'Trusted', blurb: 'Solid verified record — meets every core check.', tone: 'accent' };
+  if (score >= 35) return { label: 'Verified', blurb: 'Licensed and active — lighter local track record.', tone: 'amber' };
+  return { label: 'Limited record', blurb: 'Not enough verified history yet — ask for references.', tone: 'muted' };
+};
+
+// "5 of 6 verifications cleared" — counts live components with full or near-full credit.
+export const trustChecks = (breakdown: TrustScoreBreakdown): { passed: number; total: number } => {
+  const live = breakdown.components.filter(c => c.weight > 0);
+  const passed = live.filter(c => c.earned >= c.weight * 0.6).length;
+  return { passed, total: live.length };
+};
+
 export type TrustScoreBreakdown = {
   total: number;
   components: {
