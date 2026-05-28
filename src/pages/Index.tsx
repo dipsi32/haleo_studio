@@ -633,24 +633,24 @@ const RoastHook = () => (
 
 
 const Value = () => (
-  <section className="bg-background py-28 md:py-40">
+  <section className="bg-background py-24 md:py-32">
     <div className="container mx-auto max-w-4xl">
       <div className="grid gap-x-12 gap-y-16 md:grid-cols-3">
         {[
           {
             n: "01",
             t: "Audit the quote.",
-            b: "We check every line item against real local costs and permit history. You see what is fair, what is high, and what makes no sense. About 30 seconds.",
+            b: "Check every line item against real local costs and permit history. See what is fair, what is high, and what makes no sense. About 30 seconds.",
           },
           {
             n: "02",
-            t: "Permit-proven matches.",
-            b: "Only builders who have passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
+            t: "Permit proven matches.",
+            b: "Only builders who passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
           },
           {
             n: "03",
-            t: "Bids, compared.",
-            b: "Every trade and every line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
+            t: "Compare bids.",
+            b: "Every trade and line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
           },
         ].map((s, idx) => (
           <motion.div
