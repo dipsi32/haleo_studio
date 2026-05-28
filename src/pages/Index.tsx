@@ -486,7 +486,7 @@ const Hero = () => {
   const Screen = SCREENS[i];
 
   return (
-    <section className="relative bg-background">
+    <section className="relative bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50">
       <SiteHeader />
       <div className="container mx-auto max-w-5xl px-6 pt-20 md:pt-28 pb-16 md:pb-24">
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
@@ -495,9 +495,8 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE }}
           >
-            <div className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Free · No signup · 30 seconds
+            <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 mb-6">
+              <Flame className="w-3.5 h-3.5" /> Free · No signup · 30 seconds
             </div>
             <h1 className="font-display text-[2rem] md:text-5xl font-medium leading-[1.05] tracking-tight text-foreground">
               Got a quote? <span className="italic">Get it roasted.</span>
@@ -508,7 +507,7 @@ const Hero = () => {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to="/roast"
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-smooth"
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lg shadow-orange-200/50 hover:bg-foreground/90 transition-smooth"
               >
                 Roast my quote <ArrowRight className="w-4 h-4" />
               </Link>
