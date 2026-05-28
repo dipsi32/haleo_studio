@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Upload, FileText, BarChart3, Sparkles, Building2, X,
   Shield, Search, CheckCircle, AlertTriangle, AlertCircle, Info, ChevronDown,
   ChevronUp, MapPin, CalendarClock, ClipboardCheck, ExternalLink, ThumbsUp,
-  HelpCircle, Lock, Mail, Users, Lightbulb
+  HelpCircle, Lock, Mail, Users
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
