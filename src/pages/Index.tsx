@@ -520,7 +520,7 @@ const Hero = () => {
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-muted-foreground">No signup to start.</span>
+              <span className="text-xs text-muted-foreground">Free — sign in to save your brief.</span>
             </div>
           </motion.div>
 
@@ -777,7 +777,7 @@ const Closing = () => (
         Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. No signup. See where your quote stands.
+        Free. Sign in to start your brief and we'll match you to permit-proven builders nearby.
       </p>
       <Link
         to="/brief"
