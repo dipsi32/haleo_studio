@@ -857,13 +857,6 @@ export default function ProposalIntelligencePage() {
           </AnimatePresence>
         </div>
 
-        {/* Contextual tips sidebar */}
-        {tipsOptedIn && proposalTips.length > 0 && (
-          <TipsContainer
-            tips={proposalTips}
-            onDismiss={(id) => setProposalTips(prev => prev.filter(t => t.id !== id))}
-          />
-        )}
       </main>
       <SiteFooter />
     </div>
