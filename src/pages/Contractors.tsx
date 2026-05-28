@@ -339,8 +339,8 @@ const Contractors = () => {
             The 3 contractors I'd actually call if it were my house.
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
-            Hand-picked from {ranked.length || "every"} verified {projectLabel} contractor in {neighborhood}, ranked by
-            permit proximity to your address, project-type fit, and clean license history.
+            Hand-picked from {ranked.length || "every"} licensed {projectLabel} contractor with permits in {neighborhood}, ranked by
+            permit proximity to your address, project-type fit, and clean license history. Haleo doesn't vet contractors — we read public records.
           </p>
         </motion.div>
 
