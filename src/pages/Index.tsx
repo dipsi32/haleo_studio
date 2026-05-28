@@ -500,10 +500,10 @@ const Hero = () => {
             transition={{ duration: 0.7, ease: EASE }}
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-6">
-              <ShieldCheck className="w-3.5 h-3.5" /> For homeowners remodeling
+              <ShieldCheck className="w-3.5 h-3.5" /> Homeowners remodeling
             </div>
             <h1 className="font-display text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
-              Hire the contractor who's <span className="italic">already built it</span> — three doors down.
+              Hire the contractor who already built it on your block.
             </h1>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
               Haleo matches you to contractors with verified permit history for your exact project, in your exact neighborhood. Reviews can be bought. Permits can't.
@@ -514,12 +514,6 @@ const Hero = () => {
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/roast"
-                className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground transition-smooth"
-              >
-                <Flame className="w-3.5 h-3.5 text-accent" /> Got a quote? Get it roasted →
               </Link>
             </div>
           </motion.div>
@@ -639,24 +633,24 @@ const RoastHook = () => (
 
 
 const Value = () => (
-  <section className="bg-background py-28 md:py-40">
+  <section className="bg-background py-24 md:py-32">
     <div className="container mx-auto max-w-4xl">
       <div className="grid gap-x-12 gap-y-16 md:grid-cols-3">
         {[
           {
             n: "01",
             t: "Audit the quote.",
-            b: "We check every line item against real local costs and permit history. You see what is fair, what is high, and what makes no sense. About 30 seconds.",
+            b: "Check every line item against real local costs and permit history. See what is fair, what is high, and what makes no sense. About 30 seconds.",
           },
           {
             n: "02",
-            t: "Permit-proven matches.",
-            b: "Only builders who have passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
+            t: "Permit proven matches.",
+            b: "Only builders who passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
           },
           {
             n: "03",
-            t: "Bids, compared.",
-            b: "Every trade and every line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
+            t: "Compare bids.",
+            b: "Every trade and line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
           },
         ].map((s, idx) => (
           <motion.div
@@ -711,7 +705,7 @@ const NotLike = () => (
       >
         <p className="font-display text-xs tracking-[0.25em] text-accent">THE DIFFERENCE</p>
         <h2 className="mt-5 max-w-3xl font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
-          We are not a directory. We are how you actually hire.
+          Not a directory. The way you actually hire.
         </h2>
       </motion.div>
 
@@ -758,7 +752,7 @@ const NotLike = () => (
 /* -------------------------------------------------------------------------- */
 
 const Closing = () => (
-  <section className="relative bg-background py-32 md:py-44 border-t border-border">
+  <section className="relative bg-background py-28 md:py-36 border-t border-border">
 
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -768,22 +762,22 @@ const Closing = () => (
       className="container relative text-center"
     >
       <h2 className="mx-auto max-w-3xl text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
-        Start with the quote in your hand.
+        Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. Every line item checked against permits on your block.
+        Thirty seconds. No signup. See where your quote stands.
       </p>
       <Link
-        to="/roast"
+        to="/brief"
         className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
       >
-        Audit my proposal
+        Find your contractor
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-5 text-[13px] text-muted-foreground">
-        No quote yet?{" "}
-        <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
-          Find your contractor →
+        Already have a quote?{" "}
+        <Link to="/roast" className="font-medium text-foreground underline-offset-4 hover:underline">
+          Get it roasted
         </Link>
       </p>
     </motion.div>
