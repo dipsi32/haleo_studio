@@ -19,10 +19,17 @@ const SiteHeader = () => {
   const { user, loading, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
+    setMobileOpen(false);
     navigate("/", { replace: true });
+  };
+
+  const go = (path: string) => {
+    setMobileOpen(false);
+    navigate(path);
   };
 
   return (
