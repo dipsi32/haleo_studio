@@ -743,34 +743,38 @@ const BriefResult = () => {
 
               {/* Haleo's read — vision-grounded analysis of the photos / plans */}
               {spaceMedia.length > 0 && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <div>
-                      <p className="font-display text-base font-medium">Haleo's read of your {data.media.some((m) => m.kind === "floorplan") ? "plans & space" : "space"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {analysisStatus === "ready"
-                          ? "What our vision model pulled from your uploads — every claim tagged so contractors know what's verified."
-                          : analysisStatus === "error"
-                            ? "We couldn't finish the read."
-                            : "Reading your uploads now…"}
-                      </p>
-                    </div>
-                    {analysisStatus === "ready" && analysis && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-sage">
+                <Disclosure
+                  title={`Haleo's read of your ${data.media.some((m) => m.kind === "floorplan") ? "plans & space" : "space"}`}
+                  meta={
+                    analysisStatus === "ready" && analysis ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sage">
                         <Eye className="h-3 w-3" /> Vision-grounded
                       </span>
-                    )}
-                  </div>
-
+                    ) : analysisStatus === "error" ? (
+                      "couldn't finish"
+                    ) : (
+                      "reading…"
+                    )
+                  }
+                  preview={
+                    analysisStatus === "ready" && analysis?.summary ? (
+                      <span className="line-clamp-2">{analysis.summary}</span>
+                    ) : analysisStatus === "error" ? (
+                      <span className="text-destructive">Couldn't read your uploads</span>
+                    ) : (
+                      <span>Reading your photos &amp; plans…</span>
+                    )
+                  }
+                >
                   {(analysisStatus === "uploading" || analysisStatus === "analyzing" || analysisStatus === "idle") && (
-                    <div className="mt-4 space-y-2">
+                    <div className="space-y-2">
                       <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
                       <div className="h-3 w-1/2 animate-pulse rounded-full bg-secondary" />
                     </div>
                   )}
 
                   {analysisStatus === "ready" && analysis?.summary && (
-                    <div className="mt-4 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                    <div className="rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
                       <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
                         {analysis.summary}
                       </p>
@@ -784,7 +788,7 @@ const BriefResult = () => {
                   )}
 
                   {analysisStatus === "error" && (
-                    <p className="mt-3 text-xs text-destructive">
+                    <p className="text-xs text-destructive">
                       Couldn't read your uploads{analysisError ? ` — ${analysisError}` : ""}.
                     </p>
                   )}
@@ -795,20 +799,25 @@ const BriefResult = () => {
                     onSave={saveAnnotation}
                     locked={approved}
                   />
-                </div>
+                </Disclosure>
               )}
 
               {/* Scope of work */}
-              <div className="border-b border-border px-6 py-6 md:px-10">
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <p className="font-display text-base font-medium">Scope of work</p>
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
-                    <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From you</span>
-                    <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Verify on site</span>
-                    <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
-                  </div>
+              <Disclosure
+                title="Scope of work"
+                meta={`${tradeGroups.length} trade${tradeGroups.length === 1 ? "" : "s"}`}
+                preview={
+                  <span className="line-clamp-1">
+                    {tradeGroups.map((g) => g.trade).join(" · ") || "Trade-by-trade breakdown"}
+                  </span>
+                }
+              >
+                <div className="mb-3 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
+                  <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From you</span>
+                  <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Verify on site</span>
+                  <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
                 </div>
-                <div className="mt-4 space-y-3">
+                <div className="space-y-3">
                   {tradeGroups.map((group) => (
                     <TradeGroupCard
                       key={group.trade}
@@ -829,12 +838,19 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
 
               {/* Permit */}
-              <div className="border-b border-border px-6 py-6 md:px-10">
-                <p className="font-display text-base font-medium">Permit &amp; jurisdiction</p>
-                <div className="mt-3 flex items-start gap-3">
+              <Disclosure
+                title="Permit & jurisdiction"
+                preview={
+                  <span className={`inline-flex items-center gap-1.5 ${permit.likely ? "text-accent" : "text-sage"}`}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+                  </span>
+                }
+              >
+                <div className="flex items-start gap-3">
                   <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
                     <ShieldCheck className="h-4 w-4" />
                   </div>
@@ -851,7 +867,7 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
 
             </section>
 
