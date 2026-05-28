@@ -115,13 +115,10 @@ export default function Roast() {
 
   const [funMessageIndex, setFunMessageIndex] = useState(0);
   const funShareMessages = [
-    "Share this so your friends also know if they're getting ripped off.",
-    "Your group chat needs to see this. Seriously.",
-    "One share = one overpriced quote exposed. Be the hero.",
-    "Contractors hate this one weird trick. (It's just math.)",
-    "Sharing is caring. Especially about your wallet.",
-    "Spread the word. Save a kitchen renovation.",
-    "Tell a friend. Save them from backsplash bankruptcy.",
+    "If this helped, would you pass it on? I'm one person trying to get this in front of homeowners before they sign.",
+    "No ad budget here — just hoping word of mouth does the work. Sharing genuinely helps.",
+    "If a friend is renovating, send it their way. That's the whole growth strategy, honestly.",
+    "Built this solo. A share to one person who needs it means more than you'd think.",
   ];
 
   useEffect(() => {
