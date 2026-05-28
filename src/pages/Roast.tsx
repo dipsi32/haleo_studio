@@ -231,7 +231,7 @@ export default function Roast() {
                 <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
                   Got a quote? <span className="italic">Get it roasted.</span>
                 </h1>
-                <p className="text-lg text-foreground/70 max-w-xl mx-auto">
+                <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
                   Drop it in. Haleo checks every line against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand. No drama, just the numbers.
                 </p>
               </div>
