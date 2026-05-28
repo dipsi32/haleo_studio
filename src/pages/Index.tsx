@@ -515,35 +515,27 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Mock score card — warm gradient, the signature visual */}
+          {/* Mock score card — original tilted gradient with glow */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20, rotate: -2 }}
+            animate={{ opacity: 1, y: 0, rotate: -2 }}
             transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
             className="relative"
           >
-            <div className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 shadow-soft text-white">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-white/80">Remodel Roast</p>
-                <span className="text-[10px] uppercase tracking-wider text-white font-medium">High</span>
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
+            <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
+              <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-6xl font-serif font-bold leading-none">34</span>
+                <span className="text-sm opacity-90">/ 100</span>
               </div>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-display text-6xl font-bold leading-none text-white tabular-nums">34</span>
-                <span className="text-sm text-white/80">/ 100</span>
-              </div>
-              <p className="mt-2 font-display text-lg font-light text-white">Yikes territory</p>
-              <p className="mt-4 text-sm italic leading-snug text-white/90">
+              <p className="mt-2 text-xl font-serif">Yikes Territory</p>
+              <p className="mt-3 text-sm italic leading-snug opacity-95">
                 "$12,000 for a backsplash? Are they tiling it with 24k gold?"
               </p>
-              <div className="mt-6 space-y-2 border-t border-white/20 pt-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/80">Cabinets</span>
-                  <span className="text-white font-medium">High</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/80">Labor</span>
-                  <span className="text-white/80">Fair</span>
-                </div>
+              <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
               </div>
             </div>
           </motion.div>
