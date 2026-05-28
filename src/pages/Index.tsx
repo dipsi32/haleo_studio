@@ -499,21 +499,19 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE }}
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-8">
               <ShieldCheck className="w-3.5 h-3.5" /> Homeowners remodeling
             </div>
-            <h1 className="font-display text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
+            <h1 className="font-display text-[2.25rem] md:text-[3.6rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
               Hire the contractor who already built it on your block.
             </h1>
-            <div className="mt-5 space-y-3 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
-              <p>
-                Haleo reads your space, creates a contractor-ready brief, then matches you to builders with verified permit history for your exact project type, in your exact neighborhood.
-              </p>
-              <p className="text-foreground/80">
-                Reviews can be bought. Permits can't.
-              </p>
-            </div>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
+              A contractor-ready brief, matched to builders with verified permit history for your project, on your street.
+            </p>
+            <p className="mt-5 font-display text-lg md:text-xl text-foreground/90 leading-snug">
+              Reviews can be bought. Permits can't.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 to="/brief"
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
