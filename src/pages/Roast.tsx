@@ -219,27 +219,78 @@ export default function Roast() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-2 flex items-center justify-between">
-        <Link to="/" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1.5">
-          <ArrowLeft className="w-4 h-4" /> Haleo
-        </Link>
-        <div className="text-xs text-foreground/50">Free. No signup. Real local data.</div>
-      </div>
+      <SiteHeader />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pb-20">
-        <AnimatePresence mode="wait">
-          {stage === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <div className="text-center mb-10">
-                <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-foreground mb-3 leading-[1.05]">
-                  Got a quote? <span className="italic">Get it roasted.</span>
-                </h1>
-                <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                  Drop it in. Haleo checks every line against local cost guides, permit comps, and prior Haleo proposals, then tells you straight where you stand. No drama, just the numbers.
+      <AnimatePresence mode="wait">
+        {stage === "upload" && (
+          <motion.div key="upload" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            {/* Marketing hero — the screen homeowners land on */}
+            <section className="relative overflow-hidden">
+              <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[80%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,146,60,0.18),transparent_55%)]" />
+              <div className="container mx-auto max-w-5xl px-6 pt-12 md:pt-20 pb-10 md:pb-14">
+                <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 mb-6">
+                      <Flame className="w-3.5 h-3.5" /> Free · No signup · 30 seconds
+                    </div>
+                    <h1 className="font-serif text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground">
+                      Got a quote? <span className="italic">Get it roasted.</span>
+                    </h1>
+                    <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
+                      Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lg shadow-orange-200/50 hover:bg-foreground/90 transition"
+                      >
+                        Roast my quote <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-muted-foreground">No login. Just answers.</span>
+                    </div>
+                  </motion.div>
+
+                  {/* Sample verdict card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, rotate: -2 }}
+                    animate={{ opacity: 1, y: 0, rotate: -2 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+                    className="relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
+                    <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
+                      <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
+                      <div className="mt-2 flex items-baseline gap-2">
+                        <span className="text-6xl font-serif font-bold leading-none">34</span>
+                        <span className="text-sm opacity-90">/ 100</span>
+                      </div>
+                      <p className="mt-2 text-xl font-serif">Yikes Territory</p>
+                      <p className="mt-3 text-sm italic leading-snug opacity-95">
+                        "$12,000 for a backsplash? Are they tiling it with 24k gold?"
+                      </p>
+                      <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
+                        <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                <p className="mt-10 text-center text-[13.5px] text-muted-foreground">
+                  No quote yet?{" "}
+                  <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
+                    Find your contractor →
+                  </Link>
                 </p>
               </div>
+            </section>
 
+            {/* Upload card */}
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 md:pb-20">
               <Card
                 className="border-2 border-dashed border-orange-300/60 bg-white/70 backdrop-blur p-6 md:p-10 sm:p-14 text-center hover:border-orange-400 transition cursor-pointer rounded-3xl"
                 onDrop={handleDrop}
@@ -282,8 +333,11 @@ export default function Roast() {
                   </div>
                 ))}
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
+
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 md:pb-20">
 
           {stage === "loading" && (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-14 md:py-24">
