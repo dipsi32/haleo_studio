@@ -250,7 +250,7 @@ const ContractorProfile = () => {
                           const allPending = items.every(c => c.status === 'pending' || c.status === 'coming_soon');
                           const right = allPending ? 'Checking…' : weight === 0 ? '—' : `${earned}/${weight}`;
                           return (
-                            <details key={g.key} className="group rounded-2xl border border-border/60 bg-background/40 open:bg-background" open={idx === 0}>
+                            <details key={g.key} className="group rounded-2xl border border-border/60 bg-background/40 open:bg-background">
                               <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl p-3 hover:bg-secondary/40">
                                 <g.Icon className="h-4 w-4 shrink-0 text-accent" />
                                 <div className="min-w-0 flex-1">
