@@ -521,7 +521,7 @@ const Contractors = () => {
                   <div className="border-b border-border px-5 py-3">
                     <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
                     <p className="mt-0.5 font-display text-sm font-medium text-foreground">
-                      New {projectLabel} project in {neighborhood} — verified homeowner via Haleo
+                      New {projectLabel} project in {neighborhood} — homeowner via Haleo
                     </p>
                   </div>
 
