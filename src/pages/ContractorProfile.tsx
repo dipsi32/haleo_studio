@@ -196,7 +196,7 @@ const ContractorProfile = () => {
                       label: 'Local track record',
                       Icon: MapPinned,
                       blurb: 'How much real, recent, on-topic work they have nearby.',
-                      match: (l: string) => ['Local track record', 'Recent activity', 'Right kind of work'].includes(l),
+                      match: (l: string) => ['Permits in your area', 'Recent activity', 'Right kind of work'].includes(l),
                     },
                     {
                       key: 'license',
