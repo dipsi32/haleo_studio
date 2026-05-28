@@ -324,7 +324,7 @@ export default function Roast() {
               <div className="grid sm:grid-cols-3 gap-4 mt-10 text-sm">
                 {[
                   { n: "1", t: "Upload the quote", d: "Photo or PDF, any format." },
-                  { n: "2", t: "Haleo does the math", d: "Cost guides, local permits, our corpus." },
+                  { n: "2", t: "Haleo does the math", d: "Public cost guides, local permit records, and our own database of past audits." },
                   { n: "3", t: "See where you stand", d: "Fair range, line-by-line, what to do next." },
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">
