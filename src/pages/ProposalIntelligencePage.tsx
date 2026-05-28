@@ -401,54 +401,6 @@ export default function ProposalIntelligencePage() {
   };
 
 
-  // Generate contextual tips from red_flags, insights, and haleo_tips
-  useEffect(() => {
-    if (!contractResult || !tipsOptedIn) return;
-    const allTips: TipType[] = [];
-
-    // Red flags as warnings (highest priority)
-    (contractResult.red_flags || []).forEach((rf, i) => {
-      allTips.push({
-        id: `rf-${i}`,
-        title: rf.title,
-        type: 'warning' as const,
-        message: rf.detail,
-        phase: 'visualization' as const,
-        trigger: rf.category,
-      });
-    });
-
-    // Positive insights as success
-    (contractResult.insights || []).filter(ins => ins.type === 'positive').forEach((ins, i) => {
-      allTips.push({
-        id: `ins-${i}`,
-        title: ins.title,
-        type: 'success' as const,
-        message: ins.detail,
-        phase: 'visualization' as const,
-        trigger: ins.category,
-      });
-    });
-
-    // Haleo tips as info
-    (contractResult.haleo_tips || []).forEach((qt, i) => {
-      allTips.push({
-        id: qt.id || `qt-${i}`,
-        title: qt.headline,
-        type: 'info' as const,
-        message: qt.body,
-        phase: 'visualization' as const,
-        trigger: qt.derivedFrom?.join(', ') || 'Proposal analysis',
-      });
-    });
-
-    // Limit to 5 most relevant, prioritizing warnings
-    const sorted = allTips.sort((a, b) => {
-      const order = { warning: 0, permit: 1, success: 2, info: 3 };
-      return (order[a.type] ?? 3) - (order[b.type] ?? 3);
-    });
-    setProposalTips(sorted.slice(0, 5));
-  }, [contractResult, tipsOptedIn]);
 
   return (
     <div className="min-h-screen bg-background">
