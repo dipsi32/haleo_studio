@@ -410,6 +410,7 @@ const Contractors = () => {
             </div>
           </div>
         )}
+        <div className="mt-12 rounded-3xl border border-border bg-card p-6 md:p-8">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
