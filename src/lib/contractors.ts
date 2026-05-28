@@ -161,7 +161,7 @@ export const computeTrustScore = (
   const localCount = permits.length;
   const localScore = Math.min(20, Math.round((localCount / 20) * 20));
   components.push({
-    label: 'Local track record',
+    label: 'Permits in your area',
     what: "How many permitted jobs they've pulled in your area. More local work = more proof they actually build here.",
     weight: 20, earned: localScore,
     detail: `${localCount} permits in your area`,
