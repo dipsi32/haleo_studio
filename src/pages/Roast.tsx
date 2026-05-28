@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
   ArrowRight, CheckCircle2, Database, FileText, MapPin, BarChart3, Download,
+  ChevronDown,
 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
