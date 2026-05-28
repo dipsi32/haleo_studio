@@ -635,9 +635,9 @@ export default function Roast() {
                 </Button>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Offscreen takeaway scorecard — the "golden nugget" PNG download.
           One self-contained card: verdict, range bar, top line-item burns,
