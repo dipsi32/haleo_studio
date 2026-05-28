@@ -462,14 +462,15 @@ export default function ProposalIntelligencePage() {
               Back
             </button>
             <h1 className="font-serif text-2xl sm:text-3xl text-foreground mb-2">
-              {step === 'full-report' ? 'Your full audit' : step === 'pricing' ? 'Here is what the data says' : 'Audit a contractor proposal'}
+              {step === 'full-report' ? 'The full roast' : step === 'pricing' ? "Here's the receipts" : 'Roast your contractor quote'}
             </h1>
             <p className="text-muted-foreground">
-              {step === 'upload' && 'Drop the proposal in. We check the price first, then go deeper if you want.'}
-              {step === 'analyzing' && 'Working on it.'}
-              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals. Every number on this page comes from one of those.'}
-              {step === 'full-report' && 'Pricing, scope, contract risks, contractor signals, and what to do this week.'}
+              {step === 'upload' && "Drop the quote in. We'll check the price first — no signup, no drama, just numbers."}
+              {step === 'analyzing' && 'Reading it like a hawk…'}
+              {step === 'pricing' && 'Your quote vs. real permits, public cost guides, and prior Haleo proposals. Every number traces back to a source.'}
+              {step === 'full-report' && 'Pricing, scope, contract risk, contractor signals, and what to do this week — all in one place.'}
             </p>
+
           </div>
 
           <AnimatePresence mode="wait">
