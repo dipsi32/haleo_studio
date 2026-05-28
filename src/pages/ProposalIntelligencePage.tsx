@@ -834,55 +834,6 @@ export default function ProposalIntelligencePage() {
             {/* ═══ FULL REPORT ═══ */}
             {step === 'full-report' && contractResult && (
               <>
-                {/* Tips opt-in prompt */}
-                {!tipsAsked && (contractResult.haleo_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Lightbulb className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        Want contextual tips as you review?
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Haleo found helpful insights about your proposal — red flags, good signs, and things to watch. 
-                        They'll appear in a sidebar on the right — dismiss anytime.
-                      </p>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="text-xs h-7 gap-1.5" onClick={() => { setTipsOptedIn(true); setTipsAsked(true); }}>
-                          <Lightbulb className="w-3 h-3" /> Yes, show tips
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => { setTipsAsked(true); setTipsDismissedToFab(true); }}>
-                          Not now
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Floating FAB for dismissed tips */}
-                {tipsAsked && !tipsOptedIn && tipsDismissedToFab && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5, y: -20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className="fixed bottom-6 right-4 z-50"
-                  >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setTipsOptedIn(true); setTipsDismissedToFab(false); }}
-                      className="rounded-full shadow-lg gap-1.5 bg-card border-primary/30 hover:shadow-xl transition-all animate-pulse hover:animate-none"
-                    >
-                      <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs font-medium">Tips available</span>
-                    </Button>
-                  </motion.div>
-                )}
                 <FullReportView
                   pricingResult={pricingResult}
                   contractResult={contractResult}
