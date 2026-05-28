@@ -24,7 +24,7 @@ function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: 
 
   if (matchCount > 0) {
     reasons.push(
-      `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — verified by city records`
+      `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — straight from city records`
     );
   } else if (permits.length > 0) {
     reasons.push(`${permits.length} permitted job${permits.length === 1 ? "" : "s"} pulled in ${neighborhood}`);
@@ -59,7 +59,7 @@ function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: 
 function rankHeadline(idx: number): { eyebrow: string; rationale: string } {
   if (idx === 0) return {
     eyebrow: "Top pick · the one I'd call first",
-    rationale: "Closest fit by project type, location, and verified track record.",
+    rationale: "Closest fit by project type, location, and local permit footprint.",
   };
   if (idx === 1) return {
     eyebrow: "Strong second",
@@ -136,7 +136,7 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${toneClass}`}>
                 <ShieldCheck className="h-3 w-3" /> {tier.label}
               </span>
-              <span className="text-[11px] text-muted-foreground">{checks.passed}/{checks.total} checks</span>
+              <span className="text-[11px] text-muted-foreground">{checks.passed}/{checks.total} signals</span>
             </div>
           </div>
         );
@@ -385,8 +385,8 @@ function RecapView({
               Want a wider pool? Unlock the full match list.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Every additional contractor is verified the same way — real permit history, clean license,
-              proven work near you.
+              Every additional contractor is sourced the same way — real permit history, CSLB license file,
+              public records only.
             </p>
           </div>
         </div>

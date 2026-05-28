@@ -83,32 +83,32 @@ export const cslbDeepLink = (license: string) =>
 //  −10  Business name mismatch (CSLB record vs. permits)
 export type ComponentStatus = 'live' | 'pending' | 'penalty' | 'coming_soon';
 
-// ───── Trust tier — how to *talk* about the score ─────
-// The numeric score is strict and conservative (verified-only public records).
-// A 55/100 isn't "barely passing" — it's a contractor with solid local history
-// and a clean license. The tier label fixes that perception.
+// ───── Permit-intelligence tier — how to *talk* about the score ─────
+// Haleo does NOT vet, endorse, or rate contractors. Tiers are a grouping
+// based on public permit history + CSLB license records. The label tells
+// the homeowner what the data shows — nothing more.
 export type TrustTier = {
-  label: string;        // chip text  ("Trusted", "Highly Trusted", "Elite")
-  blurb: string;        // one-line meaning
+  label: string;        // chip text
+  blurb: string;        // one-line meaning (always frames it as "based on records")
   tone: 'sage' | 'accent' | 'amber' | 'muted' | 'destructive';
 };
 export const trustTier = (score: number, hasPenalty = false): TrustTier => {
   if (hasPenalty) return {
-    label: 'Review before hiring',
-    blurb: 'CSLB has a flag on this contractor — read the details first.',
+    label: 'Flag on file',
+    blurb: 'CSLB has a disciplinary record on this contractor — read it before reaching out.',
     tone: 'destructive',
   };
-  if (score >= 80) return { label: 'Elite', blurb: 'Top-tier verified track record near you.', tone: 'sage' };
-  if (score >= 65) return { label: 'Highly Trusted', blurb: 'Strong verified history and clean license.', tone: 'sage' };
-  if (score >= 50) return { label: 'Trusted', blurb: 'Solid verified record — meets every core check.', tone: 'accent' };
-  if (score >= 35) return { label: 'Verified', blurb: 'Licensed and active — lighter local track record.', tone: 'amber' };
-  return { label: 'Limited record', blurb: 'Not enough verified history yet — ask for references.', tone: 'muted' };
+  if (score >= 65) return { label: 'Heavy local footprint', blurb: 'Lots of recent permits in your area and a clean license on file.', tone: 'sage' };
+  if (score >= 45) return { label: 'Strong local footprint', blurb: 'Active permit history nearby with a clean license.', tone: 'sage' };
+  if (score >= 28) return { label: 'Active locally', blurb: 'Licensed and pulling permits in your area.', tone: 'accent' };
+  if (score >= 12) return { label: 'Light footprint', blurb: 'Licensed, with a smaller local permit trail.', tone: 'amber' };
+  return { label: 'Sparse record', blurb: "Not much public permit history yet — doesn't mean bad, just less data.", tone: 'muted' };
 };
 
-// "5 of 6 verifications cleared" — counts live components with full or near-full credit.
+// "5 of 6 records line up" — counts live components with at least partial credit.
 export const trustChecks = (breakdown: TrustScoreBreakdown): { passed: number; total: number } => {
   const live = breakdown.components.filter(c => c.weight > 0);
-  const passed = live.filter(c => c.earned >= c.weight * 0.6).length;
+  const passed = live.filter(c => c.earned >= c.weight * 0.4).length;
   return { passed, total: live.length };
 };
 

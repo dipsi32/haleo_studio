@@ -39,8 +39,8 @@ const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
     : 'border-border bg-secondary text-muted-foreground';
   return (
     <div className={`flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border-2 ${toneClass}`}>
-      <span className="font-display text-[13px] font-semibold leading-none">{tier.label}</span>
-      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} checks</span>
+      <span className="font-display text-[11px] font-semibold leading-tight text-center px-1">{tier.label}</span>
+      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} signals</span>
     </div>
   );
 };
@@ -92,7 +92,7 @@ const ContractorCard = ({
             onClick={() => navigate(`/contractors/${contractor.id}`)}
             className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
           >
-            See what we verified →
+            See the records behind this →
           </button>
         </div>
       </div>
@@ -339,8 +339,8 @@ const Contractors = () => {
             The 3 contractors I'd actually call if it were my house.
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
-            Hand-picked from {ranked.length || "every"} verified {projectLabel} contractor in {neighborhood}, ranked by
-            permit proximity to your address, project-type fit, and clean license history.
+            Hand-picked from {ranked.length || "every"} licensed {projectLabel} contractor with permits in {neighborhood}, ranked by
+            permit proximity to your address, project-type fit, and clean license history. Haleo doesn't vet contractors — we read public records.
           </p>
         </motion.div>
 
@@ -357,7 +357,7 @@ const Contractors = () => {
         )}
         {status === "ready" && curated.length === 0 && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-            No verified {projectLabel} contractors yet in {zip}. {backfillNote}
+            No licensed {projectLabel} contractors with permits in {zip} yet. {backfillNote}
           </div>
         )}
 
@@ -394,7 +394,7 @@ const Contractors = () => {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">More matches</p>
-                <h2 className="mt-1 font-display text-xl font-light">Other verified contractors near you</h2>
+                <h2 className="mt-1 font-display text-xl font-light">Other contractors with permits near you</h2>
               </div>
               <p className="text-xs text-muted-foreground">{rest.length} more</p>
             </div>
@@ -416,19 +416,19 @@ const Contractors = () => {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
-              <p className="font-display text-lg font-medium">How we read trust</p>
+              <p className="font-display text-lg font-medium">How we group contractors</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                We score strictly — only what we can verify in public records. No paid placements, no self-reported reviews, no five-star theatre. A contractor reaches <strong className="text-foreground">Trusted</strong> by clearing every core check, and <strong className="text-foreground">Elite</strong> by stacking real local volume on top of that.
+                Haleo doesn't vet, endorse, or rate contractors. We read public records — every permit pulled in your city plus the contractor's CSLB license file — and group them by what the data shows. No paid placements. No self-reported reviews. No stars.
               </p>
               <div className="mt-4 grid gap-2 text-sm md:grid-cols-5">
-                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Elite</p><p className="text-[11px] text-muted-foreground">80+ · top tier</p></div>
-                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Highly Trusted</p><p className="text-[11px] text-muted-foreground">65–79</p></div>
-                <div className="rounded-xl border border-accent/30 bg-accent/5 p-3"><p className="text-xs font-semibold text-accent">Trusted</p><p className="text-[11px] text-muted-foreground">50–64 · all core checks pass</p></div>
-                <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-700">Verified</p><p className="text-[11px] text-muted-foreground">35–49 · licensed, lighter record</p></div>
-                <div className="rounded-xl border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold text-muted-foreground">Limited record</p><p className="text-[11px] text-muted-foreground">Below 35</p></div>
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Heavy local footprint</p><p className="text-[11px] text-muted-foreground">65+ · lots of nearby permits</p></div>
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Strong local footprint</p><p className="text-[11px] text-muted-foreground">45–64</p></div>
+                <div className="rounded-xl border border-accent/30 bg-accent/5 p-3"><p className="text-xs font-semibold text-accent">Active locally</p><p className="text-[11px] text-muted-foreground">28–44 · licensed and pulling permits</p></div>
+                <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-700">Light footprint</p><p className="text-[11px] text-muted-foreground">12–27 · smaller local trail</p></div>
+                <div className="rounded-xl border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold text-muted-foreground">Sparse record</p><p className="text-[11px] text-muted-foreground">Below 12 · not enough data yet</p></div>
               </div>
               <p className="mt-4 text-xs text-muted-foreground">
-                Tap any contractor to see exactly which checks they cleared, the raw 0–100 score, and the source records behind every signal.
+                Tap any contractor to see the exact permits, the CSLB license file, and the raw signals behind their group. You decide who to trust.
               </p>
             </div>
           </div>
@@ -521,7 +521,7 @@ const Contractors = () => {
                   <div className="border-b border-border px-5 py-3">
                     <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
                     <p className="mt-0.5 font-display text-sm font-medium text-foreground">
-                      New {projectLabel} project in {neighborhood} — verified homeowner via Haleo
+                      New {projectLabel} project in {neighborhood} — homeowner via Haleo
                     </p>
                   </div>
 

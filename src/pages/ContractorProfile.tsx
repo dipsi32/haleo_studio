@@ -128,7 +128,7 @@ const ContractorProfile = () => {
                 </p>
               )}
               <p className="mt-3 text-base text-muted-foreground">
-                {contractor.permit_count} verified permit{contractor.permit_count === 1 ? "" : "s"} on file in {contractor.city ?? "San Jose"}.
+                {contractor.permit_count} permit{contractor.permit_count === 1 ? "" : "s"} on file in {contractor.city ?? "San Jose"}.
                 Last job {formatDate(contractor.last_permit_date)}.
               </p>
             </motion.div>
@@ -227,20 +227,20 @@ const ContractorProfile = () => {
                     <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h2 className="font-display text-xl font-medium">Haleo Trust</h2>
+                          <h2 className="font-display text-xl font-medium">Permit-intelligence read</h2>
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            {checks.passed} of {checks.total} verifications cleared
+                            {checks.passed} of {checks.total} public-record signals line up
                           </p>
                         </div>
                         <div className={`rounded-2xl border-2 px-3 py-2 text-right ${tierClass}`}>
                           <p className="font-display text-base font-semibold leading-none">{tier.label}</p>
                           <p className="mt-1 text-[10px] uppercase tracking-wider opacity-75">
-                            Raw score {score.total}/100
+                            Signal score {score.total}/100
                           </p>
                         </div>
                       </div>
                       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                        {tier.blurb} We score strictly — only verifiable permits, CSLB records, and city data. Never reviews or paid placement.
+                        {tier.blurb} Haleo doesn't vet, endorse, or rate contractors — we read public permit and CSLB records and group them by what the data shows.
                       </p>
 
                       <div className="mt-5 space-y-2">
