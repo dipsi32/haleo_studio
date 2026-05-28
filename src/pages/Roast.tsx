@@ -177,9 +177,10 @@ export default function Roast() {
       });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `haleo-score-${result.score}.png`;
+      a.download = `haleo-takeaway-${result.score}.png`;
       a.click();
-      toast({ title: "Downloaded", description: "Your scorecard is saved." });
+      toast({ title: "Saved", description: "Your takeaway card is on your device." });
+
     } catch (e) {
       toast({ title: "Couldn't generate image", description: "Try again in a moment.", variant: "destructive" });
     } finally {
