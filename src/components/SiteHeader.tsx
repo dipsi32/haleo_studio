@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown, Menu, X, Flame, Hammer, HardHat } from "lucide-react";
 import Logo from "./Logo";
 import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const SiteHeader = () => {
   const { user, loading, signOut } = useAuth();
