@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, MapPin, Calendar, Hammer, Check,
   Send, X, Info, Sparkles, AlertCircle, Paperclip,
-  CheckCircle2, FileText, Clock, Wallet, Home,
+  CheckCircle2, FileText, Clock, Wallet, Home, ChevronDown,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
@@ -18,6 +18,7 @@ import { useContractors, type RankedContractor } from "@/lib/useContractors";
 import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
+import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
