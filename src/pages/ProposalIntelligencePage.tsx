@@ -402,7 +402,7 @@ export default function ProposalIntelligencePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="pt-20 pb-16 px-4">
-        <div className={cn("max-w-2xl mx-auto", tipsOptedIn && proposalTips.length > 0 && "mr-[300px]")}>
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8 text-center">
             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
