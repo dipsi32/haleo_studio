@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { RankedContractor } from "@/lib/useContractors";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
+import { trustTier, trustChecks } from "@/lib/contractors";
 
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
