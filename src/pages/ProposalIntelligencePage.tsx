@@ -18,9 +18,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import UpgradeCard from '@/components/report/UpgradeCard';
 import LockedSection from '@/components/report/LockedSection';
-import { TipsContainer } from '@/components/design/ContextualTipDisplay';
 import { InAppEmailComposer } from '@/components/report/InAppEmailComposer';
-import { ContextualTip as TipType } from '@/types/clearcontract-intake';
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface PricingResult {
