@@ -757,8 +757,8 @@ const NotLike = () => (
 /* -------------------------------------------------------------------------- */
 
 const Closing = () => (
-  <section className="relative overflow-hidden bg-gradient-warm py-32 md:py-44">
-    <div className="pointer-events-none absolute inset-0 bg-gradient-hero opacity-60" aria-hidden />
+  <section className="relative bg-background py-32 md:py-44 border-t border-border">
+
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
