@@ -7,7 +7,7 @@ import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Hammer, MapPin, Calendar, ShieldCheck, Sparkles,
-  X as XIcon, Send, ArrowRight, Star,
+  X as XIcon, Send, ArrowRight, Star, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RankedContractor } from "@/lib/useContractors";
