@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
   ArrowRight, CheckCircle2, Database, FileText, MapPin, BarChart3, Download,
-  ChevronDown,
+  ChevronDown, Flame,
 } from "lucide-react";
+import SiteHeader from "@/components/SiteHeader";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
