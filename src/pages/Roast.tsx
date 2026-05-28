@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
   ArrowRight, CheckCircle2, Database, FileText, MapPin, BarChart3, Download,
+  ChevronDown,
 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,7 @@ export default function Roast() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileBase64Cache, setFileBase64Cache] = useState<string | null>(null);
   const [loadingPhase, setLoadingPhase] = useState(0);
+  const [showSources, setShowSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadingMessages = [
@@ -396,55 +398,82 @@ export default function Roast() {
                 </p>
               </Card>
 
-              {/* How Haleo got this number — the evidence block */}
-              <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
-                <h3 className="font-serif text-xl text-foreground mb-4">How Haleo got this number</h3>
+              {/* How Haleo got this number — collapsed by default */}
+              <Card className="p-0 rounded-3xl bg-white/85 backdrop-blur overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowSources((v) => !v)}
+                  className="w-full flex items-center justify-between gap-3 px-6 sm:px-8 py-5 text-left"
+                >
+                  <h3 className="font-serif text-lg text-foreground">How Haleo got this number</h3>
+                  <motion.div
+                    animate={{ rotate: showSources ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-foreground/60" />
+                  </motion.div>
+                </button>
 
-                {result.sources && result.sources.length > 0 ? (
-                  <>
-                    <p className="text-sm text-foreground/70 mb-3">
-                      Fair range based on {result.sources.length} source{result.sources.length === 1 ? "" : "s"}:
-                    </p>
-                    <ul className="space-y-2 text-sm">
-                      {result.sources.map((s, i) => {
-                        const cleanName = cleanSourceName(s.name);
-                        const Icon = sourceIcon(cleanName);
-                        const detail = sourceDetail(cleanName, s.sampleSize);
-                        return (
-                          <li key={i} className="flex items-start gap-3">
-                            <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
-                            <span className="text-foreground/85">
-                              {detail ? <><span className="font-medium text-foreground">{detail}</span> from </> : null}
-                              {cleanName}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </>
-                ) : (
-                  <p className="text-sm text-foreground/60">Pulled from public cost guides and recent local permits.</p>
-                )}
-
-                {result.comparableProjects && result.comparableProjects.length > 0 && (
-                  <div className="mt-5 pt-5 border-t border-foreground/10">
-                    <p className="text-[11px] uppercase tracking-wide text-foreground/50 mb-2">Nearby permit comps</p>
-                    <div className="space-y-2">
-                      {result.comparableProjects.slice(0, 3).map((c, i) => (
-                        <div key={i} className="flex items-baseline justify-between gap-3 text-sm">
-                          <div className="text-foreground/80 truncate">
-                            {c.address} <span className="text-foreground/50">· {c.type}</span>
+                <AnimatePresence initial={false}>
+                  {showSources && (
+                    <motion.div
+                      key="sources"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-1 space-y-5">
+                        {result.sources && result.sources.length > 0 ? (
+                          <div>
+                            <p className="text-sm text-foreground/70 mb-3">
+                              Fair range based on {result.sources.length} source{result.sources.length === 1 ? "" : "s"}:
+                            </p>
+                            <ul className="space-y-2 text-sm">
+                              {result.sources.map((s, i) => {
+                                const cleanName = cleanSourceName(s.name);
+                                const Icon = sourceIcon(cleanName);
+                                const detail = sourceDetail(cleanName, s.sampleSize);
+                                return (
+                                  <li key={i} className="flex items-start gap-3">
+                                    <Icon className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
+                                    <span className="text-foreground/85">
+                                      {detail ? <><span className="font-medium text-foreground">{detail}</span> from </> : null}
+                                      {cleanName}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
                           </div>
-                          <div className="font-medium text-foreground tabular-nums">{fmt(c.cost)}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        ) : (
+                          <p className="text-sm text-foreground/60">Pulled from public cost guides and recent local permits.</p>
+                        )}
 
-                <p className="mt-5 text-[11px] text-foreground/50 leading-relaxed">
-                  This is an estimate, not an appraisal. Always confirm with at least two bids before you sign.
-                </p>
+                        {result.comparableProjects && result.comparableProjects.length > 0 && (
+                          <div className="pt-5 border-t border-foreground/10">
+                            <p className="text-[11px] uppercase tracking-wide text-foreground/50 mb-2">Nearby permit comps</p>
+                            <div className="space-y-2">
+                              {result.comparableProjects.slice(0, 3).map((c, i) => (
+                                <div key={i} className="flex items-baseline justify-between gap-3 text-sm">
+                                  <div className="text-foreground/80 truncate">
+                                    {c.address} <span className="text-foreground/50">· {c.type}</span>
+                                  </div>
+                                  <div className="font-medium text-foreground tabular-nums">{fmt(c.cost)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-foreground/50 leading-relaxed">
+                          This is an estimate, not an appraisal. Always confirm with at least two bids before you sign.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
 
               {/* Line-by-line */}
