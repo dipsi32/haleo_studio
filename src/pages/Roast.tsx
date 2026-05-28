@@ -214,7 +214,7 @@ export default function Roast() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50">
+    <main className="min-h-screen bg-background">
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-2 flex items-center justify-between">
         <Link to="/" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1.5">
