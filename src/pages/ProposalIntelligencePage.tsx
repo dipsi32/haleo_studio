@@ -160,10 +160,6 @@ export default function ProposalIntelligencePage() {
   const [tier, setTier] = useState<"free" | "paid">("free");
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
   const isLocked = !user && tier === "free";
-  const [tipsOptedIn, setTipsOptedIn] = useState(false);
-  const [tipsAsked, setTipsAsked] = useState(false);
-  const [proposalTips, setProposalTips] = useState<TipType[]>([]);
-  const [tipsDismissedToFab, setTipsDismissedToFab] = useState(false);
 
   // ─── Handoff from Roast ─────────────────────────────────────────
   // If the user came from /roast, we already have the file + pricing analysis.
