@@ -359,14 +359,16 @@ const ContractorProfile = () => {
                       variant="profile"
                     />
                   </div>
-                  <a
-                    href={cslbDeepLink(contractor.license_number)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-1 text-sm text-accent underline-offset-4 hover:underline"
-                  >
-                    Verify on CSLB <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  {license && license.scrape_succeeded && (
+                    <a
+                      href={cslbDeepLink(contractor.license_number)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex items-center gap-1 text-sm text-accent underline-offset-4 hover:underline"
+                    >
+                      Verify on CSLB <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
                 </section>
 
                 <Link
