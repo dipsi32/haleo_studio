@@ -710,17 +710,18 @@ export default function ProposalIntelligencePage() {
 
 
                 {/* Section 3: Haleo's Take */}
-                <SectionLabel number={3} label="Haleo's Take" />
+                <SectionLabel number={3} label="Haleo's hot take" />
                 <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
                 {/* Section 4: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
-                    <SectionLabel number={4} label="Closest Real Project to Yours" />
+                    <SectionLabel number={4} label="A neighbor who actually built this" />
                     <Card className="p-5">
                       <p className="text-xs text-muted-foreground mb-4">
-                        Pulled live from City of San José permit records — the nearest match to your scope, size, and neighborhood.
+                        Closest match from City of San José permit records — same scope, similar size, your neighborhood.
                       </p>
+
                       {(() => {
                         const p = pricingResult.comparableProjects[0];
                         return (
