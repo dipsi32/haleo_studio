@@ -394,11 +394,12 @@ export default function ProposalIntelligencePage() {
   };
 
   const verdictConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-    'below-market': { label: 'Below market', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
-    fair: { label: 'Fair', color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
-    'above-market': { label: 'A little high', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
-    'significantly-above': { label: 'Notably high', color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
+    'below-market': { label: "Suspiciously cheap", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    fair: { label: "Priced like a grown-up", color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
+    'above-market': { label: "Bit of a stretch", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    'significantly-above': { label: "They saw you coming", color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
   };
+
 
   // Generate contextual tips from red_flags, insights, and haleo_tips
   useEffect(() => {
