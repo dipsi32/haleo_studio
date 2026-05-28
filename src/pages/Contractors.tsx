@@ -415,24 +415,20 @@ const Contractors = () => {
         </motion.div>
 
         {/* Status states */}
-        {status === "loading" && (
-          <p className="mt-8 text-sm text-muted-foreground">
-            {backfillNote ?? "Searching permit records near you…"}
-          </p>
-        )}
+        {showLoader && <MatchingProgress note={backfillNote} />}
         {status === "error" && (
           <div className="mt-8 flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
           </div>
         )}
-        {status === "ready" && curated.length === 0 && (
+        {status === "ready" && revealReady && curated.length === 0 && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
             No licensed {projectLabel} contractors with permits in {zip} yet. {backfillNote}
           </div>
         )}
 
         {/* Curated 3-match stack */}
-        {status === "ready" && curated.length > 0 && (
+        {status === "ready" && revealReady && curated.length > 0 && (
           <div className="mt-8">
             <CuratedMatchStack
               matches={curated}
