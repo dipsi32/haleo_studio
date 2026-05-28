@@ -314,10 +314,20 @@ export default function Roast() {
                 <div className="relative z-10">
                   <p className="text-xs uppercase tracking-widest opacity-90 mb-3">The verdict</p>
                   <p className="text-4xl sm:text-5xl font-serif font-semibold leading-[1.05] mb-3">{result.tier.label}.</p>
-                  <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95">{result.roast.headline}</p>
+                  <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95 mb-5">{result.roast.headline}</p>
+                  <Button
+                    onClick={downloadShareCard}
+                    disabled={downloading}
+                    className="rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold"
+                    size="sm"
+                  >
+                    <Download className="w-4 h-4 mr-1.5" />
+                    {downloading ? "Saving…" : "Save the takeaway card"}
+                  </Button>
                 </div>
                 <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
               </Card>
+
 
               {/* Where your quote lands — the intuitive bar */}
               <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
