@@ -486,7 +486,7 @@ const Hero = () => {
   const Screen = SCREENS[i];
 
   return (
-    <section className="relative bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50">
+    <section className="relative bg-background">
       <SiteHeader />
       <div className="container mx-auto max-w-5xl px-6 pt-20 md:pt-28 pb-16 md:pb-24">
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
