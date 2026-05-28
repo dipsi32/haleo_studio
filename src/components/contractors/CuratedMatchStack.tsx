@@ -189,56 +189,123 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
         </Button>
       </div>
 
-      {/* Drag affordance hint chips */}
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-between px-4">
-        <motion.div
-          className="rounded-full border-2 border-muted-foreground/60 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80"
-          initial={false}
-        >
-          Pass
-        </motion.div>
-        <motion.div
-          className="rounded-full border-2 border-amber-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-600"
-          initial={false}
-        >
-          Send
-        </motion.div>
-      </div>
     </motion.article>
   );
 };
+
+type Decision = "sent" | "passed";
 
 type Props = {
   matches: RankedContractor[];           // top 3 (or fewer)
   projectLabel: string;
   neighborhood: string;
   onSend: (rc: RankedContractor) => void;
-  onExhausted?: () => void;              // user passed/sent everything
+  onUnlockMore?: () => void;             // user wants to see the rest → paywall
 };
 
-export default function CuratedMatchStack({ matches, projectLabel, neighborhood, onSend, onExhausted }: Props) {
+export default function CuratedMatchStack({ matches, projectLabel, neighborhood, onSend, onUnlockMore }: Props) {
   const [cursor, setCursor] = useState(0);
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const total = matches.length;
   const active = matches[cursor];
   const next1 = matches[cursor + 1];
   const next2 = matches[cursor + 2];
 
-  const advance = () => {
-    setCursor(c => {
-      const n = c + 1;
-      if (n >= total) onExhausted?.();
-      return n;
-    });
+  const record = (id: string, d: Decision) => {
+    setDecisions(prev => ({ ...prev, [id]: d }));
+    setCursor(c => c + 1);
   };
 
+  // ───── Recap + paywall once all 3 are reviewed ─────
   if (!active) {
+    const sentCount = Object.values(decisions).filter(d => d === "sent").length;
+    const passedCount = total - sentCount;
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-card p-8 text-center">
-        <p className="font-display text-xl font-light">You've reviewed all 3 curated matches.</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Want a wider pool? Open the full list of verified contractors below.
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="overflow-hidden rounded-[28px] border border-border bg-card shadow-lift"
+      >
+        <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-amber-50 via-card to-card px-5 py-3">
+          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">
+            Your curated round · complete
+          </p>
+        </div>
+
+        <div className="px-6 pt-6 pb-5 md:px-7">
+          <h3 className="font-display text-2xl font-light leading-tight">
+            {sentCount === 0
+              ? "Reviewed all 3. None made the cut."
+              : sentCount === total
+              ? `Brief on its way to all ${total}.`
+              : `Brief sent to ${sentCount} of ${total}.`}
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {sentCount > 0
+              ? "We'll notify you the moment any of them open it. In the meantime…"
+              : "It happens. The shortlist is opinionated — sometimes you want a wider pool."}
+          </p>
+
+          {/* Per-match recap chips */}
+          <ul className="mt-5 space-y-2">
+            {matches.map((rc, i) => {
+              const d = decisions[rc.contractor.id];
+              return (
+                <li
+                  key={rc.contractor.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">
+                      {i === 0 ? "Top pick · " : i === 1 ? "Strong second · " : "Wild card · "}
+                      {rc.contractor.company ?? rc.contractor.name}
+                    </p>
+                  </div>
+                  {d === "sent" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sage/15 px-2.5 py-0.5 text-[11px] font-medium text-sage">
+                      <Send className="h-3 w-3" /> Brief sent
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      Passed
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Paywall */}
+        <div className="border-t border-border bg-gradient-to-b from-amber-50/60 to-card px-6 py-5 md:px-7">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500 text-white shadow-soft">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-base font-medium text-foreground">
+                Want a wider pool? Unlock the full match list.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Every additional contractor is verified the same way — real permit history, clean license,
+                proven work near you. Unlock once and browse them all.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] uppercase tracking-wider text-amber-700">
+              Test mode · no real card is charged
+            </p>
+            <Button
+              onClick={() => onUnlockMore?.()}
+              className="h-11 rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+            >
+              Unlock the rest <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
@@ -269,8 +336,8 @@ export default function CuratedMatchStack({ matches, projectLabel, neighborhood,
             index={cursor}
             projectLabel={projectLabel}
             neighborhood={neighborhood}
-            onPass={advance}
-            onSend={() => { onSend(active); advance(); }}
+            onPass={() => record(active.contractor.id, "passed")}
+            onSend={() => { onSend(active); record(active.contractor.id, "sent"); }}
           />
         </AnimatePresence>
       </div>

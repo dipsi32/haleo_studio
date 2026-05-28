@@ -365,24 +365,15 @@ const Contractors = () => {
                 setSelected(new Set([rc.contractor.id]));
                 setOutreachOpen(true);
               }}
-              onExhausted={() => setShowAll(true)}
+              onUnlockMore={() => {
+                // Simulated paywall — same "Test mode" pattern as the contractor unlock.
+                toast({
+                  title: "Test mode unlock",
+                  description: "Real Stripe checkout drops in next — for now you're through the wall.",
+                });
+                setShowAll(true);
+              }}
             />
-          </div>
-        )}
-
-        {/* Show-more affordance */}
-        {status === "ready" && rest.length > 0 && !showAll && (
-          <div className="mt-10 text-center">
-            <button
-              onClick={() => setShowAll(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground/80 shadow-soft transition-smooth hover:-translate-y-0.5 hover:border-foreground/30 hover:text-foreground"
-            >
-              Not feeling these? See {rest.length} more verified match{rest.length === 1 ? "" : "es"}
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            <p className="mt-2 text-xs text-muted-foreground">
-              We led with the strongest fits. Bigger pool, same verification standard.
-            </p>
           </div>
         )}
 
