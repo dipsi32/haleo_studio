@@ -483,9 +483,10 @@ export default function ProposalIntelligencePage() {
                   </div>
                   <div className="pt-1.5">
                     <p className="text-sm text-foreground leading-relaxed">
-                      <span className="font-semibold">Haleo:</span> Drop the proposal in. I will check the pricing against local comps first, then we can go deeper into scope and contract risks.
+                      <span className="font-semibold">Haleo:</span> Hand me the quote. I'll check if the price is honest before we dig into the fine print.
                     </p>
                   </div>
+
                 </div>
 
                 <div
