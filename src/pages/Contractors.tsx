@@ -39,8 +39,8 @@ const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
     : 'border-border bg-secondary text-muted-foreground';
   return (
     <div className={`flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border-2 ${toneClass}`}>
-      <span className="font-display text-[13px] font-semibold leading-none">{tier.label}</span>
-      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} checks</span>
+      <span className="font-display text-[11px] font-semibold leading-tight text-center px-1">{tier.label}</span>
+      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} signals</span>
     </div>
   );
 };
