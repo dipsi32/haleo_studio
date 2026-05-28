@@ -278,6 +278,67 @@ const AnnotationBlock = ({
   );
 };
 
+// ───── Progressive disclosure card ─────
+// Wraps a heavy section in a tappable card. Collapsed state shows a one-line
+// preview (thumbnails, chips, or summary teaser) so the page reads at a glance;
+// expanded state reveals the full content with a smooth height/opacity transition.
+const Disclosure = ({
+  title,
+  preview,
+  meta,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  preview?: React.ReactNode;
+  meta?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-border last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="group flex w-full items-center gap-4 px-6 py-5 text-left transition-smooth hover:bg-secondary/30 md:px-10"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p className="font-display text-base font-medium text-foreground">{title}</p>
+            {meta && <span className="text-[11px] text-muted-foreground">{meta}</span>}
+          </div>
+          {!open && preview && (
+            <div className="mt-2 min-w-0 text-sm text-muted-foreground">{preview}</div>
+          )}
+        </div>
+        <motion.span
+          animate={{ rotate: open ? 90 : 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-secondary text-foreground/60 transition-smooth group-hover:bg-accent-soft group-hover:text-accent"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6 md:px-10">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ───── Page ─────
 const BriefResult = () => {
   const { user: brUser, signOut } = useAuth();
@@ -554,15 +615,34 @@ const BriefResult = () => {
 
               {/* Photos / video / measurements */}
               {(spaceMedia.length > 0 || data.measurements || data.dimensions) && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-base font-medium">Photos &amp; walkthrough</p>
-                    {spaceMedia.length > 0 && (
-                      <span className="text-xs text-muted-foreground">{spaceMedia.length} file{spaceMedia.length > 1 ? "s" : ""} · tap to enlarge</span>
-                    )}
-                  </div>
+                <Disclosure
+                  title="Photos & walkthrough"
+                  meta={spaceMedia.length > 0 ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : undefined}
+                  preview={
+                    spaceMedia.length > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        {spaceMedia.slice(0, 4).map((m) => (
+                          <div key={m.id} className="h-10 w-10 overflow-hidden rounded-md border border-border bg-secondary">
+                            {m.kind === "photo" || m.kind === "inspiration" ? (
+                              <img src={m.url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full w-full place-items-center text-foreground/40">
+                                {m.kind === "video" ? <Play className="h-3.5 w-3.5" /> : <Map className="h-3.5 w-3.5" />}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {spaceMedia.length > 4 && (
+                          <span className="text-xs text-muted-foreground">+{spaceMedia.length - 4} more</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span>Measurements on file</span>
+                    )
+                  }
+                >
                   {spaceMedia.length > 0 && (
-                    <div className="mt-3 grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                       {spaceMedia.map((m) => (
                         <MediaTile key={m.id} m={m} onOpen={setOpen} />
                       ))}
@@ -576,28 +656,51 @@ const BriefResult = () => {
                         : data.measurements}
                     </div>
                   )}
-                </div>
+                </Disclosure>
               )}
 
               {/* Inspiration */}
               {inspirationMedia.length > 0 && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-base font-medium">The look you're after</p>
-                    <span className="text-xs text-muted-foreground">{inspirationMedia.length} ref{inspirationMedia.length > 1 ? "s" : ""}</span>
-                  </div>
-                  <div className="mt-3 grid gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+                <Disclosure
+                  title="The look you're after"
+                  meta={`${inspirationMedia.length} ref${inspirationMedia.length > 1 ? "s" : ""}`}
+                  preview={
+                    <div className="flex items-center gap-1.5">
+                      {inspirationMedia.slice(0, 5).map((m) => (
+                        <div key={m.id} className="h-10 w-10 overflow-hidden rounded-md border border-border bg-secondary">
+                          <img src={m.url} alt="" className="h-full w-full object-cover" />
+                        </div>
+                      ))}
+                      {inspirationMedia.length > 5 && (
+                        <span className="text-xs text-muted-foreground">+{inspirationMedia.length - 5} more</span>
+                      )}
+                    </div>
+                  }
+                >
+                  <div className="grid gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
                     {inspirationMedia.map((m) => (
                       <MediaTile key={m.id} m={m} onOpen={setOpen} />
                     ))}
                   </div>
-                </div>
+                </Disclosure>
               )}
 
               {/* Project details — compact key/value */}
-              <div className="px-6 py-6 md:px-10">
-                <p className="font-display text-base font-medium">Project details</p>
-                <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <Disclosure
+                title="Project details"
+                preview={
+                  <span className="line-clamp-1">
+                    {[
+                      data.room ? ROOM_LABELS[data.room] : null,
+                      budgetLabel !== "—" && budgetLabel !== "Not shared" ? budgetLabel : null,
+                      timelineLabel !== "—" ? timelineLabel : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Room, budget, timeline & more"}
+                  </span>
+                }
+              >
+                <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                   <KV label="Room" value={data.room ? ROOM_LABELS[data.room] : "—"} />
                   <KV label="Project type" value={
                     data.scope === "refresh" ? "Design refresh"
@@ -627,7 +730,7 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
             </section>
 
             {/* ════════════ LAYER 2: FOR YOUR CONTRACTOR ════════════ */}
@@ -640,34 +743,38 @@ const BriefResult = () => {
 
               {/* Haleo's read — vision-grounded analysis of the photos / plans */}
               {spaceMedia.length > 0 && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <div>
-                      <p className="font-display text-base font-medium">Haleo's read of your {data.media.some((m) => m.kind === "floorplan") ? "plans & space" : "space"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {analysisStatus === "ready"
-                          ? "What our vision model pulled from your uploads — every claim tagged so contractors know what's verified."
-                          : analysisStatus === "error"
-                            ? "We couldn't finish the read."
-                            : "Reading your uploads now…"}
-                      </p>
-                    </div>
-                    {analysisStatus === "ready" && analysis && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-sage">
+                <Disclosure
+                  title={`Haleo's read of your ${data.media.some((m) => m.kind === "floorplan") ? "plans & space" : "space"}`}
+                  meta={
+                    analysisStatus === "ready" && analysis ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sage">
                         <Eye className="h-3 w-3" /> Vision-grounded
                       </span>
-                    )}
-                  </div>
-
+                    ) : analysisStatus === "error" ? (
+                      "couldn't finish"
+                    ) : (
+                      "reading…"
+                    )
+                  }
+                  preview={
+                    analysisStatus === "ready" && analysis?.summary ? (
+                      <span className="line-clamp-2">{analysis.summary}</span>
+                    ) : analysisStatus === "error" ? (
+                      <span className="text-destructive">Couldn't read your uploads</span>
+                    ) : (
+                      <span>Reading your photos &amp; plans…</span>
+                    )
+                  }
+                >
                   {(analysisStatus === "uploading" || analysisStatus === "analyzing" || analysisStatus === "idle") && (
-                    <div className="mt-4 space-y-2">
+                    <div className="space-y-2">
                       <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
                       <div className="h-3 w-1/2 animate-pulse rounded-full bg-secondary" />
                     </div>
                   )}
 
                   {analysisStatus === "ready" && analysis?.summary && (
-                    <div className="mt-4 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                    <div className="rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
                       <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
                         {analysis.summary}
                       </p>
@@ -681,7 +788,7 @@ const BriefResult = () => {
                   )}
 
                   {analysisStatus === "error" && (
-                    <p className="mt-3 text-xs text-destructive">
+                    <p className="text-xs text-destructive">
                       Couldn't read your uploads{analysisError ? ` — ${analysisError}` : ""}.
                     </p>
                   )}
@@ -692,20 +799,25 @@ const BriefResult = () => {
                     onSave={saveAnnotation}
                     locked={approved}
                   />
-                </div>
+                </Disclosure>
               )}
 
               {/* Scope of work */}
-              <div className="border-b border-border px-6 py-6 md:px-10">
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <p className="font-display text-base font-medium">Scope of work</p>
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
-                    <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From you</span>
-                    <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Verify on site</span>
-                    <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
-                  </div>
+              <Disclosure
+                title="Scope of work"
+                meta={`${tradeGroups.length} trade${tradeGroups.length === 1 ? "" : "s"}`}
+                preview={
+                  <span className="line-clamp-1">
+                    {tradeGroups.map((g) => g.trade).join(" · ") || "Trade-by-trade breakdown"}
+                  </span>
+                }
+              >
+                <div className="mb-3 flex flex-wrap items-center gap-3 text-[11px] text-foreground/60">
+                  <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sage" /> From you</span>
+                  <span className="inline-flex items-center gap-1"><AlertCircle className="h-3 w-3 text-accent" /> Verify on site</span>
+                  <span className="inline-flex items-center gap-1"><HelpCircle className="h-3 w-3 text-foreground/50" /> Open question</span>
                 </div>
-                <div className="mt-4 space-y-3">
+                <div className="space-y-3">
                   {tradeGroups.map((group) => (
                     <TradeGroupCard
                       key={group.trade}
@@ -726,12 +838,19 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
 
               {/* Permit */}
-              <div className="border-b border-border px-6 py-6 md:px-10">
-                <p className="font-display text-base font-medium">Permit &amp; jurisdiction</p>
-                <div className="mt-3 flex items-start gap-3">
+              <Disclosure
+                title="Permit & jurisdiction"
+                preview={
+                  <span className={`inline-flex items-center gap-1.5 ${permit.likely ? "text-accent" : "text-sage"}`}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {permit.likely ? "Permit likely required" : "Probably permit-exempt"}
+                  </span>
+                }
+              >
+                <div className="flex items-start gap-3">
                   <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${permit.likely ? "bg-accent-soft text-accent" : "bg-sage-soft text-sage"}`}>
                     <ShieldCheck className="h-4 w-4" />
                   </div>
@@ -748,7 +867,7 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
 
             </section>
 
