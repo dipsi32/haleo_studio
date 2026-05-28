@@ -607,7 +607,7 @@ export default function ProposalIntelligencePage() {
                 )}
 
                 {/* Section 2: Is the Price Fair? — the TL;DR */}
-                <SectionLabel number={2} label="Is this price fair?" />
+                <SectionLabel number={2} label="Is this price honest?" />
                 {pricingResult.proposalAnalysis && (
                   <Card className={cn('p-6 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
                     <div className="flex items-center gap-3 mb-4 flex-wrap">
