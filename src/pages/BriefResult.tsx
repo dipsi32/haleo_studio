@@ -895,28 +895,7 @@ const BriefResult = () => {
         </motion.div>
 
         {/* Next step */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 md:mt-16 rounded-3xl bg-foreground p-6 md:p-8 text-background md:p-12"
-        >
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Next step</p>
-          <h2 className="mt-3 font-display text-2xl font-light leading-tight md:text-4xl">
-            Got proposals back? <em className="italic text-accent">Run the audit.</em>
-          </h2>
-          <p className="mt-4 max-w-lg text-sm text-background/70">
-            We'll cross-check every line item against San Jose permit data and tell you exactly
-            where the numbers stand — before you sign anything.
-          </p>
-          <Link
-            to="/proposal"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-smooth hover:bg-accent/90"
-          >
-            Start a forensic audit
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </motion.section>
+        {/* NOTE: "Got proposals back?" CTA moved to dashboard for post-login */}
       </main>
 
       <MediaLightbox asset={open} onClose={() => setOpen(null)} />
