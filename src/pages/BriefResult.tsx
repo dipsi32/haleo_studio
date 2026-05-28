@@ -278,6 +278,67 @@ const AnnotationBlock = ({
   );
 };
 
+// ───── Progressive disclosure card ─────
+// Wraps a heavy section in a tappable card. Collapsed state shows a one-line
+// preview (thumbnails, chips, or summary teaser) so the page reads at a glance;
+// expanded state reveals the full content with a smooth height/opacity transition.
+const Disclosure = ({
+  title,
+  preview,
+  meta,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  preview?: React.ReactNode;
+  meta?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-border last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="group flex w-full items-center gap-4 px-6 py-5 text-left transition-smooth hover:bg-secondary/30 md:px-10"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p className="font-display text-base font-medium text-foreground">{title}</p>
+            {meta && <span className="text-[11px] text-muted-foreground">{meta}</span>}
+          </div>
+          {!open && preview && (
+            <div className="mt-2 min-w-0 text-sm text-muted-foreground">{preview}</div>
+          )}
+        </div>
+        <motion.span
+          animate={{ rotate: open ? 90 : 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-secondary text-foreground/60 transition-smooth group-hover:bg-accent-soft group-hover:text-accent"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6 md:px-10">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ───── Page ─────
 const BriefResult = () => {
   const { user: brUser, signOut } = useAuth();
