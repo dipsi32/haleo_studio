@@ -254,7 +254,7 @@ const ContractorProfile = () => {
                               <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl p-3 hover:bg-secondary/40">
                                 <g.Icon className="h-4 w-4 shrink-0 text-accent" />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium leading-tight">{g.label}</p>
+                                  <p className="text-[13px] font-semibold leading-tight tracking-wide uppercase text-foreground/90">{g.label}</p>
                                   <p className="mt-0.5 text-[11px] text-muted-foreground">{g.blurb}</p>
                                 </div>
                                 <span className="font-mono text-xs text-muted-foreground">{right}</span>
@@ -266,9 +266,9 @@ const ContractorProfile = () => {
                                   const cpct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
                                   const rightLabel = c.weight === 0 ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending') : `${c.earned}/${c.weight}`;
                                   const ItemIcon =
-                                    c.label === 'Permits in your area' ? MapPinned :
-                                    c.label === 'Recent activity' ? Clock :
-                                    c.label === 'Right kind of work' ? Hammer :
+                                    c.label === 'Permits in your area' ? null :
+                                    c.label === 'Recent activity' ? null :
+                                    c.label === 'Right kind of work' ? null :
                                     c.label === 'License in good standing' ? ShieldCheck :
                                     c.label === 'Bond on file' ? Wallet :
                                     c.label === "Workers' Comp coverage" ? HardHat :
@@ -278,7 +278,7 @@ const ContractorProfile = () => {
                                     <div key={c.label}>
                                       <div className="flex items-center justify-between text-sm">
                                         <span className="inline-flex items-center gap-1.5 font-medium text-foreground/85">
-                                          <ItemIcon className="h-3.5 w-3.5 text-accent/80" />
+                                          {ItemIcon && <ItemIcon className="h-3.5 w-3.5 text-accent/80" />}
                                           {c.label}
                                         </span>
                                         <span className="font-mono text-xs text-muted-foreground">{rightLabel}</span>
