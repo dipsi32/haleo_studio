@@ -666,7 +666,7 @@ export default function Roast() {
                           {funShareMessages[funMessageIndex]}
                         </motion.p>
                       </AnimatePresence>
-                      <p className="mt-1.5 text-xs text-foreground/45">— the founder, building this solo</p>
+                      <p className="mt-1.5 text-xs text-foreground/45">Help spread the word?</p>
                     </div>
                   </div>
 
