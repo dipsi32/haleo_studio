@@ -370,15 +370,23 @@ export default function Roast() {
           <div className="max-w-3xl mx-auto px-5 sm:px-6 pt-24 md:pt-28 pb-12 md:pb-20">
             <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Verdict card — lead with the call, not a numeric score */}
-              <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-6 md:p-8 sm:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
-                <div className="relative z-10">
-                  <p className="text-xs uppercase tracking-widest opacity-90 mb-3">The verdict</p>
-                  <p className="text-4xl sm:text-5xl font-serif font-semibold leading-[1.05] mb-3">{result.tier.label}.</p>
-                  <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95 mb-5">{result.roast.headline}</p>
+              <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-7 sm:p-9 md:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
+                <div className="relative z-10 flex flex-col gap-5">
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] backdrop-blur">
+                    The verdict
+                  </span>
+                  <div>
+                    <p className="font-serif text-[2.5rem] sm:text-5xl font-semibold leading-[1.02] tracking-tight">
+                      {result.tier.label}.
+                    </p>
+                    <p className="mt-3 text-[15px] sm:text-lg leading-snug max-w-xl opacity-95 text-pretty">
+                      {result.roast.headline}
+                    </p>
+                  </div>
                   <Button
                     onClick={downloadShareCard}
                     disabled={downloading}
-                    className="rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold"
+                    className="w-full sm:w-auto rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold"
                     size="sm"
                   >
                     <Download className="w-4 h-4 mr-1.5" />
@@ -387,6 +395,7 @@ export default function Roast() {
                 </div>
                 <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
               </Card>
+
 
 
               {/* Where your quote lands — the intuitive bar */}
