@@ -477,11 +477,13 @@ const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
 
 const Hero = () => {
   const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setI((p) => (p + 1) % SCREENS.length), 3600);
+    if (paused) return;
+    const t = setInterval(() => setI((p) => (p + 1) % SCREENS.length), 5200);
     return () => clearInterval(t);
-  }, []);
+  }, [paused]);
 
   const Screen = SCREENS[i];
   const stepLabel = STEPS[i].label;
@@ -518,6 +520,7 @@ const Hero = () => {
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
               </Link>
+              <span className="text-xs text-muted-foreground">No signup to start.</span>
             </div>
           </motion.div>
 
@@ -527,6 +530,8 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
             className="relative"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
           >
             <div className="absolute -inset-8 bg-gradient-to-br from-amber-200/40 via-rose-100/30 to-transparent blur-3xl -z-10" />
             <PhoneShell>
@@ -544,19 +549,23 @@ const Hero = () => {
               </AnimatePresence>
             </PhoneShell>
 
-            {/* Step indicator under the phone */}
+            {/* Step indicator — clickable, so users can drive the demo */}
             <div className="mt-5 flex items-center justify-center gap-2.5">
               {STEPS.map((s, idx) => (
-                <span
+                <button
                   key={s.key}
-                  className={`h-1 rounded-full transition-all duration-500 ${
-                    idx === i ? "w-7 bg-foreground" : "w-3 bg-foreground/15"
+                  type="button"
+                  onClick={() => { setI(idx); setPaused(true); }}
+                  aria-label={`Show step: ${s.label}`}
+                  aria-current={idx === i}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    idx === i ? "w-8 bg-foreground" : "w-3 bg-foreground/15 hover:bg-foreground/40"
                   }`}
                 />
               ))}
             </div>
             <p className="mt-2 text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              {stepLabel}
+              Step {i + 1} of {STEPS.length} — {stepLabel}
             </p>
           </motion.div>
         </div>
