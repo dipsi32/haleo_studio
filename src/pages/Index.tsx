@@ -752,7 +752,7 @@ const NotLike = () => (
 /* -------------------------------------------------------------------------- */
 
 const Closing = () => (
-  <section className="relative bg-background py-32 md:py-44 border-t border-border">
+  <section className="relative bg-background py-28 md:py-36 border-t border-border">
 
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -762,22 +762,22 @@ const Closing = () => (
       className="container relative text-center"
     >
       <h2 className="mx-auto max-w-3xl text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
-        Start with the quote in your hand.
+        Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. Every line item checked against permits on your block.
+        Thirty seconds. No signup. See where your quote stands.
       </p>
       <Link
-        to="/roast"
+        to="/brief"
         className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
       >
-        Audit my proposal
+        Find your contractor
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-5 text-[13px] text-muted-foreground">
-        No quote yet?{" "}
-        <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
-          Find your contractor →
+        Already have a quote?{" "}
+        <Link to="/roast" className="font-medium text-foreground underline-offset-4 hover:underline">
+          Get it roasted
         </Link>
       </p>
     </motion.div>
