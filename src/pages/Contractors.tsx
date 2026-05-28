@@ -149,6 +149,10 @@ const Contractors = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sentInfo, setSentInfo] = useState<{ count: number; names: string[] } | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  const curated = useMemo(() => ranked.slice(0, 3), [ranked]);
+  const rest = useMemo(() => ranked.slice(3), [ranked]);
 
   const selectedList = useMemo(
     () => ranked.filter(r => selected.has(r.contractor.id)),
