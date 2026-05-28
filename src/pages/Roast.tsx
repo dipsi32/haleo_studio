@@ -227,15 +227,15 @@ export default function Roast() {
             {/* Marketing hero — the screen homeowners land on */}
             <section className="relative overflow-hidden">
               <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[80%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,146,60,0.18),transparent_55%)]" />
-              <div className="container mx-auto max-w-5xl px-6 pt-12 md:pt-20 pb-10 md:pb-14">
-                <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+              <div className="container mx-auto max-w-5xl px-5 sm:px-6 pt-24 md:pt-32 pb-10 md:pb-14">
+                <div className="grid items-center gap-10 md:gap-12 md:grid-cols-[1.1fr_1fr]">
                   <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 mb-6">
-                      <Flame className="w-3.5 h-3.5" /> Free · No signup · 30 seconds
+                    <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3.5 py-1.5 text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700 mb-6 whitespace-nowrap">
+                      <Flame className="w-3.5 h-3.5 shrink-0" /> Free · No signup · 30 seconds
                     </div>
                     <h1 className="font-serif text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground">
                       Got a quote? <span className="italic">Get it roasted.</span>
@@ -290,7 +290,7 @@ export default function Roast() {
             </section>
 
             {/* Upload card */}
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 md:pb-20">
+            <div className="max-w-3xl mx-auto px-5 sm:px-6 pb-12 md:pb-20">
               <Card
                 className="border-2 border-dashed border-orange-300/60 bg-white/70 backdrop-blur p-6 md:p-10 sm:p-14 text-center hover:border-orange-400 transition cursor-pointer rounded-3xl"
                 onDrop={handleDrop}
