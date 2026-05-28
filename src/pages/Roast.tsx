@@ -644,40 +644,106 @@ export default function Roast() {
                 </div>
               </Card>
 
-              {/* Share */}
-              <Card className="p-6 rounded-3xl bg-white/85 backdrop-blur">
-                <p className="text-xs uppercase tracking-widest text-foreground/50 mb-3 flex items-center gap-1.5">
-                  <Share2 className="w-3.5 h-3.5" /> Share this check
-                </p>
-                <div className="flex flex-wrap gap-2">
+              {/* Share — comprehensive social spread with fun messaging */}
+              <TooltipProvider>
+                <Card className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white/90 to-white/70 backdrop-blur border border-foreground/5">
+                  {/* Fun rotating message */}
+                  <div className="mb-5 min-h-[2.5rem] flex items-center gap-2">
+                    <PartyPopper className="w-4 h-4 text-amber-500 shrink-0" />
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={funMessageIndex}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.35 }}
+                        className="text-sm text-foreground/75 italic"
+                      >
+                        {funShareMessages[funMessageIndex]}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Primary save action */}
                   <Button
-                    size="sm"
                     onClick={downloadShareCard}
                     disabled={downloading}
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                    className="w-full rounded-2xl bg-foreground text-background hover:bg-foreground/90 h-12 text-sm font-semibold shadow-lg shadow-foreground/10 mb-5"
                   >
-                    <Download className="w-4 h-4 mr-1.5" />
-                    {downloading ? "Saving…" : "Save the takeaway card"}
+                    <Download className="w-4 h-4 mr-2" />
+                    {downloading ? "Cooking your card…" : "Save the takeaway card"}
+                  </Button>
 
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => share("twitter")} className="rounded-full">
-                    <Twitter className="w-4 h-4 mr-1.5" /> Twitter / X
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => share("facebook")} className="rounded-full">
-                    <Facebook className="w-4 h-4 mr-1.5" /> Facebook
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => share("copy")} className="rounded-full">
-                    <Link2 className="w-4 h-4 mr-1.5" /> Copy link
-                  </Button>
-                  {typeof navigator !== "undefined" && (navigator as any).share && (
-                    <Button variant="outline" size="sm" onClick={() => share("native")} className="rounded-full">
-                      <Share2 className="w-4 h-4 mr-1.5" /> More
-                    </Button>
-                  )}
-                </div>
+                  {/* Social grid */}
+                  <p className="text-[11px] uppercase tracking-widest text-foreground/40 mb-3 flex items-center gap-1.5">
+                    <Share2 className="w-3 h-3" /> Or share straight to
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                    {[
+                      { key: "twitter", label: "X / Twitter", icon: Twitter, color: "bg-neutral-900 text-white hover:bg-neutral-800" },
+                      { key: "facebook", label: "Facebook", icon: Facebook, color: "bg-[#1877F2] text-white hover:bg-[#166fe5]" },
+                      { key: "linkedin", label: "LinkedIn", icon: Linkedin, color: "bg-[#0A66C2] text-white hover:bg-[#0957a8]" },
+                      { key: "whatsapp", label: "WhatsApp", icon: MessageCircle, color: "bg-[#25D366] text-white hover:bg-[#20bd5a]" },
+                      { key: "telegram", label: "Telegram", icon: Send, color: "bg-[#229ED9] text-white hover:bg-[#1e8dc2]" },
+                      { key: "reddit", label: "Reddit", icon: null, color: "bg-[#FF4500] text-white hover:bg-[#e63e00]", svg: (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-6.986 4.87-3.856 0-6.986-2.176-6.986-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 5.5 10.754c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.106-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.25 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                      ) },
+                      { key: "email", label: "Email", icon: Mail, color: "bg-foreground/90 text-background hover:bg-foreground/80" },
+                    ].map((s) => (
+                      <Tooltip key={s.key}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => share(s.key as any)}
+                            className={`flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 ${s.color}`}
+                            aria-label={s.label}
+                          >
+                            {s.svg ? s.svg : <s.icon className="w-4 h-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {s.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    {typeof navigator !== "undefined" && (navigator as any).share && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => share("native")}
+                            className="flex items-center justify-center w-11 h-11 rounded-2xl bg-muted text-foreground hover:bg-muted/80 transition-all duration-200 hover:scale-105 active:scale-95"
+                            aria-label="More options"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          More options
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
 
-                <p className="text-[11px] text-foreground/50 mt-3">{result.roast.shareCaption}</p>
-              </Card>
+                  {/* Copy link row */}
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="flex-1 rounded-xl bg-muted/60 px-3 py-2.5 text-xs text-foreground/60 truncate font-mono">
+                      {shareUrl}
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => share("copy")}
+                          className="flex items-center gap-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 px-3 py-2.5 text-xs font-medium text-foreground/70 transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        Copy link to clipboard
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </Card>
+              </TooltipProvider>
 
               <div className="flex justify-center pt-2">
                 <Button variant="outline" onClick={reset} className="rounded-full">
