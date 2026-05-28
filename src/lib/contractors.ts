@@ -105,6 +105,16 @@ export const trustTier = (score: number, hasPenalty = false): TrustTier => {
   return { label: 'Sparse record', blurb: "Not much public permit history yet — doesn't mean bad, just less data.", tone: 'muted' };
 };
 
+export const tierChipClass = (tone: TrustTier['tone']): string => {
+  switch (tone) {
+    case 'sage': return 'border-sage/30 bg-sage/10 text-sage';
+    case 'accent': return 'border-accent/30 bg-accent/10 text-accent';
+    case 'amber': return 'border-amber-400/40 bg-amber-50 text-amber-700';
+    case 'destructive': return 'border-destructive/30 bg-destructive/10 text-destructive';
+    default: return 'border-border bg-secondary text-muted-foreground';
+  }
+};
+
 // "5 of 6 records line up" — counts live components with at least partial credit.
 export const trustChecks = (breakdown: TrustScoreBreakdown): { passed: number; total: number } => {
   const live = breakdown.components.filter(c => c.weight > 0);
