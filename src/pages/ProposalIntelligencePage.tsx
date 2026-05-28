@@ -924,11 +924,12 @@ export default function ProposalIntelligencePage() {
 function SectionLabel({ number, label }: { number: number; label: string }) {
   return (
     <div className="flex items-center gap-3 pt-2">
-      <span className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{number}</span>
-      <h3 className="font-serif text-lg text-foreground">{label}</h3>
+      <span className="font-serif italic text-2xl text-primary leading-none tabular-nums">0{number}.</span>
+      <h3 className="font-serif text-lg text-foreground tracking-tight">{label}</h3>
     </div>
   );
 }
+
 
 function InfoCell({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
   return (
