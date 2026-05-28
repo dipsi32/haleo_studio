@@ -976,15 +976,15 @@ function HaleoInsightCard({ insight }: { insight: string }) {
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-primary uppercase tracking-wider">Haleo's Take</p>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Here's what stands out about this proposal</p>
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider">Haleo's hot take</p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">What jumps out — the good, the sus, and the side notes.</p>
         </div>
       </div>
       <div className="space-y-4 pl-12">
         {positives.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-[hsl(var(--success))] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" /> What Looks Good
+              <CheckCircle className="w-3.5 h-3.5" /> What checks out
             </p>
             <div className="space-y-1.5">
               {positives.map((s, i) => (
@@ -996,7 +996,7 @@ function HaleoInsightCard({ insight }: { insight: string }) {
         {concerns.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-[hsl(var(--warning))] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> What Worries Us
+              <AlertTriangle className="w-3.5 h-3.5" /> Where it smells off
             </p>
             <div className="space-y-1.5">
               {concerns.map((s, i) => (
@@ -1009,9 +1009,10 @@ function HaleoInsightCard({ insight }: { insight: string }) {
           <div>
             {(positives.length > 0 || concerns.length > 0) && (
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5" /> Additional Context
+                <Info className="w-3.5 h-3.5" /> Worth knowing
               </p>
             )}
+
             <div className="space-y-1.5">
               {context.map((s, i) => (
                 <p key={i} className="text-sm text-foreground leading-relaxed pl-5">{s}</p>
