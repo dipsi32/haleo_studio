@@ -573,13 +573,81 @@ const Contractors = () => {
                       </div>
                     )}
 
-                    {/* Attachment line */}
-                    <div className="flex items-start gap-2 rounded-xl border border-accent/30 bg-accent-soft/40 p-3">
-                      <Paperclip className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                      <div className="text-xs text-foreground/80">
-                        <strong className="font-medium text-foreground">Full project brief attached</strong> — including detailed scope, must-haves, dimensions, inspiration imagery, and trade-by-trade requirements.
-                      </div>
-                    </div>
+                    {/* Attachment — clickable, opens full brief */}
+                    {(() => {
+                      const photos = data.media.filter(m => m.kind === "photo" || m.kind === "inspiration");
+                      const videos = data.media.filter(m => m.kind === "video");
+                      const plans = data.media.filter(m => m.kind === "floorplan");
+                      const totalMedia = data.media.length;
+                      return (
+                        <a
+                          href="/brief/result"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group block rounded-xl border border-accent/40 bg-accent-soft/40 p-3 transition-smooth hover:border-accent hover:bg-accent-soft/70 hover:shadow-soft"
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-sm font-medium text-foreground">
+                                  Haleo_Project_Brief.pdf
+                                </p>
+                                <span className="text-[10px] uppercase tracking-wider text-accent opacity-0 transition-smooth group-hover:opacity-100">
+                                  Open ↗
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                Scope, must-haves, dimensions, inspiration & trade-by-trade requirements
+                                {totalMedia > 0 && (
+                                  <>
+                                    {" · "}
+                                    {photos.length > 0 && <>{photos.length} photo{photos.length > 1 ? "s" : ""}</>}
+                                    {photos.length > 0 && (videos.length > 0 || plans.length > 0) && ", "}
+                                    {videos.length > 0 && <>{videos.length} video{videos.length > 1 ? "s" : ""}</>}
+                                    {videos.length > 0 && plans.length > 0 && ", "}
+                                    {plans.length > 0 && <>{plans.length} floor plan{plans.length > 1 ? "s" : ""}</>}
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          {totalMedia > 0 && (
+                            <div className="mt-3 flex gap-1.5 overflow-x-auto">
+                              {data.media.slice(0, 8).map(m => (
+                                <div
+                                  key={m.id}
+                                  className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-card"
+                                  title={m.name}
+                                >
+                                  {(m.kind === "photo" || m.kind === "inspiration") && m.url ? (
+                                    <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
+                                  ) : m.kind === "video" ? (
+                                    <div className="flex h-full w-full flex-col items-center justify-center bg-foreground/90 text-background">
+                                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                      <span className="mt-0.5 text-[8px] uppercase tracking-wider">Video</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-full w-full flex-col items-center justify-center bg-secondary text-foreground/70">
+                                      <Paperclip className="h-3 w-3" />
+                                      <span className="mt-0.5 text-[8px] uppercase tracking-wider">Plan</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {totalMedia > 8 && (
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg border border-dashed border-border bg-card text-xs font-medium text-muted-foreground">
+                                  +{totalMedia - 8}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </a>
+                      );
+                    })()}
 
                     <p>I'd love to get your quote and timeline. Reply directly and we can take it from there.</p>
                     <p className="text-foreground/70">Thanks —<br />Sent via Haleo</p>
