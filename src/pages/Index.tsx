@@ -506,7 +506,7 @@ const Hero = () => {
               Hire the contractor who already built it on your block.
             </h1>
             <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
-              A contractor-ready brief, matched to builders with verified permit history for your project, on your street.
+              A contractor-ready brief, matched to builders with verified permit history for your project, in your neighborhood.
             </p>
             <p className="mt-5 font-display text-lg md:text-xl text-foreground/90 leading-snug">
               Reviews can be bought. Permits can't.
