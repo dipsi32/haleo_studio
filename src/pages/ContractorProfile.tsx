@@ -265,10 +265,22 @@ const ContractorProfile = () => {
                                   const isPending = c.status === 'pending' || c.status === 'coming_soon';
                                   const cpct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
                                   const rightLabel = c.weight === 0 ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending') : `${c.earned}/${c.weight}`;
+                                  const ItemIcon =
+                                    c.label === 'Permits in your area' ? MapPinned :
+                                    c.label === 'Recent activity' ? Clock :
+                                    c.label === 'Right kind of work' ? Hammer :
+                                    c.label === 'License in good standing' ? ShieldCheck :
+                                    c.label === 'Bond on file' ? Wallet :
+                                    c.label === "Workers' Comp coverage" ? HardHat :
+                                    c.label === 'No code violations on past jobs' ? FileCheck2 :
+                                    AlertTriangle;
                                   return (
                                     <div key={c.label}>
                                       <div className="flex items-center justify-between text-sm">
-                                        <span className="font-medium text-foreground/85">{c.label}</span>
+                                        <span className="inline-flex items-center gap-1.5 font-medium text-foreground/85">
+                                          <ItemIcon className="h-3.5 w-3.5 text-accent/80" />
+                                          {c.label}
+                                        </span>
                                         <span className="font-mono text-xs text-muted-foreground">{rightLabel}</span>
                                       </div>
                                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
