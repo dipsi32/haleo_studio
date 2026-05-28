@@ -505,9 +505,14 @@ const Hero = () => {
             <h1 className="font-display text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
               Hire the contractor who already built it on your block.
             </h1>
-            <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
-              Haleo matches you to contractors with verified permit history for your exact project, in your exact neighborhood. Reviews can be bought. Permits can't.
-            </p>
+            <div className="mt-5 space-y-3 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
+              <p>
+                Haleo reads your space, creates a contractor-ready brief, then matches you to builders with verified permit history for your exact project type, in your exact neighborhood.
+              </p>
+              <p className="text-foreground/80">
+                Reviews can be bought. Permits can't.
+              </p>
+            </div>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to="/brief"
