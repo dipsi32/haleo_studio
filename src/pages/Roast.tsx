@@ -605,68 +605,73 @@ export default function Roast() {
                 </Card>
               )}
 
-              {/* What to do next */}
-              <Card className="p-6 rounded-3xl bg-foreground text-background">
-                <p className="text-xs uppercase tracking-widest opacity-60 mb-2">What to do next</p>
-                <p className="text-base sm:text-lg font-serif leading-snug">{result.roast.advice}</p>
+              {/* What to do next — warm advice card */}
+              <Card className="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-orange-50/60 to-white">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-xl" aria-hidden>
+                    💡
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-amber-700 mb-1.5">
+                      What to do next
+                    </p>
+                    <p className="text-base sm:text-lg font-serif leading-snug text-foreground">
+                      {result.roast.advice}
+                    </p>
+                  </div>
+                </div>
               </Card>
 
-              {/* Primary CTA: flow into full audit */}
-              <Card className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-foreground to-foreground/90 text-background">
+              {/* Deeper read — full audit handoff, soft not loud */}
+              <Card className="p-6 sm:p-7 rounded-3xl border border-foreground/10 bg-white/85 backdrop-blur">
                 <div className="flex items-start gap-4 flex-wrap">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
+                  <div className="shrink-0 w-10 h-10 rounded-2xl bg-foreground/5 flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-foreground/70" />
                   </div>
                   <div className="flex-1 min-w-[200px]">
-                    <p className="font-serif text-xl mb-1">Want the deeper read?</p>
-                    <p className="text-sm opacity-80 leading-snug">
-                      The full audit digs into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
+                    <p className="font-serif text-xl text-foreground mb-1">Want the deeper read?</p>
+                    <p className="text-sm text-foreground/65 leading-snug">
+                      The full audit goes into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
                     </p>
                   </div>
                   <Button
                     onClick={goToFullAudit}
-                    className="rounded-full bg-background text-foreground hover:bg-background/90 px-5"
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-5"
                   >
                     Run the full audit <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
                 </div>
               </Card>
 
-              {/* Share — comprehensive social spread with fun messaging */}
+              {/* Share — honest founder ask, then options */}
               <TooltipProvider>
-                <Card className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white/90 to-white/70 backdrop-blur border border-foreground/5">
-                  {/* Fun rotating message */}
-                  <div className="mb-5 min-h-[2.5rem] flex items-center gap-2">
-                    <PartyPopper className="w-4 h-4 text-amber-500 shrink-0" />
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={funMessageIndex}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.35 }}
-                        className="text-sm text-foreground/75 italic"
-                      >
-                        {funShareMessages[funMessageIndex]}
-                      </motion.p>
-                    </AnimatePresence>
+                <Card className="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-foreground/5 bg-white/85 backdrop-blur">
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="shrink-0 w-9 h-9 rounded-2xl bg-rose-50 flex items-center justify-center text-base" aria-hidden>
+                      🫶
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-foreground/50 mb-1">
+                        A small ask
+                      </p>
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={funMessageIndex}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.3 }}
+                          className="text-sm sm:text-[15px] text-foreground/80 leading-snug"
+                        >
+                          {funShareMessages[funMessageIndex]}
+                        </motion.p>
+                      </AnimatePresence>
+                      <p className="mt-1.5 text-xs text-foreground/45">— the founder, building this solo</p>
+                    </div>
                   </div>
 
-                  {/* Primary save action */}
-                  <Button
-                    onClick={downloadShareCard}
-                    disabled={downloading}
-                    className="w-full rounded-2xl bg-foreground text-background hover:bg-foreground/90 h-12 text-sm font-semibold shadow-lg shadow-foreground/10 mb-5"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    {downloading ? "Cooking your card…" : "Save the takeaway card"}
-                  </Button>
-
                   {/* Social grid */}
-                  <p className="text-[11px] uppercase tracking-widest text-foreground/40 mb-3 flex items-center gap-1.5">
-                    <Share2 className="w-3 h-3" /> Or share straight to
-                  </p>
-                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-4">
                     {[
                       { key: "twitter", label: "X / Twitter", icon: Twitter, color: "bg-neutral-900 text-white hover:bg-neutral-800" },
                       { key: "facebook", label: "Facebook", icon: Facebook, color: "bg-[#1877F2] text-white hover:bg-[#166fe5]" },
@@ -711,24 +716,22 @@ export default function Roast() {
                     )}
                   </div>
 
-                  {/* Copy link row */}
-                  <div className="mt-4 flex items-center gap-2">
-                    <div className="flex-1 rounded-xl bg-muted/60 px-3 py-2.5 text-xs text-foreground/60 truncate font-mono">
-                      {shareUrl}
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => share("copy")}
-                          className="flex items-center gap-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 px-3 py-2.5 text-xs font-medium text-foreground/70 transition-colors"
-                        >
-                          <Copy className="w-3.5 h-3.5" /> Copy
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">
-                        Copy link to clipboard
-                      </TooltipContent>
-                    </Tooltip>
+                  {/* Secondary row: copy link + save card, quiet utility */}
+                  <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-foreground/5 mt-1">
+                    <button
+                      onClick={() => share("copy")}
+                      className="mt-3 flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3.5 py-2 text-xs font-medium text-foreground/75 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copy link
+                    </button>
+                    <button
+                      onClick={downloadShareCard}
+                      disabled={downloading}
+                      className="mt-3 flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3.5 py-2 text-xs font-medium text-foreground/75 transition-colors disabled:opacity-60"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {downloading ? "Saving…" : "Save image card"}
+                    </button>
                   </div>
                 </Card>
               </TooltipProvider>
