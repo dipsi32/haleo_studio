@@ -105,10 +105,10 @@ export const trustTier = (score: number, hasPenalty = false): TrustTier => {
   return { label: 'Sparse record', blurb: "Not much public permit history yet — doesn't mean bad, just less data.", tone: 'muted' };
 };
 
-// "5 of 6 verifications cleared" — counts live components with full or near-full credit.
+// "5 of 6 records line up" — counts live components with at least partial credit.
 export const trustChecks = (breakdown: TrustScoreBreakdown): { passed: number; total: number } => {
   const live = breakdown.components.filter(c => c.weight > 0);
-  const passed = live.filter(c => c.earned >= c.weight * 0.6).length;
+  const passed = live.filter(c => c.earned >= c.weight * 0.4).length;
   return { passed, total: live.length };
 };
 
