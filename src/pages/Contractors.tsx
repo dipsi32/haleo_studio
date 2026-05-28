@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, MapPin, Calendar, Hammer, Check,
   Send, X, Info, Sparkles, AlertCircle, Paperclip,
-  CheckCircle2, FileText, Clock, Wallet, Home,
+  CheckCircle2, FileText, Clock, Wallet, Home, ChevronDown,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
@@ -18,6 +18,7 @@ import { useContractors, type RankedContractor } from "@/lib/useContractors";
 import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
+import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -148,6 +149,10 @@ const Contractors = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sentInfo, setSentInfo] = useState<{ count: number; names: string[] } | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  const curated = useMemo(() => ranked.slice(0, 3), [ranked]);
+  const rest = useMemo(() => ranked.slice(3), [ranked]);
 
   const selectedList = useMemo(
     () => ranked.filter(r => selected.has(r.contractor.id)),
@@ -318,68 +323,94 @@ const Contractors = () => {
         </div>
       </header>
 
-      <main className="container max-w-6xl py-7 md:py-10">
+      <main className="container max-w-3xl py-7 md:py-10">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Verified contractors near you</p>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">
+            Curated by Haleo
+          </p>
           <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl text-balance">
-            These contractors have actually done <em className="italic">{projectLabel}</em> work near you.
+            The 3 contractors I'd actually call if it were my house.
           </h1>
-          <p className="mt-4 max-w-2xl text-base text-muted-foreground">
-            Verified by real permit data from the City of San Jose — not reviews, not paid listings.
-            Every contractor here has pulled permits and completed similar work in {neighborhood}.
+          <p className="mt-4 text-base text-muted-foreground">
+            Hand-picked from {ranked.length || "every"} verified {projectLabel} contractor in {neighborhood}, ranked by
+            permit proximity to your address, project-type fit, and clean license history.
           </p>
         </motion.div>
 
-        {/* Differentiator banner */}
-        <div className="mt-8 flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 p-4">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Every contractor here has a verified permit history.</p>
-            <p className="text-xs text-muted-foreground">We show you who has actually done the work — not who paid to be listed.</p>
+        {/* Status states */}
+        {status === "loading" && (
+          <p className="mt-8 text-sm text-muted-foreground">
+            {backfillNote ?? "Searching permit records near you…"}
+          </p>
+        )}
+        {status === "error" && (
+          <div className="mt-8 flex items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4" /> {error}
           </div>
-        </div>
-
-        {/* Status / count */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            {status === "loading" && <p className="text-sm text-muted-foreground">{backfillNote ?? "Pulling verified contractors near you…"}</p>}
-            {status === "ready" && ranked.length > 0 && (
-              <p className="text-sm text-foreground/80">
-                <strong className="font-display text-2xl font-medium">{ranked.length}</strong>{" "}
-                verified contractors with completed {projectLabel} permits in or near {zip}.
-              </p>
-            )}
-            {status === "ready" && ranked.length === 0 && (
-              <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                No matches yet for {zip}. {backfillNote}
-              </div>
-            )}
-            {status === "error" && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" /> {error}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Contractor grid */}
-        {ranked.length > 0 && (
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {ranked.slice(0, 24).map(rc => (
-              <ContractorCard
-                key={rc.contractor.id}
-                rc={rc}
-                selected={selected.has(rc.contractor.id)}
-                onToggle={() => toggle(rc.contractor.id)}
-                projectLabel={projectLabel}
-                neighborhood={neighborhood}
-              />
-            ))}
+        )}
+        {status === "ready" && curated.length === 0 && (
+          <div className="mt-8 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            No verified {projectLabel} contractors yet in {zip}. {backfillNote}
           </div>
         )}
 
-        {/* Trust score explainer */}
-        <div className="mt-8 md:mt-12 rounded-3xl border border-border bg-card p-6 md:p-8">
+        {/* Curated 3-match stack */}
+        {status === "ready" && curated.length > 0 && (
+          <div className="mt-8">
+            <CuratedMatchStack
+              matches={curated}
+              projectLabel={projectLabel}
+              neighborhood={neighborhood}
+              onSend={(rc) => {
+                setSelected(new Set([rc.contractor.id]));
+                setOutreachOpen(true);
+              }}
+              onExhausted={() => setShowAll(true)}
+            />
+          </div>
+        )}
+
+        {/* Show-more affordance */}
+        {status === "ready" && rest.length > 0 && !showAll && (
+          <div className="mt-10 text-center">
+            <button
+              onClick={() => setShowAll(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground/80 shadow-soft transition-smooth hover:-translate-y-0.5 hover:border-foreground/30 hover:text-foreground"
+            >
+              Not feeling these? See {rest.length} more verified match{rest.length === 1 ? "" : "es"}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+            <p className="mt-2 text-xs text-muted-foreground">
+              We led with the strongest fits. Bigger pool, same verification standard.
+            </p>
+          </div>
+        )}
+
+        {/* Expanded grid */}
+        {status === "ready" && showAll && rest.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">More matches</p>
+                <h2 className="mt-1 font-display text-xl font-light">Other verified contractors near you</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">{rest.length} more</p>
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {rest.map(rc => (
+                <ContractorCard
+                  key={rc.contractor.id}
+                  rc={rc}
+                  selected={selected.has(rc.contractor.id)}
+                  onToggle={() => toggle(rc.contractor.id)}
+                  projectLabel={projectLabel}
+                  neighborhood={neighborhood}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="mt-12 rounded-3xl border border-border bg-card p-6 md:p-8">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
