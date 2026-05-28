@@ -176,18 +176,30 @@ export default function Roast() {
 
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/roast` : "";
 
-  const share = (where: "twitter" | "facebook" | "copy" | "native") => {
+  const share = (where: "twitter" | "facebook" | "linkedin" | "whatsapp" | "telegram" | "reddit" | "email" | "copy" | "native") => {
     if (!result) return;
-    const text = result.roast.shareCaption + " — checked on Haleo:";
-    if (where === "twitter") {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, "_blank");
-    } else if (where === "facebook") {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(text)}`, "_blank");
-    } else if (where === "copy") {
-      navigator.clipboard.writeText(`${text} ${shareUrl}`);
-      toast({ title: "Copied", description: "Link is on your clipboard." });
-    } else if (where === "native" && navigator.share) {
-      navigator.share({ title: "Haleo quote check", text, url: shareUrl }).catch(() => {});
+    const text = result.roast.shareCaption + " — checked on Haleo";
+    const url = shareUrl;
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(url);
+
+    const links: Record<string, string> = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedText}`,
+      email: `mailto:?subject=${encodeURIComponent("I checked my contractor quote on Haleo")}&body=${encodedText}%0A%0A${encodedUrl}`,
+    };
+
+    if (where === "copy") {
+      navigator.clipboard.writeText(`${text} ${url}`);
+      toast({ title: "Copied!", description: "Link ready to paste. Go make some noise." });
+    } else if (where === "native" && (navigator as any).share) {
+      (navigator as any).share({ title: "Haleo quote check", text, url }).catch(() => {});
+    } else if (links[where]) {
+      window.open(links[where], "_blank", "noopener,noreferrer");
     }
   };
 
