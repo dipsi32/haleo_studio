@@ -577,8 +577,8 @@ const BriefResult = () => {
           {/* Sticky two-tab nav */}
           <BriefTOC
             sections={[
-              { id: "yours", no: "01", label: "What you shared", icon: HomeIcon, meta: `${spaceMedia.length + inspirationMedia.length} file${spaceMedia.length + inspirationMedia.length === 1 ? "" : "s"}` },
-              { id: "contractor", no: "02", label: "For your contractor", icon: Hammer, meta: `${tradeGroups.length} trade${tradeGroups.length === 1 ? "" : "s"}` },
+              { id: "yours", no: "01", label: "What you shared", icon: HomeIcon },
+              { id: "contractor", no: "02", label: "For your contractor", icon: Hammer },
             ]}
           />
 
