@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Upload, FileText, BarChart3, Sparkles, Building2, X,
   Shield, Search, CheckCircle, AlertTriangle, AlertCircle, Info, ChevronDown,
   ChevronUp, MapPin, CalendarClock, ClipboardCheck, ExternalLink, ThumbsUp,
-  HelpCircle, Lock, Mail, Users, Lightbulb
+  HelpCircle, Lock, Mail, Users
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -18,9 +18,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import UpgradeCard from '@/components/report/UpgradeCard';
 import LockedSection from '@/components/report/LockedSection';
-import { TipsContainer } from '@/components/design/ContextualTipDisplay';
 import { InAppEmailComposer } from '@/components/report/InAppEmailComposer';
-import { ContextualTip as TipType } from '@/types/clearcontract-intake';
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface PricingResult {
@@ -160,10 +158,6 @@ export default function ProposalIntelligencePage() {
   const [tier, setTier] = useState<"free" | "paid">("free");
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
   const isLocked = !user && tier === "free";
-  const [tipsOptedIn, setTipsOptedIn] = useState(false);
-  const [tipsAsked, setTipsAsked] = useState(false);
-  const [proposalTips, setProposalTips] = useState<TipType[]>([]);
-  const [tipsDismissedToFab, setTipsDismissedToFab] = useState(false);
 
   // ─── Handoff from Roast ─────────────────────────────────────────
   // If the user came from /roast, we already have the file + pricing analysis.
@@ -395,66 +389,18 @@ export default function ProposalIntelligencePage() {
 
   const verdictConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
     'below-market': { label: "Suspiciously cheap", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
-    fair: { label: "Priced like a grown-up", color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
+    fair: { label: "Fair & reasonable", color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
     'above-market': { label: "Bit of a stretch", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
     'significantly-above': { label: "They saw you coming", color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
   };
 
 
-  // Generate contextual tips from red_flags, insights, and haleo_tips
-  useEffect(() => {
-    if (!contractResult || !tipsOptedIn) return;
-    const allTips: TipType[] = [];
-
-    // Red flags as warnings (highest priority)
-    (contractResult.red_flags || []).forEach((rf, i) => {
-      allTips.push({
-        id: `rf-${i}`,
-        title: rf.title,
-        type: 'warning' as const,
-        message: rf.detail,
-        phase: 'visualization' as const,
-        trigger: rf.category,
-      });
-    });
-
-    // Positive insights as success
-    (contractResult.insights || []).filter(ins => ins.type === 'positive').forEach((ins, i) => {
-      allTips.push({
-        id: `ins-${i}`,
-        title: ins.title,
-        type: 'success' as const,
-        message: ins.detail,
-        phase: 'visualization' as const,
-        trigger: ins.category,
-      });
-    });
-
-    // Haleo tips as info
-    (contractResult.haleo_tips || []).forEach((qt, i) => {
-      allTips.push({
-        id: qt.id || `qt-${i}`,
-        title: qt.headline,
-        type: 'info' as const,
-        message: qt.body,
-        phase: 'visualization' as const,
-        trigger: qt.derivedFrom?.join(', ') || 'Proposal analysis',
-      });
-    });
-
-    // Limit to 5 most relevant, prioritizing warnings
-    const sorted = allTips.sort((a, b) => {
-      const order = { warning: 0, permit: 1, success: 2, info: 3 };
-      return (order[a.type] ?? 3) - (order[b.type] ?? 3);
-    });
-    setProposalTips(sorted.slice(0, 5));
-  }, [contractResult, tipsOptedIn]);
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="pt-20 pb-16 px-4">
-        <div className={cn("max-w-2xl mx-auto", tipsOptedIn && proposalTips.length > 0 && "mr-[300px]")}>
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8 text-center">
             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
@@ -834,55 +780,6 @@ export default function ProposalIntelligencePage() {
             {/* ═══ FULL REPORT ═══ */}
             {step === 'full-report' && contractResult && (
               <>
-                {/* Tips opt-in prompt */}
-                {!tipsAsked && (contractResult.haleo_tips?.length > 0 || contractResult.red_flags?.length > 0 || contractResult.insights?.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Lightbulb className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        Want contextual tips as you review?
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Haleo found helpful insights about your proposal — red flags, good signs, and things to watch. 
-                        They'll appear in a sidebar on the right — dismiss anytime.
-                      </p>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="text-xs h-7 gap-1.5" onClick={() => { setTipsOptedIn(true); setTipsAsked(true); }}>
-                          <Lightbulb className="w-3 h-3" /> Yes, show tips
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => { setTipsAsked(true); setTipsDismissedToFab(true); }}>
-                          Not now
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Floating FAB for dismissed tips */}
-                {tipsAsked && !tipsOptedIn && tipsDismissedToFab && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5, y: -20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className="fixed bottom-6 right-4 z-50"
-                  >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setTipsOptedIn(true); setTipsDismissedToFab(false); }}
-                      className="rounded-full shadow-lg gap-1.5 bg-card border-primary/30 hover:shadow-xl transition-all animate-pulse hover:animate-none"
-                    >
-                      <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs font-medium">Tips available</span>
-                    </Button>
-                  </motion.div>
-                )}
                 <FullReportView
                   pricingResult={pricingResult}
                   contractResult={contractResult}
@@ -906,13 +803,6 @@ export default function ProposalIntelligencePage() {
           </AnimatePresence>
         </div>
 
-        {/* Contextual tips sidebar */}
-        {tipsOptedIn && proposalTips.length > 0 && (
-          <TipsContainer
-            tips={proposalTips}
-            onDismiss={(id) => setProposalTips(prev => prev.filter(t => t.id !== id))}
-          />
-        )}
       </main>
       <SiteFooter />
     </div>
