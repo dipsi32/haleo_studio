@@ -590,13 +590,11 @@ const BriefResult = () => {
               <LayerHeader
                 eyebrow="What you shared"
                 title="Your project, in your words"
-                sub="Everything you told us during intake — collected in one place."
               />
 
               {/* Vision — warm callout, not a giant pull-quote */}
               <div className="border-b border-border px-6 py-6 md:px-10">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">In your words</p>
-                <div className="mt-3 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                <div className="rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
                   <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
                     "{homeowner}"
                   </p>
