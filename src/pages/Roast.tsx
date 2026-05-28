@@ -290,7 +290,7 @@ export default function Roast() {
             </section>
 
             {/* Upload card */}
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 md:pb-20">
+            <div className="max-w-3xl mx-auto px-5 sm:px-6 pb-12 md:pb-20">
               <Card
                 className="border-2 border-dashed border-orange-300/60 bg-white/70 backdrop-blur p-6 md:p-10 sm:p-14 text-center hover:border-orange-400 transition cursor-pointer rounded-3xl"
                 onDrop={handleDrop}
