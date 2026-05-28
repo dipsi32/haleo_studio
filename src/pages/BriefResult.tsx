@@ -545,10 +545,9 @@ const BriefResult = () => {
           onEdit={() => setEditOpen(true)}
         />
 
-        {/* City intelligence — quiet card surfacing fire / flood / seismic
-            signals once the address is on file. Only renders when there's real
-            signal. Voice: friend who happens to know SJ construction. */}
-        <div className="mt-6">
+        {/* City intelligence — surfaced as a prominent insight card once the
+            address is on file. Only renders when there's real signal. */}
+        <div className="mt-8">
           <AddressIntelligenceCard address={data.address} />
         </div>
 
