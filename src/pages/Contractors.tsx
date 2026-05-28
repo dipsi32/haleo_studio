@@ -416,17 +416,20 @@ const Contractors = () => {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
-              <p className="font-display text-lg font-medium">How we score trust</p>
+              <p className="font-display text-lg font-medium">How we read trust</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                The Haleo Trust Score is a 0–100 rating based on verified permit history, license status, and real completed work near you — not reviews or paid listings.
+                We score strictly — only what we can verify in public records. No paid placements, no self-reported reviews, no five-star theatre. A contractor reaches <strong className="text-foreground">Trusted</strong> by clearing every core check, and <strong className="text-foreground">Elite</strong> by stacking real local volume on top of that.
               </p>
-              <ul className="mt-4 grid gap-2 text-sm text-foreground/80 md:grid-cols-2">
-                <li>• Local permit volume — 30 pts</li>
-                <li>• Recent activity (last 12 months) — 20 pts</li>
-                <li>• License status & history — 25 pts</li>
-                <li>• Project type match — 15 pts</li>
-                <li>• Job completion rate — 10 pts</li>
-              </ul>
+              <div className="mt-4 grid gap-2 text-sm md:grid-cols-5">
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Elite</p><p className="text-[11px] text-muted-foreground">80+ · top tier</p></div>
+                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Highly Trusted</p><p className="text-[11px] text-muted-foreground">65–79</p></div>
+                <div className="rounded-xl border border-accent/30 bg-accent/5 p-3"><p className="text-xs font-semibold text-accent">Trusted</p><p className="text-[11px] text-muted-foreground">50–64 · all core checks pass</p></div>
+                <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-700">Verified</p><p className="text-[11px] text-muted-foreground">35–49 · licensed, lighter record</p></div>
+                <div className="rounded-xl border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold text-muted-foreground">Limited record</p><p className="text-[11px] text-muted-foreground">Below 35</p></div>
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Tap any contractor to see exactly which checks they cleared, the raw 0–100 score, and the source records behind every signal.
+              </p>
             </div>
           </div>
         </div>
