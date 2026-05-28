@@ -1,9 +1,8 @@
 // CSLB signal display — license badge, bond/WC pills, disciplinary flag,
 // and tenure + name-match. Every signal has a plain-language tooltip.
-import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, ExternalLink, HelpCircle, Loader2 } from "lucide-react";
+import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LicenseStatus } from "@/lib/contractors";
-import { cslbDeepLink } from "@/lib/contractors";
 import {
   evaluateLicense,
   evaluateBond,
@@ -130,72 +129,69 @@ const CslbSignals = ({
   return (
     <TooltipProvider>
       <div className={variant === "card" ? "space-y-2.5" : "space-y-4"}>
-        {/* 1. License badge + classifications + expiration */}
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Tooltip delayDuration={120}>
-              <TooltipTrigger asChild>
-                <span
-                  className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${licenseToneClasses(lic.tone)}`}
-                >
-                  {lic.tone === "active" ? <ShieldCheck className="h-3.5 w-3.5" />
-                    : lic.tone === "expiring" ? <AlertTriangle className="h-3.5 w-3.5" />
-                    : lic.tone === "expired" || lic.tone === "suspended" ? <ShieldAlert className="h-3.5 w-3.5" />
-                    : <ShieldCheck className="h-3.5 w-3.5" />}
-                  {lic.badgeLabel}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                {licenseExplain}
-              </TooltipContent>
-            </Tooltip>
-            {isUnverified && (
-              <a
-                href={cslbDeepLink(licenseNumber)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-accent underline-offset-4 hover:underline"
+        {/* 1. License badge — only when verified (active/expiring/expired/suspended) */}
+        {!isUnverified && (
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Tooltip delayDuration={120}>
+                <TooltipTrigger asChild>
+                  <span
+                    className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${licenseToneClasses(lic.tone)}`}
+                  >
+                    {lic.tone === "active" ? <ShieldCheck className="h-3.5 w-3.5" />
+                      : lic.tone === "expiring" ? <AlertTriangle className="h-3.5 w-3.5" />
+                      : <ShieldAlert className="h-3.5 w-3.5" />}
+                    {lic.badgeLabel}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                  {licenseExplain}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            {lic.classifications.length > 0 && (
+              <p className="mt-1.5 text-xs text-foreground/75">
+                {lic.classifications.slice(0, 4).join(" · ")}
+                {lic.classifications.length > 4 && ` +${lic.classifications.length - 4} more`}
+              </p>
+            )}
+            {lic.expirationLabel && (
+              <p
+                className={`mt-1 text-[11px] ${
+                  lic.tone === "expiring" ? "text-accent font-medium"
+                  : lic.tone === "expired" || lic.tone === "suspended" ? "text-destructive font-medium"
+                  : "text-muted-foreground"
+                }`}
               >
-                Verify on CSLB <ExternalLink className="h-3 w-3" />
-              </a>
+                {lic.expirationLabel}
+              </p>
             )}
           </div>
-          {lic.classifications.length > 0 && (
-            <p className="mt-1.5 text-xs text-foreground/75">
-              {lic.classifications.slice(0, 4).join(" · ")}
-              {lic.classifications.length > 4 && ` +${lic.classifications.length - 4} more`}
-            </p>
-          )}
-          {lic.expirationLabel && (
-            <p
-              className={`mt-1 text-[11px] ${
-                lic.tone === "expiring" ? "text-accent font-medium"
-                : lic.tone === "expired" || lic.tone === "suspended" ? "text-destructive font-medium"
-                : "text-muted-foreground"
-              }`}
-            >
-              {lic.expirationLabel}
-            </p>
-          )}
-        </div>
+        )}
 
-        {/* 2. Bond + Workers' Comp pills */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <CoveragePill
-            status={bond}
-            verifiedLabel="Bonded ✓"
-            missingLabel="Not bonded"
-            unknownLabel="Bond not verified"
-            explanation={EXPLAIN.bond}
-          />
-          <CoveragePill
-            status={wc}
-            verifiedLabel="Workers' Comp ✓"
-            missingLabel="No Workers' Comp on file"
-            unknownLabel="Workers' Comp not verified"
-            explanation={EXPLAIN.workersComp}
-          />
-        </div>
+        {/* 2. Bond + Workers' Comp — only when verified or explicitly missing (hide "unknown") */}
+        {(bond !== "unknown" || wc !== "unknown") && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {bond !== "unknown" && (
+              <CoveragePill
+                status={bond}
+                verifiedLabel="Bonded ✓"
+                missingLabel="Not bonded"
+                unknownLabel="Bond not verified"
+                explanation={EXPLAIN.bond}
+              />
+            )}
+            {wc !== "unknown" && (
+              <CoveragePill
+                status={wc}
+                verifiedLabel="Workers' Comp ✓"
+                missingLabel="No Workers' Comp on file"
+                unknownLabel="Workers' Comp not verified"
+                explanation={EXPLAIN.workersComp}
+              />
+            )}
+          </div>
+        )}
 
         {/* 3. Disciplinary history */}
         {discipline.known && discipline.hasRecord ? (

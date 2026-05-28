@@ -196,7 +196,7 @@ const ContractorProfile = () => {
                       label: 'Local track record',
                       Icon: MapPinned,
                       blurb: 'How much real, recent, on-topic work they have nearby.',
-                      match: (l: string) => ['Local track record', 'Recent activity', 'Right kind of work'].includes(l),
+                      match: (l: string) => ['Permits in your area', 'Recent activity', 'Right kind of work'].includes(l),
                     },
                     {
                       key: 'license',
@@ -230,9 +230,16 @@ const ContractorProfile = () => {
                           <ShieldCheck className="h-3 w-3" /> {tier.label}
                         </span>
                       </div>
-                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                        {tier.blurb} Haleo doesn't vet, endorse, or rate contractors — we read public permit and CSLB records and group them by what the data shows.
-                      </p>
+                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{tier.blurb}</p>
+                      <details className="group/disc mt-1">
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 hover:text-foreground">
+                          How Haleo reads this
+                          <ChevronDown className="h-3 w-3 transition-transform group-open/disc:rotate-180" />
+                        </summary>
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/90">
+                          Haleo doesn't vet, endorse, or rate contractors — we read public permit and CSLB records and group them by what the data shows.
+                        </p>
+                      </details>
 
                       <div className="mt-5 space-y-2">
                         {groups.map((g, idx) => {
@@ -271,7 +278,13 @@ const ContractorProfile = () => {
                                         />
                                       </div>
                                       <p className="mt-1 text-xs text-foreground/70">{isPending ? '⏳ ' : '→ '}{c.detail}</p>
-                                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/90">{c.what}</p>
+                                      <details className="group/why mt-1">
+                                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 hover:text-foreground">
+                                          Why this matters
+                                          <ChevronDown className="h-3 w-3 transition-transform group-open/why:rotate-180" />
+                                        </summary>
+                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/90">{c.what}</p>
+                                      </details>
                                     </div>
                                   );
                                 })}
@@ -353,14 +366,16 @@ const ContractorProfile = () => {
                       variant="profile"
                     />
                   </div>
-                  <a
-                    href={cslbDeepLink(contractor.license_number)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-1 text-sm text-accent underline-offset-4 hover:underline"
-                  >
-                    Verify on CSLB <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  {license && license.scrape_succeeded && (
+                    <a
+                      href={cslbDeepLink(contractor.license_number)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex items-center gap-1 text-sm text-accent underline-offset-4 hover:underline"
+                    >
+                      Verify on CSLB <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
                 </section>
 
                 <Link
