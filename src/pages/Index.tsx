@@ -777,7 +777,7 @@ const Closing = () => (
         Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Thirty seconds. No signup. See where your quote stands.
+        Free. Sign in to start your brief and we'll match you to permit-proven builders nearby.
       </p>
       <Link
         to="/brief"
