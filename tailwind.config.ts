@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Fraunces"', '"Iowan Old Style"', '"Apple Garamond"', "Baskerville", "Georgia", "serif"],
-        sans: ["ui-sans-serif", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', '"Inter"', "Helvetica", "Arial", "sans-serif"],
+        display: ['"Outfit"', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['"Figtree"', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
