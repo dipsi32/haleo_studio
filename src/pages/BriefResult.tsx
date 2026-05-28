@@ -526,9 +526,6 @@ const BriefResult = () => {
           <h1 className="mt-3 font-display text-2xl font-light leading-tight text-balance md:text-3xl">
             {projectTitle.title}
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground md:text-base">
-            Here's everything in one place. Skim it, tweak anything, then share.
-          </p>
         </motion.div>
 
         {/* ────────── AT-A-GLANCE STRIP — the only summary you need ────────── */}
@@ -593,13 +590,11 @@ const BriefResult = () => {
               <LayerHeader
                 eyebrow="What you shared"
                 title="Your project, in your words"
-                sub="Everything you told us during intake — collected in one place."
               />
 
               {/* Vision — warm callout, not a giant pull-quote */}
               <div className="border-b border-border px-6 py-6 md:px-10">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">In your words</p>
-                <div className="mt-3 rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
+                <div className="rounded-2xl border-l-2 border-accent bg-accent-soft/30 px-5 py-4">
                   <p className="font-display text-base leading-relaxed text-foreground/90 md:text-lg">
                     "{homeowner}"
                   </p>
@@ -737,7 +732,6 @@ const BriefResult = () => {
               <LayerHeader
                 eyebrow="For your contractor"
                 title="What they need to bid"
-                sub="Scope of work grouped by trade, plus permit signals — every line tagged so nothing is fabricated."
               />
 
               {/* Haleo's read — vision-grounded analysis of the photos / plans */}
@@ -1210,14 +1204,14 @@ const LayerHeader = ({
 }: {
   eyebrow: string;
   title: string;
-  sub: string;
+  sub?: string;
 }) => (
   <header className="border-b border-border bg-secondary/30 px-6 py-5 md:px-10">
     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">{eyebrow}</p>
     <p className="mt-1.5 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">
       {title}
     </p>
-    <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+    {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
   </header>
 );
 
