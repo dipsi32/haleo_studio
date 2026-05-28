@@ -113,6 +113,25 @@ export default function Roast() {
   const [showSources, setShowSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [funMessageIndex, setFunMessageIndex] = useState(0);
+  const funShareMessages = [
+    "Share this so your friends also know if they're getting ripped off.",
+    "Your group chat needs to see this. Seriously.",
+    "One share = one overpriced quote exposed. Be the hero.",
+    "Contractors hate this one weird trick. (It's just math.)",
+    "Sharing is caring. Especially about your wallet.",
+    "Spread the word. Save a kitchen renovation.",
+    "Tell a friend. Save them from backsplash bankruptcy.",
+  ];
+
+  useEffect(() => {
+    if (stage !== "result") return;
+    const interval = setInterval(() => {
+      setFunMessageIndex((i) => (i + 1) % funShareMessages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [stage]);
+
   const loadingMessages = [
     "Reading the quote.",
     "Pulling local cost guides.",
