@@ -177,9 +177,10 @@ export default function Roast() {
       });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `haleo-score-${result.score}.png`;
+      a.download = `haleo-takeaway-${result.score}.png`;
       a.click();
-      toast({ title: "Downloaded", description: "Your scorecard is saved." });
+      toast({ title: "Saved", description: "Your takeaway card is on your device." });
+
     } catch (e) {
       toast({ title: "Couldn't generate image", description: "Try again in a moment.", variant: "destructive" });
     } finally {
@@ -314,10 +315,20 @@ export default function Roast() {
                 <div className="relative z-10">
                   <p className="text-xs uppercase tracking-widest opacity-90 mb-3">The verdict</p>
                   <p className="text-4xl sm:text-5xl font-serif font-semibold leading-[1.05] mb-3">{result.tier.label}.</p>
-                  <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95">{result.roast.headline}</p>
+                  <p className="text-base sm:text-lg leading-snug max-w-xl opacity-95 mb-5">{result.roast.headline}</p>
+                  <Button
+                    onClick={downloadShareCard}
+                    disabled={downloading}
+                    className="rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold"
+                    size="sm"
+                  >
+                    <Download className="w-4 h-4 mr-1.5" />
+                    {downloading ? "Saving…" : "Save the takeaway card"}
+                  </Button>
                 </div>
                 <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
               </Card>
+
 
               {/* Where your quote lands — the intuitive bar */}
               <Card className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur">
@@ -540,7 +551,8 @@ export default function Roast() {
                     className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
                     <Download className="w-4 h-4 mr-1.5" />
-                    {downloading ? "Generating…" : "Download scorecard"}
+                    {downloading ? "Saving…" : "Save the takeaway card"}
+
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => share("twitter")} className="rounded-full">
                     <Twitter className="w-4 h-4 mr-1.5" /> Twitter / X
@@ -571,95 +583,218 @@ export default function Roast() {
         </AnimatePresence>
       </div>
 
-      {/* Offscreen polished share scorecard (1200×630) for PNG export */}
-      {result && (
-        <div style={{ position: "fixed", top: 0, left: -10000, pointerEvents: "none", zIndex: -1 }}>
-          <div
-            ref={shareCardRef}
-            style={{
-              width: 1200,
-              height: 630,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              padding: 64,
-              fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
-              color: "#ffffff",
-              background:
-                ({
-                  emerald: "linear-gradient(135deg,#059669,#10b981 45%,#5eead4)",
-                  lime: "linear-gradient(135deg,#65a30d,#34d399 45%,#fde047)",
-                  amber: "linear-gradient(135deg,#f59e0b,#fbbf24 45%,#fdba74)",
-                  orange: "linear-gradient(135deg,#f97316,#fbbf24 45%,#fde047)",
-                  red: "linear-gradient(135deg,#dc2626,#f43f5e 50%,#fb923c)",
-                } as Record<string, string>)[result.tier.color] ||
-                "linear-gradient(135deg,#fbbf24,#fb923c)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 22, letterSpacing: 4, textTransform: "uppercase", opacity: 0.9, fontWeight: 600 }}>
-                Haleo · Quote Score
-              </div>
-              <div style={{ fontSize: 18, opacity: 0.9, fontWeight: 500, textTransform: "capitalize" }}>
-                {result.summary.spaceType} {result.summary.scope}
-                {result.summary.zipCode ? ` · ${result.summary.zipCode}` : ""}
-              </div>
-            </div>
+      {/* Offscreen takeaway scorecard — the "golden nugget" PNG download.
+          One self-contained card: verdict, range bar, top line-item burns,
+          advice, sources, footer. Sized 1200×1600 for crisp social/save use. */}
+      {result && (() => {
+        const lo = result.summary.marketLow;
+        const hi = result.summary.marketHigh;
+        const total = result.summary.total;
+        const within = total >= lo && total <= hi;
+        const diff = total - result.summary.marketAverage;
+        const verdictBlurb = within
+          ? "Priced fair for this scope"
+          : diff > 0
+            ? `${fmt(Math.abs(diff))} over the local average`
+            : `${fmt(Math.abs(diff))} under the local average`;
+        const span = Math.max(hi - lo, 1);
+        const minB = lo - span * 0.5;
+        const maxB = hi + span * 0.5;
+        const fullSpan = maxB - minB;
+        const fairLeftPct = ((lo - minB) / fullSpan) * 100;
+        const fairRightPct = ((hi - minB) / fullSpan) * 100;
+        const quotePct = Math.max(2, Math.min(98, ((total - minB) / fullSpan) * 100));
+        const topRoasts = (result.roast.lineRoasts || []).slice(0, 4);
+        const tierBg = ({
+          emerald: "linear-gradient(135deg,#064e3b 0%,#065f46 60%,#047857 100%)",
+          lime: "linear-gradient(135deg,#365314 0%,#4d7c0f 60%,#65a30d 100%)",
+          amber: "linear-gradient(135deg,#78350f 0%,#92400e 55%,#b45309 100%)",
+          orange: "linear-gradient(135deg,#7c2d12 0%,#9a3412 55%,#c2410c 100%)",
+          red: "linear-gradient(135deg,#7f1d1d 0%,#991b1b 55%,#b91c1c 100%)",
+        } as Record<string, string>)[result.tier.color] || "linear-gradient(135deg,#78350f,#b45309)";
 
-            {(() => {
-              const diff = result.summary.total - result.summary.marketAverage;
-              const pct = Math.round(Math.abs(diff) / Math.max(1, result.summary.marketAverage) * 100);
-              const within = result.summary.total >= result.summary.marketLow && result.summary.total <= result.summary.marketHigh;
-              const verdict = within
-                ? `Priced fair for this scope`
-                : diff > 0
-                  ? `${fmt(Math.abs(diff))} over fair, about ${pct}% above local`
-                  : `${fmt(Math.abs(diff))} under fair, about ${pct}% below local`;
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ fontSize: 22, letterSpacing: 3, textTransform: "uppercase", opacity: 0.85, fontWeight: 600 }}>
-                    The verdict
-                  </div>
-                  <div style={{ fontSize: 92, lineHeight: 1.02, fontWeight: 800, letterSpacing: -2, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                    {result.tier.label}.
-                  </div>
-                  <div style={{ fontSize: 44, lineHeight: 1.18, fontWeight: 600, opacity: 0.95, maxWidth: 980 }}>
-                    {verdict}.
-                  </div>
-                </div>
-              );
-            })()}
-
+        return (
+          <div style={{ position: "fixed", top: 0, left: -10000, pointerEvents: "none", zIndex: -1 }}>
             <div
+              ref={shareCardRef}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingTop: 28,
-                borderTop: "1px solid rgba(255,255,255,0.25)",
-                fontSize: 20,
+                width: 1200,
+                padding: 28,
+                background: tierBg,
+                fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
               }}
             >
-              <div style={{ display: "flex", gap: 48 }}>
-                <div>
-                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Your quote</div>
-                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>{fmt(result.summary.total)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.75 }}>Local fair range</div>
-                  <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>
-                    {fmt(result.summary.marketLow)}–{fmt(result.summary.marketHigh)}
+              {/* Inner "card" with golden border */}
+              <div
+                style={{
+                  background: "#FFFBF2",
+                  border: "2px solid #F5C36A",
+                  borderRadius: 32,
+                  padding: 56,
+                  boxShadow: "0 30px 80px rgba(0,0,0,0.35)",
+                  color: "#1a1a1a",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 36,
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12,
+                      background: "linear-gradient(135deg,#F59E0B,#F97316)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontWeight: 800, fontSize: 22, fontFamily: "Georgia, serif",
+                    }}>h</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>Haleo · Quote Scorecard</div>
+                  </div>
+                  <div style={{ fontSize: 16, color: "#6b7280", textTransform: "capitalize" }}>
+                    {result.summary.spaceType} {result.summary.scope}
+                    {result.summary.zipCode ? ` · ${result.summary.zipCode}` : ""}
                   </div>
                 </div>
-              </div>
-              <div style={{ fontSize: 16, opacity: 0.85, textAlign: "right" }}>
-                Check yours free →<br />haleo.studio
+
+                {/* THE NUGGET — verdict block */}
+                <div style={{
+                  background: tierBg,
+                  borderRadius: 24,
+                  padding: "44px 48px",
+                  color: "#fff",
+                  position: "relative",
+                  overflow: "hidden",
+                }}>
+                  <div style={{ fontSize: 14, letterSpacing: 4, textTransform: "uppercase", opacity: 0.85, marginBottom: 14, fontWeight: 600 }}>
+                    The verdict
+                  </div>
+                  <div style={{ fontSize: 84, lineHeight: 1, fontWeight: 800, letterSpacing: -2, fontFamily: "Georgia, 'Times New Roman', serif", marginBottom: 18 }}>
+                    {result.tier.label}.
+                  </div>
+                  <div style={{ fontSize: 28, lineHeight: 1.25, fontWeight: 500, opacity: 0.95, maxWidth: 920 }}>
+                    {verdictBlurb}.
+                  </div>
+                </div>
+
+                {/* Where the quote lands — visual bar */}
+                <div>
+                  <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: "#6b7280", marginBottom: 18, fontWeight: 600 }}>
+                    Where your quote lands
+                  </div>
+                  <div style={{ position: "relative", paddingTop: 56, paddingBottom: 44 }}>
+                    {/* Quote label */}
+                    <div style={{
+                      position: "absolute", top: 0,
+                      left: `${quotePct}%`,
+                      transform: quotePct < 12 ? "translateX(0)" : quotePct > 88 ? "translateX(-100%)" : "translateX(-50%)",
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                    }}>
+                      <div style={{
+                        background: "#1a1a1a", color: "#fff",
+                        padding: "8px 14px", borderRadius: 10,
+                        fontSize: 18, fontWeight: 700, whiteSpace: "nowrap",
+                      }}>
+                        Your quote · {fmt(total)}
+                      </div>
+                      <div style={{
+                        width: 0, height: 0,
+                        borderLeft: "8px solid transparent",
+                        borderRight: "8px solid transparent",
+                        borderTop: "8px solid #1a1a1a",
+                      }} />
+                    </div>
+                    {/* The bar */}
+                    <div style={{ position: "relative", height: 44, borderRadius: 14, background: "#FECACA", overflow: "hidden" }}>
+                      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${fairLeftPct}%`, background: "#E0F2FE" }} />
+                      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${fairLeftPct}%`, width: `${fairRightPct - fairLeftPct}%`, background: "#BBF7D0" }} />
+                      <div style={{ position: "absolute", top: -6, bottom: -6, left: `calc(${quotePct}% - 2px)`, width: 4, background: "#1a1a1a", borderRadius: 3 }} />
+                    </div>
+                    {/* Range labels */}
+                    <div style={{ position: "relative", marginTop: 10, height: 18, fontSize: 14, color: "#6b7280", fontWeight: 600 }}>
+                      <div style={{ position: "absolute", left: `${fairLeftPct}%`, transform: "translateX(-50%)" }}>{fmt(lo)}</div>
+                      <div style={{ position: "absolute", left: `${fairRightPct}%`, transform: "translateX(-50%)" }}>{fmt(hi)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Line-by-line burns */}
+                {topRoasts.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: "#6b7280", marginBottom: 16, fontWeight: 600 }}>
+                      Line by line
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      {topRoasts.map((lr, i) => {
+                        const v = verdictBadge(lr.verdict);
+                        const badgeBg = ({ fair: "#D1FAE5", low: "#CCFBF1", high: "#FEF3C7", wtf: "#FEE2E2" } as Record<string,string>)[lr.verdict] || "#F3F4F6";
+                        const badgeFg = ({ fair: "#065F46", low: "#115E59", high: "#92400E", wtf: "#991B1B" } as Record<string,string>)[lr.verdict] || "#374151";
+                        return (
+                          <div key={i} style={{ borderLeft: "3px solid #F5C36A", paddingLeft: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a" }}>{lr.item}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <span style={{ fontSize: 16, color: "#4b5563", fontVariantNumeric: "tabular-nums" }}>{fmt(lr.cost)}</span>
+                                <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 999, background: badgeBg, color: badgeFg }}>
+                                  {v.label}
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 16, color: "#4b5563", lineHeight: 1.4 }}>{lr.burn}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Golden advice strip — the takeaway */}
+                <div style={{
+                  background: "linear-gradient(135deg,#FEF3C7 0%,#FDE68A 100%)",
+                  border: "1px solid #F5C36A",
+                  borderRadius: 20,
+                  padding: "24px 28px",
+                  display: "flex",
+                  gap: 18,
+                  alignItems: "flex-start",
+                }}>
+                  <div style={{ fontSize: 28, lineHeight: 1 }}>💡</div>
+                  <div>
+                    <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: "#92400E", marginBottom: 6, fontWeight: 700 }}>
+                      What to do next
+                    </div>
+                    <div style={{ fontSize: 20, lineHeight: 1.4, color: "#1a1a1a", fontWeight: 500, fontFamily: "Georgia, serif" }}>
+                      {result.roast.advice}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  paddingTop: 24, borderTop: "1px solid #E5E7EB",
+                  fontSize: 14, color: "#6b7280",
+                }}>
+                  <div style={{ display: "flex", gap: 32 }}>
+                    <div>
+                      <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#9CA3AF", fontWeight: 600 }}>Your quote</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", marginTop: 2 }}>{fmt(total)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#9CA3AF", fontWeight: 600 }}>Local fair range</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", marginTop: 2 }}>{fmt(lo)}–{fmt(hi)}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", fontWeight: 600 }}>
+                    Roast yours free →<br />
+                    <span style={{ color: "#1a1a1a" }}>haleo.studio</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </main>
 
   );
 }
+
