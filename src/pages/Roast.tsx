@@ -101,6 +101,7 @@ export default function Roast() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileBase64Cache, setFileBase64Cache] = useState<string | null>(null);
   const [loadingPhase, setLoadingPhase] = useState(0);
+  const [showSources, setShowSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadingMessages = [
