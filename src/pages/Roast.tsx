@@ -337,9 +337,8 @@ export default function Roast() {
           </motion.div>
         )}
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 md:pb-20">
-
-          {stage === "loading" && (
+        {stage === "loading" && (
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pb-20">
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-14 md:py-24">
               <motion.div
                 animate={{ scale: [1, 1.04, 1] }}
