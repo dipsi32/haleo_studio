@@ -271,7 +271,13 @@ const ContractorProfile = () => {
                                         />
                                       </div>
                                       <p className="mt-1 text-xs text-foreground/70">{isPending ? '⏳ ' : '→ '}{c.detail}</p>
-                                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/90">{c.what}</p>
+                                      <details className="group/why mt-1">
+                                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 hover:text-foreground">
+                                          Why this matters
+                                          <ChevronDown className="h-3 w-3 transition-transform group-open/why:rotate-180" />
+                                        </summary>
+                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/90">{c.what}</p>
+                                      </details>
                                     </div>
                                   );
                                 })}
