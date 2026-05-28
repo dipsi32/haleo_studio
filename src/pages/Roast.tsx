@@ -406,7 +406,7 @@ export default function Roast() {
             <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Verdict card — lead with the call, not a numeric score */}
               <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-7 sm:p-9 md:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
-                <div className="relative z-10 flex flex-col gap-5">
+                <div className="relative z-10 flex flex-col gap-4">
                   <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] backdrop-blur">
                     The verdict
                   </span>
@@ -418,15 +418,6 @@ export default function Roast() {
                       {result.roast.headline}
                     </p>
                   </div>
-                  <Button
-                    onClick={downloadShareCard}
-                    disabled={downloading}
-                    className="w-full sm:w-auto rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold"
-                    size="sm"
-                  >
-                    <Download className="w-4 h-4 mr-1.5" />
-                    {downloading ? "Saving…" : "Save the takeaway card"}
-                  </Button>
                 </div>
                 <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
               </Card>
