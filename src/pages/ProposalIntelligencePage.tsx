@@ -592,7 +592,7 @@ export default function ProposalIntelligencePage() {
                 )}
 
                 {/* Section 1: What Haleo Found */}
-                <SectionLabel number={1} label="What's in Your Proposal" />
+                <SectionLabel number={1} label="What they actually quoted" />
                 {pricingResult.extractedProposal && (
                   <Card className="p-5 border-primary/20 bg-primary/5">
                     <div className="grid grid-cols-2 gap-3 text-sm">
