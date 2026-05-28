@@ -27,13 +27,20 @@ const formatDate = (d: string | null) => {
   return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
-const ScoreRing = ({ score }: { score: number }) => {
-  const pct = Math.max(0, Math.min(100, score));
-  const tone = pct >= 80 ? "text-sage" : pct >= 60 ? "text-accent" : "text-muted-foreground";
+const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
+  const hasPenalty = rc.score.components.some(c => c.status === 'penalty');
+  const tier = trustTier(rc.score.total, hasPenalty);
+  const checks = trustChecks(rc.score);
+  const toneClass =
+    tier.tone === 'sage' ? 'border-sage/40 bg-sage/10 text-sage'
+    : tier.tone === 'accent' ? 'border-accent/40 bg-accent/10 text-accent'
+    : tier.tone === 'amber' ? 'border-amber-400/50 bg-amber-50 text-amber-700'
+    : tier.tone === 'destructive' ? 'border-destructive/40 bg-destructive/10 text-destructive'
+    : 'border-border bg-secondary text-muted-foreground';
   return (
-    <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full border-2 border-current ${tone}`}>
-      <span className="font-display text-lg font-medium leading-none">{pct}</span>
-      <span className="text-[8px] uppercase tracking-wider opacity-70">Trust</span>
+    <div className={`flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border-2 ${toneClass}`}>
+      <span className="font-display text-[13px] font-semibold leading-none">{tier.label}</span>
+      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} checks</span>
     </div>
   );
 };
