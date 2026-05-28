@@ -500,10 +500,10 @@ const Hero = () => {
             transition={{ duration: 0.7, ease: EASE }}
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-6">
-              <ShieldCheck className="w-3.5 h-3.5" /> For homeowners remodeling
+              <ShieldCheck className="w-3.5 h-3.5" /> Homeowners remodeling
             </div>
             <h1 className="font-display text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
-              Hire the contractor who's <span className="italic">already built it</span> — three doors down.
+              Hire the contractor who already built it on your block.
             </h1>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
               Haleo matches you to contractors with verified permit history for your exact project, in your exact neighborhood. Reviews can be bought. Permits can't.
@@ -514,12 +514,6 @@ const Hero = () => {
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/roast"
-                className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground transition-smooth"
-              >
-                <Flame className="w-3.5 h-3.5 text-accent" /> Got a quote? Get it roasted →
               </Link>
             </div>
           </motion.div>
