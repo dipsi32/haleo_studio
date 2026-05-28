@@ -529,8 +529,8 @@ export default function ProposalIntelligencePage() {
                         <Upload className="w-7 h-7 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Drop your proposal here</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF or photo of your contractor's quote</p>
+                        <p className="text-sm font-semibold text-foreground">Drop the quote here</p>
+                        <p className="text-xs text-muted-foreground mt-1">PDF or photo. We'll do the rest.</p>
                       </div>
                     </div>
                   )}
@@ -540,12 +540,13 @@ export default function ProposalIntelligencePage() {
 
                 <Button onClick={handleAnalyze} disabled={!file} className="w-full gap-2 py-6 text-base" size="lg">
                   <Shield className="w-4 h-4" />
-                  Check the pricing first
+                  Roast the price
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  No signup required. Numbers come from real permit records, public cost guides, and prior Haleo proposals.
+                  No signup. Numbers come from real permits, public cost guides, and prior Haleo proposals.
                 </p>
+
               </motion.div>
             )}
 
