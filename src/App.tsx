@@ -82,9 +82,9 @@ const App = () => (
               }
             />
 
-            {/* Brief is self-serve — front door for "Find your contractor" */}
-            <Route path="/brief" element={<Brief />} />
-            <Route path="/brief/result" element={<BriefResult />} />
+            {/* Brief requires login (free, but account-gated to save progress) */}
+            <Route path="/brief" element={<ProtectedRoute><Brief /></ProtectedRoute>} />
+            <Route path="/brief/result" element={<ProtectedRoute><BriefResult /></ProtectedRoute>} />
             {/* Matches require login (paywall lives in-page at the unlock step) */}
             <Route
               path="/contractors"
