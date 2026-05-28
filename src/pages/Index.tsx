@@ -516,34 +516,34 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Mock score card — calm, intentional */}
+          {/* Mock score card — warm gradient, the signature visual */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
             className="relative"
           >
-            <div className="rounded-2xl border border-border bg-card p-7 shadow-soft">
+            <div className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 shadow-soft text-white">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Remodel Roast</p>
-                <span className="text-[10px] uppercase tracking-wider text-accent font-medium">High</span>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/80">Remodel Roast</p>
+                <span className="text-[10px] uppercase tracking-wider text-white font-medium">High</span>
               </div>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-display text-6xl font-light leading-none text-foreground tabular-nums">34</span>
-                <span className="text-sm text-muted-foreground">/ 100</span>
+                <span className="font-display text-6xl font-bold leading-none text-white tabular-nums">34</span>
+                <span className="text-sm text-white/80">/ 100</span>
               </div>
-              <p className="mt-2 font-display text-lg font-light text-foreground">Yikes territory</p>
-              <p className="mt-4 text-sm italic leading-snug text-muted-foreground">
+              <p className="mt-2 font-display text-lg font-light text-white">Yikes territory</p>
+              <p className="mt-4 text-sm italic leading-snug text-white/90">
                 "$12,000 for a backsplash? Are they tiling it with 24k gold?"
               </p>
-              <div className="mt-6 space-y-2 border-t border-border pt-4">
+              <div className="mt-6 space-y-2 border-t border-white/20 pt-4">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Cabinets</span>
-                  <span className="text-foreground font-medium">High</span>
+                  <span className="text-white/80">Cabinets</span>
+                  <span className="text-white font-medium">High</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Labor</span>
-                  <span className="text-muted-foreground">Fair</span>
+                  <span className="text-white/80">Labor</span>
+                  <span className="text-white/80">Fair</span>
                 </div>
               </div>
             </div>
