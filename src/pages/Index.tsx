@@ -500,10 +500,10 @@ const Hero = () => {
             transition={{ duration: 0.7, ease: EASE }}
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-6">
-              <ShieldCheck className="w-3.5 h-3.5" /> Permit-proven · On your block
+              <ShieldCheck className="w-3.5 h-3.5" /> For homeowners remodeling
             </div>
             <h1 className="font-display text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
-              The builder who's <span className="italic">already done it.</span> On your block.
+              Hire the contractor who's <span className="italic">already built it</span> — three doors down.
             </h1>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
               Haleo matches you to contractors with verified permit history for your exact project, in your exact neighborhood. Reviews can be bought. Permits can't.
