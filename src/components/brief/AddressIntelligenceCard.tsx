@@ -141,68 +141,92 @@ export default function AddressIntelligenceCard({ address }: Props) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7"
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-secondary/40 shadow-lift"
       aria-label="What your address tells us"
     >
-      <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-accent-soft text-accent">
-          <Sparkles className="h-3.5 w-3.5" />
-        </span>
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          What your address tells us
+      {/* Top accent bar */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
+
+      <div className="p-6 md:p-8">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                What your address tells us
+              </p>
+              <p className="mt-0.5 font-display text-xl font-light leading-tight text-foreground md:text-2xl">
+                {allClear
+                  ? "Clean parcel — no red flags."
+                  : "A few things worth knowing before you talk to anyone."}
+              </p>
+            </div>
+          </div>
+          <span className="hidden shrink-0 rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground md:inline-block">
+            Public records
+          </span>
+        </div>
+
+        {allClear ? (
+          <div className="mt-5 rounded-2xl border border-sage/20 bg-sage/5 px-5 py-4">
+            <p className="text-sm leading-relaxed text-foreground/80">
+              We checked CAL FIRE fire hazard zones, FEMA flood maps, and California
+              Geological Survey seismic overlays. None flagged your address — so no
+              special permitting or insurance gotchas to plan around upfront.
+            </p>
+          </div>
+        ) : null}
+
+        {/* Signal items as insight cards */}
+        {items.length > 0 && (
+          <div className="mt-5 grid gap-3">
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-secondary/30 p-5 transition-smooth hover:border-amber-500/30 hover:bg-secondary/50 hover:shadow-soft"
+                >
+                  {/* Subtle left accent */}
+                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-amber-400 to-amber-600 opacity-0 transition-opacity group-hover:opacity-100" />
+
+                  <div className="flex items-start gap-4">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20">
+                      <Icon className="h-4.5 w-4.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="font-display text-[15px] font-medium leading-snug">
+                          {item.title}
+                        </p>
+                        <span className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {item.chip}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {item.body}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
+          Pulled from public records. Worth confirming with the city before you sign.
         </p>
       </div>
-
-      <p className="mt-3 font-display text-lg font-light leading-snug text-foreground">
-        {allClear
-          ? "Nothing flagged on your parcel. That's a good baseline."
-          : "A few things worth knowing before you talk to anyone."}
-      </p>
-
-      {allClear ? (
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-          We checked CAL FIRE fire hazard zones, FEMA flood maps, and California
-          Geological Survey seismic overlays. None flagged your address — so no
-          special permitting or insurance gotchas to plan around upfront.
-        </p>
-      ) : null}
-
-      <ul className="mt-5 space-y-4">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <li
-              key={item.title}
-              className="flex items-start gap-3 rounded-2xl bg-secondary/50 p-4"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-background text-foreground">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p className="font-display text-sm font-medium leading-tight">
-                    {item.title}
-                  </p>
-                  <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {item.chip}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                  {item.body}
-                </p>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
-        Pulled from public records. Worth confirming with the city before you sign.
-      </p>
-      {loading ? null : null}
     </motion.section>
   );
 }
