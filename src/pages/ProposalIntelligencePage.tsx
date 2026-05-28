@@ -1027,19 +1027,20 @@ function HaleoInsightCard({ insight }: { insight: string }) {
 
 function AnalyzingPhase({ stage }: { stage: string }) {
   const stages = [
-    { id: 'reading', label: 'Reading your proposal…', icon: '📄' },
-    { id: 'pricing', label: 'Checking pricing against local market…', icon: '💰' },
-    { id: 'contract', label: 'Analyzing contract terms…', icon: '📋' },
-    { id: 'verifying', label: 'Verifying license with CSLB…', icon: '🔍' },
-    { id: 'permits', label: 'Searching permit records…', icon: '🏗️' },
-    { id: 'scoring', label: 'Building your intelligence report…', icon: '🧠' },
+    { id: 'reading', label: 'Reading the quote, line by line…', icon: '📄' },
+    { id: 'pricing', label: 'Sniffing out the price vs. local comps…', icon: '💰' },
+    { id: 'contract', label: 'Combing the contract for weasel words…', icon: '📋' },
+    { id: 'verifying', label: 'Checking the license with CSLB…', icon: '🔍' },
+    { id: 'permits', label: 'Digging through real permit history…', icon: '🏗️' },
+    { id: 'scoring', label: 'Putting the roast together…', icon: '🧠' },
   ];
 
   const currentIndex = stages.findIndex(s => s.id === stage);
 
   return (
     <div className="text-center">
-      <h2 className="font-serif text-2xl text-foreground mb-8">Analyzing your proposal</h2>
+      <h2 className="font-serif text-2xl text-foreground mb-2">Roasting your quote</h2>
+      <p className="text-sm text-muted-foreground mb-8">No fluff. Just data with attitude.</p>
       <div className="max-w-sm mx-auto space-y-3">
         {stages.map((s, i) => (
           <div key={s.id} className={cn(
@@ -1055,10 +1056,11 @@ function AnalyzingPhase({ stage }: { stage: string }) {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-8">This usually takes 15–30 seconds</p>
+      <p className="text-xs text-muted-foreground mt-8">Usually done in 15–30 seconds.</p>
     </div>
   );
 }
+
 
 // ─── Full Report View ───────────────────────────────────────────────
 
