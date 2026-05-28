@@ -115,10 +115,10 @@ export default function Roast() {
 
   const [funMessageIndex, setFunMessageIndex] = useState(0);
   const funShareMessages = [
-    "If this helped, would you pass it on? I'm one person trying to get this in front of homeowners before they sign.",
-    "No ad budget here — just hoping word of mouth does the work. Sharing genuinely helps.",
-    "If a friend is renovating, send it their way. That's the whole growth strategy, honestly.",
-    "Built this solo. A share to one person who needs it means more than you'd think.",
+    "If this helped, pass it to someone about to sign a contractor. No ads here, just word of mouth.",
+    "Know someone renovating? This might save them a headache. That's the whole growth plan.",
+    "Sharing this to one person who needs it honestly means more than you think.",
+    "Help me get this in front of homeowners before they sign. One share goes a long way.",
   ];
 
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function Roast() {
 
   const share = (where: "twitter" | "facebook" | "linkedin" | "whatsapp" | "telegram" | "reddit" | "email" | "copy" | "native") => {
     if (!result) return;
-    const text = result.roast.shareCaption + " — checked on Haleo";
+    const text = result.roast.shareCaption + " via Haleo";
     const url = shareUrl;
     const encodedText = encodeURIComponent(text);
     const encodedUrl = encodeURIComponent(url);
