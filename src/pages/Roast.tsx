@@ -624,19 +624,21 @@ export default function Roast() {
 
               {/* Deeper read — full audit handoff, soft not loud */}
               <Card className="p-6 sm:p-7 rounded-3xl border border-foreground/10 bg-white/85 backdrop-blur">
-                <div className="flex items-start gap-4 flex-wrap">
-                  <div className="shrink-0 w-10 h-10 rounded-2xl bg-foreground/5 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-foreground/70" />
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <p className="font-serif text-xl text-foreground mb-1">Want the deeper read?</p>
-                    <p className="text-sm text-foreground/65 leading-snug">
-                      The full audit goes into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="shrink-0 w-10 h-10 rounded-2xl bg-foreground/5 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-foreground/70" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-serif text-xl text-foreground mb-1">Want the deeper read?</p>
+                      <p className="text-sm text-foreground/65 leading-snug">
+                        The full audit goes into scope gaps, contract risk, license signals, and the line items most likely to bite you later. Same file, no re-upload.
+                      </p>
+                    </div>
                   </div>
                   <Button
                     onClick={goToFullAudit}
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-5"
+                    className="w-full sm:w-auto shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 px-5"
                   >
                     Run the full audit <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
