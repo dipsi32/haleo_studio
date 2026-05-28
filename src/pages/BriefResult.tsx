@@ -1205,14 +1205,14 @@ const LayerHeader = ({
 }: {
   eyebrow: string;
   title: string;
-  sub: string;
+  sub?: string;
 }) => (
   <header className="border-b border-border bg-secondary/30 px-6 py-5 md:px-10">
     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">{eyebrow}</p>
     <p className="mt-1.5 font-display text-xl font-medium leading-tight text-foreground md:text-2xl">
       {title}
     </p>
-    <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+    {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
   </header>
 );
 
