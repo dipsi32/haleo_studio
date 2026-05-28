@@ -793,7 +793,7 @@ const Index = () => {
   const { user, loading } = useAuth();
   if (loading)
     return (
-      <div className="grid min-h-screen place-items-center bg-gradient-warm text-sm text-muted-foreground">
+      <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
         Loading…
       </div>
     );
