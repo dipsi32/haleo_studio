@@ -526,9 +526,6 @@ const BriefResult = () => {
           <h1 className="mt-3 font-display text-2xl font-light leading-tight text-balance md:text-3xl">
             {projectTitle.title}
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground md:text-base">
-            Here's everything in one place. Skim it, tweak anything, then share.
-          </p>
         </motion.div>
 
         {/* ────────── AT-A-GLANCE STRIP — the only summary you need ────────── */}
