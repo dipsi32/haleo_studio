@@ -128,7 +128,7 @@ const ContractorProfile = () => {
                 </p>
               )}
               <p className="mt-3 text-base text-muted-foreground">
-                {contractor.permit_count} verified permit{contractor.permit_count === 1 ? "" : "s"} on file in {contractor.city ?? "San Jose"}.
+                {contractor.permit_count} permit{contractor.permit_count === 1 ? "" : "s"} on file in {contractor.city ?? "San Jose"}.
                 Last job {formatDate(contractor.last_permit_date)}.
               </p>
             </motion.div>
