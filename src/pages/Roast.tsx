@@ -550,7 +550,8 @@ export default function Roast() {
                     className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
                     <Download className="w-4 h-4 mr-1.5" />
-                    {downloading ? "Generating…" : "Download scorecard"}
+                    {downloading ? "Saving…" : "Save the takeaway card"}
+
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => share("twitter")} className="rounded-full">
                     <Twitter className="w-4 h-4 mr-1.5" /> Twitter / X
