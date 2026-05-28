@@ -732,7 +732,6 @@ const BriefResult = () => {
               <LayerHeader
                 eyebrow="For your contractor"
                 title="What they need to bid"
-                sub="Scope of work grouped by trade, plus permit signals — every line tagged so nothing is fabricated."
               />
 
               {/* Haleo's read — vision-grounded analysis of the photos / plans */}
