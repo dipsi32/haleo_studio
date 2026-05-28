@@ -24,7 +24,7 @@ function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: 
 
   if (matchCount > 0) {
     reasons.push(
-      `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — verified by city records`
+      `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — straight from city records`
     );
   } else if (permits.length > 0) {
     reasons.push(`${permits.length} permitted job${permits.length === 1 ? "" : "s"} pulled in ${neighborhood}`);
