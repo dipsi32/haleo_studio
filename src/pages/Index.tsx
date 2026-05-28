@@ -529,7 +529,7 @@ const Hero = () => {
                 <span className="text-[10px] uppercase tracking-wider text-white font-medium">High</span>
               </div>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-serif text-6xl font-bold leading-none text-white tabular-nums">34</span>
+                <span className="font-display text-6xl font-bold leading-none text-white tabular-nums">34</span>
                 <span className="text-sm text-white/80">/ 100</span>
               </div>
               <p className="mt-2 font-display text-lg font-light text-white">Yikes territory</p>
