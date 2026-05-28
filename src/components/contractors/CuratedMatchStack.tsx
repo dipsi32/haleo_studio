@@ -189,24 +189,11 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
         </Button>
       </div>
 
-      {/* Drag affordance hint chips */}
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-between px-4">
-        <motion.div
-          className="rounded-full border-2 border-muted-foreground/60 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80"
-          initial={false}
-        >
-          Pass
-        </motion.div>
-        <motion.div
-          className="rounded-full border-2 border-amber-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-600"
-          initial={false}
-        >
-          Send
-        </motion.div>
-      </div>
     </motion.article>
   );
 };
+
+type Decision = "sent" | "passed";
 
 type Props = {
   matches: RankedContractor[];           // top 3 (or fewer)
