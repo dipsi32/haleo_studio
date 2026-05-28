@@ -505,10 +505,10 @@ const Hero = () => {
               <ShieldCheck className="w-3.5 h-3.5" /> Homeowners remodeling
             </div>
             <h1 className="font-display text-[2.25rem] md:text-[3.6rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
-              Hire the contractor who already built it near you.
+              Audit your proposal before you hire anyone.
             </h1>
             <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
-              A contractor-ready brief, matched to builders with verified permit history for your project, in your neighborhood.
+              Upload the quote. See how pricing, scope, and permit history stack up before you commit.
             </p>
             <p className="mt-5 font-display text-lg md:text-xl text-foreground/90 leading-snug">
               Reviews can be bought. Permits can't.
