@@ -1,9 +1,8 @@
 // CSLB signal display — license badge, bond/WC pills, disciplinary flag,
 // and tenure + name-match. Every signal has a plain-language tooltip.
-import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, ExternalLink, HelpCircle, Loader2 } from "lucide-react";
+import { Link2, ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LicenseStatus } from "@/lib/contractors";
-import { cslbDeepLink } from "@/lib/contractors";
 import {
   evaluateLicense,
   evaluateBond,
