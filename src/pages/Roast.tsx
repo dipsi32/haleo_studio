@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
   ArrowRight, CheckCircle2, Database, FileText, MapPin, BarChart3, Download,
-  ChevronDown, Flame,
+  ChevronDown, Flame, Mail, MessageCircle, Send, Linkedin, Copy, PartyPopper,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import { toPng } from "html-to-image";
@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 
 interface RoastResult {
