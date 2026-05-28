@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown, Menu, X, Flame, Hammer, HardHat } from "lucide-react";
 import Logo from "./Logo";
 import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/context/AuthContext";
@@ -12,15 +13,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const SiteHeader = () => {
   const { user, loading, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
+    setMobileOpen(false);
     navigate("/", { replace: true });
+  };
+
+  const go = (path: string) => {
+    setMobileOpen(false);
+    navigate(path);
   };
 
   return (
@@ -78,11 +87,87 @@ const SiteHeader = () => {
         ) : (
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-soft transition-smooth hover:bg-secondary"
           >
             <LogIn className="h-4 w-4" /> Sign in
           </Link>
         )}
+
+        {/* Mobile hamburger */}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open menu"
+              className="ml-2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card shadow-soft transition-smooth hover:bg-secondary md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[88%] max-w-sm p-0">
+            <SheetHeader className="border-b border-border px-6 py-5 text-left">
+              <SheetTitle className="font-display text-2xl tracking-tight">Haleo</SheetTitle>
+              <p className="text-xs text-muted-foreground">Where contractors earn their keep.</p>
+            </SheetHeader>
+            <nav className="flex flex-col px-3 py-4 text-base">
+              <button onClick={() => go("/brief")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Hammer className="h-4 w-4" />
+                </span>
+                <span className="flex-1">
+                  <span className="block font-medium">Find your contractor</span>
+                  <span className="block text-xs text-muted-foreground">Get matched in minutes</span>
+                </span>
+              </button>
+              <button onClick={() => go("/roast")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Flame className="h-4 w-4" />
+                </span>
+                <span className="flex-1">
+                  <span className="block font-medium">Get it roasted</span>
+                  <span className="block text-xs text-muted-foreground">Free proposal audit</span>
+                </span>
+              </button>
+              <button onClick={() => go("/pro/login")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <HardHat className="h-4 w-4" />
+                </span>
+                <span className="flex-1">
+                  <span className="block font-medium">For contractors</span>
+                  <span className="block text-xs text-muted-foreground">Sign in or join</span>
+                </span>
+              </button>
+
+              {user && (
+                <>
+                  <div className="my-2 h-px bg-border" />
+                  <button onClick={() => go("/account")} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                    <UserRound className="h-4 w-4" /> My projects
+                  </button>
+                  <button onClick={() => go("/account#messages")} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                    <MessageSquare className="h-4 w-4" /> Messages
+                  </button>
+                  {isAdmin && (
+                    <button onClick={() => go("/admin")} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                      <Shield className="h-4 w-4" /> Admin
+                    </button>
+                  )}
+                </>
+              )}
+
+              <div className="my-2 h-px bg-border" />
+              {user ? (
+                <button onClick={handleSignOut} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-destructive transition-smooth hover:bg-destructive/10">
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              ) : (
+                <button onClick={() => go("/login")} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                  <LogIn className="h-4 w-4" /> Sign in
+                </button>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );
