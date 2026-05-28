@@ -615,15 +615,34 @@ const BriefResult = () => {
 
               {/* Photos / video / measurements */}
               {(spaceMedia.length > 0 || data.measurements || data.dimensions) && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-base font-medium">Photos &amp; walkthrough</p>
-                    {spaceMedia.length > 0 && (
-                      <span className="text-xs text-muted-foreground">{spaceMedia.length} file{spaceMedia.length > 1 ? "s" : ""} · tap to enlarge</span>
-                    )}
-                  </div>
+                <Disclosure
+                  title="Photos & walkthrough"
+                  meta={spaceMedia.length > 0 ? `${spaceMedia.length} file${spaceMedia.length > 1 ? "s" : ""}` : undefined}
+                  preview={
+                    spaceMedia.length > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        {spaceMedia.slice(0, 4).map((m) => (
+                          <div key={m.id} className="h-10 w-10 overflow-hidden rounded-md border border-border bg-secondary">
+                            {m.kind === "photo" || m.kind === "inspiration" ? (
+                              <img src={m.url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full w-full place-items-center text-foreground/40">
+                                {m.kind === "video" ? <Play className="h-3.5 w-3.5" /> : <Map className="h-3.5 w-3.5" />}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {spaceMedia.length > 4 && (
+                          <span className="text-xs text-muted-foreground">+{spaceMedia.length - 4} more</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span>Measurements on file</span>
+                    )
+                  }
+                >
                   {spaceMedia.length > 0 && (
-                    <div className="mt-3 grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                       {spaceMedia.map((m) => (
                         <MediaTile key={m.id} m={m} onOpen={setOpen} />
                       ))}
@@ -637,7 +656,7 @@ const BriefResult = () => {
                         : data.measurements}
                     </div>
                   )}
-                </div>
+                </Disclosure>
               )}
 
               {/* Inspiration */}
