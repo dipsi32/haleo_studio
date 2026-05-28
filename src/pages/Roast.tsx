@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
   ArrowRight, CheckCircle2, Database, FileText, MapPin, BarChart3, Download,
-  ChevronDown, Flame, Mail, MessageCircle, Send, Linkedin, Copy, PartyPopper,
+  ChevronDown, Flame, Mail, MessageCircle, Send, Linkedin, Copy,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import { toPng } from "html-to-image";
