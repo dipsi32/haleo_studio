@@ -486,7 +486,7 @@ const Hero = () => {
   const Screen = SCREENS[i];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50">
+    <section className="relative bg-background">
       <SiteHeader />
       <div className="container mx-auto max-w-5xl px-6 pt-20 md:pt-28 pb-16 md:pb-24">
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
@@ -495,47 +495,56 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE }}
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
-              <Flame className="w-3.5 h-3.5" /> FREE · NO SIGNUP · 30 SECONDS
+            <div className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-6">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              Free · No signup · 30 seconds
             </div>
             <h1 className="font-display text-[2rem] md:text-5xl font-medium leading-[1.05] tracking-tight text-foreground">
               Got a quote? <span className="italic">Get it roasted.</span>
             </h1>
-            <p className="mt-5 text-base md:text-lg text-foreground/70 max-w-md">
+            <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
               Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to="/roast"
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-smooth"
               >
                 Roast my quote <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-foreground/50">No login. Just answers.</span>
+              <span className="text-xs text-muted-foreground">No login. Just answers.</span>
             </div>
           </motion.div>
 
-          {/* Mock score card */}
+          {/* Mock score card — calm, intentional */}
           <motion.div
-            initial={{ opacity: 0, y: 20, rotate: -2 }}
-            animate={{ opacity: 1, y: 0, rotate: -2 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
-            <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
-              <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-6xl font-serif font-bold leading-none">34</span>
-                <span className="text-sm opacity-90">/ 100</span>
+            <div className="rounded-2xl border border-border bg-card p-7 shadow-soft">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Remodel Roast</p>
+                <span className="text-[10px] uppercase tracking-wider text-accent font-medium">High</span>
               </div>
-              <p className="mt-2 text-xl font-serif">Yikes Territory</p>
-              <p className="mt-3 text-sm italic leading-snug opacity-95">
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="font-display text-6xl font-light leading-none text-foreground tabular-nums">34</span>
+                <span className="text-sm text-muted-foreground">/ 100</span>
+              </div>
+              <p className="mt-2 font-display text-lg font-light text-foreground">Yikes territory</p>
+              <p className="mt-4 text-sm italic leading-snug text-muted-foreground">
                 "$12,000 for a backsplash? Are they tiling it with 24k gold?"
               </p>
-              <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
-                <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
+              <div className="mt-6 space-y-2 border-t border-border pt-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Cabinets</span>
+                  <span className="text-foreground font-medium">High</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Labor</span>
+                  <span className="text-muted-foreground">Fair</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -546,7 +555,7 @@ const Hero = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-10 text-center text-[13.5px] text-foreground/60"
+          className="mt-12 text-center text-[13.5px] text-muted-foreground"
         >
           No quote yet?{" "}
           <Link to="/brief" className="font-medium text-foreground underline-offset-4 hover:underline">
