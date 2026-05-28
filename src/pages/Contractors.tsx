@@ -357,7 +357,7 @@ const Contractors = () => {
         )}
         {status === "ready" && curated.length === 0 && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-            No verified {projectLabel} contractors yet in {zip}. {backfillNote}
+            No licensed {projectLabel} contractors with permits in {zip} yet. {backfillNote}
           </div>
         )}
 
