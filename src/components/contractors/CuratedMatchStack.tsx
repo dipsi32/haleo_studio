@@ -59,7 +59,7 @@ function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: 
 function rankHeadline(idx: number): { eyebrow: string; rationale: string } {
   if (idx === 0) return {
     eyebrow: "Top pick · the one I'd call first",
-    rationale: "Closest fit by project type, location, and verified track record.",
+    rationale: "Closest fit by project type, location, and local permit footprint.",
   };
   if (idx === 1) return {
     eyebrow: "Strong second",
