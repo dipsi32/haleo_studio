@@ -92,7 +92,7 @@ const ContractorCard = ({
             onClick={() => navigate(`/contractors/${contractor.id}`)}
             className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
           >
-            See what we verified →
+            See the records behind this →
           </button>
         </div>
       </div>
