@@ -78,7 +78,7 @@ const ContractorCard = ({
           aria-label="See trust score breakdown"
           className="shrink-0 rounded-full transition-smooth hover:opacity-80"
         >
-          <ScoreRing score={score.total} />
+          <TrustBadge rc={rc} />
         </button>
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-lg font-medium leading-tight text-foreground">
@@ -92,7 +92,7 @@ const ContractorCard = ({
             onClick={() => navigate(`/contractors/${contractor.id}`)}
             className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
           >
-            Why this score?
+            See what we verified →
           </button>
         </div>
       </div>
