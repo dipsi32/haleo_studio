@@ -492,7 +492,7 @@ const Hero = () => {
       {/* Subtle warm wash so the phone breathes */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10),transparent_55%)]" />
 
-      <div className="container mx-auto max-w-5xl px-6 pt-16 md:pt-24 pb-20 md:pb-28">
+      <div className="container mx-auto max-w-5xl px-6 pt-24 md:pt-32 pb-20 md:pb-28">
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
