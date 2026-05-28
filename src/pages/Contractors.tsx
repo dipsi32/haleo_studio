@@ -365,6 +365,10 @@ const Contractors = () => {
                 setSelected(new Set([rc.contractor.id]));
                 setOutreachOpen(true);
               }}
+              onSendMany={(rcs) => {
+                setSelected(new Set(rcs.map(rc => rc.contractor.id)));
+                setOutreachOpen(true);
+              }}
               onUnlockMore={() => {
                 // Simulated paywall — same "Test mode" pattern as the contractor unlock.
                 toast({
