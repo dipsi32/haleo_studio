@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon, ChevronDown, ShieldCheck, MapPinned, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Calendar, Hammer, Star, Image as ImageIcon, ChevronDown, ShieldCheck, MapPinned, AlertTriangle, Clock, Wallet, HardHat, FileCheck2 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
