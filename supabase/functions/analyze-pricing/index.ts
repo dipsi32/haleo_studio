@@ -228,36 +228,69 @@ function keywordMatchScore(record: any, keywords: string[]): number {
 }
 
 // ─── Step 5: Comparable projects ────────────────────────────────────
-function extractComparableProjects(records: any[], proposalCost: number, proposalScope: string, limit = 1) {
-  const lowerBound = proposalCost * 0.7;
-  const upperBound = proposalCost * 1.3;
+// Match by SIZE + SCOPE first, then cost. Permit valuations are often
+// sandbagged (materials-only or under-reported), so cost alone produces
+// nonsense matches. We require real scope-keyword overlap and, when sqft
+// is known, comparable square footage — never a random cheap permit.
+function extractComparableProjects(
+  records: any[],
+  proposalCost: number,
+  proposalScope: string,
+  proposalSqft?: number | null,
+  limit = 1,
+) {
+  // Cost band stays wide (permits under-report); scope+size do the real filtering
+  const costLow = proposalCost * 0.4;
+  const costHigh = proposalCost * 1.6;
 
   // Keywords from scope to match against FOLDERNAME / WORKDESCRIPTION
+  const stop = new Set(["with", "and", "the", "for", "from", "into", "your", "room", "rooms", "remodel", "remodeling", "renovation", "project"]);
   const scopeKeywords = proposalScope
     .toLowerCase()
-    .replace(/[^a-z\s]/g, "")
+    .replace(/[^a-z\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 3);
+    .filter((w) => w.length > 3 && !stop.has(w));
+
+  const sqftLow = proposalSqft ? proposalSqft * 0.5 : null;
+  const sqftHigh = proposalSqft ? proposalSqft * 2 : null;
 
   return records
     .filter((r) => {
       const val = parseFloat((r.PERMITVALUATION || "0").toString().replace(/[^0-9.]/g, ""));
       if (val <= 0) return false;
-      // Must be within ±30% of proposal cost
-      if (val < lowerBound || val > upperBound) return false;
+      if (val < costLow || val > costHigh) return false;
+
+      // MUST share at least one meaningful scope keyword
+      if (scopeKeywords.length > 0 && keywordMatchScore(r, scopeKeywords) === 0) return false;
+
+      // If we know sqft, require the comparable to be roughly the same size
+      if (sqftLow !== null && sqftHigh !== null) {
+        const sqft = parseInt((r.SQUAREFOOTAGE || "0").toString()) || 0;
+        if (sqft > 0 && (sqft < sqftLow || sqft > sqftHigh)) return false;
+      }
       return true;
     })
-    // Prefer records whose FOLDERNAME matches scope keywords
+    // Best size match first, then scope match, then cost proximity
     .sort((a, b) => {
+      if (proposalSqft) {
+        const sqftA = parseInt((a.SQUAREFOOTAGE || "0").toString()) || 0;
+        const sqftB = parseInt((b.SQUAREFOOTAGE || "0").toString()) || 0;
+        if (sqftA > 0 && sqftB > 0) {
+          const dA = Math.abs(sqftA - proposalSqft);
+          const dB = Math.abs(sqftB - proposalSqft);
+          if (dA !== dB) return dA - dB;
+        } else if (sqftA > 0) return -1;
+        else if (sqftB > 0) return 1;
+      }
       const scoreA = keywordMatchScore(a, scopeKeywords);
       const scoreB = keywordMatchScore(b, scopeKeywords);
       if (scoreB !== scoreA) return scoreB - scoreA;
-      // Secondary: closer in cost to proposal
       const costA = Math.abs(parseFloat((a.PERMITVALUATION || "0").toString().replace(/[^0-9.]/g, "")) - proposalCost);
       const costB = Math.abs(parseFloat((b.PERMITVALUATION || "0").toString().replace(/[^0-9.]/g, "")) - proposalCost);
       return costA - costB;
     })
     .slice(0, limit)
+
     .map((r) => {
       const addr = (r.ADDRESS || "").split(",")[0] || "Nearby";
       const parts = addr.trim().split(/\s+/);
