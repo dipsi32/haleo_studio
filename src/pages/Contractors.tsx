@@ -134,6 +134,68 @@ const ContractorCard = ({
   );
 };
 
+// ───── Phased loading — "magic moment" while we score contractors ─────
+const LOADING_PHASES = [
+  { label: "Reading San José permit records…", ms: 900 },
+  { label: "Cross-checking CSLB license files…", ms: 900 },
+  { label: "Scoring local footprint & project fit…", ms: 900 },
+  { label: "Curating your top 3…", ms: 700 },
+];
+
+const MatchingProgress = ({ note }: { note?: string | null }) => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    if (phase >= LOADING_PHASES.length - 1) return;
+    const t = setTimeout(() => setPhase(p => p + 1), LOADING_PHASES[phase].ms);
+    return () => clearTimeout(t);
+  }, [phase]);
+  const pct = Math.round(((phase + 1) / LOADING_PHASES.length) * 100);
+  return (
+    <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-amber-600" />
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">Curating your matches</p>
+      </div>
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
+        <motion.div
+          className="h-full bg-gradient-to-r from-amber-400 to-accent"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+      <ul className="mt-5 space-y-2.5">
+        {LOADING_PHASES.map((p, i) => {
+          const done = i < phase;
+          const active = i === phase;
+          return (
+            <motion.li
+              key={p.label}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: i <= phase ? 1 : 0.35, x: 0 }}
+              className="flex items-center gap-2.5 text-sm"
+            >
+              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                done ? "border-sage/40 bg-sage/15 text-sage" :
+                active ? "border-accent/40 bg-accent/10 text-accent" :
+                "border-border bg-secondary/50 text-muted-foreground"
+              }`}>
+                {done ? <Check className="h-3 w-3" /> : active ? <Sparkles className="h-3 w-3 animate-pulse" /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />}
+              </span>
+              <span className={done ? "text-foreground/75" : active ? "font-medium text-foreground" : "text-muted-foreground"}>
+                {p.label}
+              </span>
+            </motion.li>
+          );
+        })}
+      </ul>
+      {note && <p className="mt-4 text-[11px] italic text-muted-foreground">{note}</p>}
+    </div>
+  );
+};
+
+const MIN_REVEAL_MS = 3200;
+
 const Contractors = () => {
   const { user: authUser } = useAuth();
   const { data } = useIntake();
@@ -150,6 +212,21 @@ const Contractors = () => {
   const [sending, setSending] = useState(false);
   const [sentInfo, setSentInfo] = useState<{ count: number; names: string[] } | null>(null);
   const [showAll, setShowAll] = useState(false);
+
+  // Auto-scroll to top on landing — homeowners shouldn't see brief footer first.
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, []);
+
+  // Guarantee a minimum "magic moment" before revealing matches.
+  const [mountedAt] = useState(() => Date.now());
+  const [revealReady, setRevealReady] = useState(false);
+  useEffect(() => {
+    if (status !== "ready") return;
+    const elapsed = Date.now() - mountedAt;
+    const wait = Math.max(0, MIN_REVEAL_MS - elapsed);
+    const t = setTimeout(() => setRevealReady(true), wait);
+    return () => clearTimeout(t);
+  }, [status, mountedAt]);
+  const showLoader = status === "loading" || (status === "ready" && !revealReady);
 
   const curated = useMemo(() => ranked.slice(0, 3), [ranked]);
   const rest = useMemo(() => ranked.slice(3), [ranked]);
