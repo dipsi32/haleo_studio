@@ -171,7 +171,13 @@ export default function Roast() {
     if (f) handleFile(f);
   };
 
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/roast` : "";
+  const shareUrl = typeof window !== "undefined"
+    ? (() => {
+        const url = new URL("/roast", window.location.origin);
+        url.searchParams.set("share", "roast-v2");
+        return url.toString();
+      })()
+    : "";
 
   const share = (where: "twitter" | "facebook" | "linkedin" | "whatsapp" | "telegram" | "reddit" | "email" | "copy" | "native") => {
     if (!result) return;
