@@ -661,23 +661,46 @@ const BriefResult = () => {
 
               {/* Inspiration */}
               {inspirationMedia.length > 0 && (
-                <div className="border-b border-border px-6 py-6 md:px-10">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-base font-medium">The look you're after</p>
-                    <span className="text-xs text-muted-foreground">{inspirationMedia.length} ref{inspirationMedia.length > 1 ? "s" : ""}</span>
-                  </div>
-                  <div className="mt-3 grid gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+                <Disclosure
+                  title="The look you're after"
+                  meta={`${inspirationMedia.length} ref${inspirationMedia.length > 1 ? "s" : ""}`}
+                  preview={
+                    <div className="flex items-center gap-1.5">
+                      {inspirationMedia.slice(0, 5).map((m) => (
+                        <div key={m.id} className="h-10 w-10 overflow-hidden rounded-md border border-border bg-secondary">
+                          <img src={m.url} alt="" className="h-full w-full object-cover" />
+                        </div>
+                      ))}
+                      {inspirationMedia.length > 5 && (
+                        <span className="text-xs text-muted-foreground">+{inspirationMedia.length - 5} more</span>
+                      )}
+                    </div>
+                  }
+                >
+                  <div className="grid gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
                     {inspirationMedia.map((m) => (
                       <MediaTile key={m.id} m={m} onOpen={setOpen} />
                     ))}
                   </div>
-                </div>
+                </Disclosure>
               )}
 
               {/* Project details — compact key/value */}
-              <div className="px-6 py-6 md:px-10">
-                <p className="font-display text-base font-medium">Project details</p>
-                <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <Disclosure
+                title="Project details"
+                preview={
+                  <span className="line-clamp-1">
+                    {[
+                      data.room ? ROOM_LABELS[data.room] : null,
+                      budgetLabel !== "—" && budgetLabel !== "Not shared" ? budgetLabel : null,
+                      timelineLabel !== "—" ? timelineLabel : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Room, budget, timeline & more"}
+                  </span>
+                }
+              >
+                <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                   <KV label="Room" value={data.room ? ROOM_LABELS[data.room] : "—"} />
                   <KV label="Project type" value={
                     data.scope === "refresh" ? "Design refresh"
@@ -707,7 +730,7 @@ const BriefResult = () => {
                   onSave={saveAnnotation}
                   locked={approved}
                 />
-              </div>
+              </Disclosure>
             </section>
 
             {/* ════════════ LAYER 2: FOR YOUR CONTRACTOR ════════════ */}
