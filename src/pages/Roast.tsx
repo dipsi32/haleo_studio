@@ -360,9 +360,11 @@ export default function Roast() {
               </AnimatePresence>
               <p className="text-xs text-foreground/50 mt-2">This takes about 30 seconds.</p>
             </motion.div>
-          )}
+          </div>
+        )}
 
-          {stage === "result" && result && (
+        {stage === "result" && result && (
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pb-20">
             <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Verdict card — lead with the call, not a numeric score */}
               <Card className={`relative overflow-hidden rounded-3xl border-0 shadow-2xl p-6 md:p-8 sm:p-10 text-white bg-gradient-to-br ${tierGradient(result.tier.color)}`}>
