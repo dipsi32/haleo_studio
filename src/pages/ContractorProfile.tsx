@@ -10,7 +10,7 @@ import { useIntake } from "@/lib/intake";
 import {
   type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
-  trustTier, trustChecks,
+  trustTier, trustChecks, tierChipClass,
 } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import PermitInspectionItem from "@/components/PermitInspectionItem";
@@ -217,12 +217,6 @@ const ContractorProfile = () => {
                   const hasPenalty = penalties.length > 0;
                   const tier = trustTier(score.total, hasPenalty);
                   const checks = trustChecks(score);
-                  const tierClass =
-                    tier.tone === 'sage' ? 'border-sage/40 bg-sage/10 text-sage'
-                    : tier.tone === 'accent' ? 'border-accent/40 bg-accent/10 text-accent'
-                    : tier.tone === 'amber' ? 'border-amber-400/50 bg-amber-50 text-amber-700'
-                    : tier.tone === 'destructive' ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                    : 'border-border bg-secondary text-muted-foreground';
                   return (
                     <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -232,12 +226,9 @@ const ContractorProfile = () => {
                             {checks.passed} of {checks.total} public-record signals line up
                           </p>
                         </div>
-                        <div className={`rounded-2xl border-2 px-3 py-2 text-right ${tierClass}`}>
-                          <p className="font-display text-base font-semibold leading-none">{tier.label}</p>
-                          <p className="mt-1 text-[10px] uppercase tracking-wider opacity-75">
-                            Signal score {score.total}/100
-                          </p>
-                        </div>
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight whitespace-nowrap ${tierChipClass(tier.tone)}`}>
+                          <ShieldCheck className="h-3 w-3" /> {tier.label}
+                        </span>
                       </div>
                       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                         {tier.blurb} Haleo doesn't vet, endorse, or rate contractors — we read public permit and CSLB records and group them by what the data shows.

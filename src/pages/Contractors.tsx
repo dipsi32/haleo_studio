@@ -7,6 +7,7 @@ import {
   ArrowLeft, MapPin, Calendar, Hammer, Check,
   Send, X, Info, Sparkles, AlertCircle, Paperclip,
   CheckCircle2, FileText, Clock, Wallet, Home, ChevronDown,
+  ShieldCheck,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
-import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot, trustTier, trustChecks } from "@/lib/contractors";
+import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot, trustTier, trustChecks, tierChipClass } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
 import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
@@ -30,18 +31,10 @@ const formatDate = (d: string | null) => {
 const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
   const hasPenalty = rc.score.components.some(c => c.status === 'penalty');
   const tier = trustTier(rc.score.total, hasPenalty);
-  const checks = trustChecks(rc.score);
-  const toneClass =
-    tier.tone === 'sage' ? 'border-sage/40 bg-sage/10 text-sage'
-    : tier.tone === 'accent' ? 'border-accent/40 bg-accent/10 text-accent'
-    : tier.tone === 'amber' ? 'border-amber-400/50 bg-amber-50 text-amber-700'
-    : tier.tone === 'destructive' ? 'border-destructive/40 bg-destructive/10 text-destructive'
-    : 'border-border bg-secondary text-muted-foreground';
   return (
-    <div className={`flex h-14 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border-2 ${toneClass}`}>
-      <span className="font-display text-[11px] font-semibold leading-tight text-center px-1">{tier.label}</span>
-      <span className="mt-1 text-[9px] uppercase tracking-wider opacity-75">{checks.passed}/{checks.total} signals</span>
-    </div>
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-[3px] text-[10px] font-semibold leading-tight whitespace-nowrap ${tierChipClass(tier.tone)}`}>
+      <ShieldCheck className="h-3 w-3" /> {tier.label}
+    </span>
   );
 };
 

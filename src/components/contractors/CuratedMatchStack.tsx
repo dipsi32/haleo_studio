@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { RankedContractor } from "@/lib/useContractors";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
-import { trustTier, trustChecks } from "@/lib/contractors";
+import { trustTier, trustChecks, tierChipClass } from "@/lib/contractors";
 
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
@@ -120,12 +120,6 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
         const hasPenalty = score.components.some(c => c.status === 'penalty');
         const tier = trustTier(score.total, hasPenalty);
         const checks = trustChecks(score);
-        const toneClass =
-          tier.tone === 'sage' ? 'bg-sage/15 text-sage'
-          : tier.tone === 'accent' ? 'bg-accent/15 text-accent'
-          : tier.tone === 'amber' ? 'bg-amber-100 text-amber-700'
-          : tier.tone === 'destructive' ? 'bg-destructive/10 text-destructive'
-          : 'bg-secondary text-muted-foreground';
         return (
           <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-amber-50 via-card to-card px-5 py-3">
             <div className="flex items-center gap-2">
@@ -133,10 +127,10 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">{head.eyebrow}</p>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${toneClass}`}>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-[3px] text-[10px] font-semibold leading-tight whitespace-nowrap ${tierChipClass(tier.tone)}`}>
                 <ShieldCheck className="h-3 w-3" /> {tier.label}
               </span>
-              <span className="text-[11px] text-muted-foreground">{checks.passed}/{checks.total} signals</span>
+              <span className="text-[10px] text-muted-foreground opacity-60">{checks.passed}/{checks.total} signals</span>
             </div>
           </div>
         );
