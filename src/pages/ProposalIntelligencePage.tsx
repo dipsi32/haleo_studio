@@ -394,11 +394,12 @@ export default function ProposalIntelligencePage() {
   };
 
   const verdictConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-    'below-market': { label: 'Below market', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
-    fair: { label: 'Fair', color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
-    'above-market': { label: 'A little high', color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
-    'significantly-above': { label: 'Notably high', color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
+    'below-market': { label: "Suspiciously cheap", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    fair: { label: "Priced like a grown-up", color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60', dot: 'bg-emerald-500' },
+    'above-market': { label: "Bit of a stretch", color: 'text-amber-700', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/60', dot: 'bg-amber-500' },
+    'significantly-above': { label: "They saw you coming", color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200/60', dot: 'bg-red-500' },
   };
+
 
   // Generate contextual tips from red_flags, insights, and haleo_tips
   useEffect(() => {
@@ -461,14 +462,15 @@ export default function ProposalIntelligencePage() {
               Back
             </button>
             <h1 className="font-serif text-2xl sm:text-3xl text-foreground mb-2">
-              {step === 'full-report' ? 'Your full audit' : step === 'pricing' ? 'Here is what the data says' : 'Audit a contractor proposal'}
+              {step === 'full-report' ? 'The full roast' : step === 'pricing' ? "Here's the receipts" : 'Roast your contractor quote'}
             </h1>
             <p className="text-muted-foreground">
-              {step === 'upload' && 'Drop the proposal in. We check the price first, then go deeper if you want.'}
-              {step === 'analyzing' && 'Working on it.'}
-              {step === 'pricing' && 'Your quote against local cost guides, permit comps, and prior Haleo proposals. Every number on this page comes from one of those.'}
-              {step === 'full-report' && 'Pricing, scope, contract risks, contractor signals, and what to do this week.'}
+              {step === 'upload' && "Drop the quote in. We'll check the price first — no signup, no drama, just numbers."}
+              {step === 'analyzing' && 'Reading it like a hawk…'}
+              {step === 'pricing' && 'Your quote vs. real permits, public cost guides, and prior Haleo proposals. Every number traces back to a source.'}
+              {step === 'full-report' && 'Pricing, scope, contract risk, contractor signals, and what to do this week — all in one place.'}
             </p>
+
           </div>
 
           <AnimatePresence mode="wait">
@@ -481,9 +483,10 @@ export default function ProposalIntelligencePage() {
                   </div>
                   <div className="pt-1.5">
                     <p className="text-sm text-foreground leading-relaxed">
-                      <span className="font-semibold">Haleo:</span> Drop the proposal in. I will check the pricing against local comps first, then we can go deeper into scope and contract risks.
+                      <span className="font-semibold">Haleo:</span> Hand me the quote. I'll check if the price is honest before we dig into the fine print.
                     </p>
                   </div>
+
                 </div>
 
                 <div
@@ -526,8 +529,8 @@ export default function ProposalIntelligencePage() {
                         <Upload className="w-7 h-7 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Drop your proposal here</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF or photo of your contractor's quote</p>
+                        <p className="text-sm font-semibold text-foreground">Drop the quote here</p>
+                        <p className="text-xs text-muted-foreground mt-1">PDF or photo. We'll do the rest.</p>
                       </div>
                     </div>
                   )}
@@ -537,12 +540,13 @@ export default function ProposalIntelligencePage() {
 
                 <Button onClick={handleAnalyze} disabled={!file} className="w-full gap-2 py-6 text-base" size="lg">
                   <Shield className="w-4 h-4" />
-                  Check the pricing first
+                  Roast the price
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  No signup required. Numbers come from real permit records, public cost guides, and prior Haleo proposals.
+                  No signup. Numbers come from real permits, public cost guides, and prior Haleo proposals.
                 </p>
+
               </motion.div>
             )}
 
@@ -588,7 +592,7 @@ export default function ProposalIntelligencePage() {
                 )}
 
                 {/* Section 1: What Haleo Found */}
-                <SectionLabel number={1} label="What's in Your Proposal" />
+                <SectionLabel number={1} label="What they actually quoted" />
                 {pricingResult.extractedProposal && (
                   <Card className="p-5 border-primary/20 bg-primary/5">
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -603,7 +607,7 @@ export default function ProposalIntelligencePage() {
                 )}
 
                 {/* Section 2: Is the Price Fair? — the TL;DR */}
-                <SectionLabel number={2} label="Is this price fair?" />
+                <SectionLabel number={2} label="Is this price honest?" />
                 {pricingResult.proposalAnalysis && (
                   <Card className={cn('p-6 border', verdictConfig[pricingResult.proposalAnalysis.verdict]?.bg || 'bg-card')}>
                     <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -706,17 +710,18 @@ export default function ProposalIntelligencePage() {
 
 
                 {/* Section 3: Haleo's Take */}
-                <SectionLabel number={3} label="Haleo's Take" />
+                <SectionLabel number={3} label="Haleo's hot take" />
                 <HaleoInsightCard insight={pricingResult.haleoInsight} />
 
                 {/* Section 4: One Real Comparable */}
                 {pricingResult.comparableProjects.length > 0 && (
                   <>
-                    <SectionLabel number={4} label="Closest Real Project to Yours" />
+                    <SectionLabel number={4} label="A neighbor who actually built this" />
                     <Card className="p-5">
                       <p className="text-xs text-muted-foreground mb-4">
-                        Pulled live from City of San José permit records — the nearest match to your scope, size, and neighborhood.
+                        Closest match from City of San José permit records — same scope, similar size, your neighborhood.
                       </p>
+
                       {(() => {
                         const p = pricingResult.comparableProjects[0];
                         return (
@@ -919,11 +924,12 @@ export default function ProposalIntelligencePage() {
 function SectionLabel({ number, label }: { number: number; label: string }) {
   return (
     <div className="flex items-center gap-3 pt-2">
-      <span className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{number}</span>
-      <h3 className="font-serif text-lg text-foreground">{label}</h3>
+      <span className="font-serif italic text-2xl text-primary leading-none tabular-nums">0{number}.</span>
+      <h3 className="font-serif text-lg text-foreground tracking-tight">{label}</h3>
     </div>
   );
 }
+
 
 function InfoCell({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
   return (
@@ -971,15 +977,15 @@ function HaleoInsightCard({ insight }: { insight: string }) {
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-primary uppercase tracking-wider">Haleo's Take</p>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Here's what stands out about this proposal</p>
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider">Haleo's hot take</p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">What jumps out — the good, the sus, and the side notes.</p>
         </div>
       </div>
       <div className="space-y-4 pl-12">
         {positives.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-[hsl(var(--success))] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" /> What Looks Good
+              <CheckCircle className="w-3.5 h-3.5" /> What checks out
             </p>
             <div className="space-y-1.5">
               {positives.map((s, i) => (
@@ -991,7 +997,7 @@ function HaleoInsightCard({ insight }: { insight: string }) {
         {concerns.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-[hsl(var(--warning))] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> What Worries Us
+              <AlertTriangle className="w-3.5 h-3.5" /> Where it smells off
             </p>
             <div className="space-y-1.5">
               {concerns.map((s, i) => (
@@ -1004,9 +1010,10 @@ function HaleoInsightCard({ insight }: { insight: string }) {
           <div>
             {(positives.length > 0 || concerns.length > 0) && (
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5" /> Additional Context
+                <Info className="w-3.5 h-3.5" /> Worth knowing
               </p>
             )}
+
             <div className="space-y-1.5">
               {context.map((s, i) => (
                 <p key={i} className="text-sm text-foreground leading-relaxed pl-5">{s}</p>
@@ -1021,19 +1028,20 @@ function HaleoInsightCard({ insight }: { insight: string }) {
 
 function AnalyzingPhase({ stage }: { stage: string }) {
   const stages = [
-    { id: 'reading', label: 'Reading your proposal…', icon: '📄' },
-    { id: 'pricing', label: 'Checking pricing against local market…', icon: '💰' },
-    { id: 'contract', label: 'Analyzing contract terms…', icon: '📋' },
-    { id: 'verifying', label: 'Verifying license with CSLB…', icon: '🔍' },
-    { id: 'permits', label: 'Searching permit records…', icon: '🏗️' },
-    { id: 'scoring', label: 'Building your intelligence report…', icon: '🧠' },
+    { id: 'reading', label: 'Reading the quote, line by line…', icon: '📄' },
+    { id: 'pricing', label: 'Sniffing out the price vs. local comps…', icon: '💰' },
+    { id: 'contract', label: 'Combing the contract for weasel words…', icon: '📋' },
+    { id: 'verifying', label: 'Checking the license with CSLB…', icon: '🔍' },
+    { id: 'permits', label: 'Digging through real permit history…', icon: '🏗️' },
+    { id: 'scoring', label: 'Putting the roast together…', icon: '🧠' },
   ];
 
   const currentIndex = stages.findIndex(s => s.id === stage);
 
   return (
     <div className="text-center">
-      <h2 className="font-serif text-2xl text-foreground mb-8">Analyzing your proposal</h2>
+      <h2 className="font-serif text-2xl text-foreground mb-2">Roasting your quote</h2>
+      <p className="text-sm text-muted-foreground mb-8">No fluff. Just data with attitude.</p>
       <div className="max-w-sm mx-auto space-y-3">
         {stages.map((s, i) => (
           <div key={s.id} className={cn(
@@ -1049,10 +1057,11 @@ function AnalyzingPhase({ stage }: { stage: string }) {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-8">This usually takes 15–30 seconds</p>
+      <p className="text-xs text-muted-foreground mt-8">Usually done in 15–30 seconds.</p>
     </div>
   );
 }
+
 
 // ─── Full Report View ───────────────────────────────────────────────
 
