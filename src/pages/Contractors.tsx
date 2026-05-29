@@ -227,6 +227,14 @@ const Contractors = () => {
     const t = setTimeout(() => setRevealReady(true), wait);
     return () => clearTimeout(t);
   }, [status, mountedAt]);
+
+  // Fire contractors_viewed once results are revealed.
+  const viewedFired = useRef(false);
+  useEffect(() => {
+    if (status !== "ready" || viewedFired.current) return;
+    viewedFired.current = true;
+    track("contractors_viewed", { count: ranked.length, project_type: projectLabel });
+  }, [status, ranked.length, projectLabel]);
   const showLoader = status === "loading" || (status === "ready" && !revealReady);
 
   const curated = useMemo(() => ranked.slice(0, 3), [ranked]);
