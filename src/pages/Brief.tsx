@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
+import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChefHat,
