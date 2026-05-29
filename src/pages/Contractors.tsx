@@ -22,6 +22,7 @@ import { evaluateDiscipline } from "@/lib/cslbSignals";
 import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 
 const formatDate = (d: string | null) => {
   if (!d) return "—";
