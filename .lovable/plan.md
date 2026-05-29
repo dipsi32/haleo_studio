@@ -1,111 +1,89 @@
-## Vision
 
-At every step of the homeowner's journey, Haleo surfaces the right piece of city intelligence — quietly, like a text from a friend who happens to know everything about San Jose construction. Not data dumps. Not modals. Not tooltips. Calm cards at the exact moment they matter.
+# ADU Feasibility Check — Implementation Plan
 
-The homeowner should leave every session feeling measurably smarter than when they arrived. That's the retention, word of mouth, and moat.
+A new `/adu` route walking homeowners through: address → parcel lookup → hardcoded feasibility rules engine → SVG buildable-zone diagram → ADU-permitted contractor match. Safety guardrails are baked in: rules engine is hardcoded (not AI), Gemini only translates to plain English, every result carries a non-dismissible Planning Dept disclaimer, and missing data is surfaced honestly rather than hallucinated.
 
-## Voice
+## Scope
 
-> "Hey — before you sign that, San Jose permit fees for this scope are $485. That line item on your bid says $1,200."
+### New route
+- `src/pages/ADU.tsx` — 4-step flow with Framer Motion slide transitions, mobile-first 390px.
+- Add route to `App.tsx` behind `<Gated>` (ProtectedRoute + AccessGate).
+- Add "ADU" tab with `Building2` icon to the bottom tab bar.
 
-Bold, calm, intelligent, "got your back." Not theatrical. Numbers and sources do the talking. One light wink per screen, max.
+### Step 1 — Address & parcel resolution
+- Single address input. On submit:
+  - Call existing `lookup-parcel-history` edge function to resolve APN + permit history.
+  - Call existing `lookup-address-risk` for Fire Hazard Severity Zone signal.
+  - Derive **data confidence**: Green (APN + lot dims + zoning), Yellow (APN + partial), Red (no APN or no usable parcel data).
+  - Red → stop flow, show error, offer waitlist join.
 
-## Architecture — one shared "City Intelligence" layer
+### Step 2 — Feasibility check
+- **New edge function** `supabase/functions/check-adu-feasibility/index.ts`:
+  - Input: APN, lot_size, zoning, existing_footprints, permit_history, fhsz flag.
+  - **Hardcoded rules engine** (San Jose ADU ordinance + CA AB 2221):
+    - JADU: 500 sqft max, requires 1,200 sqft min lot.
+    - Detached ADU: min(1,200 sqft, 50% primary); 800 sqft floor if primary <800.
+    - Setbacks: 4ft rear / 4ft sides / no front.
+    - Height: 16ft flat, 18ft sloped within 0.5mi transit (flagged as needs-verification since transit proximity not in current data → fallback to 16ft + note).
+    - School impact fee triggers >500 sqft.
+    - FHSZ → fire-resistant material flag.
+    - Open permits / violations surfaced from history.
+  - Calls existing `cost-guide-lookup` for cost_range. Never lets AI estimate.
+  - Calls Lovable AI Gateway (`google/gemini-2.5-pro`) with a strict system prompt: "translate this JSON to plain English, add nothing, say 'unavailable' for nulls."
+  - Returns structured JSON spec + `explanation` string.
+- Result screen shows verdict, confidence chip, allowed ADU types, setbacks, cost range (labeled as estimate from cost guide), open permits/violations flags, school fee flag, FHSZ flag, **non-dismissible disclaimer**, CTA to diagram.
 
-All surfaces consume from the same layer. Cache tables; edge functions hydrate them; UI is a thin "Quiet Signal" card.
+### Step 3 — Property positioning diagram
+- Pure SVG (no Mapbox/Google), computed from lot dimensions.
+- Lot boundary → setback ring → buildable envelope (amber 15%) → existing structures (if footprint data) → dashed max-ADU rectangle.
+- Only render if confidence ≥ Medium AND lot dims present. Otherwise text-only explanation.
+- Unknown dimensions render as "?" with approximation note.
+- Always shows architect/Planning Dept disclaimer below.
 
-```
-public APIs ──▶ edge functions ──▶ city_* / address_* cache ──▶ <QuietSignal /> on the right screen
-```
+### Step 4 — Contractor match
+- Query existing `contractor_permits` joined to `contractors` filtered by `project_type = 'ADU'` and homeowner zip cluster.
+- Reuse existing contractor card component (`CuratedMatchStack` or single card from `/contractors`).
+- Max 3 cards. Empty state → waitlist CTA.
 
-## Phases
+### Cross-cutting
+- Disclaimer component (`AduDisclaimer.tsx`) — reusable, non-dismissible.
+- Confidence indicator component (`DataConfidenceBadge.tsx`).
+- Skeleton loaders on every async call.
+- PostHog events via existing `track()`: `adu_started`, `adu_address_submitted`, `adu_parcel_resolved`, `adu_parcel_failed`, `adu_feasibility_completed`, `adu_diagram_viewed`, `adu_contractor_matched`, `adu_waitlist_joined`.
 
-### Phase 1 — Address intelligence (SHIPPING NOW)
+## Technical details
 
-Trigger: when the homeowner saves their address in the brief.
+### Files added
+- `src/pages/ADU.tsx`
+- `src/components/adu/AddressStep.tsx`
+- `src/components/adu/FeasibilityResult.tsx`
+- `src/components/adu/BuildableDiagram.tsx`
+- `src/components/adu/AduContractorMatch.tsx`
+- `src/components/adu/AduDisclaimer.tsx`
+- `src/components/adu/DataConfidenceBadge.tsx`
+- `src/lib/aduRules.ts` — pure TS rules engine (shared between edge function logic and possible client preview). The edge function will have its own copy since edge functions can't import from `src/`.
+- `supabase/functions/check-adu-feasibility/index.ts`
 
-Looks up three things via public APIs and caches per address:
+### Files modified
+- `src/App.tsx` — add `/adu` route gated behind `<Gated>`.
+- Bottom tab bar component — add ADU tab.
+- `supabase/config.toml` — register new function (default `verify_jwt = false` for parity with sibling functions; the call is gated client-side by AccessGate).
 
-- **Fire Hazard Severity Zone (FHSZ)** — CAL FIRE FeatureServer (Moderate / High / Very High). If WUI, surface immediately. Affects exterior materials, insurance, contractor requirements.
-- **FEMA flood zone** — FEMA NFHL ArcGIS REST. Surface when in any Special Flood Hazard Area (A, AE, V, VE…). Affects scope requirements.
-- **Seismic hazard zone** — CA Geological Survey (liquefaction / landslide overlays). Surface when relevant to structural scope.
+### Data confidence rules
+- Green: APN resolved + lot_size present + zoning present
+- Yellow: APN resolved + one of {lot_size, zoning} missing
+- Red: APN unresolved OR `lookup_succeeded = false`
 
-Storage: `address_risk_signals` (created in migration `20260526_address_risk_signals`). Keyed on a normalized `street|city|state|zip` string. Cached forever (these zones rarely change); a manual refresh button can force re-lookup later.
+### Existing infra reused (not rebuilt)
+- `lookup-parcel-history`, `lookup-address-risk`, `cost-guide-lookup`, `fetch-sj-permits`, `fetch-permit-inspections`, `fetch-sj-violations`, `contractor_permits` table, contractor card components, AccessGate, analytics util.
 
-Edge function: `lookup-address-risk` (public, no JWT) — geocodes via the free US Census geocoder, then hits each ArcGIS endpoint, normalizes, writes to cache. Best-effort: if one source fails, the others still land.
+### Gemini call shape
+- Model: `google/gemini-2.5-pro`
+- System: hard guardrail prompt forbidding new facts
+- User: stringified rules-engine JSON
+- Temperature: low. Response stored on the result, never re-queried per render.
 
-Surface: a single calm `<AddressIntelligenceCard />` at the top of `BriefResult.tsx` — only renders when at least one real signal exists. Each signal is one sentence: what it is, what it changes, why they should care. No alarm. No emoji.
-
-Out of scope for Phase 1: the materials guidance itself, insurance copy, contractor filtering. That's Phase 2+.
-
-### Phase 2 — Scope intelligence
-
-Trigger: when the homeowner picks project type / scope.
-
-Curated table `city_programs` (we seed it) mapping scope → relevant SJ programs:
-
-- ADU scopes → **ADU Ally** pre-approved plans (6-month → 6-week permits)
-- Kitchen / bath / electrical → **San José Clean Energy** electrification rebates (panel upgrade, induction)
-- Any structural → **PBCE** free homeowner workshops (next session date)
-- Any permitted work → **Title 24** 2023 compliance line item reminder
-
-Surface: a `<ProgramSignal />` card on the scope screen and on `BriefResult`. Each card shows program name, the dollar/time benefit, and a deep link.
-
-### Phase 3 — Live permit & inspection wait times
-
-First step (read-only investigation): check `data.sanjoseca.gov` for inspection datasets with both request and completion timestamps (`inspection_requests`, `permit_activity` with status timestamps). If timestamps are there → compute real medians ourselves; far better than scraping.
-
-If data exists:
-
-- Nightly `compute-sj-wait-times` cron edge function (pg_cron + pg_net) writes medians per permit type into `city_wait_times` (building / electrical / mechanical / framing inspections).
-- Surface on the scope screen as a "timeline reality" card: *"San Jose is currently running 14 business days for framing inspections. Bake this in."*
-- Surface on bid review as a check: *"This contractor's 8-week timeline doesn't account for current SJ inspection backlogs."*
-
-If data doesn't exist: degrade to a quarterly hand-curated table; flag it as such honestly.
-
-### Phase 4 — Permit milestone tracker (post-hire)
-
-Goal: zero homeowner action, all proactive nudges.
-
-- New table `tracked_permits` (homeowner_user_id, permit_number, project_id, last_status, last_status_at).
-- New edge function `poll-tracked-permits` on a daily cron — pulls latest status from SJ permit API for each tracked row.
-- On status change, write into `homeowner_notifications` (already exists, already realtime via `HomeownerNotificationToaster`):
-  - Issued → "Your permit was pulled today. Make sure it's posted on site."
-  - Inspection scheduled → "Rough electrical inspection is in 3 days. Failing it adds 2–3 weeks right now in SJ."
-  - Failed → "Framing inspection had a correction notice. Here's what usually needs to be fixed."
-  - 45 days to expiration → "Permit expires in 45 days. Your contractor needs to file an extension now, not later."
-  - Final passed → "Closed out with the city. Save this — you'll need it on resale disclosure."
-
-UI: surface the live timeline on `Account.tsx` under each project.
-
-### Phase 5 — Contextual events
-
-Goal: feel like Haleo somehow knew you needed this workshop.
-
-- Table `city_events` (title, date, audience tags, deep link). Seeded weekly via a `sync-sj-events` edge function (or, until that scraper is solid, hand-curated). Tags: `adu`, `fire_zone`, `electrification`, `permits`, `general`.
-- Each phase surfaces matching events as a small card:
-  - ADU scope → ADU workshop card
-  - WUI zone (from Phase 1) → SJ Fire Dept free home assessment
-  - Electrical scope → SJ Clean Energy electrification session
-
-## Voice rules across all signals
-
-- Lead with the fact, then what it changes for them, then the action.
-- One sentence per signal where possible.
-- Always cite the source (small chip).
-- Never alarmist. The vibe is "you should know this," not "panic."
-- Honest caveat when relevant: "Public records, last refreshed [date]."
-
-## Out of scope across all phases
-
-- No homeowner-facing dashboard of all the data; signals are contextual, not a feed.
-- No paid APIs.
-- No contractor-visible changes (this is homeowner intelligence).
-- "Test mode" $99 unlock remains as-is until real Stripe is wired.
-
-## Deliverable this turn
-
-- Migration: `address_risk_signals` cache table (done).
-- Edge function: `lookup-address-risk` (CA Census geocoder → CAL FIRE FHSZ + FEMA NFHL + CGS seismic).
-- Trigger: fired from `AddressStep.save()` (fire-and-forget; non-blocking).
-- UI: `<AddressIntelligenceCard />` at the top of `BriefResult.tsx`. Calm, voice-correct, only renders when there's real signal.
+### Not in scope
+- No new npm packages.
+- No changes to existing routes/components beyond the tab bar + App.tsx route registration.
+- Transit-proximity check (no current data source) → conservative 16ft height with a "verify with Planning if near transit" note.

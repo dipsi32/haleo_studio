@@ -70,6 +70,15 @@ export type AnalyticsEvent =
   | "contractor_onboarded"
   | "lead_unlock_attempted"
   | "lead_unlock_completed"
+  // ADU feasibility
+  | "adu_started"
+  | "adu_address_submitted"
+  | "adu_parcel_resolved"
+  | "adu_parcel_failed"
+  | "adu_feasibility_completed"
+  | "adu_diagram_viewed"
+  | "adu_contractor_matched"
+  | "adu_waitlist_joined"
   // Errors
   | "error_proposal_upload"
   | "error_brief_generation"

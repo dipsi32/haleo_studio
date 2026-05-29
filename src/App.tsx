@@ -17,6 +17,7 @@ import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
 import Roast from "./pages/Roast.tsx";
+import ADU from "./pages/ADU.tsx";
 
 import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/roast" element={<Roast />} />
             <Route path="/login" element={<Login />} />
             <Route path="/waitlist" element={<Waitlist />} />
+            <Route path="/adu" element={<Gated><ADU /></Gated>} />
 
 
             {/* Authenticated, but no pilot pass needed */}
