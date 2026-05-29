@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
+import { track } from "@/lib/analytics";
 
 const Login = () => {
   const { user, loading } = useAuth();
