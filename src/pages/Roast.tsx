@@ -155,6 +155,8 @@ export default function Roast() {
     }
     setUploadedFile(file);
     setStage("loading");
+    uploadedRef.current = true;
+    track("proposal_uploaded", { file_type: file.type, file_size_kb: Math.round(file.size / 1024) });
     const phaseInterval = setInterval(() => {
       setLoadingPhase((p) => (p + 1) % loadingMessages.length);
     }, 2200);
@@ -169,8 +171,10 @@ export default function Roast() {
       clearInterval(phaseInterval);
       setResult(data);
       setStage("result");
+      track("roast_completed", { score: data?.score, tier: data?.tier?.label, confidence: data?.confidence });
     } catch (e: any) {
       clearInterval(phaseInterval);
+      track("error_proposal_upload", { message: e?.message ?? "unknown" });
       toast({ title: "Couldn't read it", description: e.message || "Try a clearer screenshot.", variant: "destructive" });
       setStage("upload");
     }
