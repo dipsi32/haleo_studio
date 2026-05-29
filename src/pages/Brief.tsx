@@ -665,6 +665,26 @@ const Brief = () => {
     return () => clearTimeout(t);
   }, [data]);
 
+  // Analytics: brief_started on mount, brief_step_completed on advance,
+  // brief_abandoned if the user leaves before submitting.
+  const submittedRef = useRef(false);
+  const stepReachedRef = useRef(1);
+  useEffect(() => {
+    track("brief_started");
+    return () => {
+      if (!submittedRef.current) {
+        track("brief_abandoned", { last_step: stepReachedRef.current });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (step > stepReachedRef.current) {
+      stepReachedRef.current = step;
+      track("brief_step_completed", { step });
+    }
+  }, [step]);
+
   const isAddition = data.room === "addition";
 
   // Auto-skip Step 3 (Haleo's read) in either direction when there's no
