@@ -15,6 +15,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
+import { track } from "@/lib/analytics";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -516,6 +517,7 @@ const Hero = () => {
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 to="/brief"
+                onClick={() => track("cta_match_clicked", { location: "hero" })}
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
@@ -600,6 +602,7 @@ const RoastHook = () => (
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to="/roast"
+              onClick={() => track("cta_roast_clicked", { location: "roast_hook" })}
               className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
             >
               Roast my quote <ArrowRight className="w-4 h-4" />

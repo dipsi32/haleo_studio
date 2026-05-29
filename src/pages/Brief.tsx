@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
+import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChefHat,
@@ -664,6 +665,26 @@ const Brief = () => {
     return () => clearTimeout(t);
   }, [data]);
 
+  // Analytics: brief_started on mount, brief_step_completed on advance,
+  // brief_abandoned if the user leaves before submitting.
+  const submittedRef = useRef(false);
+  const stepReachedRef = useRef(1);
+  useEffect(() => {
+    track("brief_started");
+    return () => {
+      if (!submittedRef.current) {
+        track("brief_abandoned", { last_step: stepReachedRef.current });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (step > stepReachedRef.current) {
+      stepReachedRef.current = step;
+      track("brief_step_completed", { step });
+    }
+  }, [step]);
+
   const isAddition = data.room === "addition";
 
   // Auto-skip Step 3 (Haleo's read) in either direction when there's no
@@ -689,6 +710,8 @@ const Brief = () => {
 
   const submit = () => {
     setSubmitting(true);
+    submittedRef.current = true;
+    track("brief_completed", { room: data.room, has_address: Boolean(data.address) });
     setTimeout(() => navigate("/brief/result"), 2400);
   };
 

@@ -1,6 +1,6 @@
 // Contractor Discovery — surfaces real San Jose contractors who pulled
 // permits matching the homeowner's project type, ranked by Trust Score.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -22,6 +22,7 @@ import { evaluateDiscipline } from "@/lib/cslbSignals";
 import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 
 const formatDate = (d: string | null) => {
   if (!d) return "—";
@@ -226,6 +227,14 @@ const Contractors = () => {
     const t = setTimeout(() => setRevealReady(true), wait);
     return () => clearTimeout(t);
   }, [status, mountedAt]);
+
+  // Fire contractors_viewed once results are revealed.
+  const viewedFired = useRef(false);
+  useEffect(() => {
+    if (status !== "ready" || viewedFired.current) return;
+    viewedFired.current = true;
+    track("contractors_viewed", { count: ranked.length, project_type: projectLabel });
+  }, [status, ranked.length, projectLabel]);
   const showLoader = status === "loading" || (status === "ready" && !revealReady);
 
   const curated = useMemo(() => ranked.slice(0, 3), [ranked]);

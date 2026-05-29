@@ -33,6 +33,7 @@ import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
 import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 import HomeownerNotificationToaster from "./components/HomeownerNotificationToaster.tsx";
 import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
+import AnalyticsTracker from "./components/AnalyticsTracker.tsx";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AnalyticsTracker />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
           <Routes>
