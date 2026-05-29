@@ -370,6 +370,13 @@ const Contractors = () => {
       const names = selectedList.map(rc => rc.contractor.company ?? rc.contractor.name);
       setSentInfo({ count: selectedList.length, names });
 
+      track("contractor_invited", {
+        batch_id: batch.id,
+        recipient_count: selectedList.length,
+        neighborhood,
+        has_personal_notes: Object.values(notes).some((n) => !!n?.trim()),
+      });
+
       toast({
         title: "Brief sent ✨",
         description: `Delivered to ${selectedList.length} contractor${selectedList.length === 1 ? "" : "s"}. We'll notify you when they respond.`,
@@ -378,6 +385,10 @@ const Contractors = () => {
       setNotes({});
       // Keep modal open to show success state — user closes it
     } catch (e) {
+      track("error_edge_function", {
+        where: "outreach_send",
+        message: e instanceof Error ? e.message : String(e),
+      });
       toast({
         title: "Couldn't send brief",
         description: e instanceof Error ? e.message : "Try again in a moment.",
