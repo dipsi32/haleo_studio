@@ -602,6 +602,7 @@ const RoastHook = () => (
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to="/roast"
+              onClick={() => track("cta_roast_clicked", { location: "roast_hook" })}
               className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
             >
               Roast my quote <ArrowRight className="w-4 h-4" />
