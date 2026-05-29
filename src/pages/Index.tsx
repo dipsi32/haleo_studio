@@ -534,15 +534,15 @@ const Hero = () => {
               30 seconds. No signup to start.
             </p>
 
-            {/* Receipts strip — the proprietary moat, in numbers */}
+            {/* Trust strip — what actually makes Haleo different */}
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6 max-w-md">
               {[
-                { n: "2,847", l: "SJ permits indexed" },
-                { n: "312", l: "Contractors verified" },
-                { n: "$4.2M", l: "Quotes audited" },
+                { n: "Permits", l: "County records, not reviews" },
+                { n: "Verified", l: "Inspection-passed history" },
+                { n: "Local", l: "Your neighborhood, your project" },
               ].map((r) => (
                 <div key={r.l}>
-                  <p className="font-display text-xl md:text-2xl font-medium tabular-nums text-foreground">{r.n}</p>
+                  <p className="font-display text-sm md:text-base font-medium text-foreground">{r.n}</p>
                   <p className="mt-1 text-[10.5px] uppercase tracking-wider text-muted-foreground leading-tight">{r.l}</p>
                 </div>
               ))}
