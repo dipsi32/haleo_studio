@@ -517,6 +517,7 @@ const Hero = () => {
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 to="/brief"
+                onClick={() => track("cta_match_clicked", { location: "hero" })}
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
               >
                 Find your contractor <ArrowRight className="w-4 h-4" />
