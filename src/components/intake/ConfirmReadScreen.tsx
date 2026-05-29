@@ -432,10 +432,34 @@ const ConfirmReadScreen = ({
                 </div>
               </>
             )}
-            {confirmed === "ok" && (
+            {confirmed === "ok" && justConfirmedThisSession && (
               <p className="inline-flex items-center gap-2 text-sm font-medium text-sage">
                 <Check className="h-4 w-4" /> Locked in. Taking you to the next step…
               </p>
+            )}
+            {confirmed === "ok" && !justConfirmedThisSession && (
+              <>
+                <p className="inline-flex items-center gap-2 text-center text-sm font-medium text-sage">
+                  <Check className="h-4 w-4" /> You already confirmed this read.
+                </p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Button
+                    onClick={onContinue}
+                    size="lg"
+                    className="rounded-full bg-sage px-7 text-background hover:bg-sage/90"
+                  >
+                    Continue <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setConfirmed("unset")}
+                    size="lg"
+                    variant="outline"
+                    className="rounded-full px-6"
+                  >
+                    <Pencil className="h-4 w-4" /> Review again
+                  </Button>
+                </div>
+              </>
             )}
             {confirmed === "off" && (
               <div className="w-full max-w-lg space-y-4 text-left">
