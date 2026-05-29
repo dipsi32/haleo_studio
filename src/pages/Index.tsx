@@ -940,6 +940,7 @@ const Index = () => {
   return (
     <main>
       <Hero />
+      <BeforeAfter />
       <NotLike />
       <Value />
       <Closing />
