@@ -276,6 +276,7 @@ const ConfirmReadScreen = ({
 
   const handleLooksRight = () => {
     setConfirmed("ok");
+    setJustConfirmedThisSession(true);
     if (analysis) {
       onApprove({
         summary: analysis.summary,
