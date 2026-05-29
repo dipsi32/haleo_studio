@@ -248,7 +248,9 @@ const ContractorProfile = () => {
                           const earned = items.reduce((s, c) => s + c.earned, 0);
                           const weight = items.reduce((s, c) => s + c.weight, 0);
                           const allPending = items.every(c => c.status === 'pending' || c.status === 'coming_soon');
-                          const right = allPending ? 'Checking…' : weight === 0 ? '—' : `${earned}/${weight}`;
+                          const right = allPending
+                            ? (g.key === 'license' ? 'Coming soon' : 'Pending')
+                            : weight === 0 ? '—' : `${earned}/${weight}`;
                           return (
                             <details key={g.key} className="group rounded-2xl border border-border/60 bg-background/40 open:bg-background">
                               <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl p-3 hover:bg-secondary/40">
