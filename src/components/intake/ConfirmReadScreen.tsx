@@ -251,6 +251,11 @@ const ConfirmReadScreen = ({
         ? "off"
         : "unset";
   const [confirmed, setConfirmed] = useState<Confirmation>(initialConfirmed);
+  // Tracks "ok" that was set THIS session via the button click — only then do
+  // we show the transient "Locked in… taking you to the next step" line and
+  // auto-advance. On revisit (already approved earlier), we show a real
+  // Continue CTA instead so the user isn't stranded on a pending message.
+  const [justConfirmedThisSession, setJustConfirmedThisSession] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState<string>(
     hasPriorFeedback ? intake.readFeedback!.note : "",
   );
