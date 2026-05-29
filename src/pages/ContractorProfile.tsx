@@ -7,6 +7,7 @@ import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIntake } from "@/lib/intake";
+import { track } from "@/lib/analytics";
 import {
   type Contractor, type Permit, type LicenseStatus, type TrustSignals,
   computeTrustScore, projectKeywords, cslbDeepLink, projectTypeLabel,
