@@ -8,6 +8,7 @@ import { ArrowRight, Calendar, Hammer, MapPin, ShieldCheck, Sparkles, Globe, Ins
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import {
   type Contractor,
   type Permit,
