@@ -110,7 +110,7 @@ const SiteHeader = () => {
               <p className="text-xs text-muted-foreground">Where contractors earn their keep.</p>
             </SheetHeader>
             <nav className="flex flex-col px-3 py-4 text-base">
-              <button onClick={() => go("/brief")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+              <button onClick={() => go("/")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Hammer className="h-4 w-4" />
                 </span>
