@@ -130,6 +130,16 @@ export default function Roast() {
     return () => clearInterval(interval);
   }, [stage]);
 
+  // Track roast_started once on mount; track roast_abandoned on unmount if never uploaded.
+  const uploadedRef = useRef(false);
+  useEffect(() => {
+    track("roast_started");
+    return () => {
+      if (!uploadedRef.current) track("roast_abandoned");
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadingMessages = [
     "Reading the quote.",
     "Pulling local cost guides.",
