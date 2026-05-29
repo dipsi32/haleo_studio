@@ -24,3 +24,6 @@ verify_jwt = false
 [functions.cost-guide-lookup]
 verify_jwt = false
 
+[functions.lookup-parcel-history]
+verify_jwt = false
+
