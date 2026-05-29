@@ -74,6 +74,11 @@ const PublicContractorProfile = () => {
       }
       const row = c as unknown as ContractorRow;
       setContractor(row);
+      track("contractor_profile_viewed", {
+        slug: row.slug,
+        claimed: row.claimed,
+        source: typeof window !== "undefined" && window.location.search.includes("ref=homeowner") ? "homeowner" : "direct",
+      });
 
       // Fire-and-forget profile_viewed_at funnel ping (only first time)
       if (!row.claimed) {

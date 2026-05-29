@@ -1,17 +1,25 @@
 // Wraps any page that requires a paid / early-access / test pass.
 // Admin bypasses. Otherwise we render either the "request access" or
 // "your trial expired" screen instead of the gated content.
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePilotAccess } from "@/hooks/usePilotAccess";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/context/AuthContext";
+import { track } from "@/lib/analytics";
 
 const AccessGate = ({ children }: { children: React.ReactNode }) => {
   const access = usePilotAccess();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { signOut, user } = useAuth();
+
+  useEffect(() => {
+    if (access.loading || adminLoading) return;
+    if (isAdmin || access.hasAccess) return;
+    track("access_gate_hit", { reason: access.isExpired ? "expired" : "not_invited" });
+  }, [access.loading, access.hasAccess, access.isExpired, adminLoading, isAdmin]);
 
   if (access.loading || adminLoading) {
     return (
