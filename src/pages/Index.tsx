@@ -507,7 +507,7 @@ const Hero = () => {
             </div>
             <h1 className="font-display text-[2.5rem] md:text-[4rem] font-medium leading-[0.98] tracking-tight text-foreground text-balance">
               Hire the contractor who already built it{" "}
-              <span className="italic text-accent">on your block.</span>
+              <span className="italic text-accent">near you.</span>
             </h1>
             <p className="mt-7 text-base md:text-[1.0625rem] text-muted-foreground max-w-md leading-relaxed">
               A contractor-ready brief, matched to builders with verified permit history for your project. Haleo audits every quote so you know what's fair before you sign.
