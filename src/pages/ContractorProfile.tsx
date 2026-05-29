@@ -46,6 +46,7 @@ const ContractorProfile = () => {
       const { data: c } = await supabase.from("contractors").select("*").eq("id", id).maybeSingle();
       if (!c || cancelled) { setLoading(false); return; }
       setContractor(c as Contractor);
+      track("contractor_profile_clicked", { contractor_id: id, slug: (c as Contractor).slug ?? null });
 
       const [{ data: p }, { data: l }, { data: pp }, { data: ts }] = await Promise.all([
         supabase.from("contractor_permits").select("*").eq("contractor_id", id).order("issued_date", { ascending: false }),
