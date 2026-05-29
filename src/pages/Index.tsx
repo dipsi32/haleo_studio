@@ -503,15 +503,16 @@ const Hero = () => {
             transition={{ duration: 0.7, ease: EASE }}
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-8">
-              <MapPinCheck className="w-3.5 h-3.5" /> San Jose · Built on real county records
+              <MapPinCheck className="w-3.5 h-3.5" /> San Jose
             </div>
-            <h1 className="font-display text-[2.25rem] md:text-[3.6rem] font-medium leading-[1.02] tracking-tight text-foreground text-balance">
-              Stop guessing your way through a remodel.
+            <h1 className="font-display text-[2.5rem] md:text-[4rem] font-medium leading-[0.98] tracking-tight text-foreground text-balance">
+              Hire the contractor who already built it{" "}
+              <span className="italic text-accent">on your block.</span>
             </h1>
-            <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
-              Haleo scopes your project, matches you to contractors with <span className="text-foreground font-medium">verified county permit history</span>, and audits every quote you get — so you know exactly what's fair before you sign anything.
+            <p className="mt-7 text-base md:text-[1.0625rem] text-muted-foreground max-w-md leading-relaxed">
+              A contractor-ready brief, matched to builders with verified permit history for your project. Haleo audits every quote so you know what's fair before you sign.
             </p>
-            <p className="mt-5 font-display text-lg md:text-xl text-foreground/90 leading-snug">
+            <p className="mt-6 font-display text-base md:text-lg text-foreground/70 italic tracking-tight">
               Reviews can be bought. Permits can't.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -533,20 +534,6 @@ const Hero = () => {
             <p className="mt-4 text-xs text-muted-foreground">
               30 seconds. No signup to start.
             </p>
-
-            {/* Trust strip — what actually makes Haleo different */}
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6 max-w-md">
-              {[
-                { n: "Permits", l: "County records, not reviews" },
-                { n: "Verified", l: "Inspection-passed history" },
-                { n: "Local", l: "Your neighborhood, your project" },
-              ].map((r) => (
-                <div key={r.l}>
-                  <p className="font-display text-sm md:text-base font-medium text-foreground">{r.n}</p>
-                  <p className="mt-1 text-[10.5px] uppercase tracking-wider text-muted-foreground leading-tight">{r.l}</p>
-                </div>
-              ))}
-            </div>
           </motion.div>
 
           {/* Mobile phone — cycles through the actual product flow */}
