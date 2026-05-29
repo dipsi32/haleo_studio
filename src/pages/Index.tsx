@@ -704,6 +704,12 @@ const BeforeAfter = () => (
     </div>
   </section>
 );
+
+/* -------------------------------------------------------------------------- */
+/*  Remodel Roast — quick, free quote check.                                   */
+/* -------------------------------------------------------------------------- */
+
+const RoastHook = () => (
   <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-14 md:py-24 lg:py-32">
     <div className="container mx-auto max-w-5xl px-6">
       <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
