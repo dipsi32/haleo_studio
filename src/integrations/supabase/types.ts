@@ -1005,6 +1005,84 @@ export type Database = {
           },
         ]
       }
+      parcel_permit_history: {
+        Row: {
+          address_key: string
+          apn: string | null
+          city: string | null
+          contractors: Json
+          created_at: string
+          expired_without_final_count: number
+          id: string
+          inspections: Json
+          last_checked_at: string
+          lat: number | null
+          lng: number | null
+          lookup_succeeded: boolean
+          most_recent_permit_date: string | null
+          oldest_permit_date: string | null
+          open_permit_count: number
+          permit_count: number
+          permits: Json
+          raw_response: Json | null
+          state: string | null
+          street: string | null
+          updated_at: string
+          violations: Json
+          zip: string | null
+        }
+        Insert: {
+          address_key: string
+          apn?: string | null
+          city?: string | null
+          contractors?: Json
+          created_at?: string
+          expired_without_final_count?: number
+          id?: string
+          inspections?: Json
+          last_checked_at?: string
+          lat?: number | null
+          lng?: number | null
+          lookup_succeeded?: boolean
+          most_recent_permit_date?: string | null
+          oldest_permit_date?: string | null
+          open_permit_count?: number
+          permit_count?: number
+          permits?: Json
+          raw_response?: Json | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          violations?: Json
+          zip?: string | null
+        }
+        Update: {
+          address_key?: string
+          apn?: string | null
+          city?: string | null
+          contractors?: Json
+          created_at?: string
+          expired_without_final_count?: number
+          id?: string
+          inspections?: Json
+          last_checked_at?: string
+          lat?: number | null
+          lng?: number | null
+          lookup_succeeded?: boolean
+          most_recent_permit_date?: string | null
+          oldest_permit_date?: string | null
+          open_permit_count?: number
+          permit_count?: number
+          permits?: Json
+          raw_response?: Json | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          violations?: Json
+          zip?: string | null
+        }
+        Relationships: []
+      }
       pilot_users: {
         Row: {
           created_at: string
