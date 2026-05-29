@@ -38,7 +38,7 @@ const SiteHeader = () => {
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <Link to="/roast" className="transition-smooth hover:text-foreground">Get it roasted</Link>
-          <Link to="/brief" className="transition-smooth hover:text-foreground">Find your contractor</Link>
+          <Link to="/" className="transition-smooth hover:text-foreground">Find your contractor</Link>
           <Link to="/pro" className="transition-smooth hover:text-foreground">For contractors</Link>
           {isAdmin && (
             <Link to="/admin" className="transition-smooth hover:text-foreground">Admin</Link>
