@@ -102,7 +102,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
         .eq("address_key", key)
         .maybeSingle();
       if (cached && active) {
-        setParcel(cached as ParcelHistory);
+        setParcel(cached as unknown as ParcelHistory);
         return;
       }
       try {
