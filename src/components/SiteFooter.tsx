@@ -14,7 +14,7 @@ const SiteFooter = () => {
         </div>
         <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground">
           <a href="/roast" className="transition-smooth hover:text-foreground">Roast a quote</a>
-          <a href="/brief" className="transition-smooth hover:text-foreground">Find your contractor</a>
+          <a href="/" className="transition-smooth hover:text-foreground">Find your contractor</a>
           <a href="/pro" className="transition-smooth hover:text-foreground">For contractors</a>
           <a href="mailto:hello@haleo.studio" className="transition-smooth hover:text-foreground">hello@haleo.studio</a>
           <span>© {new Date().getFullYear()} Haleo Studio</span>
