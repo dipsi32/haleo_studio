@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import Logo from "@/components/Logo";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 
 const Waitlist = () => {
   const [name, setName] = useState("");
@@ -29,6 +30,7 @@ const Waitlist = () => {
       toast({ title: "Couldn't submit", description: error.message, variant: "destructive" });
       return;
     }
+    track("waitlist_joined", { has_project_type: !!projectType, has_message: !!message });
     setSubmitted(true);
   };
 
