@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { getPushPermission, subscribeToPush, deferPushPermission, isPushSupported } from "@/lib/push";
@@ -857,6 +858,8 @@ function PaymentSheet({
     if (!formValid) return;
     setError(null);
     setStep("processing");
+    track("lead_unlock_attempted", { send_id: sendId, contractor_id: contractorId, amount: 9900 });
+
 
     try {
       // Idempotency: if a paid payment already exists for this send, just unlock.
@@ -897,6 +900,7 @@ function PaymentSheet({
       if (upErr) throw upErr;
 
       onUnlocked(sendId, unlockedAt);
+      track("lead_unlock_completed", { send_id: sendId, contractor_id: contractorId, amount: 9900, was_idempotent: !!existing });
       setStep("success");
       toast({ title: "Brief unlocked", description: "You've got the full picture now. Make it count." });
       // Brief celebration, then close — parent realtime will show the unlocked view.

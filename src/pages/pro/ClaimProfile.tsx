@@ -10,6 +10,7 @@ import { ArrowRight, CheckCircle2, Mail, ShieldCheck, Sparkles } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 
@@ -172,6 +173,7 @@ const ClaimProfile = () => {
         .select("id", { count: "exact", head: true })
         .eq("contractor_id", contractor.id);
       setWaitingBrief({ count: count ?? 0 });
+      track("contractor_claimed_profile", { contractor_id: contractor.id, slug: contractor.slug, waiting_briefs: count ?? 0 });
       setStep("payoff");
     } catch (err) {
       toast({

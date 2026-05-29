@@ -5,6 +5,7 @@ import { ArrowRight, Instagram, Globe, Plus, X, Loader2, Check, Sparkles } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { useAuth } from "@/context/AuthContext";
 import { useContractorAccount, type PortfolioLink } from "@/hooks/useContractorAccount";
 import { toast } from "@/hooks/use-toast";
@@ -77,6 +78,7 @@ const ProOnboarding = () => {
       }
 
       await refetch();
+      track("contractor_onboarded", { portfolio_links_count: links.length, has_logo: !!logoUrl });
       toast({ title: "Workspace ready", description: "Welcome in." });
       navigate("/pro/profile", { replace: true });
     } catch (err) {

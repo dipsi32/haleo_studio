@@ -452,6 +452,7 @@ const Contractors = () => {
                 setOutreachOpen(true);
               }}
               onUnlockMore={() => {
+                track("contractors_compared", { unlocked_more: true, visible_count: curated.length });
                 // Simulated paywall — same "Test mode" pattern as the contractor unlock.
                 toast({
                   title: "Test mode unlock",
