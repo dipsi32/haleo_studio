@@ -89,10 +89,15 @@ export default function ADU() {
       const signals = (signalsRaw ?? {}) as Record<string, unknown>;
 
       const apn = (history.apn as string | null) ?? null;
-      if (!apn) {
-        track("adu_parcel_failed", { reason: "no_apn" });
+      const geocoded = signals.lat != null && signals.lng != null;
+
+      // Hard-block only when we can't even geocode the address. If geocoding
+      // succeeded (San Jose address confirmed) but no APN — proceed with low
+      // confidence and surface the gap honestly via the badge.
+      if (!apn && !geocoded) {
+        track("adu_parcel_failed", { reason: "no_apn_no_geocode" });
         setError(
-          "We couldn't find parcel data for this address. This may be outside our current coverage area (San Jose only today) or the address may need verification.",
+          "We couldn't find or geocode this address. Double-check the spelling, or it may be outside our current coverage area (San Jose only today).",
         );
         setLoading(false);
         return;
