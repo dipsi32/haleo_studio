@@ -600,10 +600,110 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Remodel Roast — quick, free quote check.                                   */
+/*  Before / With Haleo — the contrast that does the talking.                  */
 /* -------------------------------------------------------------------------- */
 
-const RoastHook = () => (
+const BeforeAfter = () => (
+  <section className="bg-secondary/30 py-20 md:py-28 border-y border-border">
+    <div className="container mx-auto max-w-6xl px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="mb-12 md:mb-16 text-center"
+      >
+        <p className="font-display text-xs tracking-[0.25em] text-accent">WHY IT'S BROKEN · AND HOW WE FIX IT</p>
+        <h2 className="mt-4 mx-auto max-w-2xl font-display text-3xl md:text-4xl font-medium leading-[1.1] tracking-tight text-balance">
+          Remodeling is broken. We rebuilt it on the data that actually matters.
+        </h2>
+      </motion.div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* BEFORE */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6, ease: EASE }}
+          className="rounded-3xl border border-border bg-background/60 p-6 md:p-8"
+        >
+          <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Without Haleo</p>
+          <p className="mt-2 font-display text-xl md:text-2xl text-muted-foreground leading-snug">
+            Weeks of guessing.
+          </p>
+
+          <div className="mt-6 space-y-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
+              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #1 — $92k</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Yelp · 4.5★</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
+              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #2 — $148k</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Referral?</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
+              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #3 — $211k</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Cold email</span>
+            </div>
+          </div>
+
+          <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Star ratings from strangers</li>
+            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Explain your vision 6 times</li>
+            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> No way to tell what's fair</li>
+            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Zero proof they finish what they start</li>
+          </ul>
+        </motion.div>
+
+        {/* AFTER */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
+          className="rounded-3xl border border-foreground/10 bg-foreground text-background p-6 md:p-8 shadow-lift"
+        >
+          <p className="text-[10px] uppercase tracking-[0.25em] text-accent">With Haleo</p>
+          <p className="mt-2 font-display text-xl md:text-2xl leading-snug">
+            One verdict. Permit-proven matches. Bids that line up.
+          </p>
+
+          <div className="mt-6 space-y-2.5">
+            <div className="rounded-xl bg-background/5 border border-background/10 px-3.5 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wider text-background/60">Verdict</span>
+                <span className="rounded-full bg-amber-400/20 px-2 py-px text-[10px] font-medium text-amber-300">High</span>
+              </div>
+              <p className="mt-1 font-display text-base">$148k quote · fair range $112–134k</p>
+            </div>
+            {[
+              { n: "Mehdi Builders", m: "11 kitchens passed inspection · 95128" },
+              { n: "Casa Verde", m: "6 kitchens passed inspection · 95128" },
+              { n: "Westwood & Co.", m: "8 kitchens passed inspection · 95126" },
+            ].map((c) => (
+              <div key={c.n} className="flex items-center gap-3 rounded-xl bg-background/5 border border-background/10 px-3.5 py-2.5">
+                <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{c.n}</p>
+                  <p className="truncate text-[11px] text-background/60">{c.m}</p>
+                </div>
+                <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
+              </div>
+            ))}
+          </div>
+
+          <ul className="mt-6 space-y-2 text-sm text-background/80">
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Matched by what you're actually building</li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> A brief they read before they bid</li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Every line item, side by side</li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Receipts from the county, not Yelp</li>
+          </ul>
+        </motion.div>
+      </div>
+    </div>
+  </section>
+);
   <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-14 md:py-24 lg:py-32">
     <div className="container mx-auto max-w-5xl px-6">
       <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
