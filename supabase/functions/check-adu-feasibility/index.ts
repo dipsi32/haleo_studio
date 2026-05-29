@@ -235,15 +235,8 @@ Deno.serve(async (req) => {
       fire_hazard_zone: typeof body.fire_hazard_zone === "boolean" ? body.fire_hazard_zone : null,
     };
 
-    if (!input.apn) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Assessor's Parcel Number is required. We couldn't find parcel data for this address — verify it or try another.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // Missing APN is allowed — the rules engine will mark confidence as "low"
+    // and surface the gap. We only require a request body we can parse.
 
     const structured = evaluateAdu(input);
     const costRange = await fetchCostRange(body.zip ?? null);
