@@ -51,6 +51,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AnalyticsTracker />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
           <Routes>
