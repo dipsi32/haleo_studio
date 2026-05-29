@@ -39,6 +39,7 @@ const Login = () => {
 
   const handleGoogle = async () => {
     setBusy(true);
+    track(mode === "signup" ? "signup_started" : "login_completed", { method: "google" });
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + resolvedNext,
     });
