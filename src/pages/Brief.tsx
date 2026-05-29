@@ -690,6 +690,7 @@ const Brief = () => {
 
   const submit = () => {
     setSubmitting(true);
+    track("brief_completed", { room: data.room, has_address: Boolean(data.address) });
     setTimeout(() => navigate("/brief/result"), 2400);
   };
 
