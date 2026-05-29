@@ -253,7 +253,7 @@ export const computeTrustScore = (
       label: 'License in good standing',
       what: "We check the contractor's CSLB record directly for license status, bond, and Workers' Comp coverage.",
       weight: 0, earned: 0,
-      detail: 'Verifying with CSLB…',
+      detail: 'Not yet verified by Haleo — check CSLB directly',
       status: 'pending',
     });
   }
