@@ -59,6 +59,7 @@ const Login = () => {
     setBusy(true);
     try {
       if (mode === "signup") {
+        track("signup_started", { method: "email" });
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -68,10 +69,12 @@ const Login = () => {
           },
         });
         if (error) throw error;
+        track("signup_completed", { method: "email" });
         toast({ title: "Account created", description: "You're all set — signing you in." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        track("login_completed", { method: "email" });
       }
     } catch (err) {
       toast({
