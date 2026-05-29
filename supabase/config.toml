@@ -27,3 +27,8 @@ verify_jwt = false
 [functions.lookup-parcel-history]
 verify_jwt = false
 
+[functions.check-adu-feasibility]
+verify_jwt = false
+
+
+
