@@ -330,8 +330,11 @@ export default function ADU() {
             <FeasibilityView
               key="feas"
               feasibility={feasibility}
+              parcel={parcel}
               onBack={() => setStep("address")}
               onNext={() => setStep("annotation")}
+              onRecheck={handleRecheckWithUserData}
+              recheckLoading={loading}
             />
           ) : null}
 
