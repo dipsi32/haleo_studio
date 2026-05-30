@@ -331,7 +331,11 @@ function FeasibilityView({
       <div className="rounded-2xl border border-border bg-card p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Verdict</p>
         <p className="mt-1 font-display text-2xl tracking-tight">
-          {result.feasible ? "An ADU looks feasible here." : "We can't confirm feasibility for this lot yet."}
+          {result.confidence === "low"
+            ? "An ADU is likely allowed — but we need more data to confirm."
+            : result.feasible
+              ? "An ADU looks feasible here."
+              : "We can't confirm feasibility for this lot yet."}
         </p>
         {explanation ? (
           <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-foreground/90">{explanation}</p>
@@ -341,6 +345,7 @@ function FeasibilityView({
           </p>
         )}
       </div>
+
 
       <DataConfidenceBadge confidence={result.confidence} gaps={result.data_gaps} />
 
