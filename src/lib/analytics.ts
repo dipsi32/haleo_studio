@@ -77,6 +77,11 @@ export type AnalyticsEvent =
   | "adu_parcel_failed"
   | "adu_feasibility_completed"
   | "adu_diagram_viewed"
+  | "adu_annotation_method_chosen"
+  | "adu_size_entered"
+  | "adu_type_selected"
+  | "adu_brief_generated"
+  | "adu_brief_edited"
   | "adu_contractor_matched"
   | "adu_waitlist_joined"
   // Errors
