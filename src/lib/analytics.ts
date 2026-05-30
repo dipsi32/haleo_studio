@@ -84,6 +84,8 @@ export type AnalyticsEvent =
   | "adu_brief_edited"
   | "adu_contractor_matched"
   | "adu_waitlist_joined"
+  | "adu_data_enriched"
+  | "adu_gaps_filled_manually"
   // Errors
   | "error_proposal_upload"
   | "error_brief_generation"

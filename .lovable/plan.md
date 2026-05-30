@@ -1,89 +1,54 @@
+## Problem
 
-# ADU Feasibility Check — Implementation Plan
+The feasibility check has no source for the 4 critical fields (lot size, zoning, primary dwelling sqft, fire hazard zone), so every San Jose address gets "Insufficient data — cannot produce reliable feasibility." We're turning away every real customer.
 
-A new `/adu` route walking homeowners through: address → parcel lookup → hardcoded feasibility rules engine → SVG buildable-zone diagram → ADU-permitted contractor match. Safety guardrails are baked in: rules engine is hardcoded (not AI), Gemini only translates to plain English, every result carries a non-dismissible Planning Dept disclaimer, and missing data is surfaced honestly rather than hallucinated.
+## Fix — two layers
 
-## Scope
+### Layer 1: Auto-fetch from free public GIS (no API keys, no new packages)
 
-### New route
-- `src/pages/ADU.tsx` — 4-step flow with Framer Motion slide transitions, mobile-first 390px.
-- Add route to `App.tsx` behind `<Gated>` (ProtectedRoute + AccessGate).
-- Add "ADU" tab with `Building2` icon to the bottom tab bar.
+Create one new edge function `enrich-sj-parcel` that, given an address or lat/lng, hits these free ArcGIS REST endpoints in parallel:
 
-### Step 1 — Address & parcel resolution
-- Single address input. On submit:
-  - Call existing `lookup-parcel-history` edge function to resolve APN + permit history.
-  - Call existing `lookup-address-risk` for Fire Hazard Severity Zone signal.
-  - Derive **data confidence**: Green (APN + lot dims + zoning), Yellow (APN + partial), Red (no APN or no usable parcel data).
-  - Red → stop flow, show error, offer waitlist join.
+1. **Santa Clara County Assessor parcels** (`https://www.sccgov.org/sites/scc/gis` ArcGIS feature service)  
+   → `apn`, `lot_size_sqft` (from `Shape__Area` or `LotSize` attribute), `primary_dwelling_sqft` (from `BldgSqFt` / `LivingArea`), `year_built`
+2. **San Jose Zoning GIS** (`https://gisdata-csj.opendata.arcgis.com/` Zoning Districts feature service)  
+   → `zoning` code (e.g. `R-1-8`, `R-2`)
+3. **Cal Fire FHSZ** (`https://egis.fire.ca.gov/arcgis/rest/services/FHSZ_SRA_LRA_Combined`)  
+   → `fire_hazard_zone` (Moderate / High / Very High / none)
+4. **San Jose building footprints** (open-data ArcGIS layer)  
+   → `existing_footprints_sqft` (sum building polygons on parcel)
 
-### Step 2 — Feasibility check
-- **New edge function** `supabase/functions/check-adu-feasibility/index.ts`:
-  - Input: APN, lot_size, zoning, existing_footprints, permit_history, fhsz flag.
-  - **Hardcoded rules engine** (San Jose ADU ordinance + CA AB 2221):
-    - JADU: 500 sqft max, requires 1,200 sqft min lot.
-    - Detached ADU: min(1,200 sqft, 50% primary); 800 sqft floor if primary <800.
-    - Setbacks: 4ft rear / 4ft sides / no front.
-    - Height: 16ft flat, 18ft sloped within 0.5mi transit (flagged as needs-verification since transit proximity not in current data → fallback to 16ft + note).
-    - School impact fee triggers >500 sqft.
-    - FHSZ → fire-resistant material flag.
-    - Open permits / violations surfaced from history.
-  - Calls existing `cost-guide-lookup` for cost_range. Never lets AI estimate.
-  - Calls Lovable AI Gateway (`google/gemini-2.5-pro`) with a strict system prompt: "translate this JSON to plain English, add nothing, say 'unavailable' for nulls."
-  - Returns structured JSON spec + `explanation` string.
-- Result screen shows verdict, confidence chip, allowed ADU types, setbacks, cost range (labeled as estimate from cost guide), open permits/violations flags, school fee flag, FHSZ flag, **non-dismissible disclaimer**, CTA to diagram.
+Each lookup is independent, wrapped in try/catch; partial success still beats today's all-nulls. Geocode once via the existing `lookup-address-risk` flow (already returns lat/lng), then spatial-query each layer by point.
 
-### Step 3 — Property positioning diagram
-- Pure SVG (no Mapbox/Google), computed from lot dimensions.
-- Lot boundary → setback ring → buildable envelope (amber 15%) → existing structures (if footprint data) → dashed max-ADU rectangle.
-- Only render if confidence ≥ Medium AND lot dims present. Otherwise text-only explanation.
-- Unknown dimensions render as "?" with approximation note.
-- Always shows architect/Planning Dept disclaimer below.
+Call `enrich-sj-parcel` from `ADU.tsx` between `lookup-parcel-history` and `check-adu-feasibility`. Merge enriched data into the `parcel` object before posting to feasibility.
 
-### Step 4 — Contractor match
-- Query existing `contractor_permits` joined to `contractors` filtered by `project_type = 'ADU'` and homeowner zip cluster.
-- Reuse existing contractor card component (`CuratedMatchStack` or single card from `/contractors`).
-- Max 3 cards. Empty state → waitlist CTA.
+### Layer 2: Manual override — "Help us fill the gaps"
 
-### Cross-cutting
-- Disclaimer component (`AduDisclaimer.tsx`) — reusable, non-dismissible.
-- Confidence indicator component (`DataConfidenceBadge.tsx`).
-- Skeleton loaders on every async call.
-- PostHog events via existing `track()`: `adu_started`, `adu_address_submitted`, `adu_parcel_resolved`, `adu_parcel_failed`, `adu_feasibility_completed`, `adu_diagram_viewed`, `adu_contractor_matched`, `adu_waitlist_joined`.
+If after Layer 1 anything is still missing, show a compact inline form on the feasibility screen *before* the verdict:
 
-## Technical details
+- Lot size (sqft) — number input
+- Primary dwelling size (sqft) — number input
+- Zoning code (if known) — text input, optional
+- Fire hazard zone — yes / no / unsure toggle
 
-### Files added
-- `src/pages/ADU.tsx`
-- `src/components/adu/AddressStep.tsx`
-- `src/components/adu/FeasibilityResult.tsx`
-- `src/components/adu/BuildableDiagram.tsx`
-- `src/components/adu/AduContractorMatch.tsx`
-- `src/components/adu/AduDisclaimer.tsx`
-- `src/components/adu/DataConfidenceBadge.tsx`
-- `src/lib/aduRules.ts` — pure TS rules engine (shared between edge function logic and possible client preview). The edge function will have its own copy since edge functions can't import from `src/`.
-- `supabase/functions/check-adu-feasibility/index.ts`
+A "Recheck feasibility" button re-posts to `check-adu-feasibility` with the user-supplied values. Mark these as `data_source: "user"` so the confidence badge labels them clearly ("based on your input").
 
-### Files modified
-- `src/App.tsx` — add `/adu` route gated behind `<Gated>`.
-- Bottom tab bar component — add ADU tab.
-- `supabase/config.toml` — register new function (default `verify_jwt = false` for parity with sibling functions; the call is gated client-side by AccessGate).
+This turns the dead-end into a 30-second self-serve recovery. Most owners know their lot size; the rest can pull it off Zillow/Redfin in one click.
 
-### Data confidence rules
-- Green: APN resolved + lot_size present + zoning present
-- Yellow: APN resolved + one of {lot_size, zoning} missing
-- Red: APN unresolved OR `lookup_succeeded = false`
+## Files changed
 
-### Existing infra reused (not rebuilt)
-- `lookup-parcel-history`, `lookup-address-risk`, `cost-guide-lookup`, `fetch-sj-permits`, `fetch-permit-inspections`, `fetch-sj-violations`, `contractor_permits` table, contractor card components, AccessGate, analytics util.
+- **New:** `supabase/functions/enrich-sj-parcel/index.ts`
+- **New:** `src/components/adu/AduDataGapForm.tsx` (inline override form)
+- **Edit:** `src/pages/ADU.tsx` — call enrich function; render gap form on low/medium confidence; wire "Recheck" button
+- **Edit:** `supabase/config.toml` — register new function
+- **Edit:** `src/lib/analytics.ts` — add `adu_data_enriched`, `adu_gaps_filled_manually` events
 
-### Gemini call shape
-- Model: `google/gemini-2.5-pro`
-- System: hard guardrail prompt forbidding new facts
-- User: stringified rules-engine JSON
-- Temperature: low. Response stored on the result, never re-queried per render.
+## Out of scope
 
-### Not in scope
-- No new npm packages.
-- No changes to existing routes/components beyond the tab bar + App.tsx route registration.
-- Transit-proximity check (no current data source) → conservative 16ft height with a "verify with Planning if near transit" note.
+- Coverage beyond San Jose / Santa Clara County (Layer 1 endpoints are SCC-specific)
+- Paid data providers (Regrid, ATTOM) — these public sources are enough for the pilot
+- Changing the hardcoded rules engine — only the *inputs* to it are changing
+
+## Risks / verification
+
+- Public ArcGIS endpoints can rate-limit or change URLs. Each one is isolated so a single failure doesn't break the whole call. I'll log each lookup's status.
+- After implementation I'll test with a real San Jose address (e.g. 200 E Santa Clara St) and confirm at least lot_size + zoning + FHSZ come back populated and confidence rises to "medium" or "high".

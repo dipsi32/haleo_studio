@@ -33,5 +33,10 @@ verify_jwt = false
 [functions.generate-adu-brief]
 verify_jwt = false
 
+[functions.enrich-sj-parcel]
+verify_jwt = false
+
+
+
 
 

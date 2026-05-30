@@ -11,6 +11,7 @@ import DataConfidenceBadge from "@/components/adu/DataConfidenceBadge";
 import AduContractorMatch from "@/components/adu/AduContractorMatch";
 import AduPlanAnnotation, { type AnnotationOutput } from "@/components/adu/AduPlanAnnotation";
 import AduBrief, { type AduBriefData } from "@/components/adu/AduBrief";
+import AduDataGapForm, { type DataGapValues } from "@/components/adu/AduDataGapForm";
 import { track } from "@/lib/analytics";
 import type { Confidence } from "@/lib/aduRules";
 
@@ -135,31 +136,85 @@ export default function ADU() {
         zip: zip.trim() || (history.zip as string | null) || null,
         address: `${street.trim()}, San Jose, CA${zip ? ` ${zip}` : ""}`,
       };
-      setParcel(parcelData);
-      track("adu_parcel_resolved", { apn });
 
-      const { data: feas, error: feasErr } = await supabase.functions.invoke("check-adu-feasibility", {
-        body: {
-          apn: parcelData.apn,
-          lot_size_sqft: parcelData.lot_size_sqft,
-          zoning: parcelData.zoning,
-          primary_dwelling_sqft: parcelData.primary_dwelling_sqft,
-          existing_footprints_sqft: parcelData.existing_footprints_sqft,
-          open_permits: parcelData.open_permits,
-          violations: parcelData.violations,
-          fire_hazard_zone: parcelData.fire_hazard_zone,
-          zip: parcelData.zip,
-        },
-      });
-      if (feasErr) throw feasErr;
-      setFeasibility(feas as FeasibilityResponse);
-      track("adu_feasibility_completed", {
-        confidence: (feas as FeasibilityResponse)?.result?.confidence ?? "unknown",
-      });
-      setStep("feasibility");
+      // Layer 1: best-effort enrichment from public GIS sources.
+      try {
+        const { data: enrichData } = await supabase.functions.invoke("enrich-sj-parcel", {
+          body: {
+            address: { street: street.trim(), city: "San Jose", state: "CA", zip: zip.trim() || undefined },
+            lat: signals.lat ?? undefined,
+            lng: signals.lng ?? undefined,
+          },
+        });
+        if (enrichData && typeof enrichData === "object") {
+          const e = enrichData as Record<string, unknown>;
+          if (!parcelData.apn && typeof e.apn === "string") parcelData.apn = e.apn;
+          if (typeof e.lot_size_sqft === "number") parcelData.lot_size_sqft = e.lot_size_sqft;
+          if (typeof e.zoning === "string") parcelData.zoning = e.zoning;
+          if (typeof e.primary_dwelling_sqft === "number") parcelData.primary_dwelling_sqft = e.primary_dwelling_sqft;
+          if (typeof e.existing_footprints_sqft === "number") parcelData.existing_footprints_sqft = e.existing_footprints_sqft;
+          if (parcelData.fire_hazard_zone == null && typeof e.fire_hazard_zone === "boolean") {
+            parcelData.fire_hazard_zone = e.fire_hazard_zone;
+          }
+          track("adu_data_enriched", { sources: e.sources ?? null });
+        }
+      } catch (enrichErr) {
+        console.warn("parcel enrichment failed", enrichErr);
+      }
+
+      setParcel(parcelData);
+      track("adu_parcel_resolved", { apn: parcelData.apn });
+
+      await runFeasibility(parcelData);
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runFeasibility(p: ParcelData) {
+    const { data: feas, error: feasErr } = await supabase.functions.invoke("check-adu-feasibility", {
+      body: {
+        apn: p.apn,
+        lot_size_sqft: p.lot_size_sqft,
+        zoning: p.zoning,
+        primary_dwelling_sqft: p.primary_dwelling_sqft,
+        existing_footprints_sqft: p.existing_footprints_sqft,
+        open_permits: p.open_permits,
+        violations: p.violations,
+        fire_hazard_zone: p.fire_hazard_zone,
+        zip: p.zip,
+      },
+    });
+    if (feasErr) throw feasErr;
+    setFeasibility(feas as FeasibilityResponse);
+    track("adu_feasibility_completed", {
+      confidence: (feas as FeasibilityResponse)?.result?.confidence ?? "unknown",
+    });
+    setStep("feasibility");
+  }
+
+  async function handleRecheckWithUserData(values: DataGapValues) {
+    if (!parcel) return;
+    setLoading(true);
+    try {
+      const merged: ParcelData = {
+        ...parcel,
+        lot_size_sqft: values.lot_size_sqft ?? parcel.lot_size_sqft,
+        primary_dwelling_sqft: values.primary_dwelling_sqft ?? parcel.primary_dwelling_sqft,
+        zoning: values.zoning ?? parcel.zoning,
+        fire_hazard_zone: values.fire_hazard_zone ?? parcel.fire_hazard_zone,
+      };
+      setParcel(merged);
+      track("adu_gaps_filled_manually", {
+        provided: Object.entries(values).filter(([, v]) => v != null).map(([k]) => k),
+      });
+      await runFeasibility(merged);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Recheck failed.");
     } finally {
       setLoading(false);
     }
@@ -275,8 +330,11 @@ export default function ADU() {
             <FeasibilityView
               key="feas"
               feasibility={feasibility}
+              parcel={parcel}
               onBack={() => setStep("address")}
               onNext={() => setStep("annotation")}
+              onRecheck={handleRecheckWithUserData}
+              recheckLoading={loading}
             />
           ) : null}
 
@@ -378,12 +436,18 @@ function StepIndicator({ step }: { step: Step }) {
 
 function FeasibilityView({
   feasibility,
+  parcel,
   onBack,
   onNext,
+  onRecheck,
+  recheckLoading,
 }: {
   feasibility: FeasibilityResponse;
+  parcel: ParcelData;
   onBack: () => void;
   onNext: () => void;
+  onRecheck: (values: DataGapValues) => void | Promise<void>;
+  recheckLoading: boolean;
 }) {
   const { result, explanation } = feasibility;
   const fmtMoney = useMemo(
@@ -421,6 +485,21 @@ function FeasibilityView({
       </div>
 
       <DataConfidenceBadge confidence={result.confidence} gaps={result.data_gaps} />
+
+      {result.data_gaps.length > 0 ? (
+        <AduDataGapForm
+          gaps={result.data_gaps}
+          initial={{
+            lot_size_sqft: parcel.lot_size_sqft,
+            primary_dwelling_sqft: parcel.primary_dwelling_sqft,
+            zoning: parcel.zoning,
+            fire_hazard_zone: parcel.fire_hazard_zone,
+          }}
+          submitting={recheckLoading}
+          onSubmit={onRecheck}
+        />
+      ) : null}
+
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold">ADU types allowed</h3>
