@@ -11,6 +11,7 @@ import DataConfidenceBadge from "@/components/adu/DataConfidenceBadge";
 import AduContractorMatch from "@/components/adu/AduContractorMatch";
 import AduPlanAnnotation, { type AnnotationOutput } from "@/components/adu/AduPlanAnnotation";
 import AduBrief, { type AduBriefData } from "@/components/adu/AduBrief";
+import AduDataGapForm, { type DataGapValues } from "@/components/adu/AduDataGapForm";
 import { track } from "@/lib/analytics";
 import type { Confidence } from "@/lib/aduRules";
 
