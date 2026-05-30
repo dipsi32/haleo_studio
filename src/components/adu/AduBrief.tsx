@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Pencil, Plus, Trash2, X, Check } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Pencil, Plus, Trash2, X, Check, ImageIcon, MapPin, Ruler, CircleHelp } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import AduDisclaimer from "./AduDisclaimer";
 import { track } from "@/lib/analytics";
+import type { AnnotationOutput } from "./AduPlanAnnotation";
 
 export interface BriefSection {
   heading: string;
@@ -17,14 +18,39 @@ export interface AduBriefData {
 
 export default function AduBrief({
   brief,
+  annotation,
+  propertyAddress,
   onChange,
   onContinue,
 }: {
   brief: AduBriefData;
+  annotation?: AnnotationOutput | null;
+  propertyAddress?: string | null;
   onChange: (next: AduBriefData) => void;
   onContinue: () => void;
 }) {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const quickFacts = useMemo(
+    () => [
+      { label: "Address", value: propertyAddress ?? "Address unavailable", icon: MapPin },
+      {
+        label: "ADU type",
+        value: annotation?.intended_scope.adu_type ? annotation.intended_scope.adu_type.replace("_", " ") : "Not set",
+        icon: ImageIcon,
+      },
+      {
+        label: "Target size",
+        value: annotation?.intended_scope.size_sqft ? `${annotation.intended_scope.size_sqft} sqft` : "Not set",
+        icon: Ruler,
+      },
+      {
+        label: "Bid questions",
+        value: `${brief.questions.length} ready`,
+        icon: CircleHelp,
+      },
+    ],
+    [annotation, brief.questions.length, propertyAddress],
+  );
 
   function updateSection(i: number, patch: Partial<BriefSection>) {
     const next = [...brief.sections];
@@ -61,6 +87,58 @@ export default function AduBrief({
         This brief was generated from parcel data and your annotations. Review carefully before sending to contractors —
         you know your property best.
       </div>
+
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Quick read</p>
+            <h3 className="mt-1 font-display text-lg tracking-tight">Contractor-ready summary</h3>
+          </div>
+          <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-medium text-muted-foreground">
+            Saved as you edit
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {quickFacts.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="rounded-xl border border-border bg-background p-3">
+              <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" /> {label}
+              </p>
+              <p className="mt-1 text-sm font-medium capitalize text-foreground">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {(annotation?.base_plan_url || annotation?.annotation_image_url) ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {annotation?.base_plan_url ? (
+              <figure className="overflow-hidden rounded-xl border border-border bg-background">
+                <img src={annotation.base_plan_url} alt="Existing plan thumbnail" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                <figcaption className="border-t border-border px-3 py-2 text-[12px] text-muted-foreground">Existing plan</figcaption>
+              </figure>
+            ) : null}
+            {annotation?.annotation_image_url ? (
+              <figure className="overflow-hidden rounded-xl border border-border bg-background">
+                <img src={annotation.annotation_image_url} alt="Annotated ADU thumbnail" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                <figcaption className="border-t border-border px-3 py-2 text-[12px] text-muted-foreground">Annotated ADU area</figcaption>
+              </figure>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">At a glance</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {brief.sections.map((section, index) => (
+            <div key={`${section.heading}-${index}`} className="rounded-xl border border-border bg-background p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Section {index + 1}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{section.heading}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {brief.sections.map((s, i) => (
         <article key={i} className="rounded-2xl border border-border bg-card p-5">
@@ -103,7 +181,7 @@ export default function AduBrief({
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               </header>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/90">{s.body || <span className="italic text-muted-foreground">Empty</span>}</p>
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-foreground/90">{s.body || <span className="italic text-muted-foreground">Empty</span>}</p>
             </>
           )}
         </article>
