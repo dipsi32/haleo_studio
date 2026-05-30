@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Building2, Loader2, FileText } from "lucide-react";
@@ -65,10 +65,59 @@ export default function ADU() {
   const [brief, setBrief] = useState<AduBriefData | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState<string | null>(null);
+  const projectIdRef = useRef<string | null>(typeof window !== "undefined" ? sessionStorage.getItem("haleo:active_project_id") : null);
 
   useEffect(() => {
     track("adu_started");
   }, []);
+
+  useEffect(() => {
+    if (!parcel && !feasibility && !annotation && !brief) return;
+    const t = setTimeout(() => {
+      void (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const payload = {
+          user_id: user.id,
+          title: parcel?.address ? `ADU · ${parcel.address}` : "ADU feasibility",
+          room: "addition",
+          intake: {
+            room: "addition",
+            additionKind: annotation?.intended_scope.adu_type === "jadu" ? "jadu" : "adu",
+            additionSize: annotation?.intended_scope.size_sqft ?? null,
+            visionNote: annotation?.intended_scope.location_description ?? null,
+            address: {
+              street: street.trim() || undefined,
+              city: "San Jose",
+              state: "CA",
+              zip: parcel?.zip ?? zip.trim() || undefined,
+            },
+          },
+          brief: {
+            kind: "adu",
+            parcel,
+            feasibility,
+            annotation,
+            contractor_brief: brief,
+          },
+          status: brief ? "brief_ready" : "draft",
+        };
+
+        const query = projectIdRef.current
+          ? supabase.from("user_projects").update(payload).eq("id", projectIdRef.current).select("id").single()
+          : supabase.from("user_projects").insert(payload).select("id").single();
+
+        const { data, error } = await query;
+        if (!error && data?.id) {
+          projectIdRef.current = data.id;
+          sessionStorage.setItem("haleo:active_project_id", data.id);
+        }
+      })().catch((err) => console.warn("ADU autosave skipped", err));
+    }, 800);
+
+    return () => clearTimeout(t);
+  }, [annotation, brief, feasibility, parcel, street, zip]);
 
   async function handleAddressSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -388,7 +437,13 @@ export default function ADU() {
                   {briefError}
                 </div>
               ) : brief ? (
-                <AduBrief brief={brief} onChange={setBrief} onContinue={() => setStep("contractors")} />
+                <AduBrief
+                  brief={brief}
+                  annotation={annotation}
+                  propertyAddress={parcel?.address ?? null}
+                  onChange={setBrief}
+                  onContinue={() => setStep("contractors")}
+                />
               ) : null}
               <NavRow onBack={() => setStep("annotation")} />
             </motion.section>
@@ -407,6 +462,35 @@ export default function ADU() {
               <p className="text-sm text-muted-foreground">
                 These contractors have pulled ADU permits near you — verified from city records, not reviews.
               </p>
+              {(annotation?.base_plan_url || annotation?.annotation_image_url || brief) ? (
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Contractor-ready snapshot</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {annotation?.base_plan_url ? (
+                      <figure className="overflow-hidden rounded-xl border border-border bg-background">
+                        <img src={annotation.base_plan_url} alt="Existing plan thumbnail" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                        <figcaption className="border-t border-border px-3 py-2 text-[12px] text-muted-foreground">Existing plan</figcaption>
+                      </figure>
+                    ) : null}
+                    {annotation?.annotation_image_url ? (
+                      <figure className="overflow-hidden rounded-xl border border-border bg-background">
+                        <img src={annotation.annotation_image_url} alt="Annotated ADU thumbnail" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                        <figcaption className="border-t border-border px-3 py-2 text-[12px] text-muted-foreground">Annotated ADU area</figcaption>
+                      </figure>
+                    ) : null}
+                  </div>
+                  {brief?.sections?.length ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {brief.sections.slice(0, 4).map((section, index) => (
+                        <div key={`${section.heading}-${index}`} className="rounded-xl border border-border bg-background p-3">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Section {index + 1}</p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{section.heading}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <AduContractorMatch zip={parcel.zip} />
               <NavRow onBack={() => setStep("brief")} />
             </motion.section>
