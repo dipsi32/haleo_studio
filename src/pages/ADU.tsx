@@ -436,12 +436,18 @@ function StepIndicator({ step }: { step: Step }) {
 
 function FeasibilityView({
   feasibility,
+  parcel,
   onBack,
   onNext,
+  onRecheck,
+  recheckLoading,
 }: {
   feasibility: FeasibilityResponse;
+  parcel: ParcelData;
   onBack: () => void;
   onNext: () => void;
+  onRecheck: (values: DataGapValues) => void | Promise<void>;
+  recheckLoading: boolean;
 }) {
   const { result, explanation } = feasibility;
   const fmtMoney = useMemo(
@@ -479,6 +485,21 @@ function FeasibilityView({
       </div>
 
       <DataConfidenceBadge confidence={result.confidence} gaps={result.data_gaps} />
+
+      {result.data_gaps.length > 0 ? (
+        <AduDataGapForm
+          gaps={result.data_gaps}
+          initial={{
+            lot_size_sqft: parcel.lot_size_sqft,
+            primary_dwelling_sqft: parcel.primary_dwelling_sqft,
+            zoning: parcel.zoning,
+            fire_hazard_zone: parcel.fire_hazard_zone,
+          }}
+          submitting={recheckLoading}
+          onSubmit={onRecheck}
+        />
+      ) : null}
+
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold">ADU types allowed</h3>
