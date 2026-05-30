@@ -30,5 +30,8 @@ verify_jwt = false
 [functions.check-adu-feasibility]
 verify_jwt = false
 
+[functions.generate-adu-brief]
+verify_jwt = false
+
 
 

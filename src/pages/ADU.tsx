@@ -1,25 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Building2, Loader2, Ruler } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Loader2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import SiteHeader from "@/components/SiteHeader";
 import AduDisclaimer from "@/components/adu/AduDisclaimer";
 import DataConfidenceBadge from "@/components/adu/DataConfidenceBadge";
-import BuildableDiagram from "@/components/adu/BuildableDiagram";
 import AduContractorMatch from "@/components/adu/AduContractorMatch";
+import AduPlanAnnotation, { type AnnotationOutput } from "@/components/adu/AduPlanAnnotation";
+import AduBrief, { type AduBriefData } from "@/components/adu/AduBrief";
 import { track } from "@/lib/analytics";
 import type { Confidence } from "@/lib/aduRules";
 
-type Step = "address" | "feasibility" | "diagram" | "contractors";
+type Step = "address" | "feasibility" | "annotation" | "brief" | "contractors";
 
 interface ParcelData {
   apn: string | null;
   lot_size_sqft: number | null;
-  lot_width_ft: number | null;
-  lot_depth_ft: number | null;
   zoning: string | null;
   primary_dwelling_sqft: number | null;
   existing_footprints_sqft: number | null;
@@ -27,6 +26,7 @@ interface ParcelData {
   violations: Array<{ type?: string | null; date?: string | null }>;
   fire_hazard_zone: boolean | null;
   zip: string | null;
+  address: string | null;
 }
 
 interface FeasibilityResponse {
@@ -60,6 +60,10 @@ export default function ADU() {
   const [error, setError] = useState<string | null>(null);
   const [parcel, setParcel] = useState<ParcelData | null>(null);
   const [feasibility, setFeasibility] = useState<FeasibilityResponse | null>(null);
+  const [annotation, setAnnotation] = useState<AnnotationOutput | null>(null);
+  const [brief, setBrief] = useState<AduBriefData | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
 
   useEffect(() => {
     track("adu_started");
@@ -83,27 +87,21 @@ export default function ADU() {
         supabase.functions.invoke("lookup-address-risk", { body: { address } }),
       ]);
 
-      const historyRaw = (parcelRes.data as { history?: Record<string, unknown> } | null)?.history;
-      const history = (historyRaw ?? {}) as Record<string, unknown>;
-      const signalsRaw = (riskRes.data as { signals?: Record<string, unknown> } | null)?.signals;
-      const signals = (signalsRaw ?? {}) as Record<string, unknown>;
+      const history = ((parcelRes.data as { history?: Record<string, unknown> } | null)?.history ?? {}) as Record<string, unknown>;
+      const signals = ((riskRes.data as { signals?: Record<string, unknown> } | null)?.signals ?? {}) as Record<string, unknown>;
 
       const apn = (history.apn as string | null) ?? null;
       const geocoded = signals.lat != null && signals.lng != null;
 
-      // Hard-block only when we can't even geocode the address. If geocoding
-      // succeeded (San Jose address confirmed) but no APN — proceed with low
-      // confidence and surface the gap honestly via the badge.
       if (!apn && !geocoded) {
         track("adu_parcel_failed", { reason: "no_apn_no_geocode" });
         setError(
-          "We couldn't find or geocode this address. Double-check the spelling, or it may be outside our current coverage area (San Jose only today).",
+          "We couldn't find parcel data for this address. This may be outside our current coverage area (San Jose only today).",
         );
         setLoading(false);
         return;
       }
 
-      // FHSZ — true if cal fire returned any non-empty class.
       const fhszClass = (signals.fire_hazard_class as string | null) ?? null;
       const fhszZone = (signals.fire_hazard_zone as string | null) ?? null;
       const fhsz: boolean | null =
@@ -125,13 +123,9 @@ export default function ADU() {
         date: (v.most_recent_open_date as string | null) ?? null,
       }));
 
-      // Lot size / zoning / dwelling sqft are not in the parcel history feed
-      // today — surface as null and let the confidence system flag the gap.
       const parcelData: ParcelData = {
         apn,
         lot_size_sqft: null,
-        lot_width_ft: null,
-        lot_depth_ft: null,
         zoning: null,
         primary_dwelling_sqft: null,
         existing_footprints_sqft: null,
@@ -139,11 +133,11 @@ export default function ADU() {
         violations,
         fire_hazard_zone: fhsz,
         zip: zip.trim() || (history.zip as string | null) || null,
+        address: `${street.trim()}, San Jose, CA${zip ? ` ${zip}` : ""}`,
       };
       setParcel(parcelData);
       track("adu_parcel_resolved", { apn });
 
-      // Call feasibility edge function
       const { data: feas, error: feasErr } = await supabase.functions.invoke("check-adu-feasibility", {
         body: {
           apn: parcelData.apn,
@@ -171,6 +165,38 @@ export default function ADU() {
     }
   }
 
+  async function handleAnnotationComplete(out: AnnotationOutput) {
+    setAnnotation(out);
+    setBriefLoading(true);
+    setBriefError(null);
+    setStep("brief");
+    try {
+      const { data, error: err } = await supabase.functions.invoke("generate-adu-brief", {
+        body: {
+          feasibility: feasibility?.result ?? {},
+          base_plan_url: out.base_plan_url,
+          annotation_image_url: out.annotation_image_url,
+          intended_scope: out.intended_scope,
+          property: {
+            address: parcel?.address ?? null,
+            apn: parcel?.apn ?? null,
+            zip: parcel?.zip ?? null,
+          },
+        },
+      });
+      if (err) throw err;
+      const b = (data as { brief?: AduBriefData })?.brief;
+      if (!b) throw new Error("Brief generation returned no content.");
+      setBrief(b);
+      track("adu_brief_generated", { adu_type: out.intended_scope.adu_type, size_sqft: out.intended_scope.size_sqft });
+    } catch (e) {
+      console.error(e);
+      setBriefError(e instanceof Error ? e.message : "Brief generation failed.");
+    } finally {
+      setBriefLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -184,8 +210,9 @@ export default function ADU() {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             We check San Jose zoning, AB 2221 rules, your permit history, and fire-hazard zones —
-            then show what's actually allowed.
+            then help you turn your idea into a contractor-ready brief.
           </p>
+          <StepIndicator step={step} />
         </header>
 
         <AnimatePresence mode="wait">
@@ -200,9 +227,7 @@ export default function ADU() {
             >
               <form onSubmit={handleAddressSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-5">
                 <div className="space-y-2">
-                  <label htmlFor="adu-street" className="text-sm font-medium">
-                    Property address
-                  </label>
+                  <label htmlFor="adu-street" className="text-sm font-medium">Property address</label>
                   <Input
                     id="adu-street"
                     placeholder="1234 Main St"
@@ -226,7 +251,7 @@ export default function ADU() {
                 {error ? (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[13px] text-rose-900">
                     {error}{" "}
-                    <Link to="/waitlist" className="underline">
+                    <Link to="/waitlist" className="underline" onClick={() => track("adu_waitlist_joined", { reason: "no_coverage" })}>
                       Join the waitlist
                     </Link>{" "}
                     and we'll notify you as coverage expands.
@@ -250,29 +275,64 @@ export default function ADU() {
             <FeasibilityView
               key="feas"
               feasibility={feasibility}
-              parcel={parcel}
               onBack={() => setStep("address")}
-              onNext={() => setStep("diagram")}
+              onNext={() => setStep("annotation")}
             />
           ) : null}
 
-          {step === "diagram" && feasibility && parcel ? (
+          {step === "annotation" && feasibility ? (
             <motion.section
-              key="diagram"
+              key="annotation"
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.25 }}
               className="space-y-5"
-              onAnimationStart={() => track("adu_diagram_viewed")}
             >
-              <BuildableDiagram
-                lotWidthFt={parcel.lot_width_ft}
-                lotDepthFt={parcel.lot_depth_ft}
+              <div>
+                <h2 className="font-display text-xl tracking-tight">Now show us where you want it</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Upload your existing plan, then mark or describe where the ADU goes.
+                </p>
+              </div>
+              <AduPlanAnnotation
+                maxAllowedSqft={feasibility.result.max_size_sqft}
                 setbacks={feasibility.result.setbacks}
-                maxAduSqft={feasibility.result.max_size_sqft}
+                onComplete={handleAnnotationComplete}
               />
-              <NavRow onBack={() => setStep("feasibility")} onNext={() => setStep("contractors")} nextLabel="See ADU contractors" />
+              <NavRow onBack={() => setStep("feasibility")} />
+            </motion.section>
+          ) : null}
+
+          {step === "brief" ? (
+            <motion.section
+              key="brief"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-5"
+            >
+              <div>
+                <h2 className="font-display text-xl tracking-tight">Your contractor-ready ADU brief</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Editable — review every section before sending.
+                </p>
+              </div>
+              {briefLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-32 w-full rounded-2xl" />
+                  <Skeleton className="h-32 w-full rounded-2xl" />
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+              ) : briefError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                  {briefError}
+                </div>
+              ) : brief ? (
+                <AduBrief brief={brief} onChange={setBrief} onContinue={() => setStep("contractors")} />
+              ) : null}
+              <NavRow onBack={() => setStep("annotation")} />
             </motion.section>
           ) : null}
 
@@ -290,7 +350,7 @@ export default function ADU() {
                 These contractors have pulled ADU permits near you — verified from city records, not reviews.
               </p>
               <AduContractorMatch zip={parcel.zip} />
-              <NavRow onBack={() => setStep("diagram")} />
+              <NavRow onBack={() => setStep("brief")} />
             </motion.section>
           ) : null}
         </AnimatePresence>
@@ -299,19 +359,33 @@ export default function ADU() {
   );
 }
 
+function StepIndicator({ step }: { step: Step }) {
+  const order: Step[] = ["address", "feasibility", "annotation", "brief", "contractors"];
+  const idx = order.indexOf(step);
+  return (
+    <div className="mt-4 flex items-center gap-1.5">
+      {order.map((_, i) => (
+        <div
+          key={i}
+          className={`h-1 flex-1 rounded-full transition-smooth ${
+            i <= idx ? "bg-amber-500" : "bg-secondary"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function FeasibilityView({
   feasibility,
-  parcel,
   onBack,
   onNext,
 }: {
   feasibility: FeasibilityResponse;
-  parcel: ParcelData;
   onBack: () => void;
   onNext: () => void;
 }) {
   const { result, explanation } = feasibility;
-  const canShowDiagram = result.confidence !== "low" && parcel.lot_width_ft != null && parcel.lot_depth_ft != null;
   const fmtMoney = useMemo(
     () => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }),
     [],
@@ -346,7 +420,6 @@ function FeasibilityView({
         )}
       </div>
 
-
       <DataConfidenceBadge confidence={result.confidence} gaps={result.data_gaps} />
 
       <div className="rounded-2xl border border-border bg-card p-5">
@@ -356,9 +429,7 @@ function FeasibilityView({
             <li key={a.type} className="border-l-2 border-amber-400 pl-3">
               <p className="font-medium capitalize">
                 {a.type.replace("_", " ")}{" "}
-                {a.max_size_sqft ? (
-                  <span className="text-muted-foreground">— up to {a.max_size_sqft} sqft</span>
-                ) : null}
+                {a.max_size_sqft ? <span className="text-muted-foreground">— up to {a.max_size_sqft} sqft</span> : null}
               </p>
               <p className="text-[13px] text-muted-foreground">{a.note}</p>
             </li>
@@ -383,8 +454,7 @@ function FeasibilityView({
             {fmtMoney.format(result.cost_range.min)} – {fmtMoney.format(result.cost_range.max)}
           </p>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            Estimated range based on recent San Jose permit data — actual costs vary significantly by design,
-            contractor, and site conditions.
+            Estimated from recent San Jose permit data — actual costs vary by design, contractor, and site conditions.
           </p>
         </Tile>
       ) : (
@@ -398,9 +468,7 @@ function FeasibilityView({
           <p className="text-sm font-semibold text-amber-950">Things to know</p>
           <ul className="mt-2 space-y-2 text-[13px] text-amber-950">
             {result.flags.map((f, i) => (
-              <li key={i} className="list-disc pl-1 marker:text-amber-600">
-                {f}
-              </li>
+              <li key={i} className="list-disc pl-1 marker:text-amber-600">{f}</li>
             ))}
           </ul>
         </div>
@@ -409,8 +477,8 @@ function FeasibilityView({
       <NavRow
         onBack={onBack}
         onNext={onNext}
-        nextLabel={canShowDiagram ? "See where your ADU could go" : "See approximate buildable area"}
-        nextIcon={<Ruler className="h-4 w-4" />}
+        nextLabel="Now show us where you want it"
+        nextIcon={<FileText className="h-4 w-4" />}
       />
     </motion.section>
   );
