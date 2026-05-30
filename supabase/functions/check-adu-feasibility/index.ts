@@ -163,7 +163,9 @@ async function explainWithGemini(structured: Record<string, unknown>): Promise<s
     "4. Your role is translation, not analysis. Do not give opinions or advice.",
     "5. Do not invent numbers. Do not round or extrapolate.",
     "6. Keep it under 180 words, friendly but factual, no jargon.",
+    "7. CRITICAL: 'feasible: false' combined with 'confidence: low' means we lack data to confirm — NOT that an ADU is disallowed. In that case say: 'An ADU is likely allowed under San Jose and California rules, but we couldn't pull enough parcel data to confirm the exact size and placement for this lot.' Then list what's missing. Never say 'not feasible' or 'cannot build' when confidence is low.",
   ].join(" ");
+
 
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
