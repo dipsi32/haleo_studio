@@ -91,7 +91,7 @@ export default function ADU() {
               street: street.trim() || undefined,
               city: "San Jose",
               state: "CA",
-              zip: parcel?.zip ?? zip.trim() || undefined,
+              zip: (parcel?.zip ?? zip.trim()) || undefined,
             },
           },
           brief: {
