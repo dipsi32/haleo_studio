@@ -94,13 +94,15 @@ export default function ADU() {
               zip: (parcel?.zip ?? zip.trim()) || undefined,
             },
           },
-          brief: {
-            kind: "adu",
-            parcel,
-            feasibility,
-            annotation,
-            contractor_brief: brief,
-          },
+          brief: JSON.parse(
+            JSON.stringify({
+              kind: "adu",
+              parcel,
+              feasibility,
+              annotation,
+              contractor_brief: brief,
+            }),
+          ) as Json,
           status: brief ? "brief_ready" : "draft",
         };
 
