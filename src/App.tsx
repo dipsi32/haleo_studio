@@ -62,6 +62,7 @@ const App = () => (
             <Route path="/roast" element={<Roast />} />
             <Route path="/login" element={<Login />} />
             <Route path="/waitlist" element={<Waitlist />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/adu" element={<Gated><ADU /></Gated>} />
 
 
