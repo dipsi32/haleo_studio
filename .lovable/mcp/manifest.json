@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://nfjipxgmwdlxqzzvqmsl.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "haleo-mcp",
+      "version": "0.1.0",
+      "title": "Haleo"
+    },
+    "tools": [
+      {
+        "name": "list_projects",
+        "title": "List my remodel projects",
+        "description": "List the signed-in homeowner's Haleo remodel projects (title, room, status, last updated).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximum number of projects."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_project_brief",
+        "title": "Get a project brief",
+        "description": "Fetch the full contractor-ready brief and intake details for one of the signed-in homeowner's projects.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id from list_projects."
+            }
+          },
+          "required": [
+            "project_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_proposal_audits",
+        "title": "List my quote audits",
+        "description": "List the signed-in homeowner's proposal (quote) audits with verdict, risk score, contractor name and total cost.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximum number of audits."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_proposal_audit",
+        "title": "Get a quote audit",
+        "description": "Fetch the full audit for one of the signed-in homeowner's proposals: red flags, pricing analysis, permit and license data, and pushback language.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "audit_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The audit id from list_proposal_audits."
+            }
+          },
+          "required": [
+            "audit_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_contractors",
+        "title": "Search verified contractors",
+        "description": "Search Haleo's San Jose contractor directory, ranked by county permit history. Optionally filter by city or specialty.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Name or company text match."
+            },
+            "city": {
+              "type": "string",
+              "minLength": 1,
+              "description": "City filter, e.g. San Jose."
+            },
+            "specialty": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Specialty filter, e.g. ADU, kitchen."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "default": 10,
+              "description": "Maximum number of contractors."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
