@@ -909,13 +909,14 @@ const Closing = () => (
         Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Free. Sign in to start your brief and we'll match you to permit-proven builders nearby.
+        Start your brief without an account. We'll only ask you to sign up when your
+        permit-matched contractors are ready.
       </p>
       <Link
         to="/brief"
         className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
       >
-        Find your contractor
+        Start my brief — free
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-5 text-[13px] text-muted-foreground">
