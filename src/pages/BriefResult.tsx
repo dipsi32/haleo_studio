@@ -926,7 +926,7 @@ const BriefResult = () => {
           update({ address: { ...addr, skipped: false } });
           setAddressPromptOpen(false);
           setApproved(true);
-          navigate("/contractors");
+          navigate(matchDestination);
         }}
         onSkip={() => {
           setAddressPromptOpen(false);
