@@ -632,12 +632,30 @@ Deno.serve(async (req) => {
       marketRange.median = Math.round(marketRange.median * sqftFactor);
     }
 
+    // Final plausibility clamp. A homeowner being told a $78k kitchen is
+    // "below market" because a comparison set drifted is worse than saying
+    // nothing, so keep the published range inside real residential bounds.
+    const band = bandFor(proposal.spaceType);
+    let rangeClamped = false;
+    for (const k of ["low", "high", "average", "median"] as const) {
+      const clamped = Math.max(band.min, Math.min(band.max, marketRange[k]));
+      if (clamped !== marketRange[k]) rangeClamped = true;
+      marketRange[k] = clamped;
+    }
+    if (marketRange.low >= marketRange.high) {
+      marketRange.low = Math.round(marketRange.average * 0.75);
+      marketRange.high = Math.round(marketRange.average * 1.25);
+      rangeClamped = true;
+    }
+
     // Confidence: more independent sources + larger n → higher
     const distinctSources = sourcesUsed.length;
     const confidence: "high" | "medium" | "low" =
-      (corpusRange && corpusRange.n >= 20) || distinctSources >= 3 ? "high"
+      rangeClamped ? "low"
+      : (corpusRange && corpusRange.n >= 20) || distinctSources >= 3 ? "high"
       : distinctSources >= 2 ? "medium"
       : "low";
+
 
     // 4. Component breakdown
     const componentRanges = estimateComponentRanges(proposal.spaceType, marketRange);
