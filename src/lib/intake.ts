@@ -343,6 +343,63 @@ export const ROOM_LABELS: Record<Room, string> = {
   other: "Something else",
 };
 
+// ───── Non-room jobs — the work people actually post about ─────
+// Many homeowners arrive with a goal ("remove two in-ground pools with permits"),
+// not a room. These map onto the existing Room model so everything downstream
+// (pain points, brief, matching) keeps working unchanged.
+export type ProjectGoal =
+  | "pool-removal"
+  | "demolition"
+  | "roof"
+  | "electrical"
+  | "plumbing"
+  | "hvac"
+  | "landscape"
+  | "foundation"
+  | "windows-doors"
+  | "exterior"
+  | "garage-conversion"
+  | "adu-addition"
+  | "whole-home"
+  | "other-job";
+
+export const PROJECT_GOALS: {
+  value: ProjectGoal;
+  label: string;
+  hint: string;
+  /** Room bucket used by the rest of the flow. */
+  room: Room;
+}[] = [
+  { value: "pool-removal", label: "Pool removal / fill-in", hint: "Demo, haul-off, permitted fill", room: "other" },
+  { value: "demolition", label: "Demolition", hint: "Structures, slabs, interior tear-out", room: "other" },
+  { value: "roof", label: "Roof", hint: "Replace, repair, re-deck", room: "other" },
+  { value: "electrical", label: "Electrical", hint: "Panel upgrade, rewire, EV charger", room: "other" },
+  { value: "plumbing", label: "Plumbing", hint: "Repipe, sewer line, water heater", room: "other" },
+  { value: "hvac", label: "HVAC", hint: "Heat pump, ducts, mini-splits", room: "other" },
+  { value: "landscape", label: "Landscape / hardscape", hint: "Patio, driveway, drainage, fencing", room: "other" },
+  { value: "foundation", label: "Foundation / structural", hint: "Leveling, retrofit, beams", room: "other" },
+  { value: "windows-doors", label: "Windows & doors", hint: "Replacement, new openings", room: "other" },
+  { value: "exterior", label: "Siding & exterior", hint: "Stucco, siding, exterior paint", room: "other" },
+  { value: "garage-conversion", label: "Garage conversion", hint: "Turn the garage into living space", room: "addition" },
+  { value: "adu-addition", label: "ADU / addition", hint: "New square footage", room: "addition" },
+  { value: "whole-home", label: "Whole-home remodel", hint: "Multiple rooms, one project", room: "full-home" },
+  { value: "other-job", label: "Something else", hint: "Tell us in your own words", room: "other" },
+];
+
+export const GOAL_LABELS: Record<ProjectGoal, string> = PROJECT_GOALS.reduce(
+  (acc, g) => ({ ...acc, [g.value]: g.label }),
+  {} as Record<ProjectGoal, string>,
+);
+
+/** Pick the single Room the rest of the flow should run on. */
+export const primaryRoom = (rooms: Room[] = [], goals: ProjectGoal[] = []): Room => {
+  if (goals.includes("adu-addition") || goals.includes("garage-conversion")) return "addition";
+  if (rooms.length > 1) return "full-home";
+  if (rooms[0]) return rooms[0];
+  const g = PROJECT_GOALS.find((x) => goals.includes(x.value));
+  return g?.room ?? "other";
+};
+
 export const PAIN_BY_ROOM: Record<Exclude<Room, "addition">, string[]> = {
   kitchen: [
     "Too dark",
