@@ -114,6 +114,8 @@ export default function Roast() {
   const [loadingPhase, setLoadingPhase] = useState(0);
   const [showSources, setShowSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
 
   const [funMessageIndex, setFunMessageIndex] = useState(0);
   const funShareMessages = [
