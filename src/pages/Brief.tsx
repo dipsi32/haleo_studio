@@ -34,6 +34,9 @@ import AdditionFlow from "@/components/intake/AdditionFlow";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
+  PROJECT_GOALS,
+  primaryRoom,
+  type ProjectGoal,
   filesToAssets,
   hasKind,
   type Room,
