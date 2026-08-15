@@ -63,7 +63,7 @@ export type IntakeData = {
   // multi-select rooms (the primary `room` above is derived from these)
   rooms?: Room[];
   // non-room jobs the homeowner picked (pool removal, roof, electrical…)
-  goals?: import("@/lib/intake").ProjectGoal[];
+  goals?: ProjectGoal[];
   // one-sentence description in the homeowner's own words
   goalNote?: string;
   // pain
