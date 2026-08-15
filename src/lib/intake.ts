@@ -60,6 +60,12 @@ export type ScopeTier = "refresh" | "remodel" | "reconfigure" | "structural";
 
 export type IntakeData = {
   room?: Room;
+  // multi-select rooms (the primary `room` above is derived from these)
+  rooms?: Room[];
+  // non-room jobs the homeowner picked (pool removal, roof, electrical…)
+  goals?: import("@/lib/intake").ProjectGoal[];
+  // one-sentence description in the homeowner's own words
+  goalNote?: string;
   // pain
   painPoints: string[];
   // addition
