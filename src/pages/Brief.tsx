@@ -830,10 +830,32 @@ const Brief = () => {
     <IntakeShell step={step} total={TOTAL} onBack={back}>
       <AnimatePresence mode="wait">
         {step === 1 && (
-          <RoomScreen
-            key="room"
-            onPick={(r) => {
-              update({ room: r, painPoints: [] });
+          <ProjectScreen
+            key="project"
+            rooms={data.rooms ?? []}
+            goals={data.goals ?? []}
+            note={data.goalNote ?? ""}
+            onToggleRoom={(r) => {
+              const cur = data.rooms ?? [];
+              const nextRooms = cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r];
+              update({
+                rooms: nextRooms,
+                room: primaryRoom(nextRooms, data.goals ?? []),
+                painPoints: [],
+              });
+            }}
+            onToggleGoal={(g) => {
+              const cur = data.goals ?? [];
+              const nextGoals = cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g];
+              update({
+                goals: nextGoals,
+                room: primaryRoom(data.rooms ?? [], nextGoals),
+                painPoints: [],
+              });
+            }}
+            onNote={(v) => update({ goalNote: v })}
+            onContinue={() => {
+              update({ room: primaryRoom(data.rooms ?? [], data.goals ?? []) });
               setStep(2);
             }}
           />
