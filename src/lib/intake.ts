@@ -406,6 +406,31 @@ export const primaryRoom = (rooms: Room[] = [], goals: ProjectGoal[] = []): Room
   return g?.room ?? "other";
 };
 
+// What actually matters for non-room jobs — asking "too dark?" about a pool fill is nonsense.
+export const PAIN_BY_GOAL: Partial<Record<ProjectGoal, string[]>> = {
+  "pool-removal": ["Safety concern", "Maintenance cost", "Want usable yard", "Cracked / leaking", "Unused for years", "Permitted fill required"],
+  demolition: ["Structure unsafe", "Making room for new build", "Debris haul-off needed", "Permits required", "Tight access"],
+  roof: ["Active leak", "Missing shingles", "Age / end of life", "Insurance requirement", "Poor insulation"],
+  electrical: ["Breakers trip", "Panel too small", "Knob & tube / old wiring", "EV charger needed", "Not enough outlets"],
+  plumbing: ["Low water pressure", "Recurring clogs", "Old galvanized pipes", "Water heater failing", "Sewer line issue"],
+  hvac: ["Uneven temperatures", "System is old", "High energy bills", "Noisy", "Poor air quality"],
+  landscape: ["Drainage problems", "Water use too high", "Unusable yard", "Overgrown", "Want privacy"],
+  foundation: ["Cracks", "Uneven floors", "Doors stick", "Moisture / drainage", "Seismic retrofit"],
+  "windows-doors": ["Drafty", "Single pane", "Street noise", "Hard to open", "Security concern"],
+  exterior: ["Peeling paint", "Rot / damage", "Dated look", "Weather exposure"],
+  "garage-conversion": ["Need more living space", "Rental income", "Family moving in", "Permits required"],
+  "adu-addition": ["Need more living space", "Rental income", "Family moving in", "Permits required"],
+  "whole-home": ["Layout doesn't work", "Everything is dated", "Systems failing", "Adding square footage"],
+};
+
+export const painOptionsFor = (room: Exclude<Room, "addition">, goals: ProjectGoal[] = []): string[] => {
+  if (goals.length) {
+    const merged = goals.flatMap((g) => PAIN_BY_GOAL[g] ?? []);
+    if (merged.length) return Array.from(new Set(merged));
+  }
+  return PAIN_BY_ROOM[room] ?? [];
+};
+
 export const PAIN_BY_ROOM: Record<Exclude<Room, "addition">, string[]> = {
   kitchen: [
     "Too dark",
