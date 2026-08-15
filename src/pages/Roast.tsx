@@ -435,7 +435,7 @@ export default function Roast() {
               {/* How it works — plain English */}
               <div className="grid sm:grid-cols-3 gap-4 mt-10 text-sm">
                 {[
-                  { n: "1", t: "Upload the quote", d: "Photo or PDF, any format." },
+                  { n: "1", t: "Add the quote", d: "Upload a photo or PDF — or just paste the text." },
                   { n: "2", t: "Haleo does the math", d: "Public cost guides, local permit records, and our own database of past audits." },
                   { n: "3", t: "See where you stand", d: "Fair range, line-by-line, what to do next." },
                 ].map((s) => (
