@@ -886,7 +886,7 @@ const BriefResult = () => {
             onClick={handleApproveAndSend}
           >
             {approved ? <ShieldCheck className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-            Approve and send to contractors
+            {brUser ? "Approve and send to contractors" : "See my top 3 matches"}
           </Button>
           <Button
             size="lg"
@@ -899,8 +899,13 @@ const BriefResult = () => {
           </Button>
         </motion.div>
 
-        {/* Next step */}
-        {/* NOTE: "Got proposals back?" CTA moved to dashboard for post-login */}
+        {!brUser && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Your brief is saved on this device. Matching needs an account so we can
+            keep it and tell you when contractors reply — takes about 20 seconds.
+          </p>
+        )}
+
       </main>
 
       <MediaLightbox asset={open} onClose={() => setOpen(null)} />
