@@ -520,7 +520,7 @@ Deno.serve(async (req) => {
 
     // 3a. Permit-based range (local but under-reported)
     console.log("Step 3a: Analyzing permit valuations…");
-    const permitRange = analyzePermitCosts(records, proposal.scope);
+    const permitRange = analyzePermitCosts(records, proposal.scope, proposal.spaceType);
 
     // 3b. Public cost-guide range (HomeAdvisor + Angi + Cost vs. Value)
     console.log("Step 3b: Fetching cost-guide ranges…");
