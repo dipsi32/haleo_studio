@@ -160,32 +160,141 @@ const StepDots = ({ step }: { step: number }) => {
   );
 };
 
-// ───── Screen 1: Room ─────
-const RoomScreen = ({ onPick }: { onPick: (r: Room) => void }) => {
-  const rooms = Object.keys(ROOM_LABELS) as Room[];
+// ───── Screen 1: The project — a goal, a room, or several ─────
+// People arrive with all kinds of jobs ("remove two in-ground pools, permitted"),
+// not just "kitchen". So: say it in your own words, then tick whatever applies —
+// rooms and/or non-room jobs, as many as you like.
+const ROOM_CHOICES: Room[] = ["kitchen", "bathroom", "living", "bedroom", "office"];
+
+const ProjectScreen = ({
+  rooms,
+  goals,
+  note,
+  onToggleRoom,
+  onToggleGoal,
+  onNote,
+  onContinue,
+}: {
+  rooms: Room[];
+  goals: ProjectGoal[];
+  note: string;
+  onToggleRoom: (r: Room) => void;
+  onToggleGoal: (g: ProjectGoal) => void;
+  onNote: (v: string) => void;
+  onContinue: () => void;
+}) => {
+  const picked = rooms.length + goals.length;
+  const canContinue = picked > 0 || note.trim().length > 8;
+
+  const Tile = ({
+    active,
+    onClick,
+    label,
+    hint,
+    Icon,
+  }: {
+    active: boolean;
+    onClick: () => void;
+    label: string;
+    hint?: string;
+    Icon?: typeof ChefHat;
+  }) => (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
+        active ? "border-accent bg-accent-soft/50 ring-1 ring-accent" : "border-border bg-card hover:border-accent/40"
+      }`}
+    >
+      {Icon && (
+        <span
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-smooth ${
+            active ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent"
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block font-display text-sm font-medium leading-tight">{label}</span>
+        {hint && <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{hint}</span>}
+      </span>
+      {active && (
+        <span className="absolute right-3 top-3 grid h-4 w-4 place-items-center rounded-full bg-accent text-accent-foreground">
+          <Check className="h-2.5 w-2.5" />
+        </span>
+      )}
+    </button>
+  );
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 pb-28">
       <StepDots step={1} />
       <ScreenTitle
-        title="Where's the dream taking shape?"
-        sub="Tap one. Don't overthink it — you can swap rooms anytime."
+        title="What are you trying to get done?"
+        sub="A room, a whole-house job, or something like pool removal — pick everything that applies."
       />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {rooms.map((r) => {
-          const Icon = ROOM_ICONS[r];
-          return (
-            <button
+
+      {/* Say it plainly */}
+      <div className="mx-auto max-w-lg">
+        <label className="mb-2 flex items-center gap-1.5 text-xs font-medium text-foreground/70">
+          <StickyNote className="h-3.5 w-3.5 text-accent" /> In your own words (optional)
+        </label>
+        <Textarea
+          value={note}
+          onChange={(e) => onNote(e.target.value)}
+          rows={3}
+          placeholder="e.g. Remove and fill in two in-ground pools, with the proper permits."
+          className="rounded-2xl bg-card text-sm"
+        />
+      </div>
+
+      {/* Rooms */}
+      <div className="mx-auto max-w-2xl">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/60">
+          Rooms — tick as many as you need
+        </p>
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+          {ROOM_CHOICES.map((r) => (
+            <Tile
               key={r}
-              onClick={() => onPick(r)}
-              className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 text-center shadow-soft transition-smooth hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lift"
-            >
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-accent-soft text-accent transition-smooth group-hover:bg-accent group-hover:text-accent-foreground">
-                <Icon className="h-5 w-5" />
-              </div>
-              <span className="font-display text-base font-medium">{ROOM_LABELS[r]}</span>
-            </button>
-          );
-        })}
+              active={rooms.includes(r)}
+              onClick={() => onToggleRoom(r)}
+              label={ROOM_LABELS[r]}
+              Icon={ROOM_ICONS[r]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Non-room jobs */}
+      <div className="mx-auto max-w-2xl">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/60">
+          Or a job that isn't a room
+        </p>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          {PROJECT_GOALS.map((g) => (
+            <Tile
+              key={g.value}
+              active={goals.includes(g.value)}
+              onClick={() => onToggleGoal(g.value)}
+              label={g.label}
+              hint={g.hint}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Sticky commit bar — always know what you've picked and what's next */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {picked === 0 ? "Nothing selected yet" : `${picked} selected`}
+          </p>
+          <Button onClick={onContinue} disabled={!canContinue} className="rounded-full px-6">
+            Continue <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
