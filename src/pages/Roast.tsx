@@ -10,6 +10,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
@@ -113,6 +114,8 @@ export default function Roast() {
   const [loadingPhase, setLoadingPhase] = useState(0);
   const [showSources, setShowSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
 
   const [funMessageIndex, setFunMessageIndex] = useState(0);
   const funShareMessages = [
@@ -376,10 +379,63 @@ export default function Roast() {
                 </div>
               </Card>
 
+              {/* Paste path — most quotes arrive as an email or a text, not a file. */}
+              <div className="mt-5 text-center">
+                {!pasteOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setPasteOpen(true)}
+                    className="text-[13.5px] font-medium text-foreground/70 underline underline-offset-4 hover:text-foreground"
+                  >
+                    Or paste the quote text instead
+                  </button>
+                ) : (
+                  <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-5 text-left sm:p-6">
+                    <p className="text-sm font-semibold text-foreground">Paste the quote</p>
+                    <p className="mt-1 text-[12.5px] text-foreground/60">
+                      Copy it straight out of the email or text. Line items and the total are what matter.
+                    </p>
+                    <Textarea
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value)}
+                      rows={9}
+                      placeholder={"Kitchen remodel\nDemo and haul away — $4,800\nCabinets — $28,500\n...\nTotal: $78,200"}
+                      className="mt-3 rounded-2xl text-[13.5px]"
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button
+                        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                        disabled={pasteText.trim().length < 40}
+                        onClick={() =>
+                          handleFile(
+                            new File([pasteText], "pasted-quote.txt", { type: "text/plain" }),
+                          )
+                        }
+                      >
+                        Roast this quote
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="rounded-full"
+                        onClick={() => setPasteOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      {pasteText.trim().length > 0 && pasteText.trim().length < 40 && (
+                        <span className="text-[12px] text-foreground/50">
+                          Add a bit more — we need the line items or the total.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+
               {/* How it works — plain English */}
               <div className="grid sm:grid-cols-3 gap-4 mt-10 text-sm">
                 {[
-                  { n: "1", t: "Upload the quote", d: "Photo or PDF, any format." },
+                  { n: "1", t: "Add the quote", d: "Upload a photo or PDF — or just paste the text." },
                   { n: "2", t: "Haleo does the math", d: "Public cost guides, local permit records, and our own database of past audits." },
                   { n: "3", t: "See where you stand", d: "Fair range, line-by-line, what to do next." },
                 ].map((s) => (

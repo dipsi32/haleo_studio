@@ -41,8 +41,22 @@ Be meticulous. Parse every dollar amount. The totalCost must equal the actual to
 If the proposal lists a subtotal + tax/fees, use the final total.`;
 
   const userContent: any[] = [];
-  
-  if (isImage) {
+
+  if (fileType === "text/plain") {
+    // Pasted quote text — decode and send as plain text, no vision needed.
+    let pastedText = "";
+    try {
+      pastedText = new TextDecoder().decode(
+        Uint8Array.from(atob(fileBase64), (ch) => ch.charCodeAt(0)),
+      );
+    } catch {
+      pastedText = "";
+    }
+    userContent.push({
+      type: "text",
+      text: `Extract all details from this contractor proposal text.\n\n---\n${pastedText.slice(0, 20000)}\n---`,
+    });
+  } else if (isImage) {
     userContent.push({
       type: "image_url",
       image_url: { url: `data:${mimeType};base64,${fileBase64}` },
@@ -56,6 +70,7 @@ If the proposal lists a subtotal + tax/fees, use the final total.`;
     });
     userContent.push({ type: "text", text: "Extract all details from this contractor proposal PDF." });
   }
+
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -154,33 +169,67 @@ async function fetchPermitsByTypeAndZip(spaceType: string, zipCode: string) {
 }
 
 // ─── Step 3: Cost analysis ──────────────────────────────────────────
-function analyzePermitCosts(records: any[], scope: string) {
-  const valuations = records
+// Plausible residential job-cost bands per space type. San Jose's permit feed
+// mixes commercial and multifamily jobs into keyword searches, so raw
+// valuations run into the millions and would produce absurd "market ranges".
+// Anything outside these bands is not a comparable single-family remodel.
+const PLAUSIBLE_BANDS: Record<string, { min: number; max: number }> = {
+  kitchen: { min: 8000, max: 250000 },
+  bathroom: { min: 4000, max: 120000 },
+  bedroom: { min: 3000, max: 90000 },
+  "living room": { min: 3000, max: 100000 },
+  "whole home": { min: 30000, max: 900000 },
+  addition: { min: 25000, max: 600000 },
+  outdoor: { min: 2000, max: 150000 },
+};
+
+function bandFor(spaceType: string) {
+  return PLAUSIBLE_BANDS[(spaceType || "").toLowerCase()] || { min: 3000, max: 400000 };
+}
+
+function analyzePermitCosts(records: any[], scope: string, spaceType: string) {
+  const band = bandFor(spaceType);
+  let valuations = records
     .map((r) => parseFloat((r.PERMITVALUATION || r.VALUATION || "0").toString().replace(/[^0-9.]/g, "")))
-    .filter((v) => v > 0)
+    .filter((v) => v >= band.min && v <= band.max)
     .sort((a, b) => a - b);
 
   if (valuations.length === 0) return null;
-
-  const scopeMultiplier: Record<string, number> = { refresh: 0.6, redesign: 1.0, "gut-rebuild": 1.5 };
-  const multiplier = scopeMultiplier[scope] || 1.0;
 
   const percentile = (arr: number[], p: number) => {
     const idx = Math.ceil((p / 100) * arr.length) - 1;
     return arr[Math.max(0, Math.min(idx, arr.length - 1))];
   };
 
+  // Trim remaining outliers with an IQR fence before averaging.
+  if (valuations.length >= 8) {
+    const q1 = percentile(valuations, 25);
+    const q3 = percentile(valuations, 75);
+    const iqr = q3 - q1;
+    const trimmed = valuations.filter((v) => v >= q1 - 1.5 * iqr && v <= q3 + 1.5 * iqr);
+    if (trimmed.length >= 5) valuations = trimmed;
+  }
+
+  const scopeMultiplier: Record<string, number> = { refresh: 0.6, redesign: 1.0, "gut-rebuild": 1.5 };
+  const multiplier = scopeMultiplier[scope] || 1.0;
+
+  const median = percentile(valuations, 50);
   const sum = valuations.reduce((a, b) => a + b, 0);
-  const avg = sum / valuations.length;
+  const mean = sum / valuations.length;
+  // Median-centric: permit valuations are right-skewed, the mean lies.
+  const center = median * 0.75 + mean * 0.25;
+
+  const clamp = (v: number) => Math.max(band.min, Math.min(band.max, Math.round(v)));
 
   return {
-    low: Math.round(percentile(valuations, 15) * multiplier),
-    high: Math.round(percentile(valuations, 85) * multiplier),
-    average: Math.round(avg * multiplier),
-    median: Math.round(percentile(valuations, 50) * multiplier),
+    low: clamp(percentile(valuations, 20) * multiplier),
+    high: clamp(percentile(valuations, 80) * multiplier),
+    average: clamp(center * multiplier),
+    median: clamp(median * multiplier),
     sampleSize: valuations.length,
   };
 }
+
 
 // ─── Step 4: Component breakdown ────────────────────────────────────
 function estimateComponentRanges(spaceType: string, marketRange: { low: number; high: number; average: number }) {
@@ -471,7 +520,7 @@ Deno.serve(async (req) => {
 
     // 3a. Permit-based range (local but under-reported)
     console.log("Step 3a: Analyzing permit valuations…");
-    const permitRange = analyzePermitCosts(records, proposal.scope);
+    const permitRange = analyzePermitCosts(records, proposal.scope, proposal.spaceType);
 
     // 3b. Public cost-guide range (HomeAdvisor + Angi + Cost vs. Value)
     console.log("Step 3b: Fetching cost-guide ranges…");
@@ -583,12 +632,30 @@ Deno.serve(async (req) => {
       marketRange.median = Math.round(marketRange.median * sqftFactor);
     }
 
+    // Final plausibility clamp. A homeowner being told a $78k kitchen is
+    // "below market" because a comparison set drifted is worse than saying
+    // nothing, so keep the published range inside real residential bounds.
+    const band = bandFor(proposal.spaceType);
+    let rangeClamped = false;
+    for (const k of ["low", "high", "average", "median"] as const) {
+      const clamped = Math.max(band.min, Math.min(band.max, marketRange[k]));
+      if (clamped !== marketRange[k]) rangeClamped = true;
+      marketRange[k] = clamped;
+    }
+    if (marketRange.low >= marketRange.high) {
+      marketRange.low = Math.round(marketRange.average * 0.75);
+      marketRange.high = Math.round(marketRange.average * 1.25);
+      rangeClamped = true;
+    }
+
     // Confidence: more independent sources + larger n → higher
     const distinctSources = sourcesUsed.length;
     const confidence: "high" | "medium" | "low" =
-      (corpusRange && corpusRange.n >= 20) || distinctSources >= 3 ? "high"
+      rangeClamped ? "low"
+      : (corpusRange && corpusRange.n >= 20) || distinctSources >= 3 ? "high"
       : distinctSources >= 2 ? "medium"
       : "low";
+
 
     // 4. Component breakdown
     const componentRanges = estimateComponentRanges(proposal.spaceType, marketRange);
