@@ -103,12 +103,31 @@ const Login = () => {
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <Logo />
           <h1 className="font-display text-2xl font-light">
-            {mode === "signup" ? "Create your account" : "Welcome back"}
+            {isMatchIntent && mode === "signup"
+              ? "Your brief is ready. Where should we send your matches?"
+              : mode === "signup"
+                ? "Create your account"
+                : "Welcome back"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Your brief, audit, and saved rooms live behind your account — so you can pick up where you left off.
+            {isMatchIntent
+              ? "We'll show you the three contractors with permit history closest to your project — same city, same type of work. An account keeps your brief and lets us tell you when they reply."
+              : "Your brief, audit, and saved rooms live behind your account — so you can pick up where you left off."}
           </p>
         </div>
+
+        {isMatchIntent && (
+          <div className="mb-4 rounded-2xl border border-border bg-card/60 p-4 text-left text-xs leading-relaxed text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+              Free while we're small
+            </p>
+            <p className="mt-1.5">
+              Haleo is early and San Jose only, so we're keeping access free for a limited
+              number of homeowners while we learn what actually helps. No card, no trial
+              countdown. If that changes, we'll tell you before it does.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
           <Button
