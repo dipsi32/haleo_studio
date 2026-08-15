@@ -26,7 +26,12 @@ const Login = () => {
     return next;
   }, [account?.onboarded_at, isContractor, next, user]);
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  // Homeowners arriving from a finished brief are new, not returning —
+  // open on sign-up and speak to what they just built.
+  const intent = params.get("intent");
+  const isMatchIntent = intent === "match";
+
+  const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
