@@ -60,6 +60,12 @@ export type ScopeTier = "refresh" | "remodel" | "reconfigure" | "structural";
 
 export type IntakeData = {
   room?: Room;
+  // multi-select rooms (the primary `room` above is derived from these)
+  rooms?: Room[];
+  // non-room jobs the homeowner picked (pool removal, roof, electrical…)
+  goals?: ProjectGoal[];
+  // one-sentence description in the homeowner's own words
+  goalNote?: string;
   // pain
   painPoints: string[];
   // addition
@@ -341,6 +347,88 @@ export const ROOM_LABELS: Record<Room, string> = {
   addition: "Addition",
   "full-home": "Full home",
   other: "Something else",
+};
+
+// ───── Non-room jobs — the work people actually post about ─────
+// Many homeowners arrive with a goal ("remove two in-ground pools with permits"),
+// not a room. These map onto the existing Room model so everything downstream
+// (pain points, brief, matching) keeps working unchanged.
+export type ProjectGoal =
+  | "pool-removal"
+  | "demolition"
+  | "roof"
+  | "electrical"
+  | "plumbing"
+  | "hvac"
+  | "landscape"
+  | "foundation"
+  | "windows-doors"
+  | "exterior"
+  | "garage-conversion"
+  | "adu-addition"
+  | "whole-home"
+  | "other-job";
+
+export const PROJECT_GOALS: {
+  value: ProjectGoal;
+  label: string;
+  hint: string;
+  /** Room bucket used by the rest of the flow. */
+  room: Room;
+}[] = [
+  { value: "pool-removal", label: "Pool removal / fill-in", hint: "Demo, haul-off, permitted fill", room: "other" },
+  { value: "demolition", label: "Demolition", hint: "Structures, slabs, interior tear-out", room: "other" },
+  { value: "roof", label: "Roof", hint: "Replace, repair, re-deck", room: "other" },
+  { value: "electrical", label: "Electrical", hint: "Panel upgrade, rewire, EV charger", room: "other" },
+  { value: "plumbing", label: "Plumbing", hint: "Repipe, sewer line, water heater", room: "other" },
+  { value: "hvac", label: "HVAC", hint: "Heat pump, ducts, mini-splits", room: "other" },
+  { value: "landscape", label: "Landscape / hardscape", hint: "Patio, driveway, drainage, fencing", room: "other" },
+  { value: "foundation", label: "Foundation / structural", hint: "Leveling, retrofit, beams", room: "other" },
+  { value: "windows-doors", label: "Windows & doors", hint: "Replacement, new openings", room: "other" },
+  { value: "exterior", label: "Siding & exterior", hint: "Stucco, siding, exterior paint", room: "other" },
+  { value: "garage-conversion", label: "Garage conversion", hint: "Turn the garage into living space", room: "addition" },
+  { value: "adu-addition", label: "ADU / addition", hint: "New square footage", room: "addition" },
+  { value: "whole-home", label: "Whole-home remodel", hint: "Multiple rooms, one project", room: "full-home" },
+  { value: "other-job", label: "Something else", hint: "Tell us in your own words", room: "other" },
+];
+
+export const GOAL_LABELS: Record<ProjectGoal, string> = PROJECT_GOALS.reduce(
+  (acc, g) => ({ ...acc, [g.value]: g.label }),
+  {} as Record<ProjectGoal, string>,
+);
+
+/** Pick the single Room the rest of the flow should run on. */
+export const primaryRoom = (rooms: Room[] = [], goals: ProjectGoal[] = []): Room => {
+  if (goals.includes("adu-addition") || goals.includes("garage-conversion")) return "addition";
+  if (rooms.length > 1) return "full-home";
+  if (rooms[0]) return rooms[0];
+  const g = PROJECT_GOALS.find((x) => goals.includes(x.value));
+  return g?.room ?? "other";
+};
+
+// What actually matters for non-room jobs — asking "too dark?" about a pool fill is nonsense.
+export const PAIN_BY_GOAL: Partial<Record<ProjectGoal, string[]>> = {
+  "pool-removal": ["Safety concern", "Maintenance cost", "Want usable yard", "Cracked / leaking", "Unused for years", "Permitted fill required"],
+  demolition: ["Structure unsafe", "Making room for new build", "Debris haul-off needed", "Permits required", "Tight access"],
+  roof: ["Active leak", "Missing shingles", "Age / end of life", "Insurance requirement", "Poor insulation"],
+  electrical: ["Breakers trip", "Panel too small", "Knob & tube / old wiring", "EV charger needed", "Not enough outlets"],
+  plumbing: ["Low water pressure", "Recurring clogs", "Old galvanized pipes", "Water heater failing", "Sewer line issue"],
+  hvac: ["Uneven temperatures", "System is old", "High energy bills", "Noisy", "Poor air quality"],
+  landscape: ["Drainage problems", "Water use too high", "Unusable yard", "Overgrown", "Want privacy"],
+  foundation: ["Cracks", "Uneven floors", "Doors stick", "Moisture / drainage", "Seismic retrofit"],
+  "windows-doors": ["Drafty", "Single pane", "Street noise", "Hard to open", "Security concern"],
+  exterior: ["Peeling paint", "Rot / damage", "Dated look", "Weather exposure"],
+  "garage-conversion": ["Need more living space", "Rental income", "Family moving in", "Permits required"],
+  "adu-addition": ["Need more living space", "Rental income", "Family moving in", "Permits required"],
+  "whole-home": ["Layout doesn't work", "Everything is dated", "Systems failing", "Adding square footage"],
+};
+
+export const painOptionsFor = (room: Exclude<Room, "addition">, goals: ProjectGoal[] = []): string[] => {
+  if (goals.length) {
+    const merged = goals.flatMap((g) => PAIN_BY_GOAL[g] ?? []);
+    if (merged.length) return Array.from(new Set(merged));
+  }
+  return PAIN_BY_ROOM[room] ?? [];
 };
 
 export const PAIN_BY_ROOM: Record<Exclude<Room, "addition">, string[]> = {
