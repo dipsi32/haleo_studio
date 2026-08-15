@@ -286,6 +286,16 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
     });
   }
 
+  // The homeowner's own words about the job (pool fill-in, demo, re-roof…)
+  if (d.goalNote?.trim()) {
+    lines.push({
+      text: `In the homeowner's words: "${d.goalNote.trim().slice(0, 220)}${d.goalNote.trim().length > 220 ? "…" : ""}"`,
+      basis: "grounded",
+      source: "Homeowner description",
+      trade: "context",
+    });
+  }
+
   // Address — city/state only for contractor view (PII rule).
   if (d.address?.city && !d.address.skipped) {
     lines.push({
