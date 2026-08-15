@@ -448,13 +448,18 @@ const BriefResult = () => {
   // Address is required to pull permit + neighborhood intel for contractors.
   // If the homeowner skipped or never entered it, prompt before sending.
   const hasAddress = Boolean(data.address?.city && !data.address?.skipped);
+  // Where "see my matches" goes. Logged-out homeowners get a warm sign-up
+  // step instead of a cold login wall — their brief is already saved locally.
+  const matchDestination = brUser
+    ? "/contractors"
+    : "/login?next=%2Fcontractors&intent=match";
   const handleApproveAndSend = () => {
     if (!hasAddress) {
       setAddressPromptOpen(true);
       return;
     }
     setApproved(true);
-    navigate("/contractors");
+    navigate(matchDestination);
   };
 
   return (
