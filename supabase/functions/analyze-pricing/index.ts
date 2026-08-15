@@ -41,8 +41,22 @@ Be meticulous. Parse every dollar amount. The totalCost must equal the actual to
 If the proposal lists a subtotal + tax/fees, use the final total.`;
 
   const userContent: any[] = [];
-  
-  if (isImage) {
+
+  if (fileType === "text/plain") {
+    // Pasted quote text — decode and send as plain text, no vision needed.
+    let pastedText = "";
+    try {
+      pastedText = new TextDecoder().decode(
+        Uint8Array.from(atob(fileBase64), (ch) => ch.charCodeAt(0)),
+      );
+    } catch {
+      pastedText = "";
+    }
+    userContent.push({
+      type: "text",
+      text: `Extract all details from this contractor proposal text.\n\n---\n${pastedText.slice(0, 20000)}\n---`,
+    });
+  } else if (isImage) {
     userContent.push({
       type: "image_url",
       image_url: { url: `data:${mimeType};base64,${fileBase64}` },
@@ -56,6 +70,7 @@ If the proposal lists a subtotal + tax/fees, use the final total.`;
     });
     userContent.push({ type: "text", text: "Extract all details from this contractor proposal PDF." });
   }
+
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
