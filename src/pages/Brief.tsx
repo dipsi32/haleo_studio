@@ -34,6 +34,7 @@ import AdditionFlow from "@/components/intake/AdditionFlow";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
+  painOptionsFor,
   PROJECT_GOALS,
   primaryRoom,
   type ProjectGoal,
@@ -66,7 +67,7 @@ const ROOM_ICONS: Record<Room, typeof ChefHat> = {
 const TOTAL = 5;
 
 const STEP_LABELS = [
-  "The room",
+  "Your project",
   "Inside look",
   "What Haleo sees",
   "Address",
@@ -306,6 +307,7 @@ const ProjectScreen = ({
 // ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
 const InsideLookScreen = ({
   room,
+  goals,
   selected,
   onTogglePain,
   onAddMedia,
@@ -318,6 +320,7 @@ const InsideLookScreen = ({
   intake,
 }: {
   room: Exclude<Room, "addition">;
+  goals: ProjectGoal[];
   selected: string[];
   onTogglePain: (v: string) => void;
   onAddMedia: (a: MediaAsset[]) => void;
@@ -336,7 +339,7 @@ const InsideLookScreen = ({
     Boolean(notes || dimensions?.length || dimensions?.width || dimensions?.height),
   );
 
-  const options = PAIN_BY_ROOM[room].map((p) => ({ value: p, label: p }));
+  const options = painOptionsFor(room, goals).map((p) => ({ value: p, label: p }));
 
   const captures: {
     kind: MediaAsset["kind"];
@@ -867,6 +870,7 @@ const Brief = () => {
           <InsideLookScreen
             key="inside-look"
             room={data.room as Exclude<Room, "addition">}
+            goals={data.goals ?? []}
             selected={data.painPoints}
             onTogglePain={(v) => togglePill("painPoints", v)}
             media={data.media.filter((m) => m.kind !== "inspiration")}
