@@ -88,9 +88,9 @@ const App = () => (
               }
             />
 
-            {/* Brief requires login (free, but account-gated to save progress) */}
-            <Route path="/brief" element={<ProtectedRoute><Brief /></ProtectedRoute>} />
-            <Route path="/brief/result" element={<ProtectedRoute><BriefResult /></ProtectedRoute>} />
+            {/* Brief is open to everyone — sign-up is offered at the match step */}
+            <Route path="/brief" element={<Brief />} />
+            <Route path="/brief/result" element={<BriefResult />} />
             {/* Matches require login (paywall lives in-page at the unlock step) */}
             <Route
               path="/contractors"

@@ -448,13 +448,18 @@ const BriefResult = () => {
   // Address is required to pull permit + neighborhood intel for contractors.
   // If the homeowner skipped or never entered it, prompt before sending.
   const hasAddress = Boolean(data.address?.city && !data.address?.skipped);
+  // Where "see my matches" goes. Logged-out homeowners get a warm sign-up
+  // step instead of a cold login wall — their brief is already saved locally.
+  const matchDestination = brUser
+    ? "/contractors"
+    : "/login?next=%2Fcontractors&intent=match";
   const handleApproveAndSend = () => {
     if (!hasAddress) {
       setAddressPromptOpen(true);
       return;
     }
     setApproved(true);
-    navigate("/contractors");
+    navigate(matchDestination);
   };
 
   return (
@@ -881,7 +886,7 @@ const BriefResult = () => {
             onClick={handleApproveAndSend}
           >
             {approved ? <ShieldCheck className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-            Approve and send to contractors
+            {brUser ? "Approve and send to contractors" : "See my top 3 matches"}
           </Button>
           <Button
             size="lg"
@@ -894,8 +899,13 @@ const BriefResult = () => {
           </Button>
         </motion.div>
 
-        {/* Next step */}
-        {/* NOTE: "Got proposals back?" CTA moved to dashboard for post-login */}
+        {!brUser && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Your brief is saved on this device. Matching needs an account so we can
+            keep it and tell you when contractors reply — takes about 20 seconds.
+          </p>
+        )}
+
       </main>
 
       <MediaLightbox asset={open} onClose={() => setOpen(null)} />
@@ -916,7 +926,7 @@ const BriefResult = () => {
           update({ address: { ...addr, skipped: false } });
           setAddressPromptOpen(false);
           setApproved(true);
-          navigate("/contractors");
+          navigate(matchDestination);
         }}
         onSkip={() => {
           setAddressPromptOpen(false);

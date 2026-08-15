@@ -515,24 +515,37 @@ const Hero = () => {
             <p className="mt-6 font-display text-base md:text-lg text-foreground/70 italic tracking-tight">
               Reviews can be bought. Permits can't.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link
-                to="/roast"
-                onClick={() => track("cta_roast_clicked", { location: "hero" })}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift hover:bg-foreground/90 transition-smooth"
-              >
-                Audit a quote — free <ArrowRight className="w-4 h-4" />
-              </Link>
+            {/* Two doors — the whole homepage decision, made obvious. */}
+            <div className="mt-9 grid gap-3 sm:max-w-lg">
               <Link
                 to="/brief"
                 onClick={() => track("cta_match_clicked", { location: "hero" })}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-smooth"
+                className="group flex items-center gap-4 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-background shadow-lift transition-smooth hover:bg-foreground/90"
               >
-                Find your contractor
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold">I need a contractor</p>
+                  <p className="mt-0.5 text-[12.5px] text-background/70">
+                    Answer a few questions about your space — about 3 minutes, no signup.
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                to="/roast"
+                onClick={() => track("cta_roast_clicked", { location: "hero" })}
+                className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold text-foreground">I already have a quote</p>
+                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                    Paste or upload it. We check it line by line against local costs — free, 30 seconds.
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
               </Link>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              30 seconds. No signup to start.
+              San Jose only for now. Nothing is sent to a contractor until you say so.
             </p>
           </motion.div>
 
@@ -896,13 +909,14 @@ const Closing = () => (
         Ready when you are.
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Free. Sign in to start your brief and we'll match you to permit-proven builders nearby.
+        Start your brief without an account. We'll only ask you to sign up when your
+        permit-matched contractors are ready.
       </p>
       <Link
         to="/brief"
         className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
       >
-        Find your contractor
+        Start my brief — free
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-5 text-[13px] text-muted-foreground">
