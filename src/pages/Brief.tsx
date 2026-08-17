@@ -331,6 +331,7 @@ const ProjectScreen = ({
 // ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
 const InsideLookScreen = ({
   room,
+  rooms,
   goals,
   selected,
   onTogglePain,
@@ -344,6 +345,7 @@ const InsideLookScreen = ({
   intake,
 }: {
   room: Exclude<Room, "addition">;
+  rooms: Room[];
   goals: ProjectGoal[];
   selected: string[];
   onTogglePain: (v: string) => void;
@@ -365,6 +367,13 @@ const InsideLookScreen = ({
 
   const options = painOptionsFor(room, goals).map((p) => ({ value: p, label: p }));
 
+  // A job with no rooms attached (pool removal, roof, drainage…) isn't an
+  // "inside look" — it's a site look. Same inputs, honest framing.
+  const isSiteJob = rooms.length === 0 && goals.length > 0;
+  const stepLabels = isSiteJob
+    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show the site" : l))
+    : STEP_LABELS;
+
   const captures: {
     kind: MediaAsset["kind"];
     icon: typeof Video;
@@ -378,14 +387,31 @@ const InsideLookScreen = ({
     {
       kind: "video",
       icon: Video,
-      label: "Walkthrough video",
-      hint: "Best — a slow 30s pan · up to 90s, 150 MB",
+      label: isSiteJob ? "Walk the area on video" : "Walkthrough video",
+      hint: isSiteJob
+        ? "Best — a slow pan of the work area and access · up to 90s, 150 MB"
+        : "Best — a slow 30s pan · up to 90s, 150 MB",
       accept: "video/*",
       ref: videoRef,
       best: true,
     },
-    { kind: "photo", icon: Camera, label: "A few photos", hint: "Snap the trouble spots", accept: "image/*", multiple: true, ref: photosRef },
-    { kind: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or photo", accept: "image/*,application/pdf", ref: planRef },
+    {
+      kind: "photo",
+      icon: Camera,
+      label: "A few photos",
+      hint: isSiteJob ? "The area, and how a crew would get to it" : "Snap the trouble spots",
+      accept: "image/*",
+      multiple: true,
+      ref: photosRef,
+    },
+    {
+      kind: "floorplan",
+      icon: Map,
+      label: isSiteJob ? "Site plan or survey" : "Floor plan",
+      hint: "Sketch, PDF, or photo",
+      accept: "image/*,application/pdf",
+      ref: planRef,
+    },
   ];
 
   const handleFiles = (kind: MediaAsset["kind"]) => async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -397,11 +423,20 @@ const InsideLookScreen = ({
 
   return (
     <div className="space-y-12">
-      <StepDots step={2} />
+      <StepDots step={2} labels={stepLabels} />
       <ScreenTitle
-        title="Take us inside — only what you're comfortable sharing."
-        sub="A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
+        title={
+          isSiteJob
+            ? "Show us the work area — only what you're comfortable sharing."
+            : "Take us inside — only what you're comfortable sharing."
+        }
+        sub={
+          isSiteJob
+            ? "A short clip of the area, or a couple of photos including access, goes a long way. Haleo will read what you share on the next screen."
+            : "A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
+        }
       />
+
 
       {/* Capture grid — real file inputs */}
       <div>
