@@ -212,7 +212,7 @@ const ContractorProfile = () => {
                       label: 'Past job sites',
                       Icon: AlertTriangle,
                       blurb: 'Open code-enforcement cases at addresses they\u2019ve worked.',
-                      match: (l: string) => ['No code violations on past jobs'].includes(l),
+                      match: (l: string) => ['Open city code cases at past jobs'].includes(l),
                     },
                   ];
                   const penalties = score.components.filter(c => c.status === 'penalty');
@@ -276,7 +276,7 @@ const ContractorProfile = () => {
                                     c.label === 'License in good standing' ? ShieldCheck :
                                     c.label === 'Bond on file' ? Wallet :
                                     c.label === "Workers' Comp coverage" ? HardHat :
-                                    c.label === 'No code violations on past jobs' ? FileCheck2 :
+                                    c.label === 'Open city code cases at past jobs' ? FileCheck2 :
                                     AlertTriangle;
                                   return (
                                     <div key={c.label}>
