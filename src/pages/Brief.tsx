@@ -894,6 +894,7 @@ const Brief = () => {
           <InsideLookScreen
             key="inside-look"
             room={data.room as Exclude<Room, "addition">}
+            rooms={data.rooms ?? []}
             goals={data.goals ?? []}
             selected={data.painPoints}
             onTogglePain={(v) => togglePill("painPoints", v)}
