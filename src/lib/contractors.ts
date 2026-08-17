@@ -65,10 +65,9 @@ export const cslbDeepLink = (license: string) =>
 // weight from BOTH numerator and denominator instead of inflating the
 // score with free credit. Penalties apply *after* normalization.
 //
-//  Permit-derived (San Jose open data)
-//   20  Local track record         (≥20 permits in area = full credit)
-//   15  Recent activity            (last 12 months, 8+ jobs = full)
-//   12  Right kind of work         (project-type keyword match)
+  //  Permit-derived (San Jose open data)
+  //   35  Local permit history       (total ≥20 = 20 pts; 8+ in last 12mo = 15 pts)
+  //   12  Right kind of work         (project-type keyword match)
 //
 //  CSLB-derived (only when license scrape succeeded)
 //   18  License standing           (active=18, expiring=14, expired/suspended=0)
