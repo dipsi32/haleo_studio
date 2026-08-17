@@ -260,27 +260,29 @@ export const computeTrustScore = (
   }
 
   // ── Phase-2 informational rows (visible, weight depends on data) ────
-  // Same sentence shape for every contractor: "X of Y past job addresses have
-  // an open city code case." No jargon, no "clean-checked".
+  // Conversational framing: lead with the finding, then say how many addresses
+  // we checked. "0 of 7 have an open case" is confusing; "No open cases at the
+  // 7 addresses we checked" reads like a neighbor explaining it.
   if (signals && signals.addresses_checked > 0) {
     const rate = signals.addresses_with_violations / signals.addresses_checked;
     const violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
     const checked = signals.addresses_checked;
+    const hasAny = signals.addresses_with_violations > 0;
     components.push({
-      label: 'Open city code cases at past jobs',
-      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
+      label: 'City code checks',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means the city is still tracking an issue at that address.",
       weight: 5, earned: violationScore,
-      detail: signals.addresses_with_violations === 0
-        ? `0 of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case`
-        : `${signals.addresses_with_violations} of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case (${signals.open_code_violations} total)`,
+      detail: hasAny
+        ? `Open cases at ${signals.addresses_with_violations} of the ${checked} past job address${checked === 1 ? '' : 'es'} we checked`
+        : `No open cases at the ${checked} past job address${checked === 1 ? '' : 'es'} we checked`,
       status: 'live',
     });
   } else {
     components.push({
-      label: 'Open city code cases at past jobs',
-      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
+      label: 'City code checks',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means the city is still tracking an issue at that address.",
       weight: 0, earned: 0,
-      detail: 'No past job addresses checked yet for this contractor',
+      detail: "We haven't checked past job addresses for code cases yet",
       status: 'pending',
     });
   }
