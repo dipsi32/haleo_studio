@@ -27,7 +27,8 @@ function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: 
       `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — straight from city records`
     );
   } else if (permits.length > 0) {
-    reasons.push(`${permits.length} permitted job${permits.length === 1 ? "" : "s"} pulled in ${neighborhood}`);
+    const recent = permits.filter(p => p.issued_date && new Date(p.issued_date).getTime() > Date.now() - 365 * 24 * 60 * 60 * 1000);
+    reasons.push(`${permits.length} permit${permits.length === 1 ? "" : "s"} on record in ${neighborhood}${recent.length > 0 ? `, ${recent.length} in the last 12 months` : ""}`);
   }
 
   if (recentPermit?.issued_date) {
