@@ -109,11 +109,12 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 // ───── Feedforward: where you are, how much is left ─────
 // Compact, calm, mobile-first. One clear label for the current step,
 // a segmented bar that shows progress at a glance, and a quiet "x left" meter.
-const StepDots = ({ step }: { step: number }) => {
-  const total = STEP_LABELS.length;
+const StepDots = ({ step, labels = STEP_LABELS }: { step: number; labels?: string[] }) => {
+  const total = labels.length;
   const current = Math.max(1, Math.min(total, step));
   const remaining = total - current;
-  const currentLabel = STEP_LABELS[current - 1];
+  const currentLabel = labels[current - 1];
+
 
   return (
     <div className="mx-auto max-w-md">
@@ -134,7 +135,7 @@ const StepDots = ({ step }: { step: number }) => {
 
       {/* Segmented progress — five quiet bars, the active one breathes */}
       <div className="mt-3 flex items-center gap-1.5" role="progressbar" aria-valuenow={current} aria-valuemin={1} aria-valuemax={total} aria-label={`Step ${current} of ${total}: ${currentLabel}`}>
-        {STEP_LABELS.map((label, i) => {
+        {labels.map((label, i) => {
           const n = i + 1;
           const isDone = current > n;
           const isActive = current === n;
@@ -331,6 +332,7 @@ const ProjectScreen = ({
 // ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
 const InsideLookScreen = ({
   room,
+  rooms,
   goals,
   selected,
   onTogglePain,
@@ -344,6 +346,7 @@ const InsideLookScreen = ({
   intake,
 }: {
   room: Exclude<Room, "addition">;
+  rooms: Room[];
   goals: ProjectGoal[];
   selected: string[];
   onTogglePain: (v: string) => void;
@@ -365,6 +368,13 @@ const InsideLookScreen = ({
 
   const options = painOptionsFor(room, goals).map((p) => ({ value: p, label: p }));
 
+  // A job with no rooms attached (pool removal, roof, drainage…) isn't an
+  // "inside look" — it's a site look. Same inputs, honest framing.
+  const isSiteJob = rooms.length === 0 && goals.length > 0;
+  const stepLabels = isSiteJob
+    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show the site" : l))
+    : STEP_LABELS;
+
   const captures: {
     kind: MediaAsset["kind"];
     icon: typeof Video;
@@ -378,14 +388,31 @@ const InsideLookScreen = ({
     {
       kind: "video",
       icon: Video,
-      label: "Walkthrough video",
-      hint: "Best — a slow 30s pan · up to 90s, 150 MB",
+      label: isSiteJob ? "Walk the area on video" : "Walkthrough video",
+      hint: isSiteJob
+        ? "Best — a slow pan of the work area and access · up to 90s, 150 MB"
+        : "Best — a slow 30s pan · up to 90s, 150 MB",
       accept: "video/*",
       ref: videoRef,
       best: true,
     },
-    { kind: "photo", icon: Camera, label: "A few photos", hint: "Snap the trouble spots", accept: "image/*", multiple: true, ref: photosRef },
-    { kind: "floorplan", icon: Map, label: "Floor plan", hint: "Sketch, PDF, or photo", accept: "image/*,application/pdf", ref: planRef },
+    {
+      kind: "photo",
+      icon: Camera,
+      label: "A few photos",
+      hint: isSiteJob ? "The area, and how a crew would get to it" : "Snap the trouble spots",
+      accept: "image/*",
+      multiple: true,
+      ref: photosRef,
+    },
+    {
+      kind: "floorplan",
+      icon: Map,
+      label: isSiteJob ? "Site plan or survey" : "Floor plan",
+      hint: "Sketch, PDF, or photo",
+      accept: "image/*,application/pdf",
+      ref: planRef,
+    },
   ];
 
   const handleFiles = (kind: MediaAsset["kind"]) => async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -397,11 +424,20 @@ const InsideLookScreen = ({
 
   return (
     <div className="space-y-12">
-      <StepDots step={2} />
+      <StepDots step={2} labels={stepLabels} />
       <ScreenTitle
-        title="Take us inside — only what you're comfortable sharing."
-        sub="A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
+        title={
+          isSiteJob
+            ? "Show us the work area — only what you're comfortable sharing."
+            : "Take us inside — only what you're comfortable sharing."
+        }
+        sub={
+          isSiteJob
+            ? "A short clip of the area, or a couple of photos including access, goes a long way. Haleo will read what you share on the next screen."
+            : "A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
+        }
       />
+
 
       {/* Capture grid — real file inputs */}
       <div>
@@ -517,10 +553,12 @@ const InsideLookScreen = ({
       {/* Pain pills */}
       <div>
         <p className="text-center font-display text-2xl font-light text-foreground/90">
-          What's bugging you about it?
+          {isSiteJob ? "What makes this job tricky?" : "What's bugging you about it?"}
         </p>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          Tap as many as ring true. This is for your eyes only first.
+          {isSiteJob
+            ? "Tap anything that applies. This is for your eyes only first."
+            : "Tap as many as ring true. This is for your eyes only first."}
         </p>
         <div className="mt-6">
           <PillGroup options={options} selected={selected} onToggle={onTogglePain} />
@@ -894,6 +932,7 @@ const Brief = () => {
           <InsideLookScreen
             key="inside-look"
             room={data.room as Exclude<Room, "addition">}
+            rooms={data.rooms ?? []}
             goals={data.goals ?? []}
             selected={data.painPoints}
             onTogglePain={(v) => togglePill("painPoints", v)}
