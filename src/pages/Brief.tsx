@@ -372,11 +372,11 @@ const InsideLookScreen = ({
 
   const options = painOptionsFor(room, goals).map((p) => ({ value: p, label: p }));
 
-  // A job with no rooms attached (pool removal, roof, drainage…) isn't an
-  // "inside look" — it's a site look. Same inputs, honest framing.
-  const isSiteJob = rooms.length === 0 && goals.length > 0;
+  // A job with no rooms attached (pool removal, roof, drainage, note-only…)
+  // isn't an "inside look" — it's a "show it to us" step. Same inputs, honest framing.
+  const isSiteJob = rooms.length === 0;
   const stepLabels = isSiteJob
-    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show the site" : l))
+    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show it to us" : l))
     : STEP_LABELS;
 
   const captures: {
