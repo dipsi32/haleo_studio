@@ -266,27 +266,31 @@ export const computeTrustScore = (
   }
 
   // ── Phase-2 informational rows (visible, weight depends on data) ────
+  // Same sentence shape for every contractor: "X of Y past job addresses have
+  // an open city code case." No jargon, no "clean-checked".
   if (signals && signals.addresses_checked > 0) {
     const rate = signals.addresses_with_violations / signals.addresses_checked;
     const violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
+    const checked = signals.addresses_checked;
     components.push({
-      label: 'No code violations on past jobs',
-      what: "We check the addresses they've worked at against San Jose's open code-enforcement cases. Open cases = work that didn't hold up.",
+      label: 'Open city code cases at past jobs',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
       weight: 5, earned: violationScore,
-      detail: signals.open_code_violations === 0
-        ? `Clean — checked ${signals.addresses_checked} past job addresses`
-        : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`,
+      detail: signals.addresses_with_violations === 0
+        ? `0 of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case`
+        : `${signals.addresses_with_violations} of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case (${signals.open_code_violations} total)`,
       status: 'live',
     });
   } else {
     components.push({
-      label: 'No code violations on past jobs',
-      what: "We check addresses they've worked at against open code-enforcement cases.",
+      label: 'Open city code cases at past jobs',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
       weight: 0, earned: 0,
-      detail: 'Checking past job sites…',
+      detail: 'No past job addresses checked yet for this contractor',
       status: 'pending',
     });
   }
+
 
   // (Removed: "Inspection pass rate" — city portal doesn't publish a clean
   // pass/fail per-inspection feed, so we can't measure this honestly yet.)
