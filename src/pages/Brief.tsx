@@ -31,11 +31,14 @@ import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
 import ConfirmReadScreen from "@/components/intake/ConfirmReadScreen";
 import AdditionFlow from "@/components/intake/AdditionFlow";
+import VoiceTextField from "@/components/intake/VoiceTextField";
+import { detectProject } from "@/lib/projectDetect";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
   painOptionsFor,
   PROJECT_GOALS,
+  GOAL_LABELS,
   primaryRoom,
   type ProjectGoal,
   filesToAssets,
