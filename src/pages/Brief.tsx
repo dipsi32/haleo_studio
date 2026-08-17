@@ -317,7 +317,11 @@ const ProjectScreen = ({
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            {canContinue ? "Looks good — next up, a quick look inside." : "Tell us in a sentence to continue"}
+            {canContinue
+              ? rooms.length === 0
+                ? "Looks good — next up, show it to us."
+                : "Looks good — next up, a quick look inside."
+              : "Tell us in a sentence to continue"}
           </p>
           <Button onClick={onContinue} disabled={!canContinue} className="rounded-full px-6">
             Continue <ArrowRight className="ml-1.5 h-4 w-4" />
