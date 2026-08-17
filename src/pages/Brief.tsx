@@ -135,7 +135,7 @@ const StepDots = ({ step, labels = STEP_LABELS }: { step: number; labels?: strin
 
       {/* Segmented progress — five quiet bars, the active one breathes */}
       <div className="mt-3 flex items-center gap-1.5" role="progressbar" aria-valuenow={current} aria-valuemin={1} aria-valuemax={total} aria-label={`Step ${current} of ${total}: ${currentLabel}`}>
-        {STEP_LABELS.map((label, i) => {
+        {labels.map((label, i) => {
           const n = i + 1;
           const isDone = current > n;
           const isActive = current === n;
@@ -553,10 +553,12 @@ const InsideLookScreen = ({
       {/* Pain pills */}
       <div>
         <p className="text-center font-display text-2xl font-light text-foreground/90">
-          What's bugging you about it?
+          {isSiteJob ? "What makes this job tricky?" : "What's bugging you about it?"}
         </p>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          Tap as many as ring true. This is for your eyes only first.
+          {isSiteJob
+            ? "Tap anything that applies. This is for your eyes only first."
+            : "Tap as many as ring true. This is for your eyes only first."}
         </p>
         <div className="mt-6">
           <PillGroup options={options} selected={selected} onToggle={onTogglePain} />
