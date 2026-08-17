@@ -198,7 +198,7 @@ const ContractorProfile = () => {
                       label: 'Local track record',
                       Icon: MapPinned,
                       blurb: 'How much real, recent, on-topic work they have nearby.',
-                      match: (l: string) => ['Permits in your area', 'Recent activity', 'Right kind of work'].includes(l),
+                      match: (l: string) => ['Local permit history', 'Right kind of work'].includes(l),
                     },
                     {
                       key: 'license',
@@ -270,8 +270,7 @@ const ContractorProfile = () => {
                                   const cpct = c.weight > 0 ? Math.max(0, Math.min(100, (c.earned / c.weight) * 100)) : 0;
                                   const rightLabel = c.weight === 0 ? (c.status === 'coming_soon' ? 'Coming soon' : 'Pending') : `${c.earned}/${c.weight}`;
                                   const ItemIcon =
-                                    c.label === 'Permits in your area' ? null :
-                                    c.label === 'Recent activity' ? null :
+                                    c.label === 'Local permit history' ? null :
                                     c.label === 'Right kind of work' ? null :
                                     c.label === 'License in good standing' ? ShieldCheck :
                                     c.label === 'Bond on file' ? Wallet :
