@@ -31,11 +31,14 @@ import ScopeBudgetStep from "@/components/intake/ScopeBudgetStep";
 import DimensionsInput from "@/components/intake/DimensionsInput";
 import ConfirmReadScreen from "@/components/intake/ConfirmReadScreen";
 import AdditionFlow from "@/components/intake/AdditionFlow";
+import VoiceTextField from "@/components/intake/VoiceTextField";
+import { detectProject } from "@/lib/projectDetect";
 import {
   ROOM_LABELS,
   PAIN_BY_ROOM,
   painOptionsFor,
   PROJECT_GOALS,
+  GOAL_LABELS,
   primaryRoom,
   type ProjectGoal,
   filesToAssets,
@@ -164,10 +167,9 @@ const StepDots = ({ step }: { step: number }) => {
   );
 };
 
-// ───── Screen 1: The project — a goal, a room, or several ─────
-// People arrive with all kinds of jobs ("remove two in-ground pools, permitted"),
-// not just "kitchen". So: say it in your own words, then tick whatever applies —
-// rooms and/or non-room jobs, as many as you like.
+// ───── Screen 1: The project — one question, one answer ─────
+// Say it (or type it) in your own words. We read it back as chips you can
+// correct. The full list is one tap away for anyone who prefers to browse.
 const ROOM_CHOICES: Room[] = ["kitchen", "bathroom", "living", "bedroom", "office"];
 
 const ProjectScreen = ({
@@ -187,47 +189,40 @@ const ProjectScreen = ({
   onNote: (v: string) => void;
   onContinue: () => void;
 }) => {
+  const [browsing, setBrowsing] = useState(false);
   const picked = rooms.length + goals.length;
-  const canContinue = picked > 0 || note.trim().length > 8;
+  const canContinue = picked > 0 || note.trim().length > 5;
 
-  const Tile = ({
+  // Read the sentence back as suggestions — one tap to confirm, never forced.
+  const detected = detectProject(note);
+  const suggestedRooms = detected.rooms.filter((r) => !rooms.includes(r));
+  const suggestedGoals = detected.goals.filter((g) => !goals.includes(g));
+  const hasSuggestions = suggestedRooms.length + suggestedGoals.length > 0;
+
+  const Chip = ({
+    label,
     active,
     onClick,
-    label,
-    hint,
-    Icon,
+    suggestion,
   }: {
-    active: boolean;
-    onClick: () => void;
     label: string;
-    hint?: string;
-    Icon?: typeof ChefHat;
+    active?: boolean;
+    onClick: () => void;
+    suggestion?: boolean;
   }) => (
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift ${
-        active ? "border-accent bg-accent-soft/50 ring-1 ring-accent" : "border-border bg-card hover:border-accent/40"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-smooth ${
+        active
+          ? "border-accent bg-accent text-accent-foreground"
+          : suggestion
+            ? "border-dashed border-accent/60 bg-accent-soft/40 text-foreground hover:bg-accent-soft"
+            : "border-border bg-card text-foreground hover:border-accent/50"
       }`}
     >
-      {Icon && (
-        <span
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-smooth ${
-            active ? "bg-accent text-accent-foreground" : "bg-accent-soft text-accent"
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </span>
-      )}
-      <span className="min-w-0">
-        <span className="block font-display text-sm font-medium leading-tight">{label}</span>
-        {hint && <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{hint}</span>}
-      </span>
-      {active && (
-        <span className="absolute right-3 top-3 grid h-4 w-4 place-items-center rounded-full bg-accent text-accent-foreground">
-          <Check className="h-2.5 w-2.5" />
-        </span>
-      )}
+      {active ? <Check className="h-3.5 w-3.5" /> : suggestion ? <Plus className="h-3.5 w-3.5 text-accent" /> : null}
+      {label}
     </button>
   );
 
@@ -235,65 +230,93 @@ const ProjectScreen = ({
     <div className="space-y-8 pb-28">
       <StepDots step={1} />
       <ScreenTitle
-        title="What are you trying to get done?"
-        sub="A room, a whole-house job, or something like pool removal — pick everything that applies."
+        title="What do you need done?"
+        sub="One sentence is enough. We'll figure out the rest."
       />
 
-      {/* Say it plainly */}
       <div className="mx-auto max-w-lg">
-        <label className="mb-2 flex items-center gap-1.5 text-xs font-medium text-foreground/70">
-          <StickyNote className="h-3.5 w-3.5 text-accent" /> In your own words (optional)
-        </label>
-        <Textarea
+        <VoiceTextField
           value={note}
-          onChange={(e) => onNote(e.target.value)}
-          rows={3}
-          placeholder="e.g. Remove and fill in two in-ground pools, with the proper permits."
-          className="rounded-2xl bg-card text-sm"
+          onChange={onNote}
+          autoFocus
+          placeholder="e.g. Remove and fill in two in-ground pools, permitted."
         />
       </div>
 
-      {/* Rooms */}
-      <div className="mx-auto max-w-2xl">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/60">
-          Rooms — tick as many as you need
-        </p>
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
-          {ROOM_CHOICES.map((r) => (
-            <Tile
-              key={r}
-              active={rooms.includes(r)}
-              onClick={() => onToggleRoom(r)}
-              label={ROOM_LABELS[r]}
-              Icon={ROOM_ICONS[r]}
-            />
-          ))}
-        </div>
+      {/* What we heard */}
+      <AnimatePresence initial={false}>
+        {(picked > 0 || hasSuggestions) && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="mx-auto max-w-lg"
+          >
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/55">
+              {picked > 0 ? "Your project" : "Sounds like"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {rooms.map((r) => (
+                <Chip key={r} label={ROOM_LABELS[r]} active onClick={() => onToggleRoom(r)} />
+              ))}
+              {goals.map((g) => (
+                <Chip key={g} label={GOAL_LABELS[g]} active onClick={() => onToggleGoal(g)} />
+              ))}
+              {suggestedRooms.map((r) => (
+                <Chip key={`s-${r}`} label={ROOM_LABELS[r]} suggestion onClick={() => onToggleRoom(r)} />
+              ))}
+              {suggestedGoals.map((g) => (
+                <Chip key={`s-${g}`} label={GOAL_LABELS[g]} suggestion onClick={() => onToggleGoal(g)} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Escape hatch for browsers, collapsed by default */}
+      <div className="mx-auto max-w-lg text-center">
+        {!browsing ? (
+          <button
+            onClick={() => setBrowsing(true)}
+            className="text-sm text-muted-foreground underline-offset-4 transition-smooth hover:text-foreground hover:underline"
+          >
+            Rather pick from a list?
+          </button>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-5 text-left"
+          >
+            <div>
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/55">
+                Rooms
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {ROOM_CHOICES.map((r) => (
+                  <Chip key={r} label={ROOM_LABELS[r]} active={rooms.includes(r)} onClick={() => onToggleRoom(r)} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/55">
+                Everything else
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {PROJECT_GOALS.map((g) => (
+                  <Chip key={g.value} label={g.label} active={goals.includes(g.value)} onClick={() => onToggleGoal(g.value)} />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
-      {/* Non-room jobs */}
-      <div className="mx-auto max-w-2xl">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/60">
-          Or a job that isn't a room
-        </p>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {PROJECT_GOALS.map((g) => (
-            <Tile
-              key={g.value}
-              active={goals.includes(g.value)}
-              onClick={() => onToggleGoal(g.value)}
-              label={g.label}
-              hint={g.hint}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Sticky commit bar — always know what you've picked and what's next */}
+      {/* Sticky commit bar */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            {picked === 0 ? "Nothing selected yet" : `${picked} selected`}
+            {canContinue ? "Looks good — next up, a quick look inside." : "Tell us in a sentence to continue"}
           </p>
           <Button onClick={onContinue} disabled={!canContinue} className="rounded-full px-6">
             Continue <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -303,6 +326,7 @@ const ProjectScreen = ({
     </div>
   );
 };
+
 
 // ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
 const InsideLookScreen = ({
