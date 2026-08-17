@@ -432,12 +432,12 @@ const InsideLookScreen = ({
       <ScreenTitle
         title={
           isSiteJob
-            ? "Show us the work area — only what you're comfortable sharing."
+            ? "Show it to us — only what you're comfortable sharing."
             : "Take us inside — only what you're comfortable sharing."
         }
         sub={
           isSiteJob
-            ? "A short clip of the area, or a couple of photos including access, goes a long way. Haleo will read what you share on the next screen."
+            ? "A short clip or a couple of photos of the work area goes a long way. Haleo will read what you share on the next screen."
             : "A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
         }
       />
