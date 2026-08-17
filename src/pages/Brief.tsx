@@ -333,7 +333,7 @@ const ProjectScreen = ({
 };
 
 
-// ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
+// ───── Screen 2: Show it to us — media + measurements + pain (honest framing) ─────
 const InsideLookScreen = ({
   room,
   rooms,
