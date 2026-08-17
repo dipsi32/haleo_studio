@@ -317,7 +317,11 @@ const ProjectScreen = ({
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            {canContinue ? "Looks good — next up, a quick look inside." : "Tell us in a sentence to continue"}
+            {canContinue
+              ? rooms.length === 0
+                ? "Looks good — next up, show it to us."
+                : "Looks good — next up, a quick look inside."
+              : "Tell us in a sentence to continue"}
           </p>
           <Button onClick={onContinue} disabled={!canContinue} className="rounded-full px-6">
             Continue <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -329,7 +333,7 @@ const ProjectScreen = ({
 };
 
 
-// ───── Screen 2: Inside look — media + measurements + pain (calmer copy) ─────
+// ───── Screen 2: Show it to us — media + measurements + pain (honest framing) ─────
 const InsideLookScreen = ({
   room,
   rooms,
@@ -368,11 +372,11 @@ const InsideLookScreen = ({
 
   const options = painOptionsFor(room, goals).map((p) => ({ value: p, label: p }));
 
-  // A job with no rooms attached (pool removal, roof, drainage…) isn't an
-  // "inside look" — it's a site look. Same inputs, honest framing.
-  const isSiteJob = rooms.length === 0 && goals.length > 0;
+  // A job with no rooms attached (pool removal, roof, drainage, note-only…)
+  // isn't an "inside look" — it's a "show it to us" step. Same inputs, honest framing.
+  const isSiteJob = rooms.length === 0;
   const stepLabels = isSiteJob
-    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show the site" : l))
+    ? STEP_LABELS.map((l, i) => (i === 1 ? "Show it to us" : l))
     : STEP_LABELS;
 
   const captures: {
@@ -428,12 +432,12 @@ const InsideLookScreen = ({
       <ScreenTitle
         title={
           isSiteJob
-            ? "Show us the work area — only what you're comfortable sharing."
+            ? "Show it to us — only what you're comfortable sharing."
             : "Take us inside — only what you're comfortable sharing."
         }
         sub={
           isSiteJob
-            ? "A short clip of the area, or a couple of photos including access, goes a long way. Haleo will read what you share on the next screen."
+            ? "A short clip or a couple of photos of the work area goes a long way. Haleo will read what you share on the next screen."
             : "A short walkthrough or a couple of photos goes a long way. Haleo will read what you share on the next screen."
         }
       />
