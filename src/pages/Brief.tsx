@@ -109,11 +109,12 @@ const SkipButton = ({ onClick, label = "Skip — I'll add this later" }: { onCli
 // ───── Feedforward: where you are, how much is left ─────
 // Compact, calm, mobile-first. One clear label for the current step,
 // a segmented bar that shows progress at a glance, and a quiet "x left" meter.
-const StepDots = ({ step }: { step: number }) => {
-  const total = STEP_LABELS.length;
+const StepDots = ({ step, labels = STEP_LABELS }: { step: number; labels?: string[] }) => {
+  const total = labels.length;
   const current = Math.max(1, Math.min(total, step));
   const remaining = total - current;
-  const currentLabel = STEP_LABELS[current - 1];
+  const currentLabel = labels[current - 1];
+
 
   return (
     <div className="mx-auto max-w-md">
