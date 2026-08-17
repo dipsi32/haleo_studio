@@ -168,33 +168,40 @@ export const computeTrustScore = (
     status: 'live',
   });
 
+  // Shared matcher — "like yours" means the permit description mentions the
+  // project keywords we derived from the homeowner's brief.
+  const matchesProject = (p: Permit) => {
+    const hay = `${p.work_type ?? ''} ${p.description ?? ''}`.toLowerCase();
+    return projectKeywords.some(k => hay.includes(k.toLowerCase()));
+  };
+  const projectWord = projectKeywords[0] ?? 'similar';
+
   // 2. Recent activity — 15 pts (8+ jobs in last 12mo = full)
   const recent = permits.filter(p => {
     if (!p.issued_date) return false;
     return monthsBetween(new Date(p.issued_date), now) <= 12;
   });
+  const recentLikeYours = recent.filter(matchesProject).length;
   const recencyScore = Math.min(15, Math.round((recent.length / 8) * 15));
   components.push({
     label: 'Recent activity',
     what: "Are they actively working right now? We count permits pulled in the last 12 months so you don't hire someone who's gone quiet.",
     weight: 15, earned: recencyScore,
-    detail: `${recent.length} jobs in the last 12 months`,
+    detail: `${recent.length} permitted job${recent.length === 1 ? '' : 's'} in the last 12 months · ${recentLikeYours} like yours`,
     status: 'live',
   });
 
   // 3. Right kind of work — 12 pts (5+ matches = full)
-  const matchCount = permits.filter(p => {
-    const hay = `${p.work_type ?? ''} ${p.description ?? ''}`.toLowerCase();
-    return projectKeywords.some(k => hay.includes(k.toLowerCase()));
-  }).length;
+  const matchCount = permits.filter(matchesProject).length;
   const matchScore = Math.min(12, Math.round((matchCount / 5) * 12));
   components.push({
     label: 'Right kind of work',
-    what: `How often their past jobs match what you're building. We look for ${projectKeywords[0] ?? 'similar'}-type work in their permit history.`,
+    what: `How often their past jobs match what you're building. We look for ${projectWord}-type work in their permit history.`,
     weight: 12, earned: matchScore,
-    detail: `${matchCount} ${projectKeywords[0] ?? 'similar'} jobs`,
+    detail: `${matchCount} ${projectWord} job${matchCount === 1 ? '' : 's'} of ${permits.length} on record`,
     status: 'live',
   });
+
 
   // (Removed: "Finishes what they start" and "No abandoned permits" —
   // SJ Open Data drops finalized permits from its feeds, so completed_date
@@ -259,27 +266,31 @@ export const computeTrustScore = (
   }
 
   // ── Phase-2 informational rows (visible, weight depends on data) ────
+  // Same sentence shape for every contractor: "X of Y past job addresses have
+  // an open city code case." No jargon, no "clean-checked".
   if (signals && signals.addresses_checked > 0) {
     const rate = signals.addresses_with_violations / signals.addresses_checked;
     const violationScore = Math.max(0, Math.round(5 * (1 - rate / 0.25)));
+    const checked = signals.addresses_checked;
     components.push({
-      label: 'No code violations on past jobs',
-      what: "We check the addresses they've worked at against San Jose's open code-enforcement cases. Open cases = work that didn't hold up.",
+      label: 'Open city code cases at past jobs',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
       weight: 5, earned: violationScore,
-      detail: signals.open_code_violations === 0
-        ? `Clean — checked ${signals.addresses_checked} past job addresses`
-        : `${signals.open_code_violations} open case(s) at ${signals.addresses_with_violations} of ${signals.addresses_checked} past sites`,
+      detail: signals.addresses_with_violations === 0
+        ? `0 of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case`
+        : `${signals.addresses_with_violations} of ${checked} past job address${checked === 1 ? '' : 'es'} we checked have an open case (${signals.open_code_violations} total)`,
       status: 'live',
     });
   } else {
     components.push({
-      label: 'No code violations on past jobs',
-      what: "We check addresses they've worked at against open code-enforcement cases.",
+      label: 'Open city code cases at past jobs',
+      what: "We look up the addresses they've worked at in San Jose's code-enforcement records. An open case means work at that address is still flagged by the city.",
       weight: 0, earned: 0,
-      detail: 'Checking past job sites…',
+      detail: 'No past job addresses checked yet for this contractor',
       status: 'pending',
     });
   }
+
 
   // (Removed: "Inspection pass rate" — city portal doesn't publish a clean
   // pass/fail per-inspection feed, so we can't measure this honestly yet.)
