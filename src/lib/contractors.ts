@@ -157,17 +157,6 @@ export const computeTrustScore = (
 
   // ── Permit-derived signals ──────────────────────────────────────────────
 
-  // 1. Local track record — 20 pts max at 20+ permits
-  const localCount = permits.length;
-  const localScore = Math.min(20, Math.round((localCount / 20) * 20));
-  components.push({
-    label: 'Permits in your area',
-    what: "How many permitted jobs they've pulled in your area. More local work = more proof they actually build here.",
-    weight: 20, earned: localScore,
-    detail: `${localCount} permits in your area`,
-    status: 'live',
-  });
-
   // Shared matcher — "like yours" means the permit description mentions the
   // project keywords we derived from the homeowner's brief.
   const matchesProject = (p: Permit) => {
@@ -176,21 +165,24 @@ export const computeTrustScore = (
   };
   const projectWord = projectKeywords[0] ?? 'similar';
 
-  // 2. Recent activity — 15 pts (8+ jobs in last 12mo = full)
+  // 1. Local permit history — combined local + recent (35 pts)
+  //    ≥20 permits total in area = 20 pts; 8+ in last 12 months = 15 pts.
+  const localCount = permits.length;
   const recent = permits.filter(p => {
     if (!p.issued_date) return false;
     return monthsBetween(new Date(p.issued_date), now) <= 12;
   });
   const recentLikeYours = recent.filter(matchesProject).length;
+  const localScore = Math.min(20, Math.round((localCount / 20) * 20));
   const recencyScore = Math.min(15, Math.round((recent.length / 8) * 15));
   const likeYoursSuffix = recentLikeYours > 0
     ? ` · ${recentLikeYours} like yours`
     : '';
   components.push({
-    label: 'Recent activity',
-    what: "Are they actively working right now? We count permits pulled in the last 12 months so you don't hire someone who's gone quiet.",
-    weight: 15, earned: recencyScore,
-    detail: `${recent.length} permitted job${recent.length === 1 ? '' : 's'} in the last 12 months${likeYoursSuffix}`,
+    label: 'Local permit history',
+    what: "How much real, permitted work they've done nearby — and how much of it is recent. More local permits, especially recent ones, mean they actually build here and are active now.",
+    weight: 35, earned: localScore + recencyScore,
+    detail: `${localCount} permit${localCount === 1 ? '' : 's'} on record · ${recent.length} in the last 12 months${likeYoursSuffix}`,
     status: 'live',
   });
 
