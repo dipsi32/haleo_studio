@@ -183,11 +183,14 @@ export const computeTrustScore = (
   });
   const recentLikeYours = recent.filter(matchesProject).length;
   const recencyScore = Math.min(15, Math.round((recent.length / 8) * 15));
+  const likeYoursSuffix = recentLikeYours > 0
+    ? ` · ${recentLikeYours} like yours`
+    : '';
   components.push({
     label: 'Recent activity',
     what: "Are they actively working right now? We count permits pulled in the last 12 months so you don't hire someone who's gone quiet.",
     weight: 15, earned: recencyScore,
-    detail: `${recent.length} permitted job${recent.length === 1 ? '' : 's'} in the last 12 months · ${recentLikeYours} like yours`,
+    detail: `${recent.length} permitted job${recent.length === 1 ? '' : 's'} in the last 12 months${likeYoursSuffix}`,
     status: 'live',
   });
 
