@@ -783,18 +783,27 @@ const Contractors = () => {
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Add a personal note (optional)</p>
                     <p className="text-[10px] text-muted-foreground">Appears at the top of each email</p>
                   </div>
-                  {selectedList.map(rc => (
-                    <div key={rc.contractor.id} className="rounded-2xl border border-border p-3">
-                      <p className="text-sm font-medium">{rc.contractor.company ?? rc.contractor.name}</p>
-                      <Textarea
-                        placeholder={`e.g. Loved the kitchen you did on Willow St. last spring…`}
-                        value={notes[rc.contractor.id] ?? ""}
-                        onChange={e => setNotes(n => ({ ...n, [rc.contractor.id]: e.target.value }))}
-                        rows={2}
-                        className="mt-2 rounded-lg bg-background text-sm"
-                      />
-                    </div>
-                  ))}
+                  {selectedList.map(rc => {
+                    const jobs = rc.matchCount || rc.permits.length;
+                    // Ground the prompt in what the homeowner actually saw on
+                    // the card — permit counts, not invented compliments.
+                    const hint = jobs > 0
+                      ? `e.g. I saw your ${jobs} ${projectLabel} permit${jobs === 1 ? "" : "s"} in ${neighborhood} — mine looks like a similar scope. Are you taking work right now?`
+                      : `e.g. Mine is a ${projectLabel} project in ${neighborhood}. Are you taking work right now?`;
+                    return (
+                      <div key={rc.contractor.id} className="rounded-2xl border border-border p-3">
+                        <p className="text-sm font-medium">{rc.contractor.company ?? rc.contractor.name}</p>
+                        <Textarea
+                          placeholder={hint}
+                          value={notes[rc.contractor.id] ?? ""}
+                          onChange={e => setNotes(n => ({ ...n, [rc.contractor.id]: e.target.value }))}
+                          rows={2}
+                          className="mt-2 rounded-lg bg-background text-sm"
+                        />
+                      </div>
+                    );
+                  })}
+
                 </div>
 
                 <div className="mt-6 flex items-center gap-2 rounded-2xl bg-secondary/60 p-3 text-xs text-muted-foreground">
