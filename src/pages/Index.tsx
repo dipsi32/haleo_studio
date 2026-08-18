@@ -392,6 +392,50 @@ const ScreenBids = () => {
   );
 };
 
+/* Second opinion — what you do with the verdict. Mirrors the roast result UI. */
+const ScreenSecondOpinion = () => (
+  <div className="flex h-full flex-col">
+    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">What to do next</p>
+    <p className="mt-1 font-display text-lg leading-tight">Two lines to ask about</p>
+
+    <div className="mt-3 space-y-2">
+      {[
+        { t: "Backsplash — $12k", n: "Ask what tile and how many sq ft" },
+        { t: "Demo + haul — $9k", n: "Ask if dumpster fees are included" },
+      ].map((r) => (
+        <div key={r.t} className="rounded-xl border border-border bg-card px-2.5 py-2">
+          <p className="text-[11px] font-medium text-foreground">{r.t}</p>
+          <p className="mt-0.5 text-[9.5px] text-muted-foreground">{r.n}</p>
+        </div>
+      ))}
+    </div>
+
+    <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+      Want a second number?
+    </p>
+    <div className="mt-1.5 space-y-2">
+      {[
+        { n: "Casa Verde", m: "6 kitchens passed inspection · 0.9 mi" },
+        { n: "Mehdi Builders", m: "11 kitchens passed inspection · 1.2 mi" },
+      ].map((c) => (
+        <div key={c.n} className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-2">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary">
+            <ShieldCheck className="h-4 w-4 text-foreground/70" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11.5px] font-medium text-foreground">{c.n}</p>
+            <p className="truncate text-[10px] text-muted-foreground">{c.m}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-auto rounded-xl bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground">
+      Nothing is sent until <span className="text-foreground">you say so</span>.
+    </div>
+  </div>
+);
+
 /* Audit screen — the painkiller. Drop a quote, see where it lands. */
 const ScreenAudit = () => {
   const [phase, setPhase] = useState<"drop" | "scan" | "verdict">("drop");
@@ -661,6 +705,12 @@ const TRACKS: {
         label: "Line them up",
         caption: "Every trade side by side, so a $12k backsplash can't hide inside a big round number.",
         Screen: ScreenBids,
+      },
+      {
+        key: "second",
+        label: "Know what to ask",
+        caption: "You leave with two specific questions for your contractor — and, if you want it, a permit-proven second opinion nearby.",
+        Screen: ScreenSecondOpinion,
       },
     ],
   },
