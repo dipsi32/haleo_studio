@@ -15,7 +15,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
-import { track } from "@/lib/analytics";
+import { track, type AnalyticsEvent } from "@/lib/analytics";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -609,7 +609,7 @@ const TRACKS: {
   id: "match" | "audit";
   tab: string;
   blurb: string;
-  cta: { to: string; label: string; event: string };
+  cta: { to: string; label: string; event: AnalyticsEvent };
   steps: DemoStep[];
 }[] = [
   {
@@ -686,7 +686,6 @@ const DemoRail = () => {
   const switchTrack = (id: "match" | "audit") => {
     setTrackId(id);
     setI(0);
-    track("demo_track_switched", { track: id });
   };
 
   return (
