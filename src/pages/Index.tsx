@@ -474,95 +474,325 @@ const ScreenAudit = () => {
   );
 };
 
-const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
+/* -------------------------------------------------------------------------- */
+/*  Hero — the pitch in one breath, two doors, no clutter.                     */
+/* -------------------------------------------------------------------------- */
 
-const Hero = () => {
+const Hero = () => (
+  <section className="relative overflow-hidden bg-background">
+    <SiteHeader />
+    <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10),transparent_55%)]" />
+
+    <div className="container mx-auto max-w-3xl px-6 pb-16 pt-24 text-center md:pb-24 md:pt-32">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: EASE }}
+      >
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+          <MapPinCheck className="h-3.5 w-3.5" /> San Jose
+        </div>
+
+        <h1 className="font-display text-[2.5rem] font-medium leading-[0.98] tracking-tight text-balance text-foreground md:text-[4rem]">
+          A six-figure decision
+          <br className="hidden sm:block" /> shouldn't run on{" "}
+          <span className="italic text-accent">Yelp reviews.</span>
+        </h1>
+
+        <p className="mx-auto mt-7 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-[1.0625rem]">
+          Describe your project once. Haleo writes the scoped brief, matches you to the
+          three contractors who have verifiably done it near you, and audits any quote
+          line by line — using city permit records, not star ratings.
+        </p>
+
+        <div className="mx-auto mt-9 grid gap-3 text-left sm:max-w-lg">
+          <Link
+            to="/brief"
+            onClick={() => track("cta_match_clicked", { location: "hero" })}
+            className="group flex items-center gap-4 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-background shadow-lift transition-smooth hover:bg-foreground/90"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold">I need a contractor</p>
+              <p className="mt-0.5 text-[12.5px] text-background/70">
+                Describe it in a sentence — about 3 minutes, no signup.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+          <Link
+            to="/roast"
+            onClick={() => track("cta_roast_clicked", { location: "hero" })}
+            className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-foreground">I already have a quote</p>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                Paste or upload it. We check every line against local costs — free, 30 seconds.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+          </Link>
+        </div>
+
+        <p className="mt-5 text-xs text-muted-foreground">
+          San Jose only for now. Nothing reaches a contractor until you say so.
+        </p>
+      </motion.div>
+    </div>
+  </section>
+);
+
+/* -------------------------------------------------------------------------- */
+/*  The cost of doing it alone — the pain, stated plainly.                     */
+/* -------------------------------------------------------------------------- */
+
+const FACTS = [
+  { stat: "95%", line: "get three or more bids", sub: "Your vision, explained from scratch to three strangers. Three site visits. Three waits." },
+  { stat: "72%", line: "would pay more to trust someone", sub: "But the only evidence on offer is a star rating and a neighbor's hunch." },
+  { stat: "58%", line: "run longer than expected", sub: "Scope written loosely at the start is scope that drifts at the end." },
+  { stat: "48%", line: "spend more than planned", sub: "With no benchmark, a high line item looks the same as a fair one." },
+];
+
+const Pain = () => (
+  <section className="border-y border-border bg-secondary/30 py-20 md:py-28">
+    <div className="container mx-auto max-w-5xl px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="max-w-2xl"
+      >
+        <p className="font-display text-xs tracking-[0.25em] text-accent">THE PART NOBODY WARNS YOU ABOUT</p>
+        <h2 className="mt-4 font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-4xl">
+          You end up doing the work of a procurement team. Alone. On bad data.
+        </h2>
+        <p className="mt-5 text-base leading-relaxed text-muted-foreground">
+          Remodeling is a $600 billion industry, and the homeowner is the only person in it
+          without a research department. Hours of private searching before you talk to
+          anyone, and no way to verify a single thing you find.
+        </p>
+      </motion.div>
+
+      <div className="mt-12 grid gap-px overflow-hidden rounded-3xl border border-border bg-border sm:grid-cols-2">
+        {FACTS.map((f, idx) => (
+          <motion.div
+            key={f.stat}
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.55, ease: EASE, delay: idx * 0.07 }}
+            className="bg-background p-6 md:p-8"
+          >
+            <p className="font-display text-4xl font-light tracking-tight text-foreground md:text-5xl">{f.stat}</p>
+            <p className="mt-2 text-sm font-medium text-foreground">{f.line}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.sub}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <p className="mt-8 max-w-xl text-sm text-muted-foreground">
+        Most homeowners spend weeks finding someone they can barely trust. Below is what
+        the same afternoon looks like with permit records doing the vouching.
+      </p>
+    </div>
+  </section>
+);
+
+/* -------------------------------------------------------------------------- */
+/*  Guided demo — two tracks, real screens, one step at a time.                */
+/* -------------------------------------------------------------------------- */
+
+type DemoStep = { key: string; label: string; caption: string; Screen: () => JSX.Element };
+
+const TRACKS: {
+  id: "match" | "audit";
+  tab: string;
+  blurb: string;
+  cta: { to: string; label: string; event: string };
+  steps: DemoStep[];
+}[] = [
+  {
+    id: "match",
+    tab: "Find a contractor",
+    blurb: "From a sentence about your kitchen to three builders who already passed inspection on one like it.",
+    cta: { to: "/brief", label: "Start my brief — free", event: "cta_match_clicked" },
+    steps: [
+      {
+        key: "space",
+        label: "Say it in your words",
+        caption: "Type or talk. Add a few photos if you have them. No forms, no jargon, no room-by-room quiz.",
+        Screen: ScreenSpace,
+      },
+      {
+        key: "sees",
+        label: "We read it back",
+        caption: "Haleo turns what you said into measurable observations — and asks you to confirm before anything moves.",
+        Screen: ScreenScope,
+      },
+      {
+        key: "brief",
+        label: "Your scoped brief",
+        caption: "The same document goes to every contractor, so their bids finally describe the same job.",
+        Screen: ScreenBrief,
+      },
+      {
+        key: "matches",
+        label: "Permit-proven matches",
+        caption: "Only builders with pulled permits and passed inspections for your project type, in your zip.",
+        Screen: ScreenMatches,
+      },
+    ],
+  },
+  {
+    id: "audit",
+    tab: "Audit a quote",
+    blurb: "Already holding an estimate? See exactly which lines are fair before you sign anything.",
+    cta: { to: "/roast", label: "Audit my quote — free", event: "cta_roast_clicked" },
+    steps: [
+      {
+        key: "audit",
+        label: "Drop the quote in",
+        caption: "PDF, photo, or pasted text. Nothing to set up and no account to create.",
+        Screen: ScreenAudit,
+      },
+      {
+        key: "bids",
+        label: "Line them up",
+        caption: "Every trade side by side, so a $12k backsplash can't hide inside a big round number.",
+        Screen: ScreenBids,
+      },
+    ],
+  },
+];
+
+const STEP_MS = 5600;
+
+const DemoRail = () => {
+  const [trackId, setTrackId] = useState<"match" | "audit">("match");
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const track_ = TRACKS.find((t) => t.id === trackId)!;
+  const steps = track_.steps;
+  const step = steps[Math.min(i, steps.length - 1)];
+  const Screen = step.Screen;
 
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(() => setI((p) => (p + 1) % SCREENS.length), 5200);
-    return () => clearInterval(t);
-  }, [paused]);
+    const t = setTimeout(() => setI((p) => (p + 1) % steps.length), STEP_MS);
+    return () => clearTimeout(t);
+  }, [i, paused, steps.length, trackId]);
 
-  const Screen = SCREENS[i];
-  const stepLabel = STEPS[i].label;
+  const switchTrack = (id: "match" | "audit") => {
+    setTrackId(id);
+    setI(0);
+    track("demo_track_switched", { track: id });
+  };
 
   return (
-    <section className="relative bg-background overflow-hidden">
-      <SiteHeader />
-      {/* Subtle warm wash so the phone breathes */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10),transparent_55%)]" />
+    <section className="bg-background py-20 md:py-28">
+      <div className="container mx-auto max-w-5xl px-6">
+        <div className="text-center">
+          <p className="font-display text-xs tracking-[0.25em] text-accent">A SNEAK PEEK</p>
+          <h2 className="mx-auto mt-4 max-w-2xl font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-4xl">
+            Here's the whole thing, in real screens.
+          </h2>
 
-      <div className="container mx-auto max-w-5xl px-6 pt-24 md:pt-32 pb-20 md:pb-28">
-        <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE }}
-          >
-            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-8">
-              <MapPinCheck className="w-3.5 h-3.5" /> San Jose
-            </div>
-            <h1 className="font-display text-[2.5rem] md:text-[4rem] font-medium leading-[0.98] tracking-tight text-foreground text-balance">
-              Hire the contractor who already built it{" "}
-              <span className="italic text-accent">near you.</span>
-            </h1>
-            <p className="mt-7 text-base md:text-[1.0625rem] text-muted-foreground max-w-md leading-relaxed">
-              A contractor-ready brief, matched to builders with verified permit history for your project. Haleo audits every quote so you know what's fair before you sign.
-            </p>
-            <p className="mt-6 font-display text-base md:text-lg text-foreground/70 italic tracking-tight">
-              Reviews can be bought. Permits can't.
-            </p>
-            {/* Two doors — the whole homepage decision, made obvious. */}
-            <div className="mt-9 grid gap-3 sm:max-w-lg">
-              <Link
-                to="/brief"
-                onClick={() => track("cta_match_clicked", { location: "hero" })}
-                className="group flex items-center gap-4 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-background shadow-lift transition-smooth hover:bg-foreground/90"
+          {/* Track switch */}
+          <div className="mt-8 inline-flex rounded-full border border-border bg-card p-1">
+            {TRACKS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => switchTrack(t.id)}
+                aria-pressed={t.id === trackId}
+                className={`rounded-full px-4 py-2 text-[13px] font-medium transition-smooth ${
+                  t.id === trackId
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold">I need a contractor</p>
-                  <p className="mt-0.5 text-[12.5px] text-background/70">
-                    Answer a few questions about your space — about 3 minutes, no signup.
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <Link
-                to="/roast"
-                onClick={() => track("cta_roast_clicked", { location: "hero" })}
-                className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold text-foreground">I already have a quote</p>
-                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                    Paste or upload it. We check it line by line against local costs — free, 30 seconds.
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
-              </Link>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              San Jose only for now. Nothing is sent to a contractor until you say so.
-            </p>
-          </motion.div>
+                {t.tab}
+              </button>
+            ))}
+          </div>
+          <p className="mx-auto mt-4 max-w-md text-sm text-muted-foreground">{track_.blurb}</p>
+        </div>
 
-          {/* Mobile phone — cycles through the actual product flow */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
-            className="relative"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-          >
-            <div className="absolute -inset-8 bg-gradient-to-br from-amber-200/40 via-rose-100/30 to-transparent blur-3xl -z-10" />
+        <div
+          className="mt-12 grid items-center gap-10 md:grid-cols-[1fr_auto]"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {/* Step list — the narration */}
+          <div className="order-2 space-y-1.5 md:order-1">
+            {steps.map((s, idx) => {
+              const active = idx === i;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => { setI(idx); setPaused(true); }}
+                  className={`relative block w-full overflow-hidden rounded-2xl border px-5 py-4 text-left transition-smooth ${
+                    active
+                      ? "border-foreground/15 bg-card shadow-soft"
+                      : "border-transparent hover:bg-secondary/50"
+                  }`}
+                >
+                  <div className="flex items-baseline gap-3">
+                    <span className={`font-display text-xs tabular-nums ${active ? "text-accent" : "text-muted-foreground/60"}`}>
+                      0{idx + 1}
+                    </span>
+                    <span className={`text-[15px] font-medium ${active ? "text-foreground" : "text-muted-foreground"}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                  <AnimatePresence initial={false}>
+                    {active && (
+                      <motion.p
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: EASE }}
+                        className="pl-7 text-sm leading-relaxed text-muted-foreground"
+                      >
+                        <span className="block pt-1.5">{s.caption}</span>
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                  {active && (
+                    <motion.span
+                      key={`${trackId}-${idx}-${paused}`}
+                      aria-hidden
+                      className="absolute bottom-0 left-0 h-[2px] bg-accent"
+                      initial={{ width: "0%" }}
+                      animate={{ width: paused ? "0%" : "100%" }}
+                      transition={{ duration: paused ? 0 : STEP_MS / 1000, ease: "linear" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+
+            <div className="pt-5 pl-5">
+              <Link
+                to={track_.cta.to}
+                onClick={() => track(track_.cta.event, { location: "demo" })}
+                className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
+              >
+                {track_.cta.label}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* The phone */}
+          <div className="relative order-1 md:order-2">
+            <div className="absolute -inset-8 -z-10 bg-gradient-to-br from-amber-200/40 via-rose-100/30 to-transparent blur-3xl" />
             <PhoneShell>
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={i}
+                  key={`${trackId}-${step.key}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -573,31 +803,16 @@ const Hero = () => {
                 </motion.div>
               </AnimatePresence>
             </PhoneShell>
-
-            {/* Step indicator — clickable, so users can drive the demo */}
-            <div className="mt-5 flex items-center justify-center gap-2.5">
-              {STEPS.map((s, idx) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => { setI(idx); setPaused(true); }}
-                  aria-label={`Show step: ${s.label}`}
-                  aria-current={idx === i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
-                    idx === i ? "w-8 bg-foreground" : "w-3 bg-foreground/15 hover:bg-foreground/40"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="mt-2 text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              Step {i + 1} of {STEPS.length} — {stepLabel}
+            <p className="mt-4 text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Actual screens · step {i + 1} of {steps.length}
             </p>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
 
 /* -------------------------------------------------------------------------- */
 /*  Before / With Haleo — the contrast that does the talking.                  */
