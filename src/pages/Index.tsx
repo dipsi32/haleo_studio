@@ -1155,10 +1155,12 @@ const Index = () => {
   return (
     <main>
       <Hero />
+      <Pain />
+      <DemoRail />
       <BeforeAfter />
       <NotLike />
-      <Value />
       <Closing />
+
       <SiteFooter />
     </main>
   );
