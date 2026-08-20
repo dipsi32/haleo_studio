@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SCOPE_OPTIONS, scopeFor, type Address, type ScopeTier, type Timeline } from "@/lib/intake";
+import { scopeSetFor, type Address, type ProjectGoal, type Room, type ScopeTier, type Timeline } from "@/lib/intake";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,6 +27,8 @@ type Props = {
   onPickTimeline: (t: Timeline) => void;
   address?: Address;
   hideScope?: boolean;
+  rooms?: Room[];
+  goals?: ProjectGoal[];
 };
 
 // Parse loose budget input like "120k", "$80,000", "200" → number in $K.
@@ -52,8 +54,11 @@ const ScopeBudgetStep = ({
   onPickTimeline,
   address,
   hideScope,
+  rooms,
+  goals,
 }: Props) => {
-  const active = scopeFor(scope);
+  const scopeSet = useMemo(() => scopeSetFor(rooms, goals), [rooms, goals]);
+  const active = scopeSet.options.find((o) => o.value === scope);
 
   // Local input state — converts to a single-point "range" on blur/enter.
   const [budgetText, setBudgetText] = useState<string>(
@@ -96,15 +101,15 @@ const ScopeBudgetStep = ({
         <section>
           <div className="mb-4">
             <p className="font-display text-2xl font-light leading-tight">
-              What kind of project is this?
+              {scopeSet.prompt}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pick the closest match. Each one shows what's typically involved and how long it usually takes.
+              {scopeSet.sub}
             </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            {SCOPE_OPTIONS.map((o) => {
+            {scopeSet.options.map((o) => {
               const isActive = scope === o.value;
               return (
                 <button

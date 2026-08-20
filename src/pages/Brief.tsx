@@ -733,6 +733,8 @@ const ScopeAndBudgetScreen = ({
   selectedTimeline,
   address,
   hideScope,
+  rooms,
+  goals,
 }: {
   scope?: ScopeTier;
   onScopeChange: (s: ScopeTier) => void;
@@ -745,6 +747,8 @@ const ScopeAndBudgetScreen = ({
   selectedTimeline?: Timeline;
   address?: Address;
   hideScope?: boolean;
+  rooms?: Room[];
+  goals?: ProjectGoal[];
 }) => (
   <div className="space-y-10">
     <StepDots step={5} />
@@ -768,6 +772,8 @@ const ScopeAndBudgetScreen = ({
       onPickTimeline={onPickTimeline}
       address={address}
       hideScope={hideScope}
+      rooms={rooms}
+      goals={goals}
     />
   </div>
 );
@@ -1000,6 +1006,8 @@ const Brief = () => {
             selectedTimeline={data.timeline}
             address={data.address}
             hideScope={isAddition}
+            rooms={data.rooms}
+            goals={data.goals}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);

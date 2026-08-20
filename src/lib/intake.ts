@@ -557,3 +557,163 @@ export const SCOPE_OPTIONS: ScopeOption[] = [
 
 export const scopeFor = (s?: ScopeTier) =>
   SCOPE_OPTIONS.find((o) => o.value === s);
+
+// ───── Goal-specific scope sets ─────
+// The four tiers stay the same underneath (so budget/brief logic is unchanged),
+// but the words the homeowner reads match the job they actually described.
+type ScopeSet = { prompt: string; sub: string; options: ScopeOption[] };
+
+const set = (prompt: string, sub: string, options: ScopeOption[]): ScopeSet => ({
+  prompt,
+  sub,
+  options,
+});
+
+const o = (
+  value: ScopeTier,
+  label: string,
+  oneLiner: string,
+  includes: string[],
+  typicalDuration: string,
+  permitLikely: boolean,
+  range: { min: number; max: number },
+): ScopeOption => ({ value, label, oneLiner, includes, range, typicalDuration, permitLikely });
+
+export const GOAL_SCOPE_SETS: Partial<Record<ProjectGoal, ScopeSet>> = {
+  "pool-removal": set(
+    "How much of the pool is coming out?",
+    "Cities treat these two very differently on permits and future resale disclosure.",
+    [
+      o("refresh", "Partial fill-in", "Break the bottom, collapse walls, backfill.", ["Drain & haul water", "Punch drainage holes, collapse top ring", "Engineered backfill + compaction"], "3–7 days", true, { min: 8, max: 20 }),
+      o("remodel", "Full removal", "Everything out — concrete, rebar, plumbing.", ["Full demo & haul-off", "Utility cap and abandonment", "Compacted fill, soils report"], "1–3 weeks", true, { min: 15, max: 40 }),
+      o("reconfigure", "Remove + rebuild the yard", "Fill it in, then use the space.", ["Pool demo & fill", "Grading and drainage", "New patio, turf, or planting"], "3–6 weeks", true, { min: 30, max: 80 }),
+    ],
+  ),
+  demolition: set(
+    "What's coming down?",
+    "Scale drives the permit path and the haul-off cost.",
+    [
+      o("refresh", "Interior tear-out", "Strip a room back to studs.", ["Cabinets, floors, drywall", "Dust control & protection", "Debris haul-off"], "2–5 days", false, { min: 4, max: 12 }),
+      o("remodel", "Slab / hardscape removal", "Concrete, driveway, patio.", ["Saw-cut & break out", "Haul-off and disposal", "Rough grade"], "3–7 days", true, { min: 6, max: 20 }),
+      o("structural", "Structure demolition", "Shed, garage, or full teardown.", ["Utility disconnects", "Demo permit + asbestos survey", "Full haul-off and site clear"], "2–5 weeks", true, { min: 20, max: 60 }),
+    ],
+  ),
+  roof: set(
+    "What does the roof need?",
+    "Repair, replace, or rebuild the deck underneath — very different jobs.",
+    [
+      o("refresh", "Repair", "Fix leaks and problem spots.", ["Patch or replace sections", "Flashing and sealant", "Gutter checks"], "1–3 days", false, { min: 1, max: 6 }),
+      o("remodel", "Full replacement", "Tear off and re-roof.", ["Tear-off to sheathing", "New underlayment & roofing", "Vents and flashing"], "1–2 weeks", true, { min: 15, max: 45 }),
+      o("structural", "Re-deck or reframe", "Rotten sheathing or new roof line.", ["Sheathing replacement", "Framing repair", "Structural inspection"], "2–4 weeks", true, { min: 30, max: 80 }),
+    ],
+  ),
+  electrical: set(
+    "What kind of electrical work?",
+    "Everything here is permitted and inspected in San Jose.",
+    [
+      o("refresh", "Add circuits or devices", "Outlets, lighting, EV charger.", ["New dedicated circuits", "Device and fixture install", "Load check"], "1–2 days", true, { min: 1, max: 8 }),
+      o("remodel", "Panel upgrade", "More capacity for the house.", ["100A → 200A service", "New panel & grounding", "Utility coordination"], "1–3 days", true, { min: 4, max: 12 }),
+      o("structural", "Rewire", "Replace old wiring throughout.", ["Knob-and-tube / aluminum removal", "New branch circuits", "Drywall patching"], "2–5 weeks", true, { min: 15, max: 45 }),
+    ],
+  ),
+  plumbing: set(
+    "What kind of plumbing work?",
+    "Repairs are quick; repipes and sewer lines are permitted jobs.",
+    [
+      o("refresh", "Fixture or heater", "Swap what's failing.", ["Water heater or fixture", "Shutoffs and connections", "Code-required strapping"], "1 day", true, { min: 1, max: 8 }),
+      o("remodel", "Repipe", "Replace supply lines.", ["PEX or copper repipe", "Wall access & patching", "Pressure test + inspection"], "1–2 weeks", true, { min: 8, max: 25 }),
+      o("structural", "Sewer / main line", "Under the slab or out to the street.", ["Camera inspection", "Trench or trenchless replacement", "City tie-in permit"], "1–3 weeks", true, { min: 10, max: 35 }),
+    ],
+  ),
+  hvac: set(
+    "What are you changing?",
+    "Equipment swaps and full system changes have different permit paths.",
+    [
+      o("refresh", "Repair or service", "Keep the current system going.", ["Diagnostics", "Part replacement", "Refrigerant / airflow check"], "1 day", false, { min: 1, max: 5 }),
+      o("remodel", "Replace the system", "New furnace, AC, or heat pump.", ["Equipment removal & install", "Thermostat + electrical", "Permit and inspection"], "2–4 days", true, { min: 8, max: 30 }),
+      o("structural", "New system + ductwork", "Whole-house redesign.", ["Load calc & duct design", "Duct replacement", "Title 24 compliance"], "1–3 weeks", true, { min: 20, max: 60 }),
+    ],
+  ),
+  landscape: set(
+    "How far does the yard work go?",
+    "Planting is quick; hardscape and drainage need grading and often permits.",
+    [
+      o("refresh", "Planting & cleanup", "Refresh what's there.", ["Plants, mulch, sod", "Irrigation tune-up", "Clearing and haul-off"], "3–7 days", false, { min: 3, max: 15 }),
+      o("remodel", "Hardscape", "Patio, driveway, walkways.", ["Base prep and grading", "Pavers, concrete, or decking", "Drainage tie-in"], "2–4 weeks", true, { min: 15, max: 60 }),
+      o("structural", "Full yard build", "Grading, walls, structures.", ["Retaining walls", "Drainage system", "Pergola / outdoor kitchen"], "6–12 weeks", true, { min: 50, max: 150 }),
+    ],
+  ),
+  foundation: set(
+    "What's the foundation work?",
+    "These jobs always need engineering and city sign-off.",
+    [
+      o("remodel", "Seismic retrofit", "Bolt and brace the house.", ["Foundation bolting", "Cripple wall bracing", "City retrofit permit"], "1–2 weeks", true, { min: 5, max: 20 }),
+      o("reconfigure", "Leveling / piers", "Settlement and slope movement.", ["Soils and level survey", "Pier or push-pier install", "Engineer sign-off"], "2–5 weeks", true, { min: 20, max: 70 }),
+      o("structural", "Foundation replacement", "Replace or add foundation.", ["House shoring", "New footings & stem walls", "Full structural permit"], "2–5 months", true, { min: 80, max: 250 }),
+    ],
+  ),
+  "windows-doors": set(
+    "What's the window or door work?",
+    "Same-size swaps are simple; new openings are structural.",
+    [
+      o("refresh", "Like-for-like replacement", "Same openings, new units.", ["Retrofit or full-frame install", "Trim and seal", "Title 24 compliant glass"], "2–5 days", true, { min: 8, max: 30 }),
+      o("remodel", "Whole-house replacement", "Every window in one go.", ["All units replaced", "Flashing and waterproofing", "Single permit and inspection"], "1–2 weeks", true, { min: 25, max: 70 }),
+      o("structural", "New or enlarged openings", "Cut into walls.", ["Header and framing", "Structural engineering", "Patch stucco / drywall"], "2–4 weeks", true, { min: 15, max: 50 }),
+    ],
+  ),
+  exterior: set(
+    "What's the exterior work?",
+    "Paint versus new cladding changes both timeline and permits.",
+    [
+      o("refresh", "Exterior paint", "Prep, prime, paint.", ["Wash and prep", "Caulk and patch", "Two-coat finish"], "1–2 weeks", false, { min: 6, max: 20 }),
+      o("remodel", "Siding or stucco replacement", "New skin on the house.", ["Tear-off to sheathing", "Weather barrier", "New siding or stucco"], "3–6 weeks", true, { min: 25, max: 90 }),
+      o("structural", "Exterior + underlying repair", "Rot, framing, or insulation.", ["Sheathing / framing repair", "Insulation upgrade", "Full re-clad"], "6–10 weeks", true, { min: 50, max: 150 }),
+    ],
+  ),
+  "garage-conversion": set(
+    "What's the conversion?",
+    "Living space and ADUs follow different city paths.",
+    [
+      o("remodel", "Finished room", "Insulate, drywall, floor.", ["Insulation & drywall", "Electrical and lighting", "Flooring and finishes"], "3–6 weeks", true, { min: 25, max: 60 }),
+      o("reconfigure", "Room with plumbing", "Add a bath or wet bar.", ["Plumbing rough-in", "Slab cutting", "HVAC extension"], "6–10 weeks", true, { min: 50, max: 110 }),
+      o("structural", "Full garage ADU", "Legal, separate dwelling.", ["Kitchen + bath", "Separate entry & utilities", "ADU permit + Title 24"], "4–8 months", true, { min: 120, max: 250 }),
+    ],
+  ),
+  "whole-home": set(
+    "How deep does the whole-home work go?",
+    "Same footprint or moving walls — that's the fork in the road.",
+    [
+      o("refresh", "Cosmetic throughout", "Same layout, new finishes.", ["Paint, floors, fixtures", "Kitchen & bath finishes", "Lighting refresh"], "6–10 weeks", false, { min: 40, max: 100 }),
+      o("remodel", "Full gut, same layout", "Everything new inside.", ["New kitchen & baths", "Plumbing & electrical updates", "All new finishes"], "4–7 months", true, { min: 150, max: 350 }),
+      o("reconfigure", "Reconfigure the floor plan", "Move walls and wet areas.", ["Wall removal / openings", "Plumbing relocation", "Structural review"], "6–10 months", true, { min: 250, max: 550 }),
+    ],
+  ),
+};
+
+/** Scope options + framing tailored to what the homeowner actually described. */
+export const scopeSetFor = (
+  rooms: Room[] = [],
+  goals: ProjectGoal[] = [],
+): ScopeSet => {
+  for (const g of goals) {
+    const s = GOAL_SCOPE_SETS[g];
+    if (s) return s;
+  }
+  if (rooms.length > 0) {
+    return set(
+      "What kind of project is this?",
+      "Pick the closest match. Each one shows what's typically involved and how long it usually takes.",
+      SCOPE_OPTIONS,
+    );
+  }
+  return set(
+    "How big is this job?",
+    "Pick the closest match — it helps us shortlist contractors who work at that scale.",
+    [
+      o("refresh", "Small job", "A focused fix or upgrade.", ["One trade, one area", "Little or no demo", "Usually no permit"], "A few days", false, { min: 2, max: 10 }),
+      o("remodel", "Standard project", "A full replacement or build.", ["One or two trades", "Permit and inspection likely", "Some demo and patching"], "2–6 weeks", true, { min: 10, max: 45 }),
+      o("structural", "Large / structural", "Framing, foundation, or new space.", ["Engineering or plans", "Multiple trades", "Full permit set"], "2+ months", true, { min: 50, max: 200 }),
+    ],
+  );
+};
+
