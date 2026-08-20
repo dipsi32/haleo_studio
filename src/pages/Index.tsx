@@ -9,7 +9,7 @@ import {
   Upload,
   FileText,
   MapPinCheck,
-  Flame,
+  
 } from "lucide-react";
 
 import SiteHeader from "@/components/SiteHeader";
