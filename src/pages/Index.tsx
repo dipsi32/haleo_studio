@@ -476,6 +476,49 @@ const ScreenAudit = () => {
 
 const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
 
+/* One live tease instead of paragraphs: a zip already filled in, counting up. */
+const Counter = ({ to, suffix }: { to: number; suffix: string }) => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / 1100);
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to]);
+  return (
+    <span className="whitespace-nowrap">
+      <span className="font-display text-foreground">{n}</span> {suffix}
+    </span>
+  );
+};
+
+const LiveTease = () => (
+  <Link
+    to="/brief"
+    onClick={() => track("cta_match_clicked", { location: "hero_tease" })}
+    className="group mt-8 block max-w-md rounded-2xl border border-border bg-card p-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+  >
+    <div className="flex items-center gap-3">
+      <MapPinCheck className="h-4 w-4 shrink-0 text-accent" />
+      <span className="font-display text-lg tracking-tight text-foreground">95128</span>
+      <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+    </div>
+    <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
+      <Counter to={47} suffix="permitted kitchens" />
+      <span className="text-border">·</span>
+      <Counter to={12} suffix="contractors" />
+      <span className="text-border">·</span>
+      <Counter to={3} suffix="with clean records" />
+    </p>
+  </Link>
+);
+
+
 const Hero = () => {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -503,50 +546,38 @@ const Hero = () => {
             transition={{ duration: 0.7, ease: EASE }}
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-8">
-              <MapPinCheck className="w-3.5 h-3.5" /> San Jose
+              <MapPinCheck className="w-3.5 h-3.5" /> Built on city permit records
             </div>
             <h1 className="font-display text-[2.5rem] md:text-[4rem] font-medium leading-[0.98] tracking-tight text-foreground text-balance">
-              Hire the contractor who already built it{" "}
-              <span className="italic text-accent">near you.</span>
+              Who actually built the kitchen{" "}
+              <span className="italic text-accent">down your street?</span>
             </h1>
-            <p className="mt-7 text-base md:text-[1.0625rem] text-muted-foreground max-w-md leading-relaxed">
-              A contractor-ready brief, matched to builders with verified permit history for your project. Haleo audits every quote so you know what's fair before you sign.
+            <p className="mt-6 text-base md:text-[1.0625rem] text-muted-foreground">
+              Find out in 60 seconds. No signup.
             </p>
-            <p className="mt-6 font-display text-base md:text-lg text-foreground/70 italic tracking-tight">
-              Reviews can be bought. Permits can't.
-            </p>
-            {/* Two doors — the whole homepage decision, made obvious. */}
-            <div className="mt-9 grid gap-3 sm:max-w-lg">
+
+            <LiveTease />
+
+            {/* Two doors — four words each. */}
+            <div className="mt-6 grid gap-3 sm:max-w-md sm:grid-cols-2">
               <Link
                 to="/brief"
                 onClick={() => track("cta_match_clicked", { location: "hero" })}
-                className="group flex items-center gap-4 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-background shadow-lift transition-smooth hover:bg-foreground/90"
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-[15px] font-semibold text-background shadow-lift transition-smooth hover:bg-foreground/90"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold">I need a contractor</p>
-                  <p className="mt-0.5 text-[12.5px] text-background/70">
-                    Answer a few questions about your space — about 3 minutes, no signup.
-                  </p>
-                </div>
+                Find my contractor
                 <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 to="/roast"
                 onClick={() => track("cta_roast_clicked", { location: "hero" })}
-                className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4 text-[15px] font-semibold text-foreground transition-smooth hover:border-accent/40 hover:shadow-soft"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold text-foreground">I already have a quote</p>
-                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                    Paste or upload it. We check it line by line against local costs — free, 30 seconds.
-                  </p>
-                </div>
+                Check my quote
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
               </Link>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              San Jose only for now. Nothing is sent to a contractor until you say so.
-            </p>
+
           </motion.div>
 
           {/* Mobile phone — cycles through the actual product flow */}
