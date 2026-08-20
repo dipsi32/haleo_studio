@@ -476,6 +476,49 @@ const ScreenAudit = () => {
 
 const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
 
+/* One live tease instead of paragraphs: a zip already filled in, counting up. */
+const Counter = ({ to, suffix }: { to: number; suffix: string }) => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / 1100);
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to]);
+  return (
+    <span className="whitespace-nowrap">
+      <span className="font-display text-foreground">{n}</span> {suffix}
+    </span>
+  );
+};
+
+const LiveTease = () => (
+  <Link
+    to="/brief"
+    onClick={() => track("cta_match_clicked", { location: "hero_tease" })}
+    className="group mt-8 block max-w-md rounded-2xl border border-border bg-card p-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+  >
+    <div className="flex items-center gap-3">
+      <MapPinCheck className="h-4 w-4 shrink-0 text-accent" />
+      <span className="font-display text-lg tracking-tight text-foreground">95128</span>
+      <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+    </div>
+    <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
+      <Counter to={47} suffix="permitted kitchens" />
+      <span className="text-border">·</span>
+      <Counter to={12} suffix="contractors" />
+      <span className="text-border">·</span>
+      <Counter to={3} suffix="with clean records" />
+    </p>
+  </Link>
+);
+
+
 const Hero = () => {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
