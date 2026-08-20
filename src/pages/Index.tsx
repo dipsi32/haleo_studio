@@ -9,7 +9,7 @@ import {
   Upload,
   FileText,
   MapPinCheck,
-  Flame,
+  
 } from "lucide-react";
 
 import SiteHeader from "@/components/SiteHeader";
@@ -501,23 +501,20 @@ const LiveTease = () => (
   <Link
     to="/brief"
     onClick={() => track("cta_match_clicked", { location: "hero_tease" })}
-    className="group mt-8 block max-w-md rounded-2xl border border-border bg-card p-4 transition-smooth hover:border-accent/40 hover:shadow-soft"
+    className="group mt-8 flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-smooth hover:border-accent/40 hover:shadow-soft"
   >
-    <div className="flex items-center gap-3">
-      <MapPinCheck className="h-4 w-4 shrink-0 text-accent" />
-      <span className="font-display text-lg tracking-tight text-foreground">95128</span>
-      <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+    <MapPinCheck className="h-4 w-4 shrink-0 text-accent" />
+    <div className="min-w-0">
+      <p className="text-sm font-medium text-foreground">95128</p>
+      <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground">
+        <Counter to={47} suffix="permitted kitchens" />
+        <span className="text-border">·</span>
+        <Counter to={3} suffix="clean records" />
+      </p>
     </div>
-    <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
-      <Counter to={47} suffix="permitted kitchens" />
-      <span className="text-border">·</span>
-      <Counter to={12} suffix="contractors" />
-      <span className="text-border">·</span>
-      <Counter to={3} suffix="with clean records" />
-    </p>
+    <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
   </Link>
 );
-
 
 const Hero = () => {
   const [i, setI] = useState(0);
@@ -530,40 +527,34 @@ const Hero = () => {
   }, [paused]);
 
   const Screen = SCREENS[i];
-  const stepLabel = STEPS[i].label;
 
   return (
-    <section className="relative bg-background overflow-hidden">
+    <section className="relative overflow-hidden bg-background">
       <SiteHeader />
-      {/* Subtle warm wash so the phone breathes */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70%] bg-[radial-gradient(ellipse_at_top_right,hsl(var(--accent)/0.08),transparent_55%)]" />
 
-      <div className="container mx-auto max-w-5xl px-6 pt-24 md:pt-32 pb-20 md:pb-28">
-        <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+      <div className="container mx-auto max-w-5xl px-6 pb-24 pt-28 md:pb-32 md:pt-36">
+        <div className="grid items-center gap-16 md:grid-cols-[1.05fr_1fr]">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE }}
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent mb-8">
-              <MapPinCheck className="w-3.5 h-3.5" /> Built on city permit records
-            </div>
-            <h1 className="font-display text-[2.5rem] md:text-[4rem] font-medium leading-[0.98] tracking-tight text-foreground text-balance">
-              Who actually built the kitchen{" "}
-              <span className="italic text-accent">down your street?</span>
+            <p className="eyebrow text-accent">Built on city permit records</p>
+            <h1 className="mt-6 text-balance text-foreground">
+              Who actually built the kitchen down your street?
             </h1>
-            <p className="mt-6 text-base md:text-[1.0625rem] text-muted-foreground">
-              Find out in 60 seconds. No signup.
+            <p className="mt-5 max-w-md text-base text-muted-foreground">
+              Find them, and know what your quote should cost. 60 seconds, no signup.
             </p>
 
             <LiveTease />
 
-            {/* Two doors — four words each. */}
             <div className="mt-6 grid gap-3 sm:max-w-md sm:grid-cols-2">
               <Link
                 to="/brief"
                 onClick={() => track("cta_match_clicked", { location: "hero" })}
-                className="group flex items-center justify-between gap-3 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-[15px] font-semibold text-background shadow-lift transition-smooth hover:bg-foreground/90"
+                className="group flex items-center justify-between gap-3 rounded-full bg-foreground px-6 py-3.5 text-sm font-semibold text-background transition-smooth hover:bg-foreground/90"
               >
                 Find my contractor
                 <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
@@ -571,16 +562,14 @@ const Hero = () => {
               <Link
                 to="/roast"
                 onClick={() => track("cta_roast_clicked", { location: "hero" })}
-                className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4 text-[15px] font-semibold text-foreground transition-smooth hover:border-accent/40 hover:shadow-soft"
+                className="group flex items-center justify-between gap-3 rounded-full border border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground transition-smooth hover:border-accent/40"
               >
                 Check my quote
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
               </Link>
             </div>
-
           </motion.div>
 
-          {/* Mobile phone — cycles through the actual product flow */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -589,7 +578,6 @@ const Hero = () => {
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
-            <div className="absolute -inset-8 bg-gradient-to-br from-amber-200/40 via-rose-100/30 to-transparent blur-3xl -z-10" />
             <PhoneShell>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -605,8 +593,7 @@ const Hero = () => {
               </AnimatePresence>
             </PhoneShell>
 
-            {/* Step indicator — clickable, so users can drive the demo */}
-            <div className="mt-5 flex items-center justify-center gap-2.5">
+            <div className="mt-6 flex items-center justify-center gap-2">
               {STEPS.map((s, idx) => (
                 <button
                   key={s.key}
@@ -620,9 +607,7 @@ const Hero = () => {
                 />
               ))}
             </div>
-            <p className="mt-2 text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              Step {i + 1} of {STEPS.length} — {stepLabel}
-            </p>
+            <p className="mt-3 text-center text-sm text-muted-foreground">{STEPS[i].label}</p>
           </motion.div>
         </div>
       </div>
@@ -631,213 +616,42 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Before / With Haleo — the contrast that does the talking.                  */
+/*  Three steps — one idea each, nothing more.                                 */
 /* -------------------------------------------------------------------------- */
 
-const BeforeAfter = () => (
-  <section className="bg-secondary/30 py-20 md:py-28 border-y border-border">
-    <div className="container mx-auto max-w-6xl px-6">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.7, ease: EASE }}
-        className="mb-12 md:mb-16 text-center"
-      >
-        <p className="font-display text-xs tracking-[0.25em] text-accent">WHY IT'S BROKEN · AND HOW WE FIX IT</p>
-        <h2 className="mt-4 mx-auto max-w-2xl font-display text-3xl md:text-4xl font-medium leading-[1.1] tracking-tight text-balance">
-          Remodeling is broken. We rebuilt it on the data that actually matters.
-        </h2>
-      </motion.div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* BEFORE */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, ease: EASE }}
-          className="rounded-3xl border border-border bg-background/60 p-6 md:p-8"
-        >
-          <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Without Haleo</p>
-          <p className="mt-2 font-display text-xl md:text-2xl text-muted-foreground leading-snug">
-            Weeks of guessing.
-          </p>
-
-          <div className="mt-6 space-y-2.5">
-            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
-              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #1 — $92k</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Yelp · 4.5★</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
-              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #2 — $148k</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Referral?</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-dashed border-foreground/15 bg-card/60 px-3.5 py-2.5">
-              <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/40">Bid #3 — $211k</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Cold email</span>
-            </div>
-          </div>
-
-          <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Star ratings from strangers</li>
-            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Explain your vision 6 times</li>
-            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> No way to tell what's fair</li>
-            <li className="flex gap-2"><span className="text-muted-foreground/60">·</span> Zero proof they finish what they start</li>
-          </ul>
-        </motion.div>
-
-        {/* AFTER */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
-          className="rounded-3xl border border-foreground/10 bg-foreground text-background p-6 md:p-8 shadow-lift"
-        >
-          <p className="text-[10px] uppercase tracking-[0.25em] text-accent">With Haleo</p>
-          <p className="mt-2 font-display text-xl md:text-2xl leading-snug">
-            One verdict. Permit-proven matches. Bids that line up.
-          </p>
-
-          <div className="mt-6 space-y-2.5">
-            <div className="rounded-xl bg-background/5 border border-background/10 px-3.5 py-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-wider text-background/60">Verdict</span>
-                <span className="rounded-full bg-amber-400/20 px-2 py-px text-[10px] font-medium text-amber-300">High</span>
-              </div>
-              <p className="mt-1 font-display text-base">$148k quote · fair range $112–134k</p>
-            </div>
-            {[
-              { n: "Mehdi Builders", m: "11 kitchens passed inspection · 95128" },
-              { n: "Casa Verde", m: "6 kitchens passed inspection · 95128" },
-              { n: "Westwood & Co.", m: "8 kitchens passed inspection · 95126" },
-            ].map((c) => (
-              <div key={c.n} className="flex items-center gap-3 rounded-xl bg-background/5 border border-background/10 px-3.5 py-2.5">
-                <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{c.n}</p>
-                  <p className="truncate text-[11px] text-background/60">{c.m}</p>
-                </div>
-                <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
-              </div>
-            ))}
-          </div>
-
-          <ul className="mt-6 space-y-2 text-sm text-background/80">
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Matched by what you're actually building</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> A brief they read before they bid</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Every line item, side by side</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" /> Receipts from the county, not Yelp</li>
-          </ul>
-        </motion.div>
-      </div>
-    </div>
-  </section>
-);
-
-/* -------------------------------------------------------------------------- */
-/*  Remodel Roast — quick, free quote check.                                   */
-/* -------------------------------------------------------------------------- */
-
-const RoastHook = () => (
-  <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-14 md:py-24 lg:py-32">
-    <div className="container mx-auto max-w-5xl px-6">
-      <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: EASE }}
-        >
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-5">
-            <Flame className="w-3.5 h-3.5" /> FREE · NO SIGNUP · 30 SECONDS
-          </div>
-          <h2 className="font-display text-3xl md:text-4xl font-medium leading-[1.1] text-foreground">
-            Got a quote? <span className="italic">Get it roasted.</span>
-          </h2>
-          <p className="mt-5 text-lg text-foreground/70 max-w-md">
-            Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              to="/roast"
-              onClick={() => track("cta_roast_clicked", { location: "roast_hook" })}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition shadow-lg shadow-orange-200/50"
-            >
-              Roast my quote <ArrowRight className="w-4 h-4" />
-            </Link>
-            <span className="self-center text-xs text-foreground/50">No login. Just answers.</span>
-          </div>
-        </motion.div>
-
-        {/* Mock score card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20, rotate: -2 }}
-          whileInView={{ opacity: 1, y: 0, rotate: -2 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-rose-200 blur-3xl opacity-60 -z-10" />
-          <div className="rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-7 text-white shadow-2xl">
-            <p className="text-[10px] uppercase tracking-widest opacity-90">Remodel Roast</p>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-6xl font-serif font-bold leading-none">34</span>
-              <span className="text-sm opacity-90">/ 100</span>
-            </div>
-            <p className="mt-2 text-xl font-serif">Yikes Territory</p>
-            <p className="mt-3 text-sm italic leading-snug opacity-95">
-              "$12,000 for a backsplash? Are they tiling it with 24k gold?"
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
-              <span className="px-2 py-0.5 rounded-full bg-white/20">Cabinets · HIGH</span>
-              <span className="px-2 py-0.5 rounded-full bg-white/20">Labor · FAIR</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  </section>
-);
-
-/* -------------------------------------------------------------------------- */
-/*  Three calm value lines — no chrome, just typography.                       */
-/* -------------------------------------------------------------------------- */
-
-
+const STEP_CARDS = [
+  {
+    icon: FileText,
+    t: "Audit any quote",
+    b: "Line by line against real local costs. See what's fair and what's inflated.",
+  },
+  {
+    icon: ShieldCheck,
+    t: "Match on permits",
+    b: "The three contractors who verifiably built your exact project nearby.",
+  },
+  {
+    icon: CheckCircle2,
+    t: "One clear brief",
+    b: "Explain your project once. Every contractor bids on the same scope.",
+  },
+];
 
 const Value = () => (
-  <section className="bg-background py-24 md:py-32">
-    <div className="container mx-auto max-w-4xl">
-      <div className="grid gap-x-12 gap-y-16 md:grid-cols-3">
-        {[
-          {
-            n: "01",
-            t: "Audit the quote.",
-            b: "Check every line item against real local costs and permit history. See what is fair, what is high, and what makes no sense. About 30 seconds.",
-          },
-          {
-            n: "02",
-            t: "Permit proven matches.",
-            b: "Only builders who passed inspections for projects like yours in your neighborhood. Reviews can be bought. Permit history cannot.",
-          },
-          {
-            n: "03",
-            t: "Compare bids.",
-            b: "Every trade and line item, lined up side by side. See where each builder is expensive or cheap before you decide.",
-          },
-        ].map((s, idx) => (
+  <section className="border-t border-border bg-background py-24 md:py-32">
+    <div className="container mx-auto max-w-5xl px-6">
+      <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+        {STEP_CARDS.map((s, idx) => (
           <motion.div
-            key={s.n}
-            initial={{ opacity: 0, y: 20 }}
+            key={s.t}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7, ease: EASE, delay: idx * 0.1 }}
+            transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
           >
-            <p className="font-display text-xs tracking-[0.2em] text-accent">{s.n}</p>
-            <h3 className="mt-4 font-display text-2xl font-light leading-tight text-foreground">{s.t}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.b}</p>
+            <s.icon className="h-5 w-5 text-accent" />
+            <h3 className="mt-5 text-foreground">{s.t}</h3>
+            <p className="mt-2.5 max-w-xs text-base text-muted-foreground">{s.b}</p>
           </motion.div>
         ))}
       </div>
@@ -846,114 +660,82 @@ const Value = () => (
 );
 
 /* -------------------------------------------------------------------------- */
-/*  NotLike — sharp differentiation vs Yelp / Thumbtack.                       */
+/*  The difference — reviews vs. records.                                      */
 /* -------------------------------------------------------------------------- */
 
 const CONTRASTS = [
-  {
-    them: "Star ratings from strangers",
-    us: "Permits pulled. Inspections passed.",
-  },
-  {
-    them: "Matched by zip code",
-    us: "Matched by what you're actually building",
-  },
-  {
-    them: "5 contractors call you in 5 minutes",
-    us: "A brief they read before they bid",
-  },
-  {
-    them: "Apples-to-oranges quotes",
-    us: "Every line item, side by side",
-  },
+  { them: "Star ratings from strangers", us: "Permits pulled, inspections passed" },
+  { them: "Matched by zip code", us: "Matched by what you're building" },
+  { them: "Five calls in five minutes", us: "A brief they read before they bid" },
+  { them: "Apples-to-oranges quotes", us: "Every line item, side by side" },
 ];
 
 const NotLike = () => (
-  <section className="bg-foreground py-28 text-background md:py-40">
-    <div className="container mx-auto max-w-5xl">
+  <section className="bg-foreground py-24 text-background md:py-32">
+    <div className="container mx-auto max-w-3xl px-6">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.8, ease: EASE }}
-        className="mb-16 md:mb-24"
+        transition={{ duration: 0.7, ease: EASE }}
       >
-        <p className="font-display text-xs tracking-[0.25em] text-accent">THE DIFFERENCE</p>
-        <h2 className="mt-5 max-w-3xl font-display text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
-          Not a directory. The way you actually hire.
+        <p className="eyebrow text-accent">The difference</p>
+        <h2 className="mt-5 text-balance">
+          Reviews tell you how someone felt. Permits tell you what got built.
         </h2>
       </motion.div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-x-6 gap-y-3 md:gap-x-12">
-        <div className="text-right">
-          <p className="font-display text-[10px] tracking-[0.25em] text-background/40 md:text-xs">YELP · THUMBTACK · ANGI</p>
-        </div>
-        <div />
-        <div>
-          <p className="font-display text-[10px] tracking-[0.25em] text-accent md:text-xs">HALEO</p>
-        </div>
-
+      <div className="mt-14 divide-y divide-background/10 border-y border-background/10">
         {CONTRASTS.map((row, idx) => (
           <motion.div
             key={row.them}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
-            className="contents"
+            transition={{ duration: 0.5, ease: EASE, delay: idx * 0.06 }}
+            className="grid grid-cols-1 gap-1 py-5 sm:grid-cols-2 sm:gap-8"
           >
-            <div className="flex items-center justify-end border-t border-background/10 py-6">
-              <p className="text-right text-sm leading-snug text-background/40 line-through decoration-background/30 md:text-lg">
-                {row.them}
-              </p>
-            </div>
-            <div className="flex items-center border-t border-background/10 py-6 text-background/30">
-              <span className="font-display text-xs tracking-widest">→</span>
-            </div>
-            <div className="flex items-center border-t border-background/10 py-6">
-              <p className="text-sm font-light leading-snug text-background md:text-lg">
-                {row.us}
-              </p>
-            </div>
+            <p className="text-base text-background/40 line-through decoration-background/25">
+              {row.them}
+            </p>
+            <p className="text-base text-background">{row.us}</p>
           </motion.div>
         ))}
       </div>
+
+      <p className="mt-10 text-base text-background/50">Live in San Jose.</p>
     </div>
   </section>
 );
 
 /* -------------------------------------------------------------------------- */
-/*  Closing — single confident line, one CTA.                                  */
+/*  Closing — one line, one CTA.                                               */
 /* -------------------------------------------------------------------------- */
 
 const Closing = () => (
-  <section className="relative bg-background py-28 md:py-36 border-t border-border">
-
+  <section className="border-t border-border bg-background py-28 md:py-36">
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.9, ease: EASE }}
-      className="container relative text-center"
+      transition={{ duration: 0.8, ease: EASE }}
+      className="container mx-auto max-w-2xl px-6 text-center"
     >
-      <h2 className="mx-auto max-w-3xl text-3xl font-medium leading-[1.1] tracking-tight text-balance md:text-5xl">
-        Ready when you are.
-      </h2>
-      <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-        Start your brief without an account. We'll only ask you to sign up when your
-        permit-matched contractors are ready.
+      <h2 className="text-balance">Ready when you are.</h2>
+      <p className="mx-auto mt-5 max-w-md text-base text-muted-foreground">
+        Start without an account. We'll only ask you to sign up once your matches are ready.
       </p>
       <Link
         to="/brief"
-        className="group mt-10 inline-flex items-center gap-2 rounded-full bg-foreground px-8 py-4 text-sm font-medium text-background shadow-lift transition-smooth hover:bg-foreground/90"
+        className="group mt-9 inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-sm font-semibold text-background transition-smooth hover:bg-foreground/90"
       >
         Start my brief — free
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </Link>
-      <p className="mt-5 text-[13px] text-muted-foreground">
+      <p className="mt-5 text-sm text-muted-foreground">
         Already have a quote?{" "}
-        <Link to="/roast" className="font-medium text-foreground underline-offset-4 hover:underline">
-          Get it roasted
+        <Link to="/roast" className="font-medium text-foreground underline underline-offset-4">
+          Check it here
         </Link>
       </p>
     </motion.div>
@@ -972,14 +754,13 @@ const Index = () => {
   return (
     <main>
       <Hero />
-      <BeforeAfter />
-      <NotLike />
       <Value />
+      <NotLike />
       <Closing />
       <SiteFooter />
     </main>
   );
-
 };
 
 export default Index;
+
