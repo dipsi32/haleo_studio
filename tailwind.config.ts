@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Cormorant Garamond"', '"Times New Roman"', 'Georgia', 'serif'],
-        sans: ['"Karla"', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
+        display: ['"Outfit"', '"Figtree"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Figtree"', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
