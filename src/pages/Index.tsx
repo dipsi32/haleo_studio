@@ -474,7 +474,7 @@ const ScreenAudit = () => {
   );
 };
 
-const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
+const SCREENS = [ScreenBrief, ScreenMatches, ScreenAudit];
 
 /* One live tease instead of paragraphs: a zip already filled in, counting up. */
 const Counter = ({ to, suffix }: { to: number; suffix: string }) => {
