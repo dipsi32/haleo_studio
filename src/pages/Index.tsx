@@ -593,21 +593,39 @@ const Hero = () => {
               </AnimatePresence>
             </PhoneShell>
 
-            <div className="mt-6 flex items-center justify-center gap-2">
-              {STEPS.map((s, idx) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => { setI(idx); setPaused(true); }}
-                  aria-label={`Show step: ${s.label}`}
-                  aria-current={idx === i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
-                    idx === i ? "w-8 bg-foreground" : "w-3 bg-foreground/15 hover:bg-foreground/40"
-                  }`}
-                />
-              ))}
+            <div className="mx-auto mt-6 max-w-[300px] space-y-1">
+              {STEPS.map((s, idx) => {
+                const active = idx === i;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => { setI(idx); setPaused(true); }}
+                    aria-current={active}
+                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left transition-smooth ${
+                      active ? "bg-secondary/70" : "hover:bg-secondary/40"
+                    }`}
+                  >
+                    <span
+                      className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-medium tabular-nums ${
+                        active ? "bg-foreground text-background" : "bg-foreground/10 text-muted-foreground"
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-sm ${active ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                        {s.label}
+                      </span>
+                      {active && (
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{s.payoff}</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="mt-3 text-center text-sm text-muted-foreground">{STEPS[i].label}</p>
+
           </motion.div>
         </div>
       </div>
