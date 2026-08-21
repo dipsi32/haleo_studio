@@ -282,64 +282,19 @@ const ScreenScope = () => (
   </div>
 );
 
-const ScreenBrief = () => (
-  <div className="flex h-full flex-col">
-    <div className="flex items-center justify-between">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your brief</p>
-      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
-    </div>
-    <p className="mt-1 font-display text-lg leading-tight">Ready to send</p>
-
-    <div className="mt-4 space-y-2">
-      {SELECTION_ORDER.map((idx) => (
-        <div key={idx} className="rounded-xl border border-border bg-card px-2.5 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            {BUG_OPTIONS[idx]}
-          </p>
-          <p className="mt-0.5 text-[11px] leading-snug text-foreground">{BUG_MAP[idx].brief}</p>
-        </div>
-      ))}
-    </div>
-
-    <div className="mt-auto flex flex-wrap gap-1.5">
-      {[SPACE.zip, SPACE.budget, SPACE.timeline].map((t) => (
-        <span
-          key={t}
-          className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground"
-        >
-          {t}
-        </span>
-      ))}
-    </div>
-  </div>
+const Shot = ({ src, alt }: { src: string; alt: string }) => (
+  <img
+    src={src}
+    alt={alt}
+    loading="lazy"
+    className="-mx-5 -mt-10 h-[calc(100%+3.5rem)] w-[calc(100%+2.5rem)] max-w-none object-cover object-top"
+  />
 );
 
-const ScreenMatches = () => (
-  <div className="flex h-full flex-col">
-    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Matched builders</p>
-    <p className="mt-1 font-display text-lg leading-tight">4 permit-proven</p>
+const ScreenBrief = () => <Shot src={shotBrief} alt="Haleo brief builder: describe your project in one sentence" />;
 
-    <div className="mt-4 space-y-2">
-      {[
-        { name: "Mehdi Builders", meta: "11 kitchens · 95128", dist: "1.2 mi" },
-        { name: "Westwood & Co.", meta: "8 kitchens · 95126", dist: "1.8 mi" },
-        { name: "Casa Verde", meta: "6 kitchens · 95128", dist: "0.9 mi" },
-        { name: "Lozano Group", meta: "9 kitchens · 95128", dist: "2.1 mi" },
-      ].map((c) => (
-        <div key={c.name} className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary">
-            <ShieldCheck className="h-4 w-4 text-foreground/70" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11.5px] font-medium text-foreground">{c.name}</p>
-            <p className="truncate text-[10px] text-muted-foreground">{c.meta}</p>
-          </div>
-          <span className="text-[10px] tabular-nums text-muted-foreground">{c.dist}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+const ScreenMatches = () => <Shot src={shotMatches} alt="Haleo contractor match with San Jose permit history" />;
+
 
 const ScreenBids = () => {
   const trades = [
