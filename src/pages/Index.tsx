@@ -16,6 +16,9 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
 import { track } from "@/lib/analytics";
+import shotBrief from "@/assets/screens/shot-brief.png";
+import shotMatches from "@/assets/screens/shot-matches.png";
+import shotAudit from "@/assets/screens/shot-audit.png";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -24,9 +27,9 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "brief",   label: "Describe it once",        payoff: "We write the contractor-ready brief." },
-  { key: "matches", label: "See who actually built it", payoff: "Matched on permits pulled near you." },
-  { key: "audit",   label: "Know if the price is fair", payoff: "Every line checked against local costs." },
+  { key: "brief",   label: "Say it in one sentence",       payoff: "We turn it into a contractor-ready brief." },
+  { key: "matches", label: "Meet contractors with permits", payoff: "Ranked on jobs like yours, pulled near you." },
+  { key: "audit",   label: "See if the price is fair",     payoff: "Your quote against real local costs." },
 ] as const;
 
 
@@ -282,64 +285,19 @@ const ScreenScope = () => (
   </div>
 );
 
-const ScreenBrief = () => (
-  <div className="flex h-full flex-col">
-    <div className="flex items-center justify-between">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your brief</p>
-      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
-    </div>
-    <p className="mt-1 font-display text-lg leading-tight">Ready to send</p>
-
-    <div className="mt-4 space-y-2">
-      {SELECTION_ORDER.map((idx) => (
-        <div key={idx} className="rounded-xl border border-border bg-card px-2.5 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            {BUG_OPTIONS[idx]}
-          </p>
-          <p className="mt-0.5 text-[11px] leading-snug text-foreground">{BUG_MAP[idx].brief}</p>
-        </div>
-      ))}
-    </div>
-
-    <div className="mt-auto flex flex-wrap gap-1.5">
-      {[SPACE.zip, SPACE.budget, SPACE.timeline].map((t) => (
-        <span
-          key={t}
-          className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground"
-        >
-          {t}
-        </span>
-      ))}
-    </div>
-  </div>
+const Shot = ({ src, alt }: { src: string; alt: string }) => (
+  <img
+    src={src}
+    alt={alt}
+    loading="lazy"
+    className="absolute inset-0 h-full w-full max-w-none object-cover object-top"
+  />
 );
 
-const ScreenMatches = () => (
-  <div className="flex h-full flex-col">
-    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Matched builders</p>
-    <p className="mt-1 font-display text-lg leading-tight">4 permit-proven</p>
+const ScreenBrief = () => <Shot src={shotBrief} alt="Haleo brief builder: describe your project in one sentence" />;
 
-    <div className="mt-4 space-y-2">
-      {[
-        { name: "Mehdi Builders", meta: "11 kitchens · 95128", dist: "1.2 mi" },
-        { name: "Westwood & Co.", meta: "8 kitchens · 95126", dist: "1.8 mi" },
-        { name: "Casa Verde", meta: "6 kitchens · 95128", dist: "0.9 mi" },
-        { name: "Lozano Group", meta: "9 kitchens · 95128", dist: "2.1 mi" },
-      ].map((c) => (
-        <div key={c.name} className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary">
-            <ShieldCheck className="h-4 w-4 text-foreground/70" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11.5px] font-medium text-foreground">{c.name}</p>
-            <p className="truncate text-[10px] text-muted-foreground">{c.meta}</p>
-          </div>
-          <span className="text-[10px] tabular-nums text-muted-foreground">{c.dist}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+const ScreenMatches = () => <Shot src={shotMatches} alt="Haleo contractor match with San Jose permit history" />;
+
 
 const ScreenBids = () => {
   const trades = [
@@ -392,87 +350,8 @@ const ScreenBids = () => {
   );
 };
 
-/* Audit screen — the painkiller. Drop a quote, see where it lands. */
-const ScreenAudit = () => {
-  const [phase, setPhase] = useState<"drop" | "scan" | "verdict">("drop");
-  useEffect(() => {
-    setPhase("drop");
-    const t1 = setTimeout(() => setPhase("scan"), 900);
-    const t2 = setTimeout(() => setPhase("verdict"), 2000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+const ScreenAudit = () => <Shot src={shotAudit} alt="Haleo quote audit: verdict, where your quote lands against the local fair range" />;
 
-  return (
-    <div className="flex h-full flex-col">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Audit a proposal</p>
-      <p className="mt-1 font-display text-lg leading-tight">Where does it land?</p>
-
-      {/* Upload tile */}
-      <div className="mt-3 rounded-xl border border-dashed border-foreground/20 bg-secondary/40 p-3">
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15">
-            <FileText className="h-3.5 w-3.5 text-accent" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-medium text-foreground">kitchen-quote.pdf</p>
-            <p className="text-[9px] text-muted-foreground">3 pages · 18 line items</p>
-          </div>
-          {phase === "drop" && <Upload className="h-3.5 w-3.5 text-muted-foreground" />}
-          {phase !== "drop" && <CheckCircle2 className="h-3.5 w-3.5 text-accent" />}
-        </div>
-        {phase === "scan" && (
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-            <motion.div
-              className="h-full bg-accent"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 1.1, ease: "easeInOut" }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Verdict */}
-      <AnimatePresence>
-        {phase === "verdict" && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mt-3 space-y-2"
-          >
-            <div className="rounded-xl border border-border bg-card p-2.5">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Verdict</p>
-                <span className="rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-medium text-amber-700">High</span>
-              </div>
-              <p className="mt-1 font-display text-base leading-tight text-foreground">$148k quote</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Local fair range $112k – $134k</p>
-            </div>
-
-            {[
-              { t: "Backsplash", v: "$12k", n: "fair $3.8–5.2k", flag: true },
-              { t: "Cabinets", v: "$38k", n: "in range", flag: false },
-              { t: "Demo + haul", v: "$9k", n: "high for 140 sqft", flag: true },
-            ].map((row) => (
-              <div key={row.t} className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5">
-                <div className="min-w-0">
-                  <p className="text-[11px] text-foreground">{row.t}</p>
-                  <p className="text-[9px] text-muted-foreground">{row.n}</p>
-                </div>
-                <span className={`text-[10px] tabular-nums ${row.flag ? "font-medium text-amber-700" : "text-muted-foreground"}`}>{row.v}</span>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="mt-auto rounded-xl bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground">
-        Free · 30 seconds · <span className="text-foreground">no signup</span>
-      </div>
-    </div>
-  );
-};
 
 const SCREENS = [ScreenBrief, ScreenMatches, ScreenAudit];
 
@@ -638,9 +517,9 @@ const Hero = () => {
 /* -------------------------------------------------------------------------- */
 
 const STEP_CARDS = [
-  { n: "1", t: "Describe it once", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
-  { n: "2", t: "See who actually built it", b: "Matched on permits pulled near you.", Screen: ScreenMatches, to: "/brief" },
-  { n: "3", t: "Know if the price is fair", b: "Every line checked against local costs.", Screen: ScreenAudit, to: "/roast" },
+  { n: "1", t: "Say it in one sentence", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
+  { n: "2", t: "Meet contractors with permits", b: "Ranked on jobs like yours, pulled near you.", Screen: ScreenMatches, to: "/brief" },
+  { n: "3", t: "See if the price is fair", b: "Your quote against real local costs.", Screen: ScreenAudit, to: "/roast" },
 ];
 
 const Value = () => (
