@@ -27,9 +27,9 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "brief",   label: "Describe it once",        payoff: "We write the contractor-ready brief." },
-  { key: "matches", label: "See who actually built it", payoff: "Matched on permits pulled near you." },
-  { key: "audit",   label: "Know if the price is fair", payoff: "Every line checked against local costs." },
+  { key: "brief",   label: "Say it in one sentence",       payoff: "We turn it into a contractor-ready brief." },
+  { key: "matches", label: "Meet contractors with permits", payoff: "Ranked on jobs like yours, pulled near you." },
+  { key: "audit",   label: "See if the price is fair",     payoff: "Your quote against real local costs." },
 ] as const;
 
 
@@ -517,9 +517,9 @@ const Hero = () => {
 /* -------------------------------------------------------------------------- */
 
 const STEP_CARDS = [
-  { n: "1", t: "Describe it once", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
-  { n: "2", t: "See who actually built it", b: "Matched on permits pulled near you.", Screen: ScreenMatches, to: "/brief" },
-  { n: "3", t: "Know if the price is fair", b: "Every line checked against local costs.", Screen: ScreenAudit, to: "/roast" },
+  { n: "1", t: "Say it in one sentence", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
+  { n: "2", t: "Meet contractors with permits", b: "Ranked on jobs like yours, pulled near you.", Screen: ScreenMatches, to: "/brief" },
+  { n: "3", t: "See if the price is fair", b: "Your quote against real local costs.", Screen: ScreenAudit, to: "/roast" },
 ];
 
 const Value = () => (
