@@ -290,7 +290,7 @@ const Shot = ({ src, alt }: { src: string; alt: string }) => (
     src={src}
     alt={alt}
     loading="lazy"
-    className="-mx-5 -mt-10 h-[calc(100%+3.5rem)] w-[calc(100%+2.5rem)] max-w-none object-cover object-top"
+    className="absolute inset-0 h-full w-full max-w-none object-cover object-top"
   />
 );
 
