@@ -24,11 +24,11 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "audit",   label: "Audit the quote" },
-  { key: "brief",   label: "Brief, written for you" },
-  { key: "matches", label: "Permit-proven matches" },
-  { key: "bids",    label: "Bids, side by side" },
+  { key: "brief",   label: "Describe it once",        payoff: "We write the contractor-ready brief." },
+  { key: "matches", label: "See who actually built it", payoff: "Matched on permits pulled near you." },
+  { key: "audit",   label: "Know if the price is fair", payoff: "Every line checked against local costs." },
 ] as const;
+
 
 const PhoneShell = ({ children }: { children: React.ReactNode }) => (
   <div
