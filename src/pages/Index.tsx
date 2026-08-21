@@ -634,31 +634,19 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Three steps — one idea each, nothing more.                                 */
+/*  Three real screens, in order. One glance = the whole product.              */
 /* -------------------------------------------------------------------------- */
 
 const STEP_CARDS = [
-  {
-    icon: FileText,
-    t: "Audit any quote",
-    b: "Line by line against real local costs. See what's fair and what's inflated.",
-  },
-  {
-    icon: ShieldCheck,
-    t: "Match on permits",
-    b: "The three contractors who verifiably built your exact project nearby.",
-  },
-  {
-    icon: CheckCircle2,
-    t: "One clear brief",
-    b: "Explain your project once. Every contractor bids on the same scope.",
-  },
+  { n: "1", t: "Describe it once", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
+  { n: "2", t: "See who actually built it", b: "Matched on permits pulled near you.", Screen: ScreenMatches, to: "/brief" },
+  { n: "3", t: "Know if the price is fair", b: "Every line checked against local costs.", Screen: ScreenAudit, to: "/roast" },
 ];
 
 const Value = () => (
   <section className="border-t border-border bg-background py-24 md:py-32">
     <div className="container mx-auto max-w-5xl px-6">
-      <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+      <div className="grid gap-10 md:grid-cols-3">
         {STEP_CARDS.map((s, idx) => (
           <motion.div
             key={s.t}
@@ -667,15 +655,29 @@ const Value = () => (
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
           >
-            <s.icon className="h-5 w-5 text-accent" />
-            <h3 className="mt-5 text-foreground">{s.t}</h3>
-            <p className="mt-2.5 max-w-xs text-base text-muted-foreground">{s.b}</p>
+            <Link to={s.to} className="group block">
+              <div className="flex items-baseline gap-2.5">
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-medium tabular-nums text-background">
+                  {s.n}
+                </span>
+                <h3 className="text-base font-medium text-foreground">{s.t}</h3>
+              </div>
+              <p className="mt-1.5 pl-[30px] text-sm text-muted-foreground">{s.b}</p>
+
+              <div className="relative mt-5 h-[360px] overflow-hidden rounded-2xl border border-border bg-card px-5 pb-5 pt-5 transition-smooth group-hover:border-accent/40 group-hover:shadow-soft">
+                <div className="h-[440px]">
+                  <s.Screen />
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
+              </div>
+            </Link>
           </motion.div>
         ))}
       </div>
     </div>
   </section>
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*  The difference — reviews vs. records.                                      */
