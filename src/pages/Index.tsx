@@ -24,11 +24,11 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { key: "audit",   label: "Audit the quote" },
-  { key: "brief",   label: "Brief, written for you" },
-  { key: "matches", label: "Permit-proven matches" },
-  { key: "bids",    label: "Bids, side by side" },
+  { key: "brief",   label: "Describe it once",        payoff: "We write the contractor-ready brief." },
+  { key: "matches", label: "See who actually built it", payoff: "Matched on permits pulled near you." },
+  { key: "audit",   label: "Know if the price is fair", payoff: "Every line checked against local costs." },
 ] as const;
+
 
 const PhoneShell = ({ children }: { children: React.ReactNode }) => (
   <div
@@ -474,7 +474,7 @@ const ScreenAudit = () => {
   );
 };
 
-const SCREENS = [ScreenAudit, ScreenBrief, ScreenMatches, ScreenBids];
+const SCREENS = [ScreenBrief, ScreenMatches, ScreenAudit];
 
 /* One live tease instead of paragraphs: a zip already filled in, counting up. */
 const Counter = ({ to, suffix }: { to: number; suffix: string }) => {
@@ -593,21 +593,39 @@ const Hero = () => {
               </AnimatePresence>
             </PhoneShell>
 
-            <div className="mt-6 flex items-center justify-center gap-2">
-              {STEPS.map((s, idx) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => { setI(idx); setPaused(true); }}
-                  aria-label={`Show step: ${s.label}`}
-                  aria-current={idx === i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
-                    idx === i ? "w-8 bg-foreground" : "w-3 bg-foreground/15 hover:bg-foreground/40"
-                  }`}
-                />
-              ))}
+            <div className="mx-auto mt-6 max-w-[300px] space-y-1">
+              {STEPS.map((s, idx) => {
+                const active = idx === i;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => { setI(idx); setPaused(true); }}
+                    aria-current={active}
+                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left transition-smooth ${
+                      active ? "bg-secondary/70" : "hover:bg-secondary/40"
+                    }`}
+                  >
+                    <span
+                      className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-medium tabular-nums ${
+                        active ? "bg-foreground text-background" : "bg-foreground/10 text-muted-foreground"
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-sm ${active ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                        {s.label}
+                      </span>
+                      {active && (
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{s.payoff}</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="mt-3 text-center text-sm text-muted-foreground">{STEPS[i].label}</p>
+
           </motion.div>
         </div>
       </div>
@@ -616,31 +634,19 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Three steps — one idea each, nothing more.                                 */
+/*  Three real screens, in order. One glance = the whole product.              */
 /* -------------------------------------------------------------------------- */
 
 const STEP_CARDS = [
-  {
-    icon: FileText,
-    t: "Audit any quote",
-    b: "Line by line against real local costs. See what's fair and what's inflated.",
-  },
-  {
-    icon: ShieldCheck,
-    t: "Match on permits",
-    b: "The three contractors who verifiably built your exact project nearby.",
-  },
-  {
-    icon: CheckCircle2,
-    t: "One clear brief",
-    b: "Explain your project once. Every contractor bids on the same scope.",
-  },
+  { n: "1", t: "Describe it once", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
+  { n: "2", t: "See who actually built it", b: "Matched on permits pulled near you.", Screen: ScreenMatches, to: "/brief" },
+  { n: "3", t: "Know if the price is fair", b: "Every line checked against local costs.", Screen: ScreenAudit, to: "/roast" },
 ];
 
 const Value = () => (
   <section className="border-t border-border bg-background py-24 md:py-32">
     <div className="container mx-auto max-w-5xl px-6">
-      <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+      <div className="grid gap-10 md:grid-cols-3">
         {STEP_CARDS.map((s, idx) => (
           <motion.div
             key={s.t}
@@ -649,15 +655,29 @@ const Value = () => (
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
           >
-            <s.icon className="h-5 w-5 text-accent" />
-            <h3 className="mt-5 text-foreground">{s.t}</h3>
-            <p className="mt-2.5 max-w-xs text-base text-muted-foreground">{s.b}</p>
+            <Link to={s.to} className="group block">
+              <div className="flex items-baseline gap-2.5">
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-medium tabular-nums text-background">
+                  {s.n}
+                </span>
+                <h3 className="text-base font-medium text-foreground">{s.t}</h3>
+              </div>
+              <p className="mt-1.5 pl-[30px] text-sm text-muted-foreground">{s.b}</p>
+
+              <div className="relative mt-5 h-[360px] overflow-hidden rounded-2xl border border-border bg-card px-5 pb-5 pt-5 transition-smooth group-hover:border-accent/40 group-hover:shadow-soft">
+                <div className="h-[440px]">
+                  <s.Screen />
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
+              </div>
+            </Link>
           </motion.div>
         ))}
       </div>
     </div>
   </section>
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*  The difference — reviews vs. records.                                      */
