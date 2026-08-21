@@ -16,6 +16,9 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
 import { track } from "@/lib/analytics";
+import shotBrief from "@/assets/screens/shot-brief.png";
+import shotMatches from "@/assets/screens/shot-matches.png";
+import shotAudit from "@/assets/screens/shot-audit.png";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
