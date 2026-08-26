@@ -39,9 +39,11 @@ const PhoneShell = ({ children }: { children: React.ReactNode }) => (
     style={{ width: 280 }}
   >
     <div className="relative h-[560px] overflow-hidden rounded-[2.1rem] bg-background">
-      <div className="absolute left-1/2 top-1.5 z-10 h-4 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
-      <div className="h-full overflow-hidden px-5 pb-5 pt-10">{children}</div>
+      <div className="absolute inset-x-0 top-0 z-20 h-8 bg-background" />
+      <div className="absolute left-1/2 top-2 z-30 h-4 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+      <div className="absolute inset-x-0 bottom-0 top-8 overflow-hidden">{children}</div>
     </div>
+
   </div>
 );
 
@@ -513,49 +515,46 @@ const Hero = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Three real screens, in order. One glance = the whole product.              */
+/*  One quiet line after the demo — no screen-by-screen explaining.           */
 /* -------------------------------------------------------------------------- */
 
-const STEP_CARDS = [
-  { n: "1", t: "Say it in one sentence", b: "We turn it into a contractor-ready brief.", Screen: ScreenBrief, to: "/brief" },
-  { n: "2", t: "Meet contractors with permits", b: "Ranked on jobs like yours, pulled near you.", Screen: ScreenMatches, to: "/brief" },
-  { n: "3", t: "See if the price is fair", b: "Your quote against real local costs.", Screen: ScreenAudit, to: "/roast" },
-];
-
 const Value = () => (
-  <section className="border-t border-border bg-background py-24 md:py-32">
-    <div className="container mx-auto max-w-5xl px-6">
-      <div className="grid gap-10 md:grid-cols-3">
-        {STEP_CARDS.map((s, idx) => (
-          <motion.div
-            key={s.t}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6, ease: EASE, delay: idx * 0.08 }}
-          >
-            <Link to={s.to} className="group block">
-              <div className="flex items-baseline gap-2.5">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-medium tabular-nums text-background">
-                  {s.n}
-                </span>
-                <h3 className="text-base font-medium text-foreground">{s.t}</h3>
-              </div>
-              <p className="mt-1.5 pl-[30px] text-sm text-muted-foreground">{s.b}</p>
-
-              <div className="relative mt-5 h-[360px] overflow-hidden rounded-2xl border border-border bg-card px-5 pb-5 pt-5 transition-smooth group-hover:border-accent/40 group-hover:shadow-soft">
-                <div className="h-[440px]">
-                  <s.Screen />
-                </div>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+  <section className="border-t border-border bg-background py-20 md:py-24">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, ease: EASE }}
+      className="container mx-auto max-w-2xl px-6 text-center"
+    >
+      <h2 className="text-balance text-foreground">
+        Your neighbors already hired the good ones.
+      </h2>
+      <p className="mx-auto mt-5 max-w-lg text-base text-muted-foreground">
+        We read the city's permit records so you don't have to — who built what, where, and
+        whether it passed inspection.
+      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          to="/brief"
+          onClick={() => track("cta_match_clicked", { location: "value" })}
+          className="group flex items-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-sm font-semibold text-background transition-smooth hover:bg-foreground/90"
+        >
+          Find my contractor
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+        <Link
+          to="/roast"
+          onClick={() => track("cta_roast_clicked", { location: "value" })}
+          className="rounded-full border border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground transition-smooth hover:border-accent/40"
+        >
+          Check my quote
+        </Link>
       </div>
-    </div>
+    </motion.div>
   </section>
 );
+
 
 
 /* -------------------------------------------------------------------------- */
