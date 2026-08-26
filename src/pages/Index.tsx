@@ -294,7 +294,7 @@ const Shot = ({ src, alt }: { src: string; alt: string }) => (
     src={src}
     alt={alt}
     loading="lazy"
-    className="absolute inset-0 h-full w-full max-w-none object-cover object-top"
+    className="absolute inset-0 h-full w-full max-w-none object-contain object-top"
   />
 );
 
