@@ -39,10 +39,12 @@ const PhoneShell = ({ children }: { children: React.ReactNode }) => (
     style={{ width: 280 }}
   >
     <div className="relative h-[560px] overflow-hidden rounded-[2.1rem] bg-background">
-      <div className="absolute inset-x-0 top-0 z-20 h-8 bg-background" />
-      <div className="absolute left-1/2 top-2 z-30 h-4 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
-      <div className="absolute inset-x-0 bottom-0 top-8 overflow-hidden">{children}</div>
+      <div className="absolute left-1/2 top-2.5 z-30 h-4 w-24 -translate-x-1/2 rounded-full bg-foreground/95" />
+      <div className="absolute inset-x-4 bottom-4 top-9 overflow-hidden rounded-2xl border border-border bg-card">
+        {children}
+      </div>
     </div>
+
 
   </div>
 );
