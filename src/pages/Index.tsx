@@ -218,7 +218,7 @@ const Index = () => {
         </nav>
         <Sheet>
           <SheetTrigger className="flex h-11 w-11 items-center justify-center md:hidden" aria-label="Menu">
-            <Menu className="h-5.5 w-5.5" />
+            <Menu className="h-[22px] w-[22px]" />
           </SheetTrigger>
           <SheetContent side="right" className="w-[280px]">
             <SheetHeader>
