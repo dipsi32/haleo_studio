@@ -107,6 +107,8 @@ const sourceDetail = (cleanName: string, sampleSize?: number): string | null => 
 
 export default function Roast() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [stage, setStage] = useState<"upload" | "loading" | "result">("upload");
   const [result, setResult] = useState<RoastResult | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
