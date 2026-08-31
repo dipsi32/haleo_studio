@@ -1,164 +1,160 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, ArrowUp, Menu } from "lucide-react";
+import { ArrowRight, ArrowUp, Check, Menu, Upload } from "lucide-react";
 import Logo from "@/components/Logo";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { setPendingQuoteFile, setPendingQuoteText } from "@/lib/quoteHandoff";
 import { track } from "@/lib/analytics";
 
 /* ---------------------------------------------------------------- */
-/* Quote input — hero + closing CTA                                   */
+/* Quote entry — upload first, paste as a quiet fallback              */
 /* ---------------------------------------------------------------- */
 
-const QuoteInput = ({ where }: { where: "hero" | "closing" }) => {
+const QuoteEntry = ({ where }: { where: "hero" | "closing" }) => {
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
   const [text, setText] = useState("");
 
-  const go = () => {
-    track("cta_roast_clicked", { where });
-    navigate("/roast", { state: { prefillQuote: text.trim() || undefined } });
+  const goWithFile = (file: File) => {
+    setPendingQuoteFile(file);
+    track("cta_roast_clicked", { where, mode: "upload" });
+    navigate("/roast");
+  };
+
+  const goWithText = () => {
+    setPendingQuoteText(text.trim());
+    track("cta_roast_clicked", { where, mode: "paste" });
+    navigate("/roast");
   };
 
   return (
-    <div className="w-full">
-      {/* Desktop: single pill */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          go();
+    <div className="w-full max-w-md">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf,image/*,.txt,.doc,.docx"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) goWithFile(f);
         }}
-        className="hidden w-full max-w-[520px] items-center gap-2 rounded-full border border-border bg-card py-2 pl-6 pr-2 shadow-soft sm:flex"
-      >
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste your quote — or drop the PDF"
-          aria-label="Paste your quote"
-          className="min-w-0 flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-        <button
-          type="submit"
-          className="inline-flex h-[52px] shrink-0 items-center gap-2 rounded-full bg-foreground px-6 text-base font-semibold text-background transition-smooth hover:opacity-90"
-        >
-          Check it
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </form>
+      />
 
-      {/* Mobile: stacked */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          go();
-        }}
-        className="flex w-full flex-col gap-2.5 sm:hidden"
-      >
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste your quote — or drop the PDF"
-          aria-label="Paste your quote"
-          className="w-full rounded-2xl border border-border bg-card px-[18px] py-4 text-[15.5px] text-foreground placeholder:text-muted-foreground shadow-soft focus:outline-none focus:ring-2 focus:ring-ring/40"
-        />
-        <button
-          type="submit"
-          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-foreground text-[16.5px] font-semibold text-background transition-smooth hover:opacity-90"
+      {!pasteOpen ? (
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const f = e.dataTransfer.files?.[0];
+            if (f) goWithFile(f);
+          }}
+          className="space-y-3"
         >
-          Check it
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </form>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-foreground px-8 text-base font-medium text-background transition-smooth hover:opacity-90 sm:w-auto"
+          >
+            <Upload className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            Upload your quote
+          </button>
+          <p className="text-[13.5px] text-muted-foreground">
+            PDF, photo or screenshot — or{" "}
+            <button
+              type="button"
+              onClick={() => setPasteOpen(true)}
+              className="underline underline-offset-4 transition-smooth hover:text-foreground"
+            >
+              paste the text instead
+            </button>
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={6}
+            autoFocus
+            placeholder={"Kitchen remodel\nCabinets — $31,000\nCountertops — $9,400\n…\nTotal: $84,200"}
+            className="rounded-2xl text-[14px]"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={text.trim().length < 40}
+              onClick={goWithText}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 text-[15px] font-medium text-background transition-smooth hover:opacity-90 disabled:opacity-40"
+            >
+              Check it <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPasteOpen(false)}
+              className="text-[13.5px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Upload a file instead
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 /* ---------------------------------------------------------------- */
-/* Verdict (sample analysis) card                                     */
+/* Sample verdict card                                                */
 /* ---------------------------------------------------------------- */
 
 type Verdict = "in-range" | "high" | "flagged" | "ask";
 
 const verdictStyles: Record<Verdict, { label: string; className: string }> = {
-  "in-range": { label: "In range", className: "bg-success-bg text-success-foreground" },
-  high: { label: "High", className: "bg-warning-bg text-warning-foreground" },
-  flagged: { label: "Flagged", className: "bg-danger-bg text-danger-foreground" },
-  ask: { label: "Ask", className: "bg-muted text-muted-foreground" },
+  "in-range": { label: "In range", className: "text-success" },
+  high: { label: "High", className: "text-warning-foreground" },
+  flagged: { label: "Flagged", className: "text-danger" },
+  ask: { label: "Ask", className: "text-muted-foreground" },
 };
 
-const lineItems: {
-  name: string;
-  detail: string;
-  detailTone?: "muted" | "danger";
-  amount: string;
-  verdict: Verdict;
-}[] = [
-  { name: "Cabinets & install", detail: "Semi-custom, 22 linear ft", amount: "$31,000", verdict: "in-range" },
-  { name: "Quartz countertops", detail: "48 sq ft, undermount sink cut", amount: "$9,400", verdict: "in-range" },
-  {
-    name: "Demolition & haul-away",
-    detail: "Nearby jobs this size run $2,400–$3,600",
-    detailTone: "danger",
-    amount: "$6,200",
-    verdict: "high",
-  },
-  {
-    name: "City permit fee",
-    detail: "San Jose charges $1,120 for this scope",
-    detailTone: "danger",
-    amount: "$2,800",
-    verdict: "flagged",
-  },
-  { name: "\u201CFinish allowance\u201D", detail: "No scope attached — ask what it covers", amount: "$7,500", verdict: "ask" },
+const lineItems: { name: string; detail?: string; amount: string; verdict: Verdict }[] = [
+  { name: "Cabinets & install", amount: "$31,000", verdict: "in-range" },
+  { name: "Quartz countertops", amount: "$9,400", verdict: "in-range" },
+  { name: "Demolition & haul-away", detail: "Nearby jobs run $2,400–$3,600", amount: "$6,200", verdict: "high" },
+  { name: "City permit fee", detail: "San Jose charges $1,120 for this scope", amount: "$2,800", verdict: "flagged" },
+  { name: "\u201CFinish allowance\u201D", detail: "No scope attached", amount: "$7,500", verdict: "ask" },
 ];
 
 const VerdictCard = () => (
-  <div className="rounded-[22px] border border-border bg-card p-5 shadow-lift sm:p-6">
-    <div className="flex items-center justify-between pb-4">
-      <p className="eyebrow text-muted-foreground">
-        <span className="hidden sm:inline">Kitchen remodel · 180 sq ft · 95128</span>
-        <span className="sm:hidden">Kitchen · 180 sq ft · 95128</span>
-      </p>
-      <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
-        Sample
+  <div className="rounded-3xl border border-border bg-card p-7 shadow-soft sm:p-9">
+    <div className="flex items-baseline justify-between">
+      <p className="eyebrow text-muted-foreground">Sample · Kitchen · 95128</p>
+    </div>
+
+    <div className="mt-6 flex items-end justify-between gap-4">
+      <p className="font-display text-[34px] leading-none tracking-tight sm:text-[40px]">$84,200</p>
+      <span className="inline-flex items-center gap-1.5 text-sm text-danger">
+        <ArrowUp className="h-3.5 w-3.5" strokeWidth={2} />
+        $9,300 over
       </span>
     </div>
 
-    <div className="flex items-end justify-between gap-3 border-b border-border pb-4 sm:pb-5">
-      <div className="space-y-1">
-        <p className="font-display text-[32px] font-bold leading-none tracking-[-0.03em] sm:text-[38px]">$84,200</p>
-        <p className="hidden text-sm text-muted-foreground sm:block">quoted by Bayview Kitchen Co.</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-danger-bg px-3 py-2 text-danger-foreground">
-        <ArrowUp className="h-3.5 w-3.5" strokeWidth={2.5} />
-        <span className="text-[13px] font-bold sm:text-sm">$9,300 over</span>
-      </div>
-    </div>
-
-    <ul className="pt-1">
+    <ul className="mt-7 space-y-0">
       {lineItems.map((item, i) => (
         <li
           key={item.name}
-          className={`flex items-start justify-between gap-3 py-3.5 sm:items-center ${
-            i < lineItems.length - 1 ? "border-b border-border/60" : ""
+          className={`flex items-baseline justify-between gap-4 py-4 ${
+            i < lineItems.length - 1 ? "border-b border-border" : ""
           }`}
         >
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-[14.5px] font-semibold sm:text-[15.5px]">{item.name}</p>
-            <p
-              className={`text-[12.5px] sm:text-[13px] ${
-                item.detailTone === "danger" ? "text-danger" : "text-muted-foreground"
-              }`}
-            >
-              {item.detail}
-            </p>
+          <div className="min-w-0">
+            <p className="text-[15px]">{item.name}</p>
+            {item.detail && <p className="mt-1 text-[13px] text-muted-foreground">{item.detail}</p>}
           </div>
-          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3.5">
-            <span className="text-[14.5px] font-semibold sm:text-[15.5px]">{item.amount}</span>
-            <span
-              className={`w-[76px] rounded-full py-1.5 text-center text-[11.5px] font-bold sm:w-24 sm:text-[12.5px] ${
-                verdictStyles[item.verdict].className
-              }`}
-            >
+          <div className="flex shrink-0 items-baseline gap-5">
+            <span className="text-[15px] tabular-nums">{item.amount}</span>
+            <span className={`w-16 text-right text-[13px] ${verdictStyles[item.verdict].className}`}>
               {verdictStyles[item.verdict].label}
             </span>
           </div>
@@ -166,13 +162,9 @@ const VerdictCard = () => (
       ))}
     </ul>
 
-    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-      <p className="text-[12.5px] leading-snug text-muted-foreground sm:text-[13.5px]">
-        <span className="hidden sm:inline">Compared against 47 permitted kitchen remodels within two miles.</span>
-        <span className="sm:hidden">Compared against 47 permitted kitchens within two miles.</span>
-      </p>
-    </div>
+    <p className="mt-7 text-[13px] text-muted-foreground">
+      Compared against 47 permitted kitchen remodels within two miles.
+    </p>
   </div>
 );
 
@@ -188,43 +180,37 @@ const differences = [
 ];
 
 const contractorProof = [
-  <>
-    Pulled <strong className="font-bold">9 kitchen permits</strong> within two miles
-    <span className="hidden sm:inline"> of you</span>
-  </>,
-  <>Every one passed final inspection</>,
-  <>License clear since 2009 — no stop-work orders</>,
+  "Pulled 9 kitchen permits within two miles of you",
+  "Every one passed final inspection",
+  "License clear since 2009 — no stop-work orders",
 ];
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* NAV */}
-      <header className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-4 md:px-20 md:py-6">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:py-8">
         <Logo />
-        <nav className="hidden items-center gap-8 md:flex">
-          <a href="#how-it-works" className="text-[15px] font-medium text-muted-foreground transition-smooth hover:text-foreground">
+        <nav className="hidden items-center gap-9 md:flex">
+          <a href="#how-it-works" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             How it works
           </a>
-          <Link to="/pro" className="text-[15px] font-medium text-muted-foreground transition-smooth hover:text-foreground">
+          <Link to="/pro" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             For contractors
           </Link>
-          <Link
-            to="/roast"
-            className="inline-flex h-11 items-center rounded-full border border-border bg-card px-[22px] text-[15px] font-semibold transition-smooth hover:bg-secondary"
-          >
-            Check a quote
+          <Link to="/login" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
+            Sign in
           </Link>
         </nav>
         <Sheet>
-          <SheetTrigger className="flex h-11 w-11 items-center justify-center md:hidden" aria-label="Menu">
-            <Menu className="h-[22px] w-[22px]" />
+          <SheetTrigger className="flex h-10 w-10 items-center justify-center md:hidden" aria-label="Menu">
+            <Menu className="h-5 w-5" strokeWidth={1.8} />
           </SheetTrigger>
           <SheetContent side="right" className="w-[280px]">
             <SheetHeader>
-              <SheetTitle className="text-left">Haleo</SheetTitle>
+              <SheetTitle className="text-left font-display text-xl font-medium">Haleo</SheetTitle>
             </SheetHeader>
-            <div className="mt-6 flex flex-col gap-1 text-[15px]">
+            <div className="mt-8 flex flex-col gap-1 text-[15px]">
               <a href="#how-it-works" className="rounded-xl px-3 py-3 hover:bg-secondary">How it works</a>
               <Link to="/roast" className="rounded-xl px-3 py-3 hover:bg-secondary">Check a quote</Link>
               <Link to="/brief" className="rounded-xl px-3 py-3 hover:bg-secondary">Find a contractor</Link>
@@ -235,164 +221,162 @@ const Index = () => {
         </Sheet>
       </header>
 
-      {/* HERO */}
-      <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-11 pt-5 md:grid-cols-[1.02fr_0.98fr] md:gap-[72px] md:px-20 md:pb-[104px] md:pt-14">
+      {/* HERO — one thing to do */}
+      <section className="mx-auto max-w-6xl px-6 pb-24 pt-16 md:pb-32 md:pt-28">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col gap-5 md:gap-6"
+          className="max-w-2xl"
         >
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent md:h-[7px] md:w-[7px]" />
-            <p className="eyebrow text-muted-foreground">
-              <span className="hidden sm:inline">Free · No account · Any U.S. zip code</span>
-              <span className="sm:hidden">Free · No account · Any U.S. zip</span>
-            </p>
-          </div>
-
-          <h1 className="font-display text-[42px] font-extrabold leading-[1.03] tracking-[-0.035em] md:text-[70px] md:leading-none">
-            Don't sign that<br className="hidden md:block" /> quote yet.
+          <p className="eyebrow text-muted-foreground">Free · No account · Any U.S. zip</p>
+          <h1 className="mt-6 font-display text-[44px] leading-[1.05] tracking-tight md:text-[64px]">
+            Don't sign that quote yet.
           </h1>
-
-          <p className="max-w-[470px] text-[17px] leading-relaxed text-muted-foreground md:text-xl">
-            Paste it here. In 60 seconds you'll know what's fair, what's padded, and whether they've
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Upload it here. In 60 seconds you'll know what's fair, what's padded, and whether they've
             actually done this job before.
           </p>
-
-          <div className="flex flex-col gap-3 pt-0.5">
-            <QuoteInput where="hero" />
-            <p className="text-center text-[13px] text-muted-foreground sm:text-left sm:text-[13.5px]">
-              <span className="hidden sm:inline">Free. No account. </span>We never show your quote to a contractor.
-            </p>
+          <div className="mt-10">
+            <QuoteEntry where="hero" />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <VerdictCard />
+          <p className="mt-6 text-[13.5px] text-muted-foreground">
+            We never show your quote to a contractor.
+          </p>
         </motion.div>
       </section>
 
+      {/* SAMPLE */}
+      <section className="border-t border-border bg-secondary/40">
+        <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+          <div className="grid items-center gap-12 md:grid-cols-[0.85fr_1.15fr] md:gap-20">
+            <div>
+              <p className="eyebrow text-accent">What you get back</p>
+              <h2 className="mt-5 font-display text-[30px] leading-tight tracking-tight md:text-[38px]">
+                Every line, checked against the neighborhood.
+              </h2>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5 }}
+            >
+              <VerdictCard />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* THE IDEA */}
-      <section className="border-y border-border bg-card px-6 py-14 md:px-20 md:py-[104px]">
-        <div className="mx-auto flex max-w-[880px] flex-col items-center gap-4 text-center md:gap-[22px]">
-          <h2 className="font-display text-[30px] font-extrabold leading-[1.14] tracking-[-0.03em] md:text-[46px] md:leading-[1.12]">
-            Everyone who gets a fair price<br className="hidden md:block" /> knows a guy.
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-3xl px-6 py-24 text-center md:py-32">
+          <h2 className="font-display text-[30px] leading-tight tracking-tight md:text-[42px]">
+            Everyone who gets a fair price knows a guy.
           </h2>
-          <p className="max-w-[660px] text-[16.5px] leading-relaxed text-muted-foreground md:text-xl">
-            Someone in the trades who'll look at the quote and tell you what's real — and has no
-            stake in whether you sign. Haleo is that person, for everyone else.
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Someone in the trades who'll look at the quote and tell you what's real — with no stake in
+            whether you sign. Haleo is that person, for everyone else.
           </p>
         </div>
       </section>
 
       {/* CONTRACTORS */}
-      <section
-        id="how-it-works"
-        className="mx-auto grid max-w-[1440px] items-center gap-6 px-5 py-14 md:grid-cols-2 md:gap-[72px] md:px-20 md:py-[104px]"
-      >
-        <div className="flex flex-col gap-3.5 md:gap-5">
-          <p className="eyebrow text-accent">Then, when you're ready</p>
-          <h2 className="font-display text-[30px] font-extrabold leading-[1.12] tracking-[-0.03em] md:text-[44px] md:leading-[1.1]">
-            We'll show you who has actually done it.
-          </h2>
-          <p className="max-w-[480px] text-[16.5px] leading-relaxed text-muted-foreground md:text-[19px]">
-            We read the city's permit records — who built what, where, and whether it passed
-            inspection. Not star ratings from strangers.
-          </p>
-        </div>
-
-        <div className="rounded-[20px] border border-border bg-card p-[22px] shadow-lift md:rounded-[22px] md:p-7">
-          <div className="flex items-center gap-3 border-b border-border pb-[18px] md:gap-3.5 md:pb-[22px]">
-            <div className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[13px] bg-accent-soft text-[15px] font-bold text-accent-soft-foreground md:h-[52px] md:w-[52px] md:rounded-[14px] md:text-[17px]">
-              WB
-            </div>
-            <div>
-              <p className="font-display text-[17px] font-bold tracking-[-0.01em] md:text-[19px]">Wise Builders</p>
-              <p className="text-[12.5px] text-muted-foreground md:text-[13.5px]">CSLB #812440 · Willow Glen</p>
-            </div>
+      <section id="how-it-works" className="border-t border-border bg-secondary/40">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:gap-20 md:py-28">
+          <div>
+            <p className="eyebrow text-accent">Then, when you're ready</p>
+            <h2 className="mt-5 font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
+              We'll show you who has actually done it.
+            </h2>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
+              We read the city's permit records — who built what, where, and whether it passed
+              inspection. Not star ratings from strangers.
+            </p>
           </div>
 
-          <ul className="flex flex-col gap-3.5 py-[18px] md:gap-4 md:pb-5 md:pt-[22px]">
-            {contractorProof.map((line, i) => (
-              <li key={i} className="flex items-start gap-2.5 md:gap-3">
-                <Check className="mt-0.5 h-[18px] w-[18px] shrink-0 text-success md:h-[19px] md:w-[19px]" strokeWidth={2.4} />
-                <span className="text-[14.5px] leading-snug md:text-[15.5px]">{line}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="rounded-3xl border border-border bg-card p-7 shadow-soft sm:p-9">
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-medium text-accent-soft-foreground">
+                WB
+              </div>
+              <div>
+                <p className="font-display text-lg">Wise Builders</p>
+                <p className="text-[13px] text-muted-foreground">CSLB #812440 · Willow Glen</p>
+              </div>
+            </div>
 
-          <div className="flex items-center justify-between border-t border-border pt-4 md:pt-[18px]">
-            <p className="hidden text-[13.5px] text-muted-foreground md:block">Last job closed March 2026</p>
-            <Link
-              to="/brief"
-              onClick={() => track("cta_match_clicked", { where: "contractor_card" })}
-              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground px-5 text-[15px] font-semibold text-background transition-smooth hover:opacity-90 md:h-11 md:w-auto md:text-[14.5px]"
-            >
-              Send my brief
-            </Link>
+            <ul className="mt-7 space-y-3.5">
+              {contractorProof.map((line) => (
+                <li key={line} className="flex items-start gap-3">
+                  <Check className="mt-[3px] h-[17px] w-[17px] shrink-0 text-success" strokeWidth={2} />
+                  <span className="text-[15px] leading-snug">{line}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">
+              <p className="hidden text-[13px] text-muted-foreground sm:block">Last job closed March 2026</p>
+              <Link
+                to="/brief"
+                onClick={() => track("cta_match_clicked", { where: "contractor_card" })}
+                className="inline-flex h-12 w-full items-center justify-center rounded-full border border-foreground/15 px-6 text-[15px] font-medium transition-smooth hover:bg-foreground hover:text-background sm:w-auto"
+              >
+                Send my brief
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* DIFFERENCE */}
-      <section className="bg-foreground px-6 py-14 text-background md:px-20 md:py-[104px]">
-        <div className="mx-auto flex max-w-[980px] flex-col gap-[30px] md:gap-[46px]">
-          <div className="flex flex-col gap-3.5 md:gap-[18px]">
-            <p className="eyebrow text-accent">The difference</p>
-            <h2 className="font-display text-[30px] font-extrabold leading-[1.14] tracking-[-0.03em] md:text-[46px] md:leading-[1.12]">
-              Reviews tell you how someone felt.<br className="hidden md:block" /> Permits tell you what got built.
-            </h2>
-          </div>
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-4xl px-6 py-24 md:py-32">
+          <p className="eyebrow text-accent">The difference</p>
+          <h2 className="mt-5 max-w-2xl font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
+            Reviews tell you how someone felt. Permits tell you what got built.
+          </h2>
 
-          <div className="flex flex-col">
+          <div className="mt-12">
             {differences.map(([before, after], i) => (
               <div
                 key={before}
-                className={`flex flex-col gap-1.5 border-t border-background/[0.12] py-4 md:grid md:grid-cols-2 md:gap-10 md:py-[22px] ${
-                  i === differences.length - 1 ? "border-b border-background/[0.12]" : ""
+                className={`grid gap-1.5 border-t border-border py-5 md:grid-cols-2 md:gap-12 md:py-6 ${
+                  i === differences.length - 1 ? "border-b" : ""
                 }`}
               >
-                <p className="text-sm text-background/50 line-through md:text-[17px]">{before}</p>
-                <p className="text-base font-medium md:text-[17px]">{after}</p>
+                <p className="text-[15px] text-muted-foreground line-through md:text-base">{before}</p>
+                <p className="text-[15px] md:text-base">{after}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CLOSING CTA */}
-      <section className="px-5 py-14 md:px-20 md:py-[104px]">
-        <div className="mx-auto flex max-w-[760px] flex-col items-center gap-5 text-center md:gap-[26px]">
-          <h2 className="font-display text-[30px] font-extrabold leading-[1.14] tracking-[-0.03em] md:text-[46px] md:leading-[1.12]">
+      {/* CLOSING */}
+      <section className="border-t border-border bg-secondary/40">
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center md:py-32">
+          <h2 className="font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
             Got a quote sitting in your inbox right now?
           </h2>
-          <div className="flex w-full justify-center">
-            <QuoteInput where="closing" />
+          <div className="mt-10 flex justify-center">
+            <QuoteEntry where="closing" />
           </div>
-          <p className="max-w-[560px] text-[13px] leading-relaxed text-muted-foreground md:text-[14.5px]">
-            Quote checks work anywhere in the U.S. Permit-matched contractors are live in San Jose,
-            with Santa Clara and Sunnyvale next.
+          <p className="mt-8 max-w-md text-[13.5px] leading-relaxed text-muted-foreground">
+            Quote checks work anywhere in the U.S. Permit-matched contractors are live in San Jose.
           </p>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="flex items-center justify-between border-t border-border px-5 py-6 md:px-20 md:py-[30px]">
-        <div className="flex items-center gap-2">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] font-bold text-accent-foreground md:h-[22px] md:w-[22px] md:text-xs">
-            h
-          </span>
-          <span className="text-[13.5px] font-semibold md:text-sm">Haleo</span>
-        </div>
-        <div className="flex items-center gap-4 text-[12.5px] text-muted-foreground md:gap-6 md:text-[13.5px]">
-          <Link to="/" className="transition-smooth hover:text-foreground">Privacy</Link>
-          <Link to="/" className="transition-smooth hover:text-foreground">Terms</Link>
-          <Link to="/pro" className="hidden transition-smooth hover:text-foreground md:inline">For contractors</Link>
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8">
+          <Logo />
+          <div className="flex items-center gap-6 text-[13.5px] text-muted-foreground">
+            <Link to="/roast" className="transition-smooth hover:text-foreground">Check a quote</Link>
+            <Link to="/pro" className="transition-smooth hover:text-foreground">For contractors</Link>
+            <span>© {new Date().getFullYear()} Haleo</span>
+          </div>
         </div>
       </footer>
     </div>
