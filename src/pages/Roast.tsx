@@ -185,14 +185,18 @@ export default function Roast() {
     }
   };
 
-  // Quote pasted on the homepage → carry it straight into the audit.
+  // Quote handed off from the homepage → carry it straight into the audit.
   const prefillHandled = useRef(false);
   useEffect(() => {
-    const prefill = (location.state as { prefillQuote?: string } | null)?.prefillQuote?.trim();
     if (prefillHandled.current) return;
     prefillHandled.current = true;
+    const { file, text } = takePendingQuote();
+    if (file) {
+      handleFile(file);
+      return;
+    }
+    const prefill = text?.trim();
     if (!prefill) return;
-    window.history.replaceState({}, "");
     if (prefill.length >= 40) {
       handleFile(new File([prefill], "pasted-quote.txt", { type: "text/plain" }));
     } else {
@@ -201,6 +205,7 @@ export default function Roast() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
