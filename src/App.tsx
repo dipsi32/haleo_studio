@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AccessGate from "@/components/auth/AccessGate";
 import AdminRoute from "@/components/auth/AdminRoute";
 import Index from "./pages/Index.tsx";
+import IndexClassic from "./pages/IndexClassic.tsx";
+
 import NotFound from "./pages/NotFound.tsx";
 import Brief from "./pages/Brief.tsx";
 import BriefResult from "./pages/BriefResult.tsx";
