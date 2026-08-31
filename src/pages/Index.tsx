@@ -15,7 +15,7 @@ const QuoteInput = ({ where }: { where: "hero" | "closing" }) => {
   const [text, setText] = useState("");
 
   const go = () => {
-    track("home_quote_check_clicked", { where });
+    track("cta_roast_clicked", { where });
     navigate("/roast", { state: { prefillQuote: text.trim() || undefined } });
   };
 
@@ -330,7 +330,7 @@ const Index = () => {
             <p className="hidden text-[13.5px] text-muted-foreground md:block">Last job closed March 2026</p>
             <Link
               to="/brief"
-              onClick={() => track("home_find_contractor_clicked", { where: "contractor_card" })}
+              onClick={() => track("cta_match_clicked", { where: "contractor_card" })}
               className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground px-5 text-[15px] font-semibold text-background transition-smooth hover:opacity-90 md:h-11 md:w-auto md:text-[14.5px]"
             >
               Send my brief
