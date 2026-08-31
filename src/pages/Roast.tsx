@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { takePendingQuote } from "@/lib/quoteHandoff";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
@@ -107,7 +108,6 @@ const sourceDetail = (cleanName: string, sampleSize?: number): string | null => 
 
 export default function Roast() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [stage, setStage] = useState<"upload" | "loading" | "result">("upload");
   const [result, setResult] = useState<RoastResult | null>(null);
