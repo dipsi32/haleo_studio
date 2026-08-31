@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Share2, Twitter, Facebook, Link2, ArrowLeft, RotateCcw,
@@ -107,6 +107,8 @@ const sourceDetail = (cleanName: string, sampleSize?: number): string | null => 
 
 export default function Roast() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [stage, setStage] = useState<"upload" | "loading" | "result">("upload");
   const [result, setResult] = useState<RoastResult | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -183,11 +185,29 @@ export default function Roast() {
     }
   };
 
+  // Quote pasted on the homepage → carry it straight into the audit.
+  const prefillHandled = useRef(false);
+  useEffect(() => {
+    const prefill = (location.state as { prefillQuote?: string } | null)?.prefillQuote?.trim();
+    if (prefillHandled.current) return;
+    prefillHandled.current = true;
+    if (!prefill) return;
+    window.history.replaceState({}, "");
+    if (prefill.length >= 40) {
+      handleFile(new File([prefill], "pasted-quote.txt", { type: "text/plain" }));
+    } else {
+      setPasteOpen(true);
+      setPasteText(prefill);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const f = e.dataTransfer.files[0];
     if (f) handleFile(f);
   };
+
 
   const shareUrl = typeof window !== "undefined"
     ? (() => {

@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AccessGate from "@/components/auth/AccessGate";
 import AdminRoute from "@/components/auth/AdminRoute";
 import Index from "./pages/Index.tsx";
+import IndexClassic from "./pages/IndexClassic.tsx";
+
 import NotFound from "./pages/NotFound.tsx";
 import Brief from "./pages/Brief.tsx";
 import BriefResult from "./pages/BriefResult.tsx";
@@ -59,6 +61,9 @@ const App = () => (
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
+            {/* Previous homepage, kept for comparison */}
+            <Route path="/home-classic" element={<IndexClassic />} />
+
             <Route path="/roast" element={<Roast />} />
             <Route path="/login" element={<Login />} />
             <Route path="/waitlist" element={<Waitlist />} />
