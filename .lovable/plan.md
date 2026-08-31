@@ -1,54 +1,38 @@
-## Problem
+# Agent integrations (MCP) — finish and ship
 
-The feasibility check has no source for the 4 critical fields (lot size, zoning, primary dwelling sqft, fire hazard zone), so every San Jose address gets "Insufficient data — cannot produce reliable feasibility." We're turning away every real customer.
+Haleo already has an MCP server in the codebase: an OAuth-protected server named "Haleo" with five tools (`list_projects`, `get_project_brief`, `list_proposal_audits`, `get_proposal_audit`, `search_contractors`), the Vite plugin wired in `vite.config.ts`, the generated function at `supabase/functions/mcp/index.ts`, and a consent page at `/.lovable/oauth/consent`.
 
-## Fix — two layers
+What is missing is the part that makes it actually reachable and useful to ChatGPT/Claude users.
 
-### Layer 1: Auto-fetch from free public GIS (no API keys, no new packages)
+## 1. Fix the Supabase client used by the tools
 
-Create one new edge function `enrich-sj-parcel` that, given an address or lat/lng, hits these free ArcGIS REST endpoints in parallel:
+`src/lib/mcp/supabase.ts` reads `process.env.SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` at call time. Edge Functions run on Deno and do not populate the singular publishable-key name, so the tools can fail to construct a client. Replace it with the runtime-env resolver that checks Deno first, falls back to the `SUPABASE_PUBLISHABLE_KEYS` dictionary and the legacy anon key, and keeps the token-forwarding behavior so row-level security still runs as the signed-in homeowner.
 
-1. **Santa Clara County Assessor parcels** (`https://www.sccgov.org/sites/scc/gis` ArcGIS feature service)  
-   → `apn`, `lot_size_sqft` (from `Shape__Area` or `LotSize` attribute), `primary_dwelling_sqft` (from `BldgSqFt` / `LivingArea`), `year_built`
-2. **San Jose Zoning GIS** (`https://gisdata-csj.opendata.arcgis.com/` Zoning Districts feature service)  
-   → `zoning` code (e.g. `R-1-8`, `R-2`)
-3. **Cal Fire FHSZ** (`https://egis.fire.ca.gov/arcgis/rest/services/FHSZ_SRA_LRA_Combined`)  
-   → `fire_hazard_zone` (Moderate / High / Very High / none)
-4. **San Jose building footprints** (open-data ArcGIS layer)  
-   → `existing_footprints_sqft` (sum building polygons on parcel)
+## 2. Add public, no-login discovery tools
 
-Each lookup is independent, wrapped in try/catch; partial success still beats today's all-nulls. Geocode once via the existing `lookup-address-risk` flow (already returns lat/lng), then spatial-query each layer by point.
+Today every tool requires OAuth, so an assistant can do nothing for a homeowner who has never signed into Haleo. Add tools that read only intentionally public data:
 
-Call `enrich-sj-parcel` from `ADU.tsx` between `lookup-parcel-history` and `check-adu-feasibility`. Merge enriched data into the `parcel` object before posting to feasibility.
+- `find_contractors_for_project` — describe a project in plain language plus a San Jose neighborhood/zip, get back permit-proven contractor matches with counts of similar permitted jobs nearby.
+- `get_contractor_profile` — public profile for one contractor by slug: permit history, recent job counts, city code-case checks.
 
-### Layer 2: Manual override — "Help us fill the gaps"
+These are the tools that let Haleo answer "who should remodel my kitchen in 95128?" inside ChatGPT and hand the homeowner a reason to come to the app.
 
-If after Layer 1 anything is still missing, show a compact inline form on the feasibility screen *before* the verdict:
+Note: mixing public and OAuth tools on one server requires a decision on access mode (see the question below).
 
-- Lot size (sqft) — number input
-- Primary dwelling size (sqft) — number input
-- Zoning code (if known) — text input, optional
-- Fire hazard zone — yes / no / unsure toggle
+## 3. Verify and deploy
 
-A "Recheck feasibility" button re-posts to `check-adu-feasibility` with the user-supplied values. Mark these as `data_source: "user"` so the confidence badge labels them clearly ("based on your input").
+Regenerate the manifest, deploy the `mcp` function, and test the endpoint end to end — unauthenticated tool call, then an OAuth-authenticated one — before calling it done.
 
-This turns the dead-end into a 30-second self-serve recovery. Most owners know their lot size; the rest can pull it off Zillow/Redfin in one click.
+## 4. Surface it in the product
 
-## Files changed
+Add a short "Connect Haleo to ChatGPT or Claude" section (Account page) with the server URL and one-line setup instructions, so homeowners can actually turn it on.
 
-- **New:** `supabase/functions/enrich-sj-parcel/index.ts`
-- **New:** `src/components/adu/AduDataGapForm.tsx` (inline override form)
-- **Edit:** `src/pages/ADU.tsx` — call enrich function; render gap form on low/medium confidence; wire "Recheck" button
-- **Edit:** `supabase/config.toml` — register new function
-- **Edit:** `src/lib/analytics.ts` — add `adu_data_enriched`, `adu_gaps_filled_manually` events
+## Also tracked
 
-## Out of scope
+Y Combinator consumer-AI positioning work — answered in chat this turn; capture any resulting product changes as their own tasks.
 
-- Coverage beyond San Jose / Santa Clara County (Layer 1 endpoints are SCC-specific)
-- Paid data providers (Regrid, ATTOM) — these public sources are enough for the pilot
-- Changing the hardcoded rules engine — only the *inputs* to it are changing
+## Technical notes
 
-## Risks / verification
-
-- Public ArcGIS endpoints can rate-limit or change URLs. Each one is isolated so a single failure doesn't break the whole call. I'll log each lookup's status.
-- After implementation I'll test with a real San Jose address (e.g. 200 E Santa Clara St) and confirm at least lot_size + zoning + FHSZ come back populated and confidence rises to "medium" or "high".
+- Tool files stay import-safe (no env reads at module load).
+- Public tools query only via an anon client; never service-role, never widened RLS.
+- The OAuth issuer stays `https://<project-ref>.supabase.co/auth/v1`, built from `VITE_SUPABASE_PROJECT_ID`.
