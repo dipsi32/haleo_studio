@@ -86,6 +86,12 @@ export type AnalyticsEvent =
   | "adu_waitlist_joined"
   | "adu_data_enriched"
   | "adu_gaps_filled_manually"
+  // Hero story (interactive "Text From Mike" hero)
+  | "hero_story_started"
+  | "hero_story_beat"
+  | "hero_story_choice"
+  | "hero_story_completed"
+  | "hero_story_skipped"
   // Errors
   | "error_proposal_upload"
   | "error_brief_generation"
