@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { setPendingQuoteFile, setPendingQuoteText } from "@/lib/quoteHandoff";
 import { track } from "@/lib/analytics";
+import HeroStory from "@/components/hero-story/HeroStory";
 
 /* ---------------------------------------------------------------- */
 /* Quote entry — upload first, paste as a quiet fallback              */
@@ -221,30 +222,10 @@ const Index = () => {
         </Sheet>
       </header>
 
-      {/* HERO — one thing to do */}
-      <section className="mx-auto max-w-6xl px-6 pb-24 pt-16 md:pb-32 md:pt-28">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl"
-        >
-          <p className="eyebrow text-muted-foreground">Free · No account · Any U.S. zip</p>
-          <h1 className="mt-6 font-display text-[44px] leading-[1.05] tracking-tight md:text-[64px]">
-            Don't sign that quote yet.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Upload it here. In 60 seconds you'll know what's fair, what's padded, and whether they've
-            actually done this job before.
-          </p>
-          <div className="mt-10">
-            <QuoteEntry where="hero" />
-          </div>
-          <p className="mt-6 text-[13.5px] text-muted-foreground">
-            We never show your quote to a contractor.
-          </p>
-        </motion.div>
-      </section>
+      {/* HERO — "Text From Mike": an interactive pain-simulation story.
+          Deliberately its own design world (see src/components/hero-story) —
+          gets reconciled with the rest of the site's design system later. */}
+      <HeroStory />
 
       {/* SAMPLE */}
       <section className="border-t border-border bg-secondary/40">
