@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
+import DealReadCard from "@/components/pro/DealReadCard";
+import { toBuyBox } from "@/lib/dealRead";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +67,8 @@ type SendRow = {
   sent_at: string | null;
   unlocked_at: string | null;
   passed_at: string | null;
+  // 'contractor_invite' = the prospect came through this contractor's own link.
+  source: string;
   outreach_batches: {
     neighborhood: string | null;
     homeowner_name: string | null;
@@ -119,7 +123,7 @@ const ProInbox = () => {
     const load = async () => {
       const { data } = await supabase
         .from("outreach_sends")
-        .select("id, contractor_id, batch_id, sent_at, unlocked_at, passed_at, outreach_batches(neighborhood, homeowner_name, homeowner_user_id, brief_snapshot)")
+        .select("id, contractor_id, batch_id, sent_at, unlocked_at, passed_at, source, outreach_batches(neighborhood, homeowner_name, homeowner_user_id, brief_snapshot)")
         .eq("contractor_id", contractorId)
         .order("sent_at", { ascending: false });
       if (active && data) setSends(data as unknown as SendRow[]);
@@ -219,6 +223,9 @@ const ProInbox = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg">{headline}</h3>
                         {isUnlocked && <CheckCircle2 className="h-4 w-4 text-accent" />}
+                        {s.source === "contractor_invite" && (
+                          <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">Your link</span>
+                        )}
                         {isPassed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Passed</span>}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">From {homeowner}</p>
@@ -296,6 +303,8 @@ const ProInbox = () => {
 // =============================================================
 function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: SendRow; contractorId: string; onUnlocked: (sendId: string, unlockedAt: string) => void; onClose: () => void }) {
   const { toast } = useToast();
+  const { account } = useContractorAccount();
+  const buyBox = toBuyBox(account?.buy_box);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [passing, setPassing] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -413,7 +422,9 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
       <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{headline}</DialogTitle>
-          <DialogDescription>From {homeowner}</DialogDescription>
+          <DialogDescription>
+            From {homeowner}{send.source === "contractor_invite" ? " · came through your brief link" : ""}
+          </DialogDescription>
         </DialogHeader>
 
         {!isUnlocked ? (
@@ -492,6 +503,16 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
           </div>
         ) : (
           <div className="space-y-6 py-2">
+            {/* Deal read: the decision first, the detail after */}
+            <DealReadCard
+              snapshot={snap}
+              buyBox={buyBox}
+              onAsk={(q) => {
+                setQuestion((cur) => (cur.trim() ? `${cur.trim()}\n${q}` : q).slice(0, 800));
+                document.getElementById("ask-homeowner")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            />
+
             {/* Room photos — homeowner-uploaded, shown first so contractor sees the actual space */}
             {((snap.room_photo_urls?.length ?? 0) > 0 || (snap.floorplan_urls?.length ?? 0) > 0) && (
               <section className="rounded-2xl border border-border bg-card p-5">
@@ -749,7 +770,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
             </section>
 
             {/* Clarifications — contractor ↔ homeowner */}
-            <section className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
+            <section id="ask-homeowner" className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
                 <MessageSquare className="h-3 w-3" /> Ask the homeowner
               </div>

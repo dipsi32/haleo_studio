@@ -1,7 +1,7 @@
 // Shared header for the contractor workspace. Same nav everywhere so it's
 // always one click to inbox, profile, public view, or sign out.
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ExternalLink, Inbox, LogOut, UserRound, ChevronDown } from "lucide-react";
+import { ExternalLink, Inbox, Link2, LogOut, UserRound, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
@@ -33,6 +33,7 @@ export default function ProHeader() {
 
   const onProfile = pathname.startsWith("/pro/profile");
   const onInbox = pathname.startsWith("/pro/inbox");
+  const onLinks = pathname.startsWith("/pro/links");
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,6 +63,9 @@ export default function ProHeader() {
           </Link>
           <Link to="/pro/inbox" className={linkClass(onInbox)}>
             <Inbox className="h-3.5 w-3.5" /> Inbox
+          </Link>
+          <Link to="/pro/links" className={linkClass(onLinks)}>
+            <Link2 className="h-3.5 w-3.5" /> Links
           </Link>
         </nav>
 
@@ -103,6 +107,9 @@ export default function ProHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/pro/inbox")}>
                 <Inbox className="mr-2 h-4 w-4" /> Inbox
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/pro/links")}>
+                <Link2 className="mr-2 h-4 w-4" /> Brief links
               </DropdownMenuItem>
               {profileSlug && (
                 <DropdownMenuItem asChild>

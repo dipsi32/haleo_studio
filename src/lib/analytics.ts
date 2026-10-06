@@ -70,6 +70,13 @@ export type AnalyticsEvent =
   | "contractor_onboarded"
   | "lead_unlock_attempted"
   | "lead_unlock_completed"
+  // Contractor-owned brief links (the contractor's funnel, then the homeowner's)
+  | "invite_created"
+  | "invite_revoked"
+  | "buy_box_saved"
+  | "invite_opened"
+  | "invite_brief_started"
+  | "invite_brief_sent"
   // ADU feasibility
   | "adu_started"
   | "adu_address_submitted"

@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { track } from "@/lib/analytics";
+import { getActiveInvite } from "@/lib/invites";
 
 const Login = () => {
   const { user, loading } = useAuth();
@@ -30,8 +31,11 @@ const Login = () => {
   // open on sign-up and speak to what they just built.
   const intent = params.get("intent");
   const isMatchIntent = intent === "match";
+  // Sent here from a contractor's brief link: the homeowner is new too.
+  const isInviteIntent = intent === "invite";
+  const inviteName = isInviteIntent ? getActiveInvite()?.contractorName ?? null : null;
 
-  const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent ? "signup" : "signin");
+  const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent || isInviteIntent ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -103,16 +107,20 @@ const Login = () => {
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <Logo />
           <h1 className="font-display text-2xl font-light">
-            {isMatchIntent && mode === "signup"
-              ? "Your brief is ready. Where should we send your matches?"
-              : mode === "signup"
-                ? "Create your account"
-                : "Welcome back"}
+            {isInviteIntent && mode === "signup"
+              ? `Your brief is ready. Create an account to send it${inviteName ? ` to ${inviteName}` : ""}.`
+              : isMatchIntent && mode === "signup"
+                ? "Your brief is ready. Where should we send your matches?"
+                : mode === "signup"
+                  ? "Create your account"
+                  : "Welcome back"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">
-            {isMatchIntent
-              ? "We'll show you the three contractors with permit history closest to your project — same city, same type of work. An account keeps your brief and lets us tell you when they reply."
-              : "Your brief, audit, and saved rooms live behind your account — so you can pick up where you left off."}
+            {isInviteIntent
+              ? `An account keeps your brief for you and lets ${inviteName ?? "the contractor"} reply to you through Haleo. The brief goes to them and no one else.`
+              : isMatchIntent
+                ? "We'll show you the three contractors with permit history closest to your project — same city, same type of work. An account keeps your brief and lets us tell you when they reply."
+                : "Your brief, audit, and saved rooms live behind your account — so you can pick up where you left off."}
           </p>
         </div>
 
