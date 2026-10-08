@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, CircleHelp, Info, ListChecks, Ruler, ShieldCheck, Wallet } from "lucide-react";
 import { computeDealRead, type BuyBox, type DealSnapshot, type FitLevel } from "@/lib/dealRead";
 
-const FIT_STYLE: Record<FitLevel, string> = {
+export const FIT_STYLE: Record<FitLevel, string> = {
   fits: "border-sage/30 bg-sage/10 text-sage",
   check: "border-amber-400/40 bg-amber-50 text-amber-700",
   below: "border-border bg-secondary text-muted-foreground",

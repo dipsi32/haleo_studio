@@ -12,6 +12,7 @@ import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import { demoScan } from "@/lib/visibilityDemo";
 import {
   cooldownLeftHours,
   rankLabel,
@@ -138,6 +139,7 @@ export default function ProVisibility() {
   const [scan, setScan] = useState<ScanRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   const load = useCallback(async () => {
     if (!contractorId) return;
@@ -149,12 +151,18 @@ export default function ProVisibility() {
       .limit(1)
       .maybeSingle();
     setScan((data as unknown as ScanRow) ?? null);
+    setIsDemo(false);
     setLoading(false);
   }, [contractorId]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const showSample = () => {
+    setScan(demoScan(account?.company_name || "Your company", "San Jose"));
+    setIsDemo(true);
+  };
 
   const run = async () => {
     setRunning(true);
@@ -171,11 +179,13 @@ export default function ProVisibility() {
           track("visibility_scan_blocked");
           toast({ title: "Checked recently", description: "Results don't change hour to hour. Come back later today." });
         } else {
-          toast({ title: "Couldn't run the check", description: "Try again in a few minutes.", variant: "destructive" });
+          // Live checks aren't connected yet: show a clearly labeled sample.
+          showSample();
         }
         return;
       }
       setScan((data as { scan: ScanRow }).scan);
+      setIsDemo(false);
       track("visibility_scan_run");
     } finally {
       setRunning(false);
@@ -188,7 +198,7 @@ export default function ProVisibility() {
   const ai = results ? summarizeAi(results.ai) : null;
   const rivals = useMemo(() => (results ? topRivals(results) : []), [results]);
   const gap = results ? (reviewGap(results.google) ?? reviewGap(results.yelp)) : null;
-  const wait = cooldownLeftHours(scan?.created_at ?? null);
+  const wait = isDemo ? 0 : cooldownLeftHours(scan?.created_at ?? null);
 
   const searchTile = (s: ReturnType<typeof summarizeSearch>) =>
     !s
@@ -221,13 +231,23 @@ export default function ProVisibility() {
               <RefreshCw className={`h-4 w-4 ${running ? "animate-spin" : ""}`} />
               {running ? "Checking…" : scan ? "Check again" : "Check my visibility"}
             </Button>
-            {scan && (
+            {scan && !isDemo && (
               <p className="text-xs text-muted-foreground sm:text-right">
                 {wait > 0 ? `Next check in about ${wait}h. ` : ""}Last checked {formatDistanceToNow(new Date(scan.created_at), { addSuffix: true })}
               </p>
             )}
           </div>
         </div>
+
+        {isDemo && (
+          <div className="mb-5 flex items-start gap-2 rounded-2xl border border-amber-400/40 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              <span className="font-medium">Sample data.</span> This shows what a check looks like once Google, Yelp and the AI check are connected. These
+              numbers and company names aren't real and aren't yours.
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="grid gap-3 sm:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted/40" />)}</div>
@@ -239,6 +259,9 @@ export default function ProVisibility() {
               It takes about 30 seconds. We search Google and Yelp, and ask ChatGPT and Gemini who they'd recommend, for the
               kind of work you do in {account?.service_areas?.split(",")[0]?.trim() || "your city"}.
             </p>
+            <button onClick={showSample} className="mt-4 text-sm text-foreground underline underline-offset-4 hover:text-accent">
+              See a sample first
+            </button>
           </div>
         ) : (
           <>

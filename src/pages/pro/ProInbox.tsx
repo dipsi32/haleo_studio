@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
-  MessageSquare, Send as SendIcon, Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
+  Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
   DollarSign, ImagePlus, ShieldCheck, CreditCard, Loader2, Info, Flame, Waves, Mountain,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
-import DealReadCard from "@/components/pro/DealReadCard";
-import { toBuyBox } from "@/lib/dealRead";
+import DealReadCard, { FIT_STYLE } from "@/components/pro/DealReadCard";
+import ReplyPanel from "@/components/pro/ReplyPanel";
+import { computeDealRead, toBuyBox } from "@/lib/dealRead";
+import { matchesFilter, replyState, triageCompare, type InboxFilter, type ReplyState, type ThreadMsg } from "@/lib/replyDrafts";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
@@ -99,10 +101,35 @@ const ProInbox = () => {
   const [loading, setLoading] = useState(true);
   const [activeSendId, setActiveSendId] = useState<string | null>(null);
   const [pushBannerOpen, setPushBannerOpen] = useState(false);
+  const [threads, setThreads] = useState<Record<string, ThreadMsg[]>>({});
+  const [filter, setFilter] = useState<InboxFilter>("action");
   const [searchParams, setSearchParams] = useSearchParams();
 
   const contractorId = account?.contractor_id;
   const activeSend = useMemo(() => sends.find((s) => s.id === activeSendId) ?? null, [sends, activeSendId]);
+  const buyBox = toBuyBox(account?.buy_box);
+
+  // One row per brief with where the conversation stands, sorted so what needs
+  // a reply is on top.
+  const rows = useMemo(
+    () =>
+      sends
+        .map((s) => ({ send: s, state: replyState(threads[s.id] ?? []), passed: !!s.passed_at, sentAt: s.sent_at }))
+        .sort(triageCompare),
+    [sends, threads],
+  );
+  const counts = useMemo(
+    () => ({
+      action: rows.filter((r) => matchesFilter(r, "action")).length,
+      waiting: rows.filter((r) => matchesFilter(r, "waiting")).length,
+      all: rows.length,
+    }),
+    [rows],
+  );
+  const visible = rows.filter((r) => matchesFilter(r, filter));
+  const oldestWaiting = rows
+    .filter((r) => matchesFilter(r, "action") && r.sentAt)
+    .reduce<string | null>((o, r) => (!o || r.sentAt! < o ? r.sentAt : o), null);
 
   // Honor ?open=<send_id> deep link (from notification bell, etc.)
   useEffect(() => {
@@ -128,6 +155,21 @@ const ProInbox = () => {
         .order("sent_at", { ascending: false });
       if (active && data) setSends(data as unknown as SendRow[]);
       if (active) setLoading(false);
+      // Who spoke last on each brief, so the list can say what needs a reply.
+      const ids = ((data ?? []) as { id: string }[]).map((r) => r.id);
+      if (ids.length) {
+        const { data: msgs } = await supabase
+          .from("brief_clarifications")
+          .select("outreach_send_id, sender_role, created_at")
+          .in("outreach_send_id", ids);
+        if (active && msgs) {
+          const by: Record<string, ThreadMsg[]> = {};
+          for (const m of msgs as { outreach_send_id: string; sender_role: "contractor" | "homeowner"; created_at: string }[]) {
+            (by[m.outreach_send_id] ??= []).push({ sender_role: m.sender_role, created_at: m.created_at });
+          }
+          setThreads(by);
+        }
+      }
     };
     load();
 
@@ -136,6 +178,11 @@ const ProInbox = () => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "outreach_sends", filter: `contractor_id=eq.${contractorId}` },
+        () => load()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "brief_clarifications", filter: `contractor_id=eq.${contractorId}` },
         () => load()
       )
       .subscribe();
@@ -204,8 +251,46 @@ const ProInbox = () => {
             </div>
           </div>
         ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter briefs">
+                {([
+                  ["action", "Needs a reply", counts.action],
+                  ["waiting", "Waiting on them", counts.waiting],
+                  ["all", "All", counts.all],
+                ] as const).map(([key, label, n]) => (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={filter === key}
+                    onClick={() => setFilter(key)}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                      filter === key ? "border-foreground bg-foreground text-background" : "border-border bg-card text-foreground/80 hover:border-foreground/40"
+                    }`}
+                  >
+                    {label} <span className={filter === key ? "opacity-70" : "text-muted-foreground"}>{n}</span>
+                  </button>
+                ))}
+              </div>
+              {counts.action > 0 && oldestWaiting && (
+                <p className="text-xs text-muted-foreground">
+                  {counts.action === 1 ? "1 brief is" : `${counts.action} briefs are`} waiting for you · oldest came in{" "}
+                  {formatDistanceToNow(new Date(oldestWaiting), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+
+            {visible.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-border bg-card/40 p-10 text-center">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-sage" />
+                <p className="mt-3 font-display text-lg">{filter === "action" ? "You're all caught up" : "Nothing here"}</p>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                  {filter === "action" ? "Every brief has your reply. New ones show up here the moment they arrive." : "Briefs will appear here as the conversation moves."}
+                </p>
+              </div>
+            ) : (
           <ul className="space-y-3">
-            {sends.map((s) => {
+            {visible.map(({ send: s, state }) => {
               const headline = headlineFor(s);
               const homeowner = s.outreach_batches?.homeowner_name ?? "A homeowner";
               const isUnlocked = !!s.unlocked_at;
@@ -213,23 +298,28 @@ const ProInbox = () => {
               const snap = s.outreach_batches?.brief_snapshot ?? {};
               const preview = snap.scope_summary || snap.vision || (snap.trade_groups?.[0]?.lines?.[0] ?? "");
               const photoCount = (snap.room_photo_urls?.length ?? 0) + (snap.floorplan_urls?.length ?? 0) + (snap.rendering_urls?.length ?? 0);
+              const deal = isUnlocked ? computeDealRead(snap, buyBox) : null;
               return (
                 <li key={s.id}>
                   <button
                     onClick={() => setActiveSendId(s.id)}
-                    className="flex w-full items-start justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-accent/40 hover:shadow-soft"
+                    className={`flex w-full items-start justify-between gap-4 rounded-2xl border bg-card p-5 text-left transition-all hover:border-accent/40 hover:shadow-soft ${
+                      state === "homeowner_replied" && !isPassed ? "border-amber-400/60" : "border-border"
+                    }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-display text-lg">{headline}</h3>
                         {isUnlocked && <CheckCircle2 className="h-4 w-4 text-accent" />}
+                        {deal && deal.fit.level !== "unset" && (
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_STYLE[deal.fit.level]}`}>{deal.fit.title}</span>
+                        )}
                         {s.source === "contractor_invite" && (
                           <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">Your link</span>
                         )}
                         {isPassed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Passed</span>}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">From {homeowner}</p>
-
                       {preview && (
                         <p className={`mt-2 text-sm text-foreground/80 ${isUnlocked ? "line-clamp-2" : "line-clamp-2 italic"}`}>
                           {isUnlocked ? preview : `"${preview}"`}
@@ -270,6 +360,7 @@ const ProInbox = () => {
                           <Lock className="h-3 w-3" /> $99 to unlock
                         </span>
                       )}
+                      {!isPassed && isUnlocked && <StateTag state={state} name={homeowner} />}
                       {s.sent_at && (
                         <p className="mt-2 text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(s.sent_at), { addSuffix: true })}</p>
                       )}
@@ -279,6 +370,8 @@ const ProInbox = () => {
               );
             })}
           </ul>
+            )}
+          </>
         )}
       </main>
 
@@ -286,6 +379,7 @@ const ProInbox = () => {
         <BriefDetailDialog
           send={activeSend}
           contractorId={contractorId}
+          onMessage={(sendId, msg) => setThreads((cur) => ({ ...cur, [sendId]: [...(cur[sendId] ?? []), msg] }))}
           onUnlocked={(sendId, unlockedAt) => {
             setSends((current) => current.map((row) => (
               row.id === sendId ? { ...row, unlocked_at: unlockedAt } : row
@@ -298,10 +392,19 @@ const ProInbox = () => {
   );
 };
 
+const StateTag = ({ state, name }: { state: ReplyState; name: string }) => {
+  const first = name.trim().split(/\s+/)[0] || "them";
+  if (state === "homeowner_replied")
+    return <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">{first} replied</span>;
+  if (state === "waiting")
+    return <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">Waiting on {first}</span>;
+  return <span className="inline-flex rounded-full bg-foreground px-2.5 py-1 text-xs font-medium text-background">Reply</span>;
+};
+
 // =============================================================
 // Brief detail with locked / unlocked states + private annotations
 // =============================================================
-function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: SendRow; contractorId: string; onUnlocked: (sendId: string, unlockedAt: string) => void; onClose: () => void }) {
+function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose }: { send: SendRow; contractorId: string; onUnlocked: (sendId: string, unlockedAt: string) => void; onMessage: (sendId: string, msg: ThreadMsg) => void; onClose: () => void }) {
   const { toast } = useToast();
   const { account } = useContractorAccount();
   const buyBox = toBuyBox(account?.buy_box);
@@ -378,12 +481,13 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
     setAnnotations((cur) => cur.filter((a) => a.id !== id));
   };
 
-  const sendQuestion = async () => {
+  // Sends the draft in the reply panel. Returns true when it went through.
+  const sendMessage = async (): Promise<boolean> => {
     const trimmed = question.trim();
-    if (!trimmed) return;
+    if (!trimmed) return false;
     if (!homeownerUserId) {
       toast({ title: "Can't reach this homeowner", description: "Older brief — no contact route on file.", variant: "destructive" });
-      return;
+      return false;
     }
     setSendingQ(true);
     try {
@@ -405,17 +509,29 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
         user_id: homeownerUserId,
         outreach_send_id: send.id,
         type: "clarification_received",
-        title: `Question from a contractor`,
+        title: `Message from a contractor`,
         body: trimmed.length > 140 ? `${trimmed.slice(0, 140)}…` : trimmed,
       });
 
-      if (data) setClarifications((cur) => [...cur, data as Clarification]);
+      if (data) {
+        setClarifications((cur) => [...cur, data as Clarification]);
+        onMessage(send.id, { sender_role: "contractor", created_at: (data as Clarification).created_at });
+      }
       setQuestion("");
+      track("contractor_reply_sent", { source: send.source });
       toast({ title: "Sent to homeowner", description: "They'll see it in their notifications." });
+      return true;
     } catch (e) {
       toast({ title: "Couldn't send", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      return false;
     } finally { setSendingQ(false); }
   };
+
+  const sendAndPass = async () => {
+    if (await sendMessage()) await handlePass();
+  };
+
+  const dealUnknowns = computeDealRead(snap, buyBox).unknowns;
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -511,6 +627,20 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
                 setQuestion((cur) => (cur.trim() ? `${cur.trim()}\n${q}` : q).slice(0, 800));
                 document.getElementById("ask-homeowner")?.scrollIntoView({ behavior: "smooth", block: "center" });
               }}
+            />
+
+            {/* Reply right here: the decision, then the action, before any scrolling */}
+            <ReplyPanel
+              ctx={{ homeowner, company: account?.company_name ?? null, project: (snap.projectType || snap.scope_label || null) }}
+              thread={clarifications}
+              openQuestions={dealUnknowns}
+              sentAt={send.sent_at}
+              value={question}
+              onChange={setQuestion}
+              canSend={!!homeownerUserId}
+              sending={sendingQ}
+              onSend={sendMessage}
+              onSendAndPass={sendAndPass}
             />
 
             {/* Room photos — homeowner-uploaded, shown first so contractor sees the actual space */}
@@ -766,52 +896,6 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onClose }: { send: 
                     {savingNote ? "Saving…" : "Save note"}
                   </Button>
                 </div>
-              </div>
-            </section>
-
-            {/* Clarifications — contractor ↔ homeowner */}
-            <section id="ask-homeowner" className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">
-                <MessageSquare className="h-3 w-3" /> Ask the homeowner
-              </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Questions go straight to {homeowner}'s notification bell. They can reply right back.
-              </p>
-              {clarifications.length > 0 && (
-                <ul className="mt-3 space-y-2">
-                  {clarifications.map((c) => (
-                    <li
-                      key={c.id}
-                      className={`rounded-xl px-3 py-2 text-sm ${
-                        c.sender_role === "contractor"
-                          ? "ml-8 bg-foreground text-background"
-                          : "mr-8 border border-border bg-card"
-                      }`}
-                    >
-                      <p className="text-[10px] font-medium uppercase tracking-wider opacity-70">
-                        {c.sender_role === "contractor" ? "You" : homeowner} · {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      </p>
-                      <p className="mt-1 whitespace-pre-wrap">{c.message}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="mt-3 space-y-2">
-                <Textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value.slice(0, 800))}
-                  placeholder="e.g. Are you flexible on the island size? And is the existing electrical panel 200A?"
-                  rows={3}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">{question.length}/800</span>
-                  <Button size="sm" onClick={sendQuestion} disabled={sendingQ || !question.trim() || !homeownerUserId}>
-                    <SendIcon className="h-3.5 w-3.5" /> {sendingQ ? "Sending…" : "Send to homeowner"}
-                  </Button>
-                </div>
-                {!homeownerUserId && (
-                  <p className="text-[11px] text-muted-foreground">This brief was sent before reply-routing was set up.</p>
-                )}
               </div>
             </section>
           </div>

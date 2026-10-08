@@ -75,6 +75,7 @@ export type AnalyticsEvent =
   | "invite_revoked"
   | "buy_box_saved"
   | "invite_opened"
+  | "contractor_reply_sent"
   | "visibility_scan_run"
   | "visibility_scan_blocked"
   | "invite_brief_started"
