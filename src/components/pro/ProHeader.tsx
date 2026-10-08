@@ -1,7 +1,7 @@
 // Shared header for the contractor workspace. Same nav everywhere so it's
 // always one click to inbox, profile, public view, or sign out.
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ExternalLink, Inbox, Link2, LogOut, UserRound, ChevronDown } from "lucide-react";
+import { ExternalLink, Inbox, Link2, LogOut, TrendingUp, UserRound, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
@@ -34,6 +34,7 @@ export default function ProHeader() {
   const onProfile = pathname.startsWith("/pro/profile");
   const onInbox = pathname.startsWith("/pro/inbox");
   const onLinks = pathname.startsWith("/pro/links");
+  const onVisibility = pathname.startsWith("/pro/visibility");
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,14 +59,17 @@ export default function ProHeader() {
         </div>
 
         <nav className="flex items-center gap-1">
-          <Link to="/pro/profile" className={linkClass(onProfile)}>
-            <UserRound className="h-3.5 w-3.5" /> Profile
+          <Link to="/pro/profile" aria-label="Profile" className={linkClass(onProfile)}>
+            <UserRound className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Profile</span>
           </Link>
-          <Link to="/pro/inbox" className={linkClass(onInbox)}>
-            <Inbox className="h-3.5 w-3.5" /> Inbox
+          <Link to="/pro/inbox" aria-label="Inbox" className={linkClass(onInbox)}>
+            <Inbox className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Inbox</span>
           </Link>
-          <Link to="/pro/links" className={linkClass(onLinks)}>
-            <Link2 className="h-3.5 w-3.5" /> Links
+          <Link to="/pro/links" aria-label="Links" className={linkClass(onLinks)}>
+            <Link2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Links</span>
+          </Link>
+          <Link to="/pro/visibility" aria-label="Visibility" className={linkClass(onVisibility)}>
+            <TrendingUp className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Visibility</span>
           </Link>
         </nav>
 

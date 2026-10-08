@@ -1473,6 +1473,38 @@ export type Database = {
         }
         Relationships: []
       }
+      visibility_scans: {
+        Row: {
+          city: string | null
+          contractor_id: string
+          created_at: string
+          id: string
+          results: Json
+        }
+        Insert: {
+          city?: string | null
+          contractor_id: string
+          created_at?: string
+          id?: string
+          results: Json
+        }
+        Update: {
+          city?: string | null
+          contractor_id?: string
+          created_at?: string
+          id?: string
+          results?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_scans_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       contractor_profiles_public: {

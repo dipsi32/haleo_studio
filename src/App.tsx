@@ -33,6 +33,7 @@ import ProOnboarding from "./pages/pro/ProOnboarding.tsx";
 import ProInbox from "./pages/pro/ProInbox.tsx";
 import ProStudio from "./pages/pro/ProStudio.tsx";
 import ProLinks from "./pages/pro/ProLinks.tsx";
+import ProVisibility from "./pages/pro/ProVisibility";
 import Invite from "./pages/Invite.tsx";
 import InviteSend from "./pages/InviteSend.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
@@ -180,6 +181,15 @@ const App = () => (
               }
             />
 
+
+            <Route
+              path="/pro/visibility"
+              element={
+                <ContractorRoute>
+                  <ProVisibility />
+                </ContractorRoute>
+              }
+            />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
