@@ -1,0 +1,60 @@
+# Keeps the staging Supabase database in sync with supabase/migrations.
+# Runs when a pull request is merged into develop or staging (a merge is a push
+# to that branch), and on demand from the Actions tab.
+name: Staging migrations
+
+on:
+  push:
+    branches: [develop, staging]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - ".github/workflows/staging-migrations.yml"
+  workflow_dispatch:
+
+# One push at a time. A second merge waits instead of racing the first.
+concurrency:
+  group: staging-db-migrations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  push-migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+      STAGING_PROJECT_ID: ${{ secrets.STAGING_PROJECT_ID }}
+      # The production project ref from supabase/config.toml. Never push from CI to it.
+      PRODUCTION_PROJECT_ID: nfjipxgmwdlxqzzvqmsl
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets and target
+        run: |
+          missing=0
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD STAGING_PROJECT_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Missing repository secret for $v"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || exit 1
+          if [ "$STAGING_PROJECT_ID" = "$PRODUCTION_PROJECT_ID" ]; then
+            echo "::error::STAGING_PROJECT_ID is the production project. Refusing to push."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link staging project
+        run: supabase link --project-ref "$STAGING_PROJECT_ID"
+
+      # Shows exactly which migrations will run, in the job log, before they do.
+      - name: Dry run
+        run: supabase db push --dry-run
+
+      - name: Push migrations
+        run: supabase db push
