@@ -203,7 +203,6 @@ export type Database = {
       contractor_accounts: {
         Row: {
           bio: string | null
-          buy_box: Json | null
           branding: Json
           company_name: string | null
           contractor_id: string | null
@@ -231,7 +230,6 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
-          buy_box?: Json | null
           branding?: Json
           company_name?: string | null
           contractor_id?: string | null
@@ -259,7 +257,6 @@ export type Database = {
         }
         Update: {
           bio?: string | null
-          buy_box?: Json | null
           branding?: Json
           company_name?: string | null
           contractor_id?: string | null
@@ -288,59 +285,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contractor_accounts_contractor_id_fkey"
-            columns: ["contractor_id"]
-            isOneToOne: false
-            referencedRelation: "contractors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      contractor_invites: {
-        Row: {
-          completed_at: string | null
-          contractor_id: string
-          created_at: string
-          created_by: string
-          expires_at: string
-          first_opened_at: string | null
-          id: string
-          open_count: number
-          outreach_send_id: string | null
-          prospect_label: string | null
-          revoked_at: string | null
-          token: string
-        }
-        Insert: {
-          completed_at?: string | null
-          contractor_id: string
-          created_at?: string
-          created_by?: string
-          expires_at?: string
-          first_opened_at?: string | null
-          id?: string
-          open_count?: number
-          outreach_send_id?: string | null
-          prospect_label?: string | null
-          revoked_at?: string | null
-          token?: string
-        }
-        Update: {
-          completed_at?: string | null
-          contractor_id?: string
-          created_at?: string
-          created_by?: string
-          expires_at?: string
-          first_opened_at?: string | null
-          id?: string
-          open_count?: number
-          outreach_send_id?: string | null
-          prospect_label?: string | null
-          revoked_at?: string | null
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contractor_invites_contractor_id_fkey"
             columns: ["contractor_id"]
             isOneToOne: false
             referencedRelation: "contractors"
@@ -981,7 +925,6 @@ export type Database = {
           homeowner_approved_at: string | null
           homeowner_viewed_at: string | null
           id: string
-          invite_id: string | null
           is_simulated: boolean
           opened_at: string | null
           passed_at: string | null
@@ -993,7 +936,6 @@ export type Database = {
           proposal_submitted_at: string | null
           responded_at: string | null
           sent_at: string | null
-          source: string
           status: string
           unlocked_at: string | null
           updated_at: string
@@ -1007,7 +949,6 @@ export type Database = {
           homeowner_approved_at?: string | null
           homeowner_viewed_at?: string | null
           id?: string
-          invite_id?: string | null
           is_simulated?: boolean
           opened_at?: string | null
           passed_at?: string | null
@@ -1019,7 +960,6 @@ export type Database = {
           proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
-          source?: string
           status?: string
           unlocked_at?: string | null
           updated_at?: string
@@ -1033,7 +973,6 @@ export type Database = {
           homeowner_approved_at?: string | null
           homeowner_viewed_at?: string | null
           id?: string
-          invite_id?: string | null
           is_simulated?: boolean
           opened_at?: string | null
           passed_at?: string | null
@@ -1045,7 +984,6 @@ export type Database = {
           proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
-          source?: string
           status?: string
           unlocked_at?: string | null
           updated_at?: string
@@ -1063,13 +1001,6 @@ export type Database = {
             columns: ["contractor_id"]
             isOneToOne: false
             referencedRelation: "contractors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outreach_sends_invite_id_fkey"
-            columns: ["invite_id"]
-            isOneToOne: false
-            referencedRelation: "contractor_invites"
             referencedColumns: ["id"]
           },
         ]
@@ -1473,38 +1404,6 @@ export type Database = {
         }
         Relationships: []
       }
-      visibility_scans: {
-        Row: {
-          city: string | null
-          contractor_id: string
-          created_at: string
-          id: string
-          results: Json
-        }
-        Insert: {
-          city?: string | null
-          contractor_id: string
-          created_at?: string
-          id?: string
-          results: Json
-        }
-        Update: {
-          city?: string | null
-          contractor_id?: string
-          created_at?: string
-          id?: string
-          results?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "visibility_scans_contractor_id_fkey"
-            columns: ["contractor_id"]
-            isOneToOne: false
-            referencedRelation: "contractors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       contractor_profiles_public: {
@@ -1585,35 +1484,12 @@ export type Database = {
         Args: { _license: string; _name: string }
         Returns: string
       }
-      get_invite_public: {
-        Args: { _token: string }
-        Returns: {
-          contractor_city: string
-          contractor_company: string
-          contractor_id: string
-          contractor_name: string
-          contractor_slug: string
-          status: string
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      mark_invite_opened: { Args: { _token: string }; Returns: undefined }
-      send_invited_brief: {
-        Args: {
-          _brief_snapshot: Json
-          _homeowner_name: string
-          _neighborhood: string
-          _personal_note?: string
-          _session_id: string
-          _token: string
-        }
-        Returns: string
       }
     }
     Enums: {
@@ -1633,12 +1509,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1662,11 +1538,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1687,11 +1563,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1712,11 +1588,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1729,11 +1605,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
