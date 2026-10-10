@@ -204,6 +204,7 @@ export type Database = {
         Row: {
           bio: string | null
           branding: Json
+          buy_box: Json | null
           company_name: string | null
           contractor_id: string | null
           created_at: string
@@ -231,6 +232,7 @@ export type Database = {
         Insert: {
           bio?: string | null
           branding?: Json
+          buy_box?: Json | null
           company_name?: string | null
           contractor_id?: string | null
           created_at?: string
@@ -258,6 +260,7 @@ export type Database = {
         Update: {
           bio?: string | null
           branding?: Json
+          buy_box?: Json | null
           company_name?: string | null
           contractor_id?: string | null
           created_at?: string
@@ -285,6 +288,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contractor_accounts_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractor_invites: {
+        Row: {
+          completed_at: string | null
+          contractor_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          first_opened_at: string | null
+          id: string
+          open_count: number
+          outreach_send_id: string | null
+          prospect_label: string | null
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contractor_id: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          first_opened_at?: string | null
+          id?: string
+          open_count?: number
+          outreach_send_id?: string | null
+          prospect_label?: string | null
+          revoked_at?: string | null
+          token?: string
+        }
+        Update: {
+          completed_at?: string | null
+          contractor_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          first_opened_at?: string | null
+          id?: string
+          open_count?: number
+          outreach_send_id?: string | null
+          prospect_label?: string | null
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_invites_contractor_id_fkey"
             columns: ["contractor_id"]
             isOneToOne: false
             referencedRelation: "contractors"
@@ -925,6 +981,7 @@ export type Database = {
           homeowner_approved_at: string | null
           homeowner_viewed_at: string | null
           id: string
+          invite_id: string | null
           is_simulated: boolean
           opened_at: string | null
           passed_at: string | null
@@ -936,6 +993,7 @@ export type Database = {
           proposal_submitted_at: string | null
           responded_at: string | null
           sent_at: string | null
+          source: string
           status: string
           unlocked_at: string | null
           updated_at: string
@@ -949,6 +1007,7 @@ export type Database = {
           homeowner_approved_at?: string | null
           homeowner_viewed_at?: string | null
           id?: string
+          invite_id?: string | null
           is_simulated?: boolean
           opened_at?: string | null
           passed_at?: string | null
@@ -960,6 +1019,7 @@ export type Database = {
           proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
+          source?: string
           status?: string
           unlocked_at?: string | null
           updated_at?: string
@@ -973,6 +1033,7 @@ export type Database = {
           homeowner_approved_at?: string | null
           homeowner_viewed_at?: string | null
           id?: string
+          invite_id?: string | null
           is_simulated?: boolean
           opened_at?: string | null
           passed_at?: string | null
@@ -984,6 +1045,7 @@ export type Database = {
           proposal_submitted_at?: string | null
           responded_at?: string | null
           sent_at?: string | null
+          source?: string
           status?: string
           unlocked_at?: string | null
           updated_at?: string
@@ -1001,6 +1063,13 @@ export type Database = {
             columns: ["contractor_id"]
             isOneToOne: false
             referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sends_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_invites"
             referencedColumns: ["id"]
           },
         ]
@@ -1484,12 +1553,35 @@ export type Database = {
         Args: { _license: string; _name: string }
         Returns: string
       }
+      get_invite_public: {
+        Args: { _token: string }
+        Returns: {
+          contractor_city: string
+          contractor_company: string
+          contractor_id: string
+          contractor_name: string
+          contractor_slug: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_invite_opened: { Args: { _token: string }; Returns: undefined }
+      send_invited_brief: {
+        Args: {
+          _brief_snapshot: Json
+          _homeowner_name: string
+          _neighborhood: string
+          _personal_note?: string
+          _session_id: string
+          _token: string
+        }
+        Returns: string
       }
     }
     Enums: {
