@@ -59,6 +59,7 @@ import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard"
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
+import { getActiveInvite, inviteSendPath } from "@/lib/invites";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
@@ -450,9 +451,18 @@ const BriefResult = () => {
   const hasAddress = Boolean(data.address?.city && !data.address?.skipped);
   // Where "see my matches" goes. Logged-out homeowners get a warm sign-up
   // step instead of a cold login wall — their brief is already saved locally.
-  const matchDestination = brUser
+  // Arrived through a contractor's link? The homeowner already chose them, so
+  // the primary path sends the brief to that contractor and nobody else. The
+  // open "compare contractors" path stays one click away.
+  const invite = useMemo(() => getActiveInvite(), []);
+  const compareDestination = brUser
     ? "/contractors"
     : "/login?next=%2Fcontractors&intent=match";
+  const matchDestination = invite
+    ? brUser
+      ? inviteSendPath(invite.token)
+      : `/login?next=${encodeURIComponent(inviteSendPath(invite.token))}&intent=invite`
+    : compareDestination;
   const handleApproveAndSend = () => {
     if (!hasAddress) {
       setAddressPromptOpen(true);
@@ -886,7 +896,11 @@ const BriefResult = () => {
             onClick={handleApproveAndSend}
           >
             {approved ? <ShieldCheck className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-            {brUser ? "Approve and send to contractors" : "See my top 3 matches"}
+            {invite
+              ? `Send to ${invite.contractorName}`
+              : brUser
+                ? "Approve and send to contractors"
+                : "See my top 3 matches"}
           </Button>
           <Button
             size="lg"
@@ -899,10 +913,24 @@ const BriefResult = () => {
           </Button>
         </motion.div>
 
+        {invite && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            It goes to {invite.contractorName} only. It's your brief, and you can share it with other contractors later.{" "}
+            <button
+              type="button"
+              onClick={() => navigate(compareDestination)}
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Compare other contractors first
+            </button>
+          </p>
+        )}
+
         {!brUser && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Your brief is saved on this device. Matching needs an account so we can
-            keep it and tell you when contractors reply — takes about 20 seconds.
+            {invite
+              ? `Your brief is saved on this device. Sending needs an account so we can keep it and let ${invite.contractorName} reply to you. It takes about 20 seconds.`
+              : "Your brief is saved on this device. Matching needs an account so we can keep it and tell you when contractors reply — takes about 20 seconds."}
           </p>
         )}
 

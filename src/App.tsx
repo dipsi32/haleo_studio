@@ -32,6 +32,10 @@ import ProLogin from "./pages/pro/ProLogin.tsx";
 import ProOnboarding from "./pages/pro/ProOnboarding.tsx";
 import ProInbox from "./pages/pro/ProInbox.tsx";
 import ProStudio from "./pages/pro/ProStudio.tsx";
+import ProLinks from "./pages/pro/ProLinks.tsx";
+import ProVisibility from "./pages/pro/ProVisibility";
+import Invite from "./pages/Invite.tsx";
+import InviteSend from "./pages/InviteSend.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
 import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
 import ContractorRoute from "./components/auth/ContractorRoute.tsx";
@@ -126,6 +130,18 @@ const App = () => (
             />
             <Route path="/contractor/submit/:outreachSendId" element={<ContractorSubmit />} />
 
+            {/* Contractor-owned brief links: the homeowner already chose this
+                contractor, so these routes honor that choice. */}
+            <Route path="/i/:token" element={<Invite />} />
+            <Route
+              path="/i/:token/send"
+              element={
+                <ProtectedRoute>
+                  <InviteSend />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Pro Workspace (contractor-side) */}
             <Route path="/pro" element={<ProLanding />} />
             <Route path="/pro/login" element={<ProLogin />} />
@@ -156,7 +172,24 @@ const App = () => (
                 </ContractorRoute>
               }
             />
+            <Route
+              path="/pro/links"
+              element={
+                <ContractorRoute>
+                  <ProLinks />
+                </ContractorRoute>
+              }
+            />
 
+
+            <Route
+              path="/pro/visibility"
+              element={
+                <ContractorRoute>
+                  <ProVisibility />
+                </ContractorRoute>
+              }
+            />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

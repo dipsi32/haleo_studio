@@ -65,7 +65,7 @@ const isFreshFirecrawl = (row: { data_source?: string | null; last_verified_at?:
 // Convert a cslb_licenses row → the shared LicenseStatus shape used by the UI.
 // We populate `scrape_succeeded` so all existing cslbSignals evaluators keep
 // working. `last_verified_at` doubles as "last_checked_at" for legacy callers.
-const toLicenseStatus = (row: {
+export const toLicenseStatus = (row: {
   license_number: string;
   license_status?: string | null;
   business_name?: string | null;
