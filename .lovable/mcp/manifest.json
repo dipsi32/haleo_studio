@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "haleo-mcp",
+      "name": "home-haleo-studio",
       "version": "0.1.0",
-      "title": "Haleo"
+      "title": "Home@haleo.studio"
     },
     "tools": [
       {
