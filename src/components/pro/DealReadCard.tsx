@@ -25,9 +25,11 @@ type Props = {
   buyBox?: BuyBox | null;
   /** Called with a ready-to-send question when the contractor taps an open item. */
   onAsk?: (question: string) => void;
+  /** Hide the "Still open" list when another card on the page already asks those questions. */
+  hideOpen?: boolean;
 };
 
-export default function DealReadCard({ snapshot, buyBox, onAsk }: Props) {
+export default function DealReadCard({ snapshot, buyBox, onAsk, hideOpen }: Props) {
   const read = useMemo(() => computeDealRead(snapshot, buyBox), [snapshot, buyBox]);
   const { fit, size, permit, flags, unknowns, completeness } = read;
 
@@ -117,7 +119,7 @@ export default function DealReadCard({ snapshot, buyBox, onAsk }: Props) {
         </div>
       )}
 
-      {unknowns.length > 0 && (
+      {!hideOpen && unknowns.length > 0 && (
         <div className="mt-4">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Still open</p>
           <ul className="mt-2 space-y-1.5">

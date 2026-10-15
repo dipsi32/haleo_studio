@@ -125,8 +125,8 @@ export default function ProLinks() {
         <div className="mb-8 max-w-2xl">
           <h1 className="font-display text-2xl font-light">Brief links</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Send a prospect a link before you visit. They add photos, plans, scope, budget and timeline. You get the
-            brief in your inbox, free, with a read on whether it's worth the trip. It comes only to you.
+            A big one comes in? Send the link. The homeowner adds their photos, plans, scope and budget. You get a prep
+            sheet for the visit: the lot, the permit risks, what to ask, and a plain call on whether it's worth the drive. Free, and it comes only to you.
           </p>
         </div>
 

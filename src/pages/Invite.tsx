@@ -137,8 +137,8 @@ const Invite = () => {
     },
     {
       icon: Map,
-      title: "A better first visit",
-      body: `${name} reads it before you meet, so the visit goes to your actual project instead of the basics.`,
+      title: "A first visit that feels like the second",
+      body: `${name} gets your brief along with what the public record shows for your address, so the visit starts with your project instead of the basics.`,
     },
   ];
 

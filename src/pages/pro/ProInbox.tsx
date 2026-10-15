@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import DealReadCard, { FIT_STYLE } from "@/components/pro/DealReadCard";
+import VisitPrepCard from "@/components/pro/VisitPrepCard";
 import ReplyPanel from "@/components/pro/ReplyPanel";
 import { computeDealRead, toBuyBox } from "@/lib/dealRead";
 import { matchesFilter, replyState, triageCompare, type InboxFilter, type ReplyState, type ThreadMsg } from "@/lib/replyDrafts";
@@ -449,6 +450,11 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
     return () => { active = false; };
   }, [isUnlocked, contractorId, send.id]);
 
+  const askAbout = (q: string) => {
+    setQuestion((cur) => (cur.trim() ? `${cur.trim()}\n${q}` : q).slice(0, 800));
+    document.getElementById("ask-homeowner")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const handlePass = async () => {
     setPassing(true);
     try {
@@ -620,14 +626,8 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
         ) : (
           <div className="space-y-6 py-2">
             {/* Deal read: the decision first, the detail after */}
-            <DealReadCard
-              snapshot={snap}
-              buyBox={buyBox}
-              onAsk={(q) => {
-                setQuestion((cur) => (cur.trim() ? `${cur.trim()}\n${q}` : q).slice(0, 800));
-                document.getElementById("ask-homeowner")?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
-            />
+            <VisitPrepCard snapshot={snap} buyBox={buyBox} homeownerName={send.outreach_batches?.homeowner_name} onAsk={askAbout} />
+            <DealReadCard snapshot={snap} buyBox={buyBox} hideOpen />
 
             {/* Reply right here: the decision, then the action, before any scrolling */}
             <ReplyPanel

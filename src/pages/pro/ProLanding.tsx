@@ -30,11 +30,11 @@ const ProLanding = () => {
             Haleo for contractors
           </span>
           <h1 className="mt-6 font-display text-3xl font-light leading-tight md:text-4xl">
-            Win more of the <em className="text-accent">right</em> work.
+            Know the job <em className="text-accent">before</em> you drive out.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-            Skip the cold leads. Haleo sends you projects from homeowners who've already done the
-            scope, the budget, and the photos — so your bid lands in context, not in a guessing game.
+            When a big inquiry lands, send the Haleo link. By the time you pull into the driveway, you know the lot, the
+            permit risks and what to ask, and the homeowner already feels looked after.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full">
@@ -52,8 +52,8 @@ const ProLanding = () => {
           {[
             {
               icon: Inbox,
-              title: "A real inbox",
-              body: "Every project arrives with a brief, photos, and a budget signal. No more 'how much for a kitchen?' calls.",
+              title: "A call, not a pile of info",
+              body: "Every big inquiry comes with a plain answer: worth the drive, or worth a quick call first. The reasons are right underneath.",
             },
             {
               icon: FileText,

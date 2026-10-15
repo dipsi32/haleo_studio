@@ -3,6 +3,7 @@
 import type { IntakeData } from "@/lib/intake";
 import { ROOM_LABELS, scopeFor } from "@/lib/intake";
 import { buildHomeownerLayer, buildContractorLayer, groupContractorLinesByTrade } from "@/lib/brief";
+import type { HomeownerContext, ParcelFacts } from "@/lib/prepTypes";
 
 export type Contractor = {
   id: string;
@@ -408,6 +409,10 @@ export type BriefSnapshot = {
     seismic_hazard_type?: string | null;
     seismic_hazard_zone?: string | null;
   };
+  // Public-record facts about the parcel, attached at send time (best effort).
+  parcel?: ParcelFacts;
+  // What only the homeowner can say, in their words. All optional.
+  context?: HomeownerContext;
 };
 
 const fmtMoney = (v?: number) => (v == null ? '' : v >= 500 ? '$500K+' : `$${v}K`);
