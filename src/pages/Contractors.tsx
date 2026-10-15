@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIntake } from "@/lib/intake";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
+import { loadParcelFacts } from "@/lib/parcelFacts";
 import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot, trustTier, trustChecks, tierChipClass } from "@/lib/contractors";
 import CslbSignals from "@/components/CslbSignals";
 import { evaluateDiscipline } from "@/lib/cslbSignals";
@@ -312,7 +313,8 @@ const Contractors = () => {
         }
       }
 
-      const snapshot = { ...briefSummary, ...(addressRisk ? { address_risk: addressRisk } : {}) };
+      const parcel = await loadParcelFacts(data.address);
+      const snapshot = { ...briefSummary, ...(addressRisk ? { address_risk: addressRisk } : {}), ...(parcel ? { parcel } : {}) };
       const { data: batch, error: bErr } = await supabase
         .from("outreach_batches")
         .insert({

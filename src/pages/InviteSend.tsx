@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 import { loadAddressRisk } from "@/lib/addressRisk";
+import { loadParcelFacts } from "@/lib/parcelFacts";
+import { cleanContext, hasContext, type HomeownerContext } from "@/lib/prepTypes";
+import VisitContextForm from "@/components/brief/VisitContextForm";
 import { buildBriefSnapshot, getSessionId, projectKeywords, projectTypeLabel, type BriefSnapshot } from "@/lib/contractors";
 import {
   INVITE_ERROR_COPY,
@@ -48,6 +51,7 @@ const InviteSend = () => {
   const [invite, setInvite] = useState<InvitePublic | null | undefined>(undefined);
   const [consent, setConsent] = useState(false);
   const [note, setNote] = useState("");
+  const [context, setContext] = useState<HomeownerContext>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -103,8 +107,7 @@ const InviteSend = () => {
             <h1 className="font-display text-3xl font-light">Sent to {name}</h1>
           </div>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            They'll read it before you meet. If they have questions, they'll reach you through Haleo and you'll see them in
-            your notifications. Your brief is saved in your account.
+            Your brief comes with a prep sheet on your home and project, so your first visit can start with the real conversation. If they have questions, they'll reach you through Haleo and you'll see them in your notifications. Your brief is saved in your account.
           </p>
 
           <div className="mt-8">
@@ -179,11 +182,14 @@ const InviteSend = () => {
     if (!user || !consent) return;
     setSending(true);
     try {
-      const addressRisk = await loadAddressRisk(data.address);
+      const [addressRisk, parcel] = await Promise.all([loadAddressRisk(data.address), loadParcelFacts(data.address)]);
+      const ctx = cleanContext(context);
       const snapshot = {
         ...buildBriefSnapshot(data, homeownerName),
         projectType: projectTypeLabel(data),
         ...(addressRisk ? { address_risk: addressRisk } : {}),
+        ...(parcel ? { parcel } : {}),
+        ...(ctx ? { context: ctx } : {}),
       } as BriefSnapshot & { projectType: string };
 
       const res = await sendInvitedBrief({
@@ -215,7 +221,7 @@ const InviteSend = () => {
         })
         .then(() => undefined, () => undefined);
 
-      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim() });
+      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel });
       clearActiveInvite();
       setSent(true);
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -254,6 +260,8 @@ const InviteSend = () => {
           </Link>
         </p>
       )}
+
+      <VisitContextForm name={name} value={context} onChange={setContext} />
 
       <label htmlFor="invite-note" className="mt-8 block text-sm font-medium">
         Anything you want {name} to know before you meet? <span className="font-normal text-muted-foreground">(optional)</span>
