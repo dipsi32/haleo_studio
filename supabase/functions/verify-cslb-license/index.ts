@@ -5,12 +5,13 @@
 //   2. Bulk import  → cslb_licenses row from bulk_import (any age) → return,
 //                     but kick off a background Firecrawl refresh.
 //   3. Firecrawl    → render the CSLB license-detail page (handles ASP.NET
-//                     ViewState / cookies / JS), then ask Lovable AI to extract
+//                     ViewState / cookies / JS), then ask Claude to extract
 //                     a clean JSON record. Up to 2 attempts.
 //   4. Fallback     → record `data_source = 'fallback'` and return a deep link.
 //
 // Always returns the canonical row shape so the client can render the same
 // CslbSignals component regardless of which layer answered.
+import { aiFetch } from "../_shared/ai.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -20,7 +21,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY')
 
 const CACHE_HOURS = 24
@@ -124,9 +125,9 @@ const firecrawlScrape = async (license: string): Promise<{ markdown: string | nu
   }
 }
 
-// ─── Lovable AI extraction (tool-calling for structured JSON) ────────────────
+// ─── Claude extraction (tool-calling for structured JSON) ────────────────
 const extractWithAi = async (license: string, rendered: string): Promise<Partial<CslbRecord> | null> => {
-  if (!LOVABLE_API_KEY) return null
+  if (!ANTHROPIC_API_KEY) return null
   // Trim long pages — CSLB detail page is small but be safe
   const content = rendered.length > 18000 ? rendered.slice(0, 18000) : rendered
 
@@ -177,14 +178,14 @@ const extractWithAi = async (license: string, rendered: string): Promise<Partial
   }
 
   try {
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const resp = await aiFetch({
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${ANTHROPIC_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'fast',
         messages: [
           {
             role: 'system',
@@ -204,7 +205,7 @@ const extractWithAi = async (license: string, rendered: string): Promise<Partial
       }),
     })
     if (!resp.ok) {
-      console.warn('Lovable AI extract failed', resp.status, await resp.text().catch(() => ''))
+      console.warn('Claude extract failed', resp.status, await resp.text().catch(() => ''))
       return null
     }
     const data = await resp.json()
@@ -225,7 +226,7 @@ const extractWithAi = async (license: string, rendered: string): Promise<Partial
       disciplinary_notes: parsed.disciplinary_notes ?? null,
     }
   } catch (e) {
-    console.warn('Lovable AI extract error', e)
+    console.warn('Claude extract error', e)
     return null
   }
 }

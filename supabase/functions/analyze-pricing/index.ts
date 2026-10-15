@@ -1,3 +1,4 @@
+import { aiFetch } from "../_shared/ai.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -72,14 +73,14 @@ If the proposal lists a subtotal + tax/fees, use the final total.`;
   }
 
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "fast",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
@@ -449,14 +450,14 @@ ${lineItemStr || "(none — quote is a single number, no itemization)"}
 Write 3 to 4 sentences. State the position plainly with the actual numbers above. If line items exist, name the one or two that move the score most and cite their cost from the list. If they do not exist, say so and recommend asking for an itemized breakdown. End with one concrete next step the homeowner can do this week.`;
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await aiFetch({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "fast",
         messages: [
           { role: "system", content: "You are Haleo. Calm, sharp, evidence-led. No theater, no clichés, no em dashes." },
           { role: "user", content: prompt },
@@ -488,8 +489,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const body = await req.json();
     const parsed = RequestSchema.safeParse(body);

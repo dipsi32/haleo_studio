@@ -4,7 +4,7 @@
 // Three sources, each measured the way its owner allows:
 //   - Google: Places API text search (the order Google returns for the query).
 //   - Yelp: Fusion API business search, best_match order.
-//   - AI assistants: each model is asked the same homeowner question several
+//   - AI assistants (Gemini and ChatGPT, each with its own key): each is asked the same homeowner question several
 //     times and we count how often the business is named. This is the model's
 //     answer from memory, not a live web search, and the UI says so.
 // Angi has no public API, so it is not measured and we don't guess.
@@ -21,10 +21,16 @@ const corsHeaders = {
 
 const COOLDOWN_HOURS = 12;
 const AI_RUNS_PER_QUERY = 4;
+// Each assistant is asked directly with its own key, because the point is to
+// measure what that assistant says. A missing key means that assistant is not
+// measured, never a zero.
 const AI_MODELS = [
-  { id: "google/gemini-2.5-flash", label: "Gemini" },
-  { id: "openai/gpt-5-mini", label: "ChatGPT" },
-];
+  { id: "gemini", label: "Gemini", keyEnv: "GEMINI_API_KEY", modelEnv: "GEMINI_MODEL", fallbackModel: "gemini-2.5-flash" },
+  { id: "chatgpt", label: "ChatGPT", keyEnv: "OPENAI_API_KEY", modelEnv: "OPENAI_MODEL", fallbackModel: "gpt-5-mini" },
+] as const;
+
+const AI_SYSTEM =
+  "You answer homeowners' questions about hiring local contractors. Reply with ONLY a JSON array of up to 5 business names you would recommend, best first. No other text. If you do not know of specific businesses, reply [].";
 
 type Listing = { name: string; rating: number | null; reviews: number | null; url: string | null; phone?: string | null; website?: string | null };
 
@@ -89,25 +95,7 @@ async function yelpSearch(term: string, city: string, key: string): Promise<List
   }));
 }
 
-async function askModel(model: string, question: string, key: string): Promise<string[]> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You answer homeowners' questions about hiring local contractors. Reply with ONLY a JSON array of up to 5 business names you would recommend, best first. No other text. If you do not know of specific businesses, reply [].",
-        },
-        { role: "user", content: question },
-      ],
-    }),
-  });
-  if (!r.ok) throw new Error(`ai ${model} ${r.status}`);
-  const j = await r.json();
-  const text: string = j.choices?.[0]?.message?.content ?? "[]";
+function parseNames(text: string): string[] {
   const m = text.match(/\[[\s\S]*\]/);
   if (!m) return [];
   try {
@@ -116,6 +104,37 @@ async function askModel(model: string, question: string, key: string): Promise<s
   } catch {
     return [];
   }
+}
+
+async function askModel(m: (typeof AI_MODELS)[number], question: string, key: string): Promise<string[]> {
+  const model = Deno.env.get(m.modelEnv) || m.fallbackModel;
+  if (m.id === "gemini") {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: AI_SYSTEM }] },
+        contents: [{ role: "user", parts: [{ text: question }] }],
+      }),
+    });
+    if (!r.ok) throw new Error(`gemini ${r.status}`);
+    const j = await r.json();
+    return parseNames((j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join(""));
+  }
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: AI_SYSTEM },
+        { role: "user", content: question },
+      ],
+    }),
+  });
+  if (!r.ok) throw new Error(`openai ${r.status}`);
+  const j = await r.json();
+  return parseNames(j.choices?.[0]?.message?.content ?? "[]");
 }
 
 Deno.serve(async (req) => {
@@ -169,7 +188,6 @@ Deno.serve(async (req) => {
 
     const googleKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
     const yelpKey = Deno.env.get("YELP_API_KEY");
-    const aiKey = Deno.env.get("LOVABLE_API_KEY");
 
     const searchChannel = async (
       keyPresent: boolean,
@@ -187,15 +205,17 @@ Deno.serve(async (req) => {
     };
 
     const aiChannel = async () => {
-      if (!aiKey) return { status: "unavailable", reason: "Not connected yet." };
+      const active = AI_MODELS.filter((m) => !!Deno.env.get(m.keyEnv));
+      if (active.length === 0) return { status: "unavailable", reason: "Not connected yet." };
       try {
         const models = await Promise.all(
-          AI_MODELS.map(async (m) => {
+          active.map(async (m) => {
+            const aiKey = Deno.env.get(m.keyEnv)!;
             const perQuery = await Promise.all(
               queries.map(async (q) => {
                 const question = `I'm a homeowner in ${city} planning a big project. ${q.text.charAt(0).toUpperCase()}${q.text.slice(1)}: who would you recommend?`;
                 const runs = await Promise.all(
-                  Array.from({ length: AI_RUNS_PER_QUERY }, () => askModel(m.id, question, aiKey).catch(() => null)),
+                  Array.from({ length: AI_RUNS_PER_QUERY }, () => askModel(m, question, aiKey).catch(() => null)),
                 );
                 const ok = runs.filter((r): r is string[] => r !== null);
                 const tally = new Map<string, { name: string; count: number }>();
@@ -221,7 +241,7 @@ Deno.serve(async (req) => {
                 };
               }),
             );
-            return { id: m.id, label: m.label, perQuery };
+            return { id: Deno.env.get(m.modelEnv) || m.fallbackModel, label: m.label, perQuery };
           }),
         );
         return { status: "ok", models };

@@ -3,7 +3,7 @@
 Staging is the same app, pointed at its **own** Supabase project, on its own web address, so you can click through new work with test data before real contractors and homeowners see it.
 
 ```
-feature branch → PR → main ─────────────► production (haleo.studio, Lovable publish)
+feature branch → PR → main ─────────────► production (haleo.studio, Cloudflare Pages)
                   └→ staging branch ────► staging site + staging Supabase
 ```
 
@@ -14,7 +14,7 @@ feature branch → PR → main ─────────────► produc
 - Analytics are not sent from staging.
 - `.env.staging.example` is the template for the three settings staging needs.
 - `.github/workflows/staging-migrations.yml` pushes migrations and deploys edge functions to the staging Supabase project when `develop` or `staging` changes.
-- `.github/workflows/staging-frontend.yml` tests and builds the staging site on every push to `staging`.
+- `.github/workflows/deploy.yml` tests, builds and publishes `main` (production) and `staging`.
 - `public/_redirects` makes deep links (like `/pro/inbox`) work on Netlify and Cloudflare Pages.
 
 ## One-time setup (about 20 minutes)
@@ -50,17 +50,7 @@ The first push runs both workflows: the database comes up with all 23 migrations
 
 ### 4. Publish the staging site
 
-Any of these works. All three read the `staging` branch and are free at this size.
-
-**Cloudflare Pages** (recommended), **Netlify** or **Vercel**: connect the GitHub repo, then:
-
-- Production branch: `staging`
-- Build command: `npm run build:staging`
-- Output directory: `dist`
-- Environment variables: `VITE_APP_ENV=staging`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` (the staging values)
-- Optional: a custom domain such as `staging.haleo.studio`
-
-Vercel also needs a rewrite of `/(.*)` to `/index.html` for deep links.
+The Deploy workflow publishes `staging` to Cloudflare Pages. Set it up once with `docs/hosting-cloudflare.md`; the staging address is `staging.<project>.pages.dev` unless you add a custom domain.
 
 ### 5. Staging Supabase settings you'll want
 
@@ -73,11 +63,11 @@ Vercel also needs a rewrite of `/(.*)` to `/index.html` for deep links.
 
 1. Open a PR into `main` as usual.
 2. To try it on staging first: merge the same branch into `staging` (`git push origin <branch>:staging`, or a PR into `staging`). The workflows do the rest.
-3. When it looks right on staging, merge into `main` and press **Publish** in Lovable.
+3. When it looks right on staging, merge into `main`. The Deploy workflow publishes it.
 
-## Production publishing (Lovable)
+## Production publishing
 
-Merging to `main` updates the code Lovable sees, but **the live site only changes when someone presses Publish in Lovable** (top right, then Update). That step is not automatic, and nothing in this repo can do it.
+Merging to `main` publishes production through the Deploy workflow and Cloudflare Pages. See `docs/hosting-cloudflare.md`.
 
 ## Not covered
 

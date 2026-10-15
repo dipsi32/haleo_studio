@@ -1,3 +1,4 @@
+import { aiFetch } from "../_shared/ai.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -136,14 +137,14 @@ CRITICAL INSTRUCTIONS:
     },
   ];
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "fast",
       messages,
       tools,
       tool_choice: { type: "function", function: { name: "extract_proposal_data" } },
@@ -1054,8 +1055,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1082,7 +1083,7 @@ Deno.serve(async (req) => {
     console.log(`Processing proposal: ${file_name}`);
 
     // Step 1: Extract proposal data via LLM
-    const extracted = await extractProposalData(file_base64, file_name, LOVABLE_API_KEY);
+    const extracted = await extractProposalData(file_base64, file_name, ANTHROPIC_API_KEY);
     console.log("Extracted data:", JSON.stringify(extracted));
 
     // Step 2: Fetch permit intelligence from San Jose

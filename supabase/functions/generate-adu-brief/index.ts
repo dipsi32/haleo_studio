@@ -1,10 +1,11 @@
 // ADU brief generator.
 // CRITICAL: receives base plan and annotation as EXPLICITLY LABELED, SEPARATE
-// inputs to Gemini vision. They are never combined into a single message.
-// Gemini's role is to compile a structured brief — it does NOT determine
+// inputs to Claude vision. They are never combined into a single message.
+// Claude's role is to compile a structured brief — it does NOT determine
 // zoning rules, costs, or feasibility. Those come from the verified
 // feasibility JSON passed in.
 
+import { aiFetch } from "../_shared/ai.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -47,8 +48,8 @@ const SYSTEM_PROMPT = [
   "5. Return JSON only, using the tool. No prose outside the tool call.",
 ].join(" ");
 
-async function callGemini(body: BriefRequest): Promise<{ sections: BriefSection[]; questions: string[] } | null> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
+async function callClaude(body: BriefRequest): Promise<{ sections: BriefSection[]; questions: string[] } | null> {
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) return null;
 
   const userParts: Array<Record<string, unknown>> = [
@@ -77,11 +78,11 @@ async function callGemini(body: BriefRequest): Promise<{ sections: BriefSection[
   }
 
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await aiFetch({
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "smart",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userParts },
@@ -125,7 +126,7 @@ async function callGemini(body: BriefRequest): Promise<{ sections: BriefSection[
       }),
     });
     if (!res.ok) {
-      console.error("gemini brief failed", res.status, await res.text());
+      console.error("claude brief failed", res.status, await res.text());
       return null;
     }
     const json = await res.json();
@@ -133,7 +134,7 @@ async function callGemini(body: BriefRequest): Promise<{ sections: BriefSection[
     if (!call?.function?.arguments) return null;
     return JSON.parse(call.function.arguments);
   } catch (e) {
-    console.error("gemini brief error", e);
+    console.error("claude brief error", e);
     return null;
   }
 }
@@ -189,7 +190,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const brief = (await callGemini(body)) ?? fallbackBrief(body);
+    const brief = (await callClaude(body)) ?? fallbackBrief(body);
     return new Response(JSON.stringify({ brief }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
