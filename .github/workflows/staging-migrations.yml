@@ -1,4 +1,4 @@
-# Keeps the staging Supabase database in sync with supabase/migrations.
+# Keeps the staging Supabase database and edge functions in sync with the repo.
 # Runs when a pull request is merged into develop or staging (a merge is a push
 # to that branch), and on demand from the Actions tab.
 name: Staging migrations
@@ -9,6 +9,7 @@ on:
     paths:
       - "supabase/migrations/**"
       - "supabase/config.toml"
+      - "supabase/functions/**"
       - ".github/workflows/staging-migrations.yml"
   workflow_dispatch:
 
@@ -58,3 +59,9 @@ jobs:
 
       - name: Push migrations
         run: supabase db push
+
+      # Edge functions the app calls (notify, visibility scan, parcel lookups...).
+      # Their secrets (LOVABLE_API_KEY, GOOGLE_PLACES_API_KEY, YELP_API_KEY) are
+      # set once on the staging project and are not touched here.
+      - name: Deploy edge functions
+        run: supabase functions deploy --project-ref "$STAGING_PROJECT_ID" --use-api

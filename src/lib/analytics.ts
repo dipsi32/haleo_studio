@@ -7,7 +7,7 @@ import posthog from "posthog-js";
 const POSTHOG_KEY = "phc_mWVyNiT4NULYmNdZUgsCntAk3HAjNnX8RT7wCRFJmmDj";
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
-const isDev = import.meta.env.DEV;
+const isDev = import.meta.env.DEV || import.meta.env.VITE_APP_ENV === "staging";
 
 let initialized = false;
 
@@ -16,7 +16,7 @@ export function initAnalytics() {
   initialized = true;
 
   if (isDev) {
-    // Don't pollute the prod project with localhost traffic.
+    // Don't pollute the prod project with localhost or staging traffic.
     // eslint-disable-next-line no-console
     console.info("[analytics] dev mode — events logged, not sent");
     return;

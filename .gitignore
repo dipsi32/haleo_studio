@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local staging env (real keys; use .env.staging.example as the template)
+.env.staging

@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AccessGate from "@/components/auth/AccessGate";
 import AdminRoute from "@/components/auth/AdminRoute";
+import StagingBanner from "@/components/StagingBanner";
 import Index from "./pages/Index.tsx";
 import IndexClassic from "./pages/IndexClassic.tsx";
 
@@ -57,6 +58,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <StagingBanner />
       <BrowserRouter>
         <AuthProvider>
           <AnalyticsTracker />
