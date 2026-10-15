@@ -1,0 +1,57 @@
+# Builds the staging site on every push to `staging`, against the staging
+# Supabase project. Host-independent: it tests, builds with the staging
+# settings, and keeps the result as an artifact. Point Netlify, Cloudflare
+# Pages or Vercel at the `staging` branch to publish it (see docs/staging-setup.md).
+name: Staging frontend
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-frontend
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_APP_ENV: staging
+      VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_PROJECT_ID: ${{ secrets.STAGING_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check settings
+        run: |
+          missing=0
+          for v in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY VITE_SUPABASE_PROJECT_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Missing repository secret for $v (STAGING_SUPABASE_URL, STAGING_SUPABASE_PUBLISHABLE_KEY, STAGING_PROJECT_ID)"; missing=1; fi
+          done
+          [ "$missing" = 0 ]
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The lockfile may point at a private mirror; fall back to a plain install.
+      - name: Install
+        run: npm ci || npm install --no-audit --no-fund --no-package-lock
+
+      - name: Test
+        run: npm test
+
+      # Refuses to build if the settings point at the production project.
+      - name: Build (staging)
+        run: npm run build:staging
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-site
+          path: dist
+          retention-days: 14
