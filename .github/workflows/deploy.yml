@@ -22,28 +22,27 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CF_PROJECT: ${{ vars.CF_PAGES_PROJECT || 'haleo' }}
       IS_STAGING: ${{ github.ref_name == 'staging' }}
-      # Production values come from PRODUCTION_*, staging from STAGING_*.
-      SUPABASE_URL: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.PRODUCTION_SUPABASE_URL }}
-      SUPABASE_KEY: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_PUBLISHABLE_KEY || secrets.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
-      SUPABASE_REF: ${{ github.ref_name == 'staging' && secrets.STAGING_PROJECT_ID || secrets.PRODUCTION_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Load settings
+        run: |
+          file="deploy/production.env"; [ "$IS_STAGING" = "true" ] && file="deploy/staging.env"
+          grep -E '^[A-Z_]+=' "$file" >> "$GITHUB_ENV"
 
       - name: Check settings
         id: check
         run: |
           publish=false; build=true
-          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then publish=true; fi
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ] || [ -z "$SUPABASE_REF" ]; then
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then publish=true; fi
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ] || [ -z "$PROJECT_REF" ]; then
             build=false
             if [ "$publish" = true ]; then
-              echo "::error::Missing Supabase settings for this branch. Add PRODUCTION_* (main) or STAGING_* (staging) secrets: SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, PROJECT_ID. See docs/hosting-cloudflare.md."
+              echo "::error::Missing Supabase settings. Fill in deploy/production.env (main) or deploy/staging.env (staging). See docs/new-backend.md."
               exit 1
             fi
-            echo "::notice::Hosting is not set up yet (no Cloudflare or Supabase secrets), so nothing was built. See docs/hosting-cloudflare.md."
+            echo "::notice::Hosting is not set up yet (deploy/*.env or the Cloudflare token is empty), so nothing was built. See docs/hosting-cloudflare.md."
           elif [ "$publish" = false ]; then
             echo "::notice::Cloudflare secrets not set yet, so this run tests and builds but does not publish."
           fi
@@ -65,8 +64,8 @@ jobs:
         if: steps.check.outputs.build == 'true'
         env:
           VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_KEY }}
-          VITE_SUPABASE_PROJECT_ID: ${{ env.SUPABASE_REF }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ env.PROJECT_REF }}
           VITE_APP_ENV: ${{ env.IS_STAGING == 'true' && 'staging' || 'production' }}
         run: |
           if [ "$IS_STAGING" = "true" ]; then npm run build:staging; else npm run build; fi
@@ -76,8 +75,8 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.CF_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
 
       - uses: actions/upload-artifact@v4
         if: steps.check.outputs.build == 'true'

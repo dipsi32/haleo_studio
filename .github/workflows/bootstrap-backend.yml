@@ -30,12 +30,7 @@ jobs:
     env:
       TARGET: ${{ inputs.environment }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      PROJECT_REF: ${{ inputs.environment == 'production' && secrets.PRODUCTION_PROJECT_ID || secrets.STAGING_PROJECT_ID }}
       SUPABASE_DB_PASSWORD: ${{ inputs.environment == 'production' && secrets.PRODUCTION_DB_PASSWORD || secrets.STAGING_DB_PASSWORD }}
-      SUPABASE_URL: ${{ inputs.environment == 'production' && secrets.PRODUCTION_SUPABASE_URL || secrets.STAGING_SUPABASE_URL }}
-      PUBLISHABLE_KEY: ${{ inputs.environment == 'production' && secrets.PRODUCTION_SUPABASE_PUBLISHABLE_KEY || secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
-      APP_URL: ${{ inputs.environment == 'production' && vars.PRODUCTION_APP_URL || vars.STAGING_APP_URL }}
-      OTHER_PROJECT_REF: ${{ inputs.environment == 'production' && secrets.STAGING_PROJECT_ID || secrets.PRODUCTION_PROJECT_ID }}
       # Third-party keys shared by both backends. Any that are empty are skipped.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -51,14 +46,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Load settings
+        run: |
+          grep -E '^[A-Z_]+=' "deploy/$TARGET.env" >> "$GITHUB_ENV"
+          other=staging; [ "$TARGET" = "staging" ] && other=production
+          echo "OTHER_PROJECT_REF=$(grep -E '^PROJECT_REF=' "deploy/$other.env" | cut -d= -f2-)" >> "$GITHUB_ENV"
+
       - name: Check what we need
         run: |
           missing=0
-          for v in SUPABASE_ACCESS_TOKEN PROJECT_REF SUPABASE_DB_PASSWORD SUPABASE_URL PUBLISHABLE_KEY APP_URL; do
-            if [ -z "${!v}" ]; then echo "::error::Missing $v for $TARGET. See docs/new-backend.md for where to set it."; missing=1; fi
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD PROJECT_REF SUPABASE_URL SUPABASE_PUBLISHABLE_KEY APP_URL; do
+            if [ -z "${!v}" ]; then echo "::error::Missing $v for $TARGET. Secrets go in GitHub; the rest in deploy/$TARGET.env. See docs/new-backend.md."; missing=1; fi
           done
           [ "$missing" = 0 ] || exit 1
-          if [ "$PROJECT_REF" = "$OTHER_PROJECT_REF" ]; then
+          if [ -n "$OTHER_PROJECT_REF" ] && [ "$PROJECT_REF" = "$OTHER_PROJECT_REF" ]; then
             echo "::error::Staging and production point at the same Supabase project. Refusing."; exit 1
           fi
           if [ -z "$ANTHROPIC_API_KEY" ]; then echo "::warning::ANTHROPIC_API_KEY is not set, so the AI features will not work yet."; fi
@@ -117,4 +118,4 @@ jobs:
           node-version: 20
 
       - name: Smoke test
-        run: node scripts/smoke.mjs "$SUPABASE_URL" "$PUBLISHABLE_KEY"
+        run: node scripts/smoke.mjs "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY"
