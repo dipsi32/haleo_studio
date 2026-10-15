@@ -1,4 +1,5 @@
-project_id = "nfjipxgmwdlxqzzvqmsl"
+# Local name only (used by `supabase start`). The real project is chosen with `supabase link`.
+project_id = "haleo"
 
 [functions.import-cslb-bulk]
 verify_jwt = false
