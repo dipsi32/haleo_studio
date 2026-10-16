@@ -22,8 +22,10 @@ const get = (path, headers = {}) => fetch(base + path, { headers: { apikey: key,
 const must = (cond, msg) => { if (!cond) throw new Error(msg); };
 
 await check("API answers and the key is accepted", async () => {
-  const r = await get("/rest/v1/");
-  must(r.ok, `status ${r.status}`);
+  // The API root is closed to public keys, so ask a real table instead.
+  const r = await get("/rest/v1/waitlist?select=id&limit=1");
+  must(r.status !== 401 && r.status !== 403, `status ${r.status}: the key was rejected`);
+  must(r.status < 500, `status ${r.status}`);
 });
 
 for (const table of ["contractors", "waitlist", "outreach_batches"]) {
