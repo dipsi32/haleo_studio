@@ -10,11 +10,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
-const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@haleo.studio";
+const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY");
+const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY");
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:hello@haleo.studio";
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+// Push is optional: without VAPID keys the in-app notification still goes out.
+const pushEnabled = Boolean(VAPID_PUBLIC && VAPID_PRIVATE);
+if (pushEnabled) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC!, VAPID_PRIVATE!);
 
 function buildHeadline(projectType: string | null, neighborhood: string | null) {
   const proj = projectType?.trim() || "New project";
@@ -85,7 +87,7 @@ Deno.serve(async (req) => {
       .eq("contractor_id", contractor.id)
       .eq("active", true);
 
-    if (subs?.length) {
+    if (pushEnabled && subs?.length) {
       const payload = JSON.stringify({
         title,
         body: headline,
