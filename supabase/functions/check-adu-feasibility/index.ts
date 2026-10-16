@@ -1,8 +1,9 @@
 // ADU feasibility check — San Jose + CA AB 2221.
 // CRITICAL: all zoning rules, size limits, setbacks, and height caps are
-// HARDCODED below. Gemini is invoked only to translate the structured JSON
+// HARDCODED below. Claude is invoked only to translate the structured JSON
 // into a plain-English summary — it is forbidden by system prompt from
 // adding any fact, cost, or rule not present in the JSON.
+import { aiFetch } from "../_shared/ai.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -149,9 +150,9 @@ function evaluateAdu(input: FeasibilityInput) {
   };
 }
 
-// ─── Gemini translation (plain-English explainer only). ─────────────────────
-async function explainWithGemini(structured: Record<string, unknown>): Promise<string | null> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
+// ─── Claude translation (plain-English explainer only). ─────────────────────
+async function explainWithClaude(structured: Record<string, unknown>): Promise<string | null> {
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) return null;
 
   const systemPrompt = [
@@ -168,14 +169,14 @@ async function explainWithGemini(structured: Record<string, unknown>): Promise<s
 
 
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await aiFetch({
       method: "POST",
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "smart",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -188,13 +189,13 @@ async function explainWithGemini(structured: Record<string, unknown>): Promise<s
       }),
     });
     if (!res.ok) {
-      console.error("gemini explain failed", res.status, await res.text());
+      console.error("claude explain failed", res.status, await res.text());
       return null;
     }
     const json = await res.json();
     return json?.choices?.[0]?.message?.content ?? null;
   } catch (e) {
-    console.error("gemini explain error", e);
+    console.error("claude explain error", e);
     return null;
   }
 }
@@ -244,7 +245,7 @@ Deno.serve(async (req) => {
     const costRange = await fetchCostRange(body.zip ?? null);
     const result = { ...structured, cost_range: costRange };
 
-    const explanation = await explainWithGemini(result);
+    const explanation = await explainWithClaude(result);
 
     return new Response(JSON.stringify({ result, explanation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 // Remodel Roast — anonymous, fun, viral. Reuses analyze-pricing under the hood,
 // then asks the LLM to produce a brutally-honest, color-coded JSON roast.
 
+import { aiFetch } from "../_shared/ai.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -19,8 +20,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const body = await req.json();
     const parsed = RequestSchema.safeParse(body);
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
       : score >= 20 ? { label: "Notably high", color: "orange" }
       : { label: "Way over", color: "red" };
 
-    // 3. Ask Gemini for the roast in Haleo's voice — calm, evidence-led, no theater.
+    // 3. Ask Claude for the roast in Haleo's voice — calm, evidence-led, no theater.
     const lineItemBlock = (extractedProposal.lineItems || [])
       .slice(0, 12)
       .map((li: any) => `- ${li.item}: $${Number(li.cost).toLocaleString()}`)
@@ -108,11 +109,11 @@ Verdict rules:
 
 Generate 3 to 5 lineRoasts, picking the items that move the score most. If no line items, return lineRoasts: [] and put analysis in oneLiner. Never name the contractor.`;
 
-    const roastResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const roastResp = await aiFetch({
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "fast",
         messages: [
           { role: "system", content: "You are Haleo. Calm, sharp, evidence-led. Output ONLY valid JSON." },
           { role: "user", content: roastPrompt },

@@ -1,0 +1,86 @@
+# Builds and publishes the site to Cloudflare Pages.
+#   push to main    -> production
+#   push to staging -> staging (its own Supabase project and web address)
+# Until the Cloudflare secrets exist this only tests and builds, and says so.
+# Setup: docs/hosting-cloudflare.md
+name: Deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      IS_STAGING: ${{ github.ref_name == 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load settings
+        run: |
+          file="deploy/production.env"; [ "$IS_STAGING" = "true" ] && file="deploy/staging.env"
+          grep -E '^[A-Z_]+=' "$file" >> "$GITHUB_ENV"
+
+      - name: Check settings
+        id: check
+        run: |
+          publish=false; build=true
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then publish=true; fi
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ] || [ -z "$PROJECT_REF" ]; then
+            build=false
+            if [ "$publish" = true ]; then
+              echo "::error::Missing Supabase settings. Fill in deploy/production.env (main) or deploy/staging.env (staging). See docs/new-backend.md."
+              exit 1
+            fi
+            echo "::notice::Hosting is not set up yet (deploy/*.env or the Cloudflare token is empty), so nothing was built. See docs/hosting-cloudflare.md."
+          elif [ "$publish" = false ]; then
+            echo "::notice::Cloudflare secrets not set yet, so this run tests and builds but does not publish."
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - if: steps.check.outputs.build == 'true'
+        run: npm ci
+
+      - if: steps.check.outputs.build == 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.check.outputs.build == 'true'
+        env:
+          VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ env.PROJECT_REF }}
+          VITE_APP_ENV: ${{ env.IS_STAGING == 'true' && 'staging' || 'production' }}
+        run: |
+          if [ "$IS_STAGING" = "true" ]; then npm run build:staging; else npm run build; fi
+
+      - name: Publish to Cloudflare Pages
+        if: steps.check.outputs.publish == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
+
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.build == 'true'
+        with:
+          name: site-${{ github.ref_name }}
+          path: dist
+          retention-days: 7

@@ -10,7 +10,7 @@ page shows the search, the sample size and the listing we matched.
 | --- | --- | --- | --- |
 | Google | Places API text search, results in the order Google returns them | `GOOGLE_PLACES_API_KEY` | Maps order for the query. Not personalized, not the exact local pack. |
 | Yelp | Fusion API business search, `best_match`, top 20 | `YELP_API_KEY` | Check Yelp's display and caching terms (attribution, link back) before launch. |
-| ChatGPT, Gemini | Same homeowner question asked 4 times per search per model, count how often the business is named | `LOVABLE_API_KEY` (already used) | The model's own knowledge, no live web search. Shown as a rate, never a rank. |
+| ChatGPT, Gemini | Same homeowner question asked 4 times per search per model, count how often the business is named | `GEMINI_API_KEY` and `OPENAI_API_KEY` (already used) | The model's own knowledge, no live web search. Shown as a rate, never a rank. |
 | Angi | Not measured | none | No public data source. The page says so instead of guessing. |
 
 A source with no credential reports `unavailable`; the page shows "Not

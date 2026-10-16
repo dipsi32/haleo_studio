@@ -5,7 +5,6 @@ import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -49,17 +48,15 @@ const Login = () => {
   const handleGoogle = async () => {
     setBusy(true);
     track(mode === "signup" ? "signup_started" : "login_completed", { method: "google" });
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + resolvedNext,
+    // Supabase redirects the browser to Google and back to `redirectTo`.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + resolvedNext },
     });
-    if (result.error) {
-      toast({ title: "Couldn't sign in with Google", description: String(result.error), variant: "destructive" });
+    if (error) {
+      toast({ title: "Couldn't sign in with Google", description: error.message, variant: "destructive" });
       setBusy(false);
-      return;
     }
-    if (result.redirected) return; // Browser is redirecting
-    // Tokens set — go to next.
-    navigate(resolvedNext, { replace: true });
   };
 
   const handleEmail = async (e: React.FormEvent) => {
