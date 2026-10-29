@@ -18,6 +18,7 @@ import Audit from "./pages/Audit.tsx";
 import Contractors from "./pages/Contractors.tsx";
 import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
+import Shortlist from "./pages/Shortlist.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
 import Roast from "./pages/Roast.tsx";
 import ADU from "./pages/ADU.tsx";
@@ -100,6 +101,7 @@ const App = () => (
             />
 
             {/* Brief is open to everyone — sign-up is offered at the match step */}
+            <Route path="/shortlist" element={<Shortlist />} />
             <Route path="/brief" element={<Brief />} />
             <Route path="/brief/result" element={<BriefResult />} />
             {/* Matches require login (paywall lives in-page at the unlock step) */}

@@ -60,6 +60,7 @@ import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import { getActiveInvite, inviteSendPath } from "@/lib/invites";
+import { loadShortlist } from "@/lib/shortlist";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
@@ -458,11 +459,16 @@ const BriefResult = () => {
   const compareDestination = brUser
     ? "/contractors"
     : "/login?next=%2Fcontractors&intent=match";
+  // Came here from a shortlist of their own names? Send them back to it:
+  // the brief now goes into every bid request they send from there.
+  const shortlist = useMemo(() => loadShortlist(), []);
   const matchDestination = invite
     ? brUser
       ? inviteSendPath(invite.token)
       : `/login?next=${encodeURIComponent(inviteSendPath(invite.token))}&intent=invite`
-    : compareDestination;
+    : shortlist
+      ? "/shortlist"
+      : compareDestination;
   const handleApproveAndSend = () => {
     if (!hasAddress) {
       setAddressPromptOpen(true);
@@ -898,7 +904,9 @@ const BriefResult = () => {
             {approved ? <ShieldCheck className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             {invite
               ? `Send to ${invite.contractorName}`
-              : brUser
+              : shortlist
+                ? "Back to my shortlist"
+                : brUser
                 ? "Approve and send to contractors"
                 : "See my top 3 matches"}
           </Button>

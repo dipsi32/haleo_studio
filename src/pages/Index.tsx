@@ -180,6 +180,36 @@ const differences = [
   ["Apples-to-oranges quotes", "Every line item, side by side"],
 ];
 
+const entryDoors = [
+  {
+    id: "shortlist",
+    to: "/shortlist",
+    when: "You asked around and got 40 names",
+    title: "Find the three worth calling.",
+    body: "Paste the Nextdoor thread or drop in screenshots. We check every license and permit record and put them in order for your project.",
+    cta: "Check my names",
+    featured: true,
+  },
+  {
+    id: "brief",
+    to: "/brief",
+    when: "You're starting from scratch",
+    title: "Meet the ones who've built it nearby.",
+    body: "Describe the project once. We match it to contractors who've pulled permits for the same kind of work in your city.",
+    cta: "Find a contractor",
+    featured: false,
+  },
+  {
+    id: "quote",
+    to: "/roast",
+    when: "You already have a quote",
+    title: "Know if it's fair before you sign.",
+    body: "Every line checked against your neighborhood: what's included, what's missing, and what to push back on.",
+    cta: "Check a quote",
+    featured: false,
+  },
+];
+
 const contractorProof = [
   "Pulled 9 kitchen permits within two miles of you",
   "Every one passed final inspection",
@@ -196,6 +226,9 @@ const Index = () => {
           <a href="#how-it-works" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             How it works
           </a>
+          <Link to="/shortlist" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
+            Check my names
+          </Link>
           <Link to="/pro" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             For contractors
           </Link>
@@ -214,6 +247,7 @@ const Index = () => {
             <div className="mt-8 flex flex-col gap-1 text-[15px]">
               <a href="#how-it-works" className="rounded-xl px-3 py-3 hover:bg-secondary">How it works</a>
               <Link to="/roast" className="rounded-xl px-3 py-3 hover:bg-secondary">Check a quote</Link>
+              <Link to="/shortlist" className="rounded-xl px-3 py-3 hover:bg-secondary">Check my names</Link>
               <Link to="/brief" className="rounded-xl px-3 py-3 hover:bg-secondary">Find a contractor</Link>
               <Link to="/pro" className="rounded-xl px-3 py-3 hover:bg-secondary">For contractors</Link>
               <Link to="/login" className="rounded-xl px-3 py-3 hover:bg-secondary">Sign in</Link>
@@ -226,6 +260,35 @@ const Index = () => {
           Deliberately its own design world (see src/components/hero-story) —
           gets reconciled with the rest of the site's design system later. */}
       <HeroStory />
+
+      {/* THREE DOORS: wherever the homeowner is in the search, start there. */}
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+          <p className="eyebrow text-accent">Wherever you are in it</p>
+          <h2 className="mt-5 max-w-2xl font-display text-[30px] leading-tight tracking-tight md:text-[38px]">
+            Finding the right contractor, without the second job.
+          </h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {entryDoors.map((d) => (
+              <Link
+                key={d.to}
+                to={d.to}
+                onClick={() => track("home_door_clicked", { door: d.id })}
+                className={`group flex flex-col rounded-3xl border p-7 transition-smooth hover:-translate-y-0.5 hover:shadow-soft ${
+                  d.featured ? "border-foreground/20 bg-card shadow-soft" : "border-border bg-card/60"
+                }`}
+              >
+                <p className="text-[13px] font-medium text-muted-foreground">{d.when}</p>
+                <p className="mt-3 font-display text-[22px] leading-snug">{d.title}</p>
+                <p className="mt-3 flex-1 text-[15px] leading-relaxed text-muted-foreground">{d.body}</p>
+                <span className="mt-6 inline-flex items-center gap-2 text-[15px] font-medium">
+                  {d.cta} <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* SAMPLE */}
       <section className="border-t border-border bg-secondary/40">
