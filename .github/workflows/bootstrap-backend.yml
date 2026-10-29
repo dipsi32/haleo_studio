@@ -90,15 +90,26 @@ jobs:
           rm -f /tmp/secrets.env
 
       # Production skips the seed-test-* functions: they create test data and are public.
+      # One function failing (Supabase sometimes answers a deploy with a 500,
+      # especially right after a paused project wakes up) must not stop the
+      # rest, or sign-in settings and the smoke test. Retry once, keep going,
+      # and fail the run at the end naming what didn't deploy.
       - name: Edge functions
         run: |
+          failed=""
           for dir in supabase/functions/*/; do
             fn=$(basename "$dir")
             [ "$fn" = "_shared" ] && continue
             if [ "$TARGET" = "production" ] && [[ "$fn" == seed-test-* ]]; then echo "skipping $fn on production"; continue; fi
             echo "deploying $fn"
-            supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api
+            if ! supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api; then
+              echo "::warning::$fn failed to deploy, retrying in 15s"
+              sleep 15
+              supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api || failed="$failed $fn"
+            fi
           done
+          echo "FAILED_FUNCTIONS=${failed# }" >> "$GITHUB_ENV"
+          [ -n "$failed" ] && echo "::error::These functions did not deploy:$failed. Everything else did. Re-run this workflow to retry." || true
 
       - name: Sign-in settings
         run: |
@@ -119,3 +130,9 @@ jobs:
 
       - name: Smoke test
         run: node scripts/smoke.mjs "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Functions that didn't deploy
+        if: env.FAILED_FUNCTIONS != ''
+        run: |
+          echo "::error::Not deployed: $FAILED_FUNCTIONS. Everything else is live. Re-run this workflow to retry them."
+          exit 1
