@@ -10,6 +10,9 @@ import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
+import CheckEmailCard from "@/components/auth/CheckEmailCard";
+import { authMessage } from "@/lib/authMessages";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const ProLogin = () => {
   const { user, loading } = useAuth();
@@ -24,6 +27,15 @@ const ProLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+  const { isAdmin } = useIsAdmin();
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   useEffect(() => {
     if (loading || acctLoading) return;
@@ -49,27 +61,52 @@ const ProLogin = () => {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin + "/pro/login" },
         });
         if (error) throw error;
-        toast({ title: "Account created", description: "Signing you in…" });
+        if (data.session) toast({ title: "Account created", description: "Signing you in…" });
+        else {
+          setSentTo(email);
+          setResendIn(60);
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (err) {
-      toast({
-        title: mode === "signup" ? "Couldn't create account" : "Sign in failed",
-        description: err instanceof Error ? err.message : "Try again.",
-        variant: "destructive",
-      });
+      const msg = authMessage(err);
+      if (msg.kind === "unconfirmed") setSentTo(email);
+      else if (msg.kind === "exists") setMode("signin");
+      toast({ title: msg.title, description: msg.body, variant: msg.kind === "rate" ? undefined : "destructive" });
     } finally {
       setBusy(false);
     }
   };
+
+  const resend = async () => {
+    if (!sentTo || resendIn > 0) return;
+    setBusy(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: sentTo,
+      options: { emailRedirectTo: window.location.origin + "/pro/login" },
+    });
+    setBusy(false);
+    if (error) {
+      const msg = authMessage(error);
+      toast({ title: msg.title, description: msg.body });
+      return;
+    }
+    setResendIn(60);
+    toast({ title: "Sent again", description: `A fresh link is on its way to ${sentTo}.` });
+  };
+
+  // Signed in, but this email isn't linked to a contractor yet. Say so,
+  // instead of showing the sign-in form again as if nothing happened.
+  const signedInNotContractor = !loading && !acctLoading && !!user && !isContractor;
 
   return (
     <div className="grid min-h-screen place-items-center bg-gradient-warm px-6">
@@ -85,15 +122,68 @@ const ProLogin = () => {
             Pro Workspace
           </span>
           <h1 className="font-display text-2xl font-light">
-            {mode === "signup" ? "Create your contractor account" : "Sign in to your workspace"}
+            {signedInNotContractor
+              ? "One step from your workspace"
+              : sentTo
+                ? "Almost there"
+                : mode === "signup"
+                  ? "Create your contractor account"
+                  : "Sign in to your workspace"}
           </h1>
           <p className="max-w-sm text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "Set up your Pro Workspace in under a minute."
-              : "Email and password — quick and simple."}
+            {signedInNotContractor
+              ? "Link your business and your Pro Workspace opens."
+              : sentTo
+                ? "Confirm your email and you're in."
+                : mode === "signup"
+                  ? "Set up your Pro Workspace in under a minute."
+                  : "Email and password, quick and simple."}
           </p>
         </div>
 
+        {signedInNotContractor ? (
+          <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-soft md:p-8">
+            <h2 className="font-display text-xl">You're signed in</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              As <span className="font-medium text-foreground">{user?.email}</span>. This email isn't linked to a
+              contractor profile yet. Haleo links it when your business shows up in San Jose's permit records and you
+              claim it.
+            </p>
+            <div className="mt-6 space-y-2">
+              <Button asChild className="h-11 w-full rounded-full">
+                <Link to="/pro">
+                  Find and claim my business <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              {isAdmin && (
+                <Button asChild variant="outline" className="h-11 w-full rounded-full">
+                  <Link to="/admin">Open Mission control</Link>
+                </Button>
+              )}
+              <Button asChild variant="outline" className="h-11 w-full rounded-full">
+                <Link to="/account">Continue as a homeowner</Link>
+              </Button>
+            </div>
+            <button
+              type="button"
+              onClick={() => void supabase.auth.signOut()}
+              className="mt-4 text-xs text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Sign out and use a different email
+            </button>
+          </div>
+        ) : sentTo ? (
+          <CheckEmailCard
+            email={sentTo}
+            resendIn={resendIn}
+            busy={busy}
+            onResend={resend}
+            onSignIn={() => {
+              setSentTo(null);
+              setMode("signin");
+            }}
+          />
+        ) : (
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
           <div className="mb-5 grid grid-cols-2 gap-1 rounded-full border border-border bg-background p-1">
             <button
@@ -168,7 +258,10 @@ const ProLogin = () => {
             </button>
           </p>
         </div>
+        )}
 
+        {!signedInNotContractor && (
+        <>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Don't have a profile yet?{" "}
           <Link to="/pro" className="text-accent underline-offset-4 hover:underline">
@@ -181,6 +274,8 @@ const ProLogin = () => {
             Sign in here
           </Link>
         </p>
+        </>
+        )}
       </motion.div>
     </div>
   );
