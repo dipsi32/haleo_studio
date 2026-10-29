@@ -123,12 +123,15 @@ const Shortlist = () => {
   const [messages, setMessages] = useState<Record<string, string>>({});
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const [needInput, setNeedInput] = useState(false);
 
   const { results: liveResults, running, run, reset } = useShortlistCheck();
   const [restored, setRestored] = useState<CheckedCandidate[]>(saved?.results ?? []);
   const results = liveResults.length > 0 ? liveResults : restored;
 
-  const opt = project ? projectOption(project) : null;
+  // The project is optional. Without one, "like yours" means any remodel or repair.
+  const opt = projectOption(project ?? "other");
   const hasBrief = !!intake.room && (!!intake.scope || intake.painPoints.length > 0 || !!intake.notes);
   const homeownerName = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ?? null;
 
@@ -139,8 +142,8 @@ const Shortlist = () => {
 
   // Keep the shortlist through a detour (building a brief, a reload).
   useEffect(() => {
-    if (!project || results.length === 0 || running) return;
-    saveShortlist({ project, candidates, results, selected: [...selected] });
+    if (results.length === 0 || running) return;
+    saveShortlist({ project: project ?? "other", candidates, results, selected: [...selected] });
   }, [project, candidates, results, selected, running]);
 
   // "Not them": drop a wrong permit match from that card.
@@ -176,9 +179,15 @@ const Shortlist = () => {
     setManualLicense("");
   };
 
-  const canFind = !!project && (text.trim().length > 0 || shots.length > 0 || manual.length > 0 || manualName.trim().length > 0);
+  const hasInput = text.trim().length > 0 || shots.length > 0 || manual.length > 0 || manualName.trim().length > 0;
 
   const findContractors = async () => {
+    // Never a dead grey button: say what's missing and point at it.
+    if (!hasInput) {
+      setNeedInput(true);
+      textRef.current?.focus();
+      return;
+    }
     const typed = manualName.trim() ? [manualCandidate({ name: manualName, phone: manualPhone, license_number: manualLicense })] : [];
     let found: Candidate[] = [];
     if (text.trim() || shots.length) {
@@ -224,7 +233,6 @@ const Shortlist = () => {
     setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
 
   const checkThem = () => {
-    if (!opt) return;
     const list = candidates.filter((c) => c.name.trim());
     if (list.length === 0) return;
     setRejected(new Set());
@@ -306,32 +314,18 @@ const Shortlist = () => {
               </p>
 
               <div className="mt-10 space-y-6">
-                <div>
-                  <p className="text-sm font-medium">What are you planning?</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {PROJECT_OPTIONS.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setProject(p.id)}
-                        className={`rounded-full border px-4 py-2 text-sm transition-smooth ${
-                          project === p.id ? "border-foreground bg-foreground text-background" : "border-border hover:bg-secondary"
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <ClipboardPaste className="h-4 w-4 text-accent" /> Paste the thread
                   </div>
                   <p className="mt-1 text-[13px] text-muted-foreground">Nextdoor, Reddit, a WhatsApp group, texts. Messy is fine.</p>
                   <Textarea
+                    ref={textRef}
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setNeedInput(false);
+                    }}
                     placeholder={"\"We used Acme Builders for our kitchen, on time and on budget. 408-555-0199\"\n\"+1 for Acme. Also try Pacific Remodeling, Lic #1023456\""}
                     className="mt-3 min-h-[140px] resize-y text-[15px]"
                   />
@@ -406,8 +400,30 @@ const Shortlist = () => {
                 </div>
               </div>
 
+              <div className="mt-8">
+                <p className="text-sm font-medium">
+                  What are you planning? <span className="font-normal text-muted-foreground">Optional</span>
+                </p>
+                <p className="mt-1 text-[13px] text-muted-foreground">It helps us spot who has built something like yours.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PROJECT_OPTIONS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      aria-pressed={project === p.id}
+                      onClick={() => setProject((cur) => (cur === p.id ? null : p.id))}
+                      className={`rounded-full border px-4 py-2 text-sm transition-smooth ${
+                        project === p.id ? "border-foreground bg-foreground text-background" : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Button size="lg" className="rounded-full px-7" disabled={!canFind || extracting} onClick={findContractors}>
+                <Button size="lg" className="rounded-full px-7" disabled={extracting} onClick={findContractors}>
                   {extracting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reading the replies…
@@ -418,7 +434,11 @@ const Shortlist = () => {
                     </>
                   )}
                 </Button>
-                {!project && <p className="text-sm text-muted-foreground">Pick what you're planning first.</p>}
+                {needInput && !hasInput && (
+                  <p role="status" className="text-sm text-accent">
+                    Paste a thread, add a screenshot, or type a name above.
+                  </p>
+                )}
               </div>
               <p className="mt-4 text-[13px] text-muted-foreground">
                 We only read what you give us, and we don't contact anyone. You decide who hears from you.
@@ -485,7 +505,7 @@ const Shortlist = () => {
             <motion.section key="compare" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {step === "compare" && (
                 <>
-                  <Eyebrow>Your shortlist{opt ? ` · ${opt.label}` : ""}</Eyebrow>
+                  <Eyebrow>Your shortlist{project ? ` · ${opt.label}` : ""}</Eyebrow>
                   <h1 className="mt-4 font-display text-[1.9rem] font-light leading-tight tracking-tight md:text-[2.4rem]">
                     {running
                       ? `Checking ${shown.length - doneCount} of ${shown.length}…`
@@ -677,7 +697,7 @@ const ResultCard = ({
             <dd className="mt-0.5 text-muted-foreground">
               {r.contractor ? (
                 <>
-                  {r.permits.length} on file, {r.likeYours} like your {projectWord} project
+                  {r.permits.length} on file, {r.likeYours} like your {projectWord === "similar" ? "" : `${projectWord} `}project
                   {latest?.issued_date ? `. Most recent ${new Date(latest.issued_date).toLocaleDateString(undefined, { month: "short", year: "numeric" })}` : ""}
                   .{" "}
                   <span className="text-[13px]">
