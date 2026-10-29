@@ -13,6 +13,7 @@ import { track } from "@/lib/analytics";
 import { getActiveInvite } from "@/lib/invites";
 import { authMessage } from "@/lib/authMessages";
 import CheckEmailCard from "@/components/auth/CheckEmailCard";
+import ForgotPasswordCard from "@/components/auth/ForgotPasswordCard";
 
 const Login = () => {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ const Login = () => {
   const [busy, setBusy] = useState(false);
   // Set after sign-up when Supabase wants the email confirmed before signing in.
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(params.get("forgot") === "1");
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
@@ -172,7 +174,9 @@ const Login = () => {
           </div>
         )}
 
-        {sentTo ? (
+        {forgot ? (
+          <ForgotPasswordCard initialEmail={email} next={next} onBack={() => setForgot(false)} />
+        ) : sentTo ? (
           <CheckEmailCard
             email={sentTo}
             resendIn={resendIn}
@@ -253,6 +257,15 @@ const Login = () => {
                   className="h-11 rounded-xl bg-background pl-9"
                 />
               </div>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={() => setForgot(true)}
+                  className="mt-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="h-11 w-full rounded-full">
               {mode === "signup" ? "Create account" : "Sign in"}
