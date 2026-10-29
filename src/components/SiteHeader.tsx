@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown, Menu, X, Flame, Hammer, HardHat, Building2 } from "lucide-react";
+import { UserRound, LogIn, LogOut, Shield, MessageSquare, ChevronDown, Menu, X, Flame, Hammer, HardHat, Building2, ListChecks } from "lucide-react";
 import Logo from "./Logo";
 import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/context/AuthContext";
@@ -38,6 +38,7 @@ const SiteHeader = () => {
         <Logo />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <Link to="/roast" className="transition-smooth hover:text-foreground">Get it roasted</Link>
+          <Link to="/shortlist" className="transition-smooth hover:text-foreground">Check my names</Link>
           <Link to="/brief" className="transition-smooth hover:text-foreground">Find your contractor</Link>
           <Link to="/adu" className="transition-smooth hover:text-foreground">ADU check</Link>
           <Link to="/pro" className="transition-smooth hover:text-foreground">For contractors</Link>
@@ -111,6 +112,15 @@ const SiteHeader = () => {
               <p className="text-xs text-muted-foreground">Where contractors earn their keep.</p>
             </SheetHeader>
             <nav className="flex flex-col px-3 py-4 text-base">
+              <button onClick={() => go("/shortlist")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <ListChecks className="h-4 w-4" />
+                </span>
+                <span className="flex-1">
+                  <span className="block font-medium">Check my names</span>
+                  <span className="block text-xs text-muted-foreground">Got names from neighbors? Find the good ones</span>
+                </span>
+              </button>
               <button onClick={() => go("/brief")} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-smooth hover:bg-secondary">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Hammer className="h-4 w-4" />
