@@ -105,7 +105,10 @@ jobs:
             if ! supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api; then
               echo "::warning::$fn failed to deploy, retrying in 15s"
               sleep 15
-              supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api || failed="$failed $fn"
+              if ! supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api; then
+                # mcp (the AI-assistant connector) isn't used by the app. Warn, don't fail the run.
+                if [ "$fn" = "mcp" ]; then echo "::warning::mcp did not deploy. The app doesn't use it; the previous version stays live."; else failed="$failed $fn"; fi
+              fi
             fi
           done
           echo "FAILED_FUNCTIONS=${failed# }" >> "$GITHUB_ENV"
