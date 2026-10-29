@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import CheckEmailCard from "@/components/auth/CheckEmailCard";
+import ForgotPasswordCard from "@/components/auth/ForgotPasswordCard";
 import { authMessage } from "@/lib/authMessages";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -28,6 +29,7 @@ const ProLogin = () => {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(params.get("forgot") === "1");
   const [resendIn, setResendIn] = useState(0);
   const { isAdmin } = useIsAdmin();
 
@@ -172,6 +174,8 @@ const ProLogin = () => {
               Sign out and use a different email
             </button>
           </div>
+        ) : forgot ? (
+          <ForgotPasswordCard initialEmail={email} next={"/pro/login"} onBack={() => setForgot(false)} />
         ) : sentTo ? (
           <CheckEmailCard
             email={sentTo}
@@ -240,6 +244,15 @@ const ProLogin = () => {
                   className="h-11 rounded-xl bg-background pl-9"
                 />
               </div>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={() => setForgot(true)}
+                  className="mt-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="h-11 w-full rounded-full">
               {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
