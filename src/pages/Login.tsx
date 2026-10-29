@@ -11,6 +11,8 @@ import Logo from "@/components/Logo";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { track } from "@/lib/analytics";
 import { getActiveInvite } from "@/lib/invites";
+import { authMessage } from "@/lib/authMessages";
+import CheckEmailCard from "@/components/auth/CheckEmailCard";
 
 const Login = () => {
   const { user, loading } = useAuth();
@@ -39,6 +41,15 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  // Set after sign-up when Supabase wants the email confirmed before signing in.
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   useEffect(() => {
     if (loading || contractorLoading || !user) return;
@@ -66,7 +77,7 @@ const Login = () => {
     try {
       if (mode === "signup") {
         track("signup_started", { method: "email" });
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -75,22 +86,49 @@ const Login = () => {
           },
         });
         if (error) throw error;
-        track("signup_completed", { method: "email" });
-        toast({ title: "Account created", description: "You're all set — signing you in." });
+        track("signup_completed", { method: "email", needs_confirmation: !data.session });
+        if (data.session) {
+          toast({ title: "Account created", description: "You're all set. Signing you in." });
+        } else {
+          // Confirmation required: say so plainly instead of waiting on a sign-in that won't come.
+          setSentTo(email);
+          setResendIn(60);
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         track("login_completed", { method: "email" });
       }
     } catch (err) {
-      toast({
-        title: mode === "signup" ? "Couldn't create account" : "Sign in failed",
-        description: err instanceof Error ? err.message : "Try again.",
-        variant: "destructive",
-      });
+      const msg = authMessage(err);
+      if (msg.kind === "unconfirmed") {
+        setSentTo(email);
+        setResendIn(0);
+      } else if (msg.kind === "exists") {
+        setMode("signin");
+      }
+      toast({ title: msg.title, description: msg.body, variant: msg.kind === "rate" ? undefined : "destructive" });
     } finally {
       setBusy(false);
     }
+  };
+
+  const resend = async () => {
+    if (!sentTo || resendIn > 0) return;
+    setBusy(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: sentTo,
+      options: { emailRedirectTo: window.location.origin + next },
+    });
+    setBusy(false);
+    if (error) {
+      const msg = authMessage(error);
+      toast({ title: msg.title, description: msg.body });
+      return;
+    }
+    setResendIn(60);
+    toast({ title: "Sent again", description: `A fresh link is on its way to ${sentTo}.` });
   };
 
   return (
@@ -134,6 +172,18 @@ const Login = () => {
           </div>
         )}
 
+        {sentTo ? (
+          <CheckEmailCard
+            email={sentTo}
+            resendIn={resendIn}
+            busy={busy}
+            onResend={resend}
+            onSignIn={() => {
+              setSentTo(null);
+              setMode("signin");
+            }}
+          />
+        ) : (
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
           <Button
             type="button"
@@ -221,6 +271,7 @@ const Login = () => {
             </button>
           </p>
         </div>
+        )}
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Don't have access yet?{" "}
