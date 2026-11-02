@@ -5,7 +5,7 @@
 //     contractors who worked it) from parcel_permit_history
 // Only renders when there's real signal. One fact + one consequence per item.
 import { useEffect, useState } from "react";
-import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History } from "lucide-react";
+import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
@@ -21,7 +21,12 @@ type Signal = {
   seismic_hazard_type: string | null;
   lookup_succeeded: boolean | null;
   last_checked_at: string | null;
-  raw_response?: { geocodeLevel?: string; fire?: { approximate?: boolean } } | null;
+  raw_response?: {
+    geocodeLevel?: string;
+    fire?: { approximate?: boolean };
+    /** Which hazard checks actually ran. Missing on rows saved before this was tracked. */
+    checked?: { fire?: boolean; flood?: boolean; seismic?: boolean };
+  } | null;
 };
 
 type ParcelPermit = {
@@ -209,7 +214,46 @@ export default function AddressIntelligenceCard({ address }: Props) {
   if (!signal && !parcel) return null;
   if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return null;
 
-  const allClear = items.length === 0 && hasRiskSignal;
+  const warnCount = items.filter((i) => i.tone === "warn").length;
+  // We only call a hazard "clear" when its check ran on this exact address.
+  // A ZIP-centroid fallback or a failed map lookup is never shown as clear.
+  const ran = signal?.raw_response?.checked;
+  const exact = !!signal?.lookup_succeeded && signal?.raw_response?.geocodeLevel !== "zip";
+  const approximate = !!signal?.lookup_succeeded && signal?.raw_response?.geocodeLevel === "zip";
+  const notChecked = exact && ran
+    ? [!ran.fire && "fire hazard zones", !ran.flood && "flood maps", !ran.seismic && "earthquake hazard zones"].filter(Boolean) as string[]
+    : [];
+  const clearChecks = exact && ran
+    ? [
+        ran.fire && !signal?.fire_hazard_class && {
+          icon: Flame,
+          label: "Not in a CAL FIRE hazard zone",
+          means: "The state's fire-rated rules for siding, roofing and vents shouldn't apply to your exterior work.",
+        },
+        ran.flood && !signal?.in_special_flood_hazard_area && {
+          icon: Waves,
+          label: "Outside FEMA flood zones",
+          means: "No flood elevation or venting rules, and federally backed lenders don't require flood insurance here.",
+        },
+        ran.seismic && !signal?.seismic_hazard_type && {
+          icon: Mountain,
+          label: "No mapped liquefaction or landslide zone",
+          means: "Additions and foundation work usually don't need a state-required soils report, one less study before you can build.",
+        },
+      ].filter(Boolean) as { icon: typeof Flame; label: string; means: string }[]
+    : [];
+  const headline =
+    warnCount > 0
+      ? `${warnCount} thing${warnCount === 1 ? "" : "s"} on your lot that can change every bid.`
+      : clearChecks.length === 3 && hasParcel
+        ? "No hazard zones, and the permit record is clean."
+        : clearChecks.length === 3
+          ? "No hazard zones on your lot. Fewer surprises in your bids."
+          : "Worth knowing before you talk to anyone.";
+  const subline =
+    warnCount > 0
+      ? "Hazard zones and unfinished permits change materials, insurance and cost. Raise them before anyone prices the job, not after."
+      : "Hazard zones are where change orders hide: different materials, extra reports, higher insurance. Here's what we checked.";
   const recentPermits = parcel?.permits
     ?.slice()
     .sort((a, b) => (a.issued_date && b.issued_date ? (a.issued_date < b.issued_date ? 1 : -1) : 0))
@@ -236,29 +280,63 @@ export default function AddressIntelligenceCard({ address }: Props) {
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 What your address tells us
               </p>
-              <p className="mt-0.5 font-display text-xl font-light leading-tight text-foreground md:text-2xl">
-                {allClear && !hasParcel
-                  ? "Clean parcel — no red flags."
-                  : items.length === 0 && hasParcel
-                    ? "Clean record — here's the parcel's history."
-                    : "A few things worth knowing before you talk to anyone."}
-              </p>
+              <p className="mt-0.5 font-display text-xl font-light leading-tight text-foreground md:text-2xl">{headline}</p>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{subline}</p>
             </div>
           </div>
           <span className="hidden shrink-0 rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground md:inline-block">
-            Public records
+            From public records
           </span>
         </div>
 
-        {allClear && !hasParcel ? (
-          <div className="mt-5 rounded-2xl border border-sage/20 bg-sage/5 px-5 py-4">
-            <p className="text-sm leading-relaxed text-foreground/80">
-              We checked CAL FIRE fire hazard zones, FEMA flood maps, and California
-              Geological Survey seismic overlays. None flagged your address — so no
-              special permitting or insurance gotchas to plan around upfront.
+        {/* What came back clear, and what that saves them. */}
+        {clearChecks.length > 0 && (
+          <ul className="mt-5 grid gap-2.5 rounded-2xl border border-sage/20 bg-sage/5 p-4 md:p-5">
+            {clearChecks.map((c) => (
+              <li key={c.label} className="flex items-start gap-3">
+                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sage/15 text-sage">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{c.label}</p>
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">{c.means}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {(approximate || notChecked.length > 0) && (
+          <div className="mt-3 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
+            <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
+              {approximate ? (
+                <>
+                  <span className="font-medium text-foreground">We couldn't place your exact address,</span> so we
+                  only looked around your ZIP code. Treat this as a rough read and ask your contractor to confirm
+                  hazard zones for the lot itself.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">We couldn't check {notChecked.join(" or ")} just now.</span>{" "}
+                  That's not a clean result. Ask your contractor, or open this brief again later.
+                </>
+              )}
             </p>
           </div>
-        ) : null}
+        )}
+
+        {/* Say what we couldn't check, so "clear" never implies more than it means. */}
+        {!hasParcel && (
+          <div className="mt-3 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
+            <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">Permit history not found for this address.</span> We
+              can't tell whether past work was signed off by the city. Ask any contractor you meet to check for open or
+              expired permits: unfinished ones get passed to the next job and show up at resale.
+            </p>
+          </div>
+        )}
 
         {/* Risk + open-permit warnings */}
         {items.length > 0 && (

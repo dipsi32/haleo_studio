@@ -133,7 +133,7 @@ const Invite = () => {
     {
       icon: Lock,
       title: `Only ${name} gets it`,
-      body: "It goes to this contractor and no one else. You can share it with other contractors whenever you like from your account.",
+      body: "It goes to this contractor and no one else. It's still yours to keep.",
     },
     {
       icon: Map,

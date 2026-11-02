@@ -1,5 +1,6 @@
 // Pure brief generators — kept out of the page so they're testable and honest.
 // Rule: every line must be grounded in user input. Anything inferred is tagged.
+import { projectLabel, projectNoun, projectOpener } from "@/lib/projectName";
 import {
   ROOM_LABELS,
   type IntakeData,
@@ -75,7 +76,7 @@ export const buildProjectTitle = (d: IntakeData): { title: string; sub: string }
     : d.room === "full-home"
       ? "Whole-home"
       : d.room
-        ? ROOM_LABELS[d.room]
+        ? projectLabel(d)
         : "Project";
   const action = scope?.value === "refresh"
     ? "Refresh"
@@ -96,17 +97,9 @@ export const buildProjectTitle = (d: IntakeData): { title: string; sub: string }
 // ───── Homeowner layer ─────
 // First-person, only uses words/choices the user actually made.
 export const buildHomeownerLayer = (d: IntakeData): string => {
-  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
   const pains = d.painPoints.slice(0, 3).map((p) => p.toLowerCase());
-
-  const opener =
-    d.room === "addition"
-      ? "We're adding on to our home."
-      : d.room === "full-home"
-        ? "We're remodeling our whole home."
-        : d.room
-          ? `We're remodeling the ${room}.`
-          : "We're planning a remodel.";
+  // Named from what they chose: rooms, jobs like "roof", or their own words.
+  const opener = projectOpener(d);
 
   const painsLine =
     pains.length > 0
@@ -148,9 +141,9 @@ export const buildContractorLayer = (d: IntakeData): ContractorLine[] => {
     });
   } else if (d.room) {
     lines.push({
-      text: `${ROOM_LABELS[d.room]} renovation.`,
+      text: d.room === "other" ? `${projectLabel(d)}.` : `${ROOM_LABELS[d.room]} renovation.`,
       basis: "grounded",
-      source: `Room: ${ROOM_LABELS[d.room]}`,
+      source: d.room === "other" ? "Project, as the homeowner described it" : `Room: ${ROOM_LABELS[d.room]}`,
       trade: "context",
     });
   }
@@ -416,7 +409,7 @@ export type SpaceAnalysisBlock = {
 
 export const buildSpaceAnalysis = (d: IntakeData): SpaceAnalysisBlock[] => {
   const blocks: SpaceAnalysisBlock[] = [];
-  const room = d.room ? ROOM_LABELS[d.room].toLowerCase() : "space";
+  const room = d.room ? projectNoun(d) : "space";
 
   // Video walkthrough — the contractor-lens block
   const videos = d.media.filter((m) => m.kind === "video");

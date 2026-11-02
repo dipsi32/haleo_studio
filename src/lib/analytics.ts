@@ -81,6 +81,7 @@ export type AnalyticsEvent =
   | "visit_prep_question_added"
   // Shortlist: names from neighbors, checked against public records
   | "home_door_clicked"
+  | "matched_bids_interest"
   | "password_reset_requested"
   | "password_reset_opened"
   | "password_reset_completed"

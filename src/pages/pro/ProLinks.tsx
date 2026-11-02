@@ -128,6 +128,11 @@ export default function ProLinks() {
             A big one comes in? Send the link. The homeowner adds their photos, plans, scope and budget. You get a prep
             sheet for the visit: the lot, the permit risks, what to ask, and a plain call on whether it's worth the drive. Free, and it comes only to you.
           </p>
+          <p className="mt-3 rounded-xl border border-sage/25 bg-sage/5 px-4 py-3 text-sm text-foreground/80">
+            <span className="font-medium">Your link, your lead.</span> While a homeowner builds and sends their brief
+            through your link, Haleo shows them you and no one else. After they send it, the brief is theirs to keep,
+            like any document they wrote.
+          </p>
         </div>
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">

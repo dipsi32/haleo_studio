@@ -2,6 +2,7 @@
 // Trust score, project-type matching, and brief snapshots — kept testable.
 import type { IntakeData } from "@/lib/intake";
 import { ROOM_LABELS, scopeFor } from "@/lib/intake";
+import { projectLabel, projectNoun } from "@/lib/projectName";
 import { buildHomeownerLayer, buildContractorLayer, groupContractorLinesByTrade } from "@/lib/brief";
 import type { HomeownerContext, ParcelFacts } from "@/lib/prepTypes";
 
@@ -352,6 +353,7 @@ export const projectTypeLabel = (data: IntakeData): string => {
   if (!data.room) return 'remodel';
   if (data.room === 'addition') return 'addition';
   if (data.room === 'full-home') return 'whole-home remodel';
+  if (data.room === 'other') return projectNoun(data);
   return `${ROOM_LABELS[data.room].toLowerCase()} remodel`;
 };
 
@@ -454,7 +456,7 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     scope_summary: buildHomeownerLayer(data),
     vision: data.notes ?? '',
     frustrations: data.painPoints,
-    rooms: data.room ? [ROOM_LABELS[data.room]] : [],
+    rooms: data.room ? [data.room === 'other' ? projectLabel(data) : ROOM_LABELS[data.room]] : [],
     scope_label: scope?.label,
     timeline,
     budget,

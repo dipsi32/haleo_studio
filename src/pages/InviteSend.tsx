@@ -20,6 +20,8 @@ import { loadAddressRisk } from "@/lib/addressRisk";
 import { loadParcelFacts } from "@/lib/parcelFacts";
 import { cleanContext, hasContext, type HomeownerContext } from "@/lib/prepTypes";
 import VisitContextForm from "@/components/brief/VisitContextForm";
+import MoreBidsOffer from "@/components/brief/MoreBidsOffer";
+import { projectNoun } from "@/lib/projectName";
 import { buildBriefSnapshot, getSessionId, projectKeywords, projectTypeLabel, type BriefSnapshot } from "@/lib/contractors";
 import {
   INVITE_ERROR_COPY,
@@ -117,21 +119,12 @@ const InviteSend = () => {
             <ProofPanel contractorId={invite.contractor.id} city={city ?? invite.contractor.city} keywords={keywords} variant="full" />
           </div>
 
-          <div className="mt-8 rounded-2xl border border-border bg-card/70 p-5">
-            <p className="font-display text-lg">It's your brief</p>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              You picked {name}, and that's the only place it went. If you'd like other contractors with permit history near
-              you to see it too, you can share it with them whenever you want.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button variant="outline" className="rounded-full" onClick={() => navigate("/contractors")}>
-                See other contractors near me
-              </Button>
-              <Button className="rounded-full" onClick={() => navigate("/account")}>
-                Go to my account
-              </Button>
-            </div>
+          <div className="mt-8">
+            <MoreBidsOffer contractorName={name} email={user?.email ?? null} projectNoun={projectNoun(data)} city={city} />
           </div>
+          <Button className="mt-6 rounded-full" onClick={() => navigate("/account")}>
+            Go to my account
+          </Button>
         </motion.div>
       </Shell>
     );
@@ -291,12 +284,6 @@ const InviteSend = () => {
         <Button size="lg" className="rounded-full" disabled={!consent || sending} onClick={send}>
           <Send className="h-4 w-4" /> {sending ? "Sending…" : `Send to ${name}`}
         </Button>
-        <button
-          onClick={() => navigate("/contractors")}
-          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          Compare other contractors first
-        </button>
       </div>
     </Shell>
   );

@@ -61,6 +61,7 @@ import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import { getActiveInvite, inviteSendPath } from "@/lib/invites";
 import { loadShortlist } from "@/lib/shortlist";
+import { projectLabel } from "@/lib/projectName";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
@@ -706,7 +707,7 @@ const BriefResult = () => {
                 preview={
                   <span className="line-clamp-1">
                     {[
-                      data.room ? ROOM_LABELS[data.room] : null,
+                      data.room ? projectLabel(data) : null,
                       budgetLabel !== "—" && budgetLabel !== "Not shared" ? budgetLabel : null,
                       timelineLabel !== "—" ? timelineLabel : null,
                     ]
@@ -716,7 +717,7 @@ const BriefResult = () => {
                 }
               >
                 <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                  <KV label="Room" value={data.room ? ROOM_LABELS[data.room] : "—"} />
+                  <KV label={data.room === "other" ? "Project" : "Room"} value={data.room ? projectLabel(data) : "—"} />
                   <KV label="Project type" value={
                     data.scope === "refresh" ? "Design refresh"
                     : data.scope === "remodel" ? "Full remodel"
@@ -923,14 +924,7 @@ const BriefResult = () => {
 
         {invite && (
           <p className="mt-3 text-xs text-muted-foreground">
-            It goes to {invite.contractorName} only. It's your brief, and you can share it with other contractors later.{" "}
-            <button
-              type="button"
-              onClick={() => navigate(compareDestination)}
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              Compare other contractors first
-            </button>
+            It goes to {invite.contractorName} and no one else.
           </p>
         )}
 
@@ -1154,7 +1148,7 @@ const ExecSummary = ({
   onApprove: () => void;
   onEdit: () => void;
 }) => {
-  const room = data.room ? ROOM_LABELS[data.room] : "Project";
+  const room = data.room ? projectLabel(data) : "Project";
   const scopeLabel =
     data.scope === "refresh"
       ? "Design refresh"

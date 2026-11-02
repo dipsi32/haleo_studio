@@ -53,6 +53,11 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
 // CAL FIRE Fire Hazard Severity Zones — current (2023) authoritative service
 // hosted by CAL FIRE on the public ArcGIS hub. SRA (state lands) and the LRA
 // rollout layer cover the state between them.
+// A lookup that couldn't run returns FAILED, so it is never mistaken for
+// "checked, and nothing found" (null).
+const FAILED = { failed: true } as const;
+const failed = (r: unknown): r is typeof FAILED => r === FAILED;
+
 async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
   const params = new URLSearchParams({
     f: "json",
@@ -70,8 +75,9 @@ async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
   async function hit(url: string) {
     try {
       const res = await fetch(`${url}?${params}`);
-      if (!res.ok) return null;
+      if (!res.ok) return FAILED;
       const json = await res.json();
+      if (json?.error) return FAILED;
       const feats = json?.features ?? [];
       if (!feats.length) return null;
       // Pick the most severe class if multiple polygons matched (buffer query).
@@ -89,16 +95,19 @@ async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
         .sort((a: Record<string, unknown>, b: Record<string, unknown>) => rank(b) - rank(a))[0];
     } catch (e) {
       console.error("fhsz query failed", url, e);
-      return null;
+      return FAILED;
     }
   }
   const SRA =
     "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZSRA_23_3/FeatureServer/0/query";
   const LRA =
     "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZLRA0711_ByPhase/FeatureServer/0/query";
-  const [sra, lra] = await Promise.all([hit(SRA), hit(LRA)]);
+  const [sraR, lraR] = await Promise.all([hit(SRA), hit(LRA)]);
+  const sra = failed(sraR) ? null : sraR;
+  const lra = failed(lraR) ? null : lraR;
   const f = sra ?? lra;
-  if (!f) return null;
+  // Either map failing means we can't say "not in a fire zone".
+  if (!f) return failed(sraR) || failed(lraR) ? FAILED : null;
   const desc = String(
     f.FHSZ_Description ?? f.HAZ_CLASS ?? f.FHSZ ?? f.HAZ_CODE ?? "",
   ).toUpperCase();
@@ -129,8 +138,9 @@ async function queryFlood(lat: number, lng: number) {
     });
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) return FAILED;
     const json = await res.json();
+    if (json?.error) return FAILED;
     const f = json?.features?.[0]?.attributes;
     if (!f) return null;
     const zone = f.FLD_ZONE ?? null;
@@ -143,7 +153,7 @@ async function queryFlood(lat: number, lng: number) {
     return { zone, description, sfha, raw: f };
   } catch (e) {
     console.error("flood query failed", e);
-    return null;
+    return FAILED;
   }
 }
 
@@ -162,8 +172,9 @@ async function querySeismic(lat: number, lng: number) {
     });
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) return FAILED;
     const json = await res.json();
+    if (json?.error) return FAILED;
     const f = json?.features?.[0]?.attributes;
     if (!f) return null;
     const type = f.ZONE ?? f.HAZARD ?? f.Hazard ?? null;
@@ -174,7 +185,7 @@ async function querySeismic(lat: number, lng: number) {
     return { zone: type ? String(type) : "Mapped seismic hazard zone", type: kind, raw: f };
   } catch (e) {
     console.error("seismic query failed", e);
-    return null;
+    return FAILED;
   }
 }
 
@@ -210,6 +221,7 @@ Deno.serve(async (req) => {
       // Treat fully-empty results as stale (probably a broken endpoint last
       // time) and re-run the lookup rather than serving the empty cache.
       const stale =
+        (cached && !(cached.raw_response as { checked?: unknown } | null)?.checked) ||
         cached &&
         !cached.fire_hazard_class &&
         !cached.flood_zone &&
@@ -258,11 +270,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const [fire, flood, seismic] = await Promise.all([
+    const [fireR, floodR, seismicR] = await Promise.all([
       queryFireHazard(coords.lat, coords.lng, geocodeLevel === "zip" ? 3000 : 0),
       queryFlood(coords.lat, coords.lng),
       querySeismic(coords.lat, coords.lng),
     ]);
+    // Which checks actually ran. The brief only calls a hazard "clear" when its check ran.
+    const checked = { fire: !failed(fireR), flood: !failed(floodR), seismic: !failed(seismicR) };
+    const fire = failed(fireR) ? null : fireR;
+    const flood = failed(floodR) ? null : floodR;
+    const seismic = failed(seismicR) ? null : seismicR;
 
     const row = {
       address_key: key,
@@ -279,7 +296,7 @@ Deno.serve(async (req) => {
       in_special_flood_hazard_area: !!flood?.sfha,
       seismic_hazard_zone: seismic?.zone ?? null,
       seismic_hazard_type: seismic?.type ?? null,
-      raw_response: { fire, flood, seismic, geocodeLevel },
+      raw_response: { fire, flood, seismic, geocodeLevel, checked },
       lookup_succeeded: true,
       last_checked_at: new Date().toISOString(),
     };
