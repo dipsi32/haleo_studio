@@ -220,8 +220,11 @@ export default function AddressIntelligenceCard({ address }: Props) {
   const ran = signal?.raw_response?.checked;
   const exact = !!signal?.lookup_succeeded && signal?.raw_response?.geocodeLevel !== "zip";
   const approximate = !!signal?.lookup_succeeded && signal?.raw_response?.geocodeLevel === "zip";
-  const notChecked = exact && ran
-    ? [!ran.fire && "fire hazard zones", !ran.flood && "flood maps", !ran.seismic && "earthquake hazard zones"].filter(Boolean) as string[]
+  // Rows saved before checks were tracked don't say which ran: treat all as unconfirmed.
+  const notChecked = exact
+    ? ran
+      ? ([!ran.fire && "fire hazard zones", !ran.flood && "flood maps", !ran.seismic && "earthquake hazard zones"].filter(Boolean) as string[])
+      : ["fire hazard zones, flood maps", "earthquake hazard zones"]
     : [];
   const clearChecks = exact && ran
     ? [
@@ -253,7 +256,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
   const subline =
     warnCount > 0
       ? "Hazard zones and unfinished permits change materials, insurance and cost. Raise them before anyone prices the job, not after."
-      : "Hazard zones are where change orders hide: different materials, extra reports, higher insurance. Here's what we checked.";
+      : `Hazard zones are where change orders hide: different materials, extra reports, higher insurance.${clearChecks.length ? " Here's what we checked." : ""}`;
   const recentPermits = parcel?.permits
     ?.slice()
     .sort((a, b) => (a.issued_date && b.issued_date ? (a.issued_date < b.issued_date ? 1 : -1) : 0))
