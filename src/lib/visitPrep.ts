@@ -12,6 +12,7 @@
 //    a rule matters, the sheet says to check it with the city.
 //  - Nothing the homeowner didn't share is invented. A gap is shown as a gap
 //    and turned into a question worth asking.
+import { cleanVisitTimes, formatVisitTime } from "@/lib/visitTimes";
 import { computeDealRead, type BuyBox, type DealRead, type DealSnapshot } from "@/lib/dealRead";
 import { FUNDING_OPTIONS, SHOPPING_OPTIONS, WHO_DECIDES_OPTIONS, WHY_NOW_OPTIONS } from "@/lib/prepTypes";
 
@@ -226,6 +227,8 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
   if (ctx.hard_date?.trim()) people.push({ text: `Date that matters: ${ctx.hard_date.trim()}`, source: "asked", tone: "watch" });
   if (shopping) people.push({ text: shopping, source: "asked" });
   if (ctx.past_note?.trim()) people.push({ text: `From past projects: ${ctx.past_note.trim()}`, source: "asked", tone: "info" });
+  const times = cleanVisitTimes(ctx.visit_times);
+  if (times.length) people.push({ text: `Times that work for a visit: ${times.map(formatVisitTime).join("; ")}`, source: "asked", note: "Reply to confirm one." });
   if (snap.read_feedback?.trim()) people.push({ text: `They flagged Haleo's read: "${clip(snap.read_feedback.trim(), 120)}"`, source: "asked", tone: "watch" });
 
   // ── what only a site visit can settle (said out loud, so it reads as craft) ──

@@ -1,5 +1,6 @@
 // Shapes shared by the brief snapshot and the visit prep sheet.
 // Kept apart from contractors.ts and visitPrep.ts so neither imports the other.
+import { cleanVisitTimes } from "@/lib/visitTimes";
 
 // ───── Public-record facts attached to a brief when it is sent ─────
 export type ParcelPermitLite = {
@@ -66,12 +67,14 @@ export type HomeownerContext = {
   hard_date?: string;
   /** Free text: anything from past projects they would like handled differently. */
   past_note?: string;
+  /** Times that work for a visit, "YYYY-MM-DD|morning". The contractor confirms one. */
+  visit_times?: string[];
 };
 
 export const CONTEXT_TEXT_LIMIT = 200;
 
 export const hasContext = (c: HomeownerContext | null | undefined): boolean =>
-  Boolean(c && (c.why_now || c.who_decides || c.funding || c.shopping || c.hard_date?.trim() || c.past_note?.trim()));
+  Boolean(c && (c.why_now || c.who_decides || c.funding || c.shopping || c.hard_date?.trim() || c.past_note?.trim() || c.visit_times?.length));
 
 /** Drop empty strings and trim, so a snapshot carries only what was said. */
 export const cleanContext = (c: HomeownerContext): HomeownerContext | undefined => {
@@ -84,5 +87,7 @@ export const cleanContext = (c: HomeownerContext): HomeownerContext | undefined 
   if (hd) out.hard_date = hd;
   const pn = c.past_note?.trim().slice(0, CONTEXT_TEXT_LIMIT);
   if (pn) out.past_note = pn;
+  const vt = cleanVisitTimes(c.visit_times);
+  if (vt.length) out.visit_times = vt;
   return hasContext(out) ? out : undefined;
 };

@@ -21,6 +21,8 @@ import { loadParcelFacts } from "@/lib/parcelFacts";
 import { cleanContext, hasContext, type HomeownerContext } from "@/lib/prepTypes";
 import VisitContextForm from "@/components/brief/VisitContextForm";
 import MoreBidsOffer from "@/components/brief/MoreBidsOffer";
+import VisitTimesPicker from "@/components/brief/VisitTimesPicker";
+import { formatVisitTime } from "@/lib/visitTimes";
 import { projectNoun } from "@/lib/projectName";
 import { buildBriefSnapshot, getSessionId, projectKeywords, projectTypeLabel, type BriefSnapshot } from "@/lib/contractors";
 import {
@@ -112,6 +114,18 @@ const InviteSend = () => {
             Your brief comes with a prep sheet on your home and project, so your first visit can start with the real conversation. If they have questions, they'll reach you through Haleo and you'll see them in your notifications. Your brief is saved in your account.
           </p>
 
+          {(context.visit_times?.length ?? 0) > 0 && (
+            <div className="mt-6 rounded-2xl border border-sage/25 bg-sage/5 p-5">
+              <p className="font-display text-lg">Times you suggested</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {context.visit_times!.map((t) => (
+                  <li key={t} className="rounded-full bg-background px-3 py-1 text-sm">{formatVisitTime(t)}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-sm text-muted-foreground">{name} will confirm one with you. You'll see it in your notifications.</p>
+            </div>
+          )}
+
           <div className="mt-8">
             <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
               What the public record shows for {name}{city ? ` in ${city}` : ""}
@@ -120,7 +134,7 @@ const InviteSend = () => {
           </div>
 
           <div className="mt-8">
-            <MoreBidsOffer contractorName={name} email={user?.email ?? null} projectNoun={projectNoun(data)} city={city} />
+            <MoreBidsOffer contractorName={name} projectNoun={projectNoun(data)} city={city} />
           </div>
           <Button className="mt-6 rounded-full" onClick={() => navigate("/account")}>
             Go to my account
@@ -214,7 +228,7 @@ const InviteSend = () => {
         })
         .then(() => undefined, () => undefined);
 
-      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel });
+      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel, visit_times: context.visit_times?.length ?? 0 });
       clearActiveInvite();
       setSent(true);
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -255,6 +269,12 @@ const InviteSend = () => {
       )}
 
       <VisitContextForm name={name} value={context} onChange={setContext} />
+
+      <VisitTimesPicker
+        name={name}
+        value={context.visit_times ?? []}
+        onChange={(visit_times) => setContext((c) => ({ ...c, visit_times }))}
+      />
 
       <label htmlFor="invite-note" className="mt-8 block text-sm font-medium">
         Anything you want {name} to know before you meet? <span className="font-normal text-muted-foreground">(optional)</span>

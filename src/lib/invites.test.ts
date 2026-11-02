@@ -5,6 +5,7 @@ import {
   getActiveInvite,
   inviteListStatus,
   inviteMessage,
+  personFirstName,
   invitePath,
   inviteSendPath,
   inviteUrl,
@@ -30,6 +31,8 @@ describe("links and messages", () => {
     const m = inviteMessage({ contractor: "Creative Builders", url: "https://x/i/1", firstName: "Pat" });
     expect(m.startsWith("Hi Pat, it's Creative Builders.")).toBe(true);
     expect(m).toContain("https://x/i/1");
+    expect(m).toMatch(/come prepared/);
+    expect(m).toMatch(/times that work/);
     expect(inviteMessage({ contractor: "Creative Builders", url: "u" }).startsWith("Hi, it's Creative Builders.")).toBe(true);
   });
 });
@@ -83,5 +86,14 @@ describe("active invite", () => {
     expect(getActiveInvite()).toBeNull();
     localStorage.setItem("haleo:active_invite", JSON.stringify({ token: "t" }));
     expect(getActiveInvite()).toBeNull();
+  });
+});
+
+describe("personFirstName", () => {
+  it("finds a person's first name only when it's distinct from the company", () => {
+    expect(personFirstName({ name: "JOHN DOE", company: "ACME BUILDERS INC" })).toBe("John");
+    expect(personFirstName({ name: "Acme Builders", company: "ACME BUILDERS" })).toBeNull();
+    expect(personFirstName({ name: "Matt", company: null })).toBeNull();
+    expect(personFirstName({ name: "K&E KITCHEN & BATH, INC.", company: "K&E" })).toBeNull();
   });
 });
