@@ -19,7 +19,7 @@ const norm = (s?: string | null) => (s ?? "").trim().toLowerCase();
 // Short keywords ("add") match whole words only, so "address" and "padding"
 // don't read as additions. Longer ones match as prefixes ("addition" finds
 // "additions"), the way the contractor matching already treats them.
-const matchesKeyword = (haystack: string, keyword: string): boolean => {
+export const matchesKeyword = (haystack: string, keyword: string): boolean => {
   const k = keyword.trim().toLowerCase();
   if (!k) return false;
   if (k.length > 3) return haystack.includes(k);

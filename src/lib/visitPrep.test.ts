@@ -150,7 +150,7 @@ describe("computeVisitPrep: the people", () => {
     const line = p.people.find((i) => /Times that work/.test(i.text));
     expect(line?.text).toBe("Times that work for a visit: Thu, Nov 5 · morning; Fri, Nov 6 · afternoon");
     expect(line?.source).toBe("asked");
-    expect(prepToText(p, "Pat")).toMatch(/Times that work for a visit/);
+    expect(prepToText(p, { homeowner: "Pat" })).toMatch(/Times that work for a visit/);
   });
 });
 

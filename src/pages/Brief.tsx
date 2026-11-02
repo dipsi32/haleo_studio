@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
+import RecordWhisper from "@/components/brief/RecordWhisper";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -906,6 +907,8 @@ const Brief = () => {
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back}>
+      {/* Through a contractor's link: their record speaks to this project as it takes shape. */}
+      <RecordWhisper intake={data} />
       <AnimatePresence mode="wait">
         {step === 1 && (
           <ProjectScreen
