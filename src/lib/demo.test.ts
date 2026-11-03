@@ -18,8 +18,14 @@ describe("resolveDemo", () => {
   });
   it("builds one from the link for anyone else", () => {
     const d = resolveDemo(undefined, new URLSearchParams("record=ACME BUILDERS INC&person=Sam"));
-    expect(d).toMatchObject({ brand: "Acme Builders Inc", person: "Sam", slug: "acme-builders-inc" });
+    expect(d).toMatchObject({ brand: "Acme Builders Inc", person: "Sam", slug: "acme-builders-inc", brandColor: null, licenseNumber: null });
     expect(demoUrl(d!, "https://haleo.pages.dev")).toBe("https://haleo.pages.dev/demo?record=ACME+BUILDERS+INC&brand=Acme+Builders+Inc&person=Sam");
+  });
+  it("takes their color, license and site from the link, and nothing malformed", () => {
+    const d = resolveDemo(undefined, new URLSearchParams("record=X Co&color=%23E31B23&license=1025687&site=https://x.com/about"));
+    expect(d).toMatchObject({ brandColor: "#E31B23", licenseNumber: "1025687", website: "x.com" });
+    const bad = resolveDemo(undefined, new URLSearchParams("record=X Co&color=red&license=abc"));
+    expect(bad).toMatchObject({ brandColor: null, licenseNumber: null });
   });
   it("needs a name", () => {
     expect(resolveDemo("nobody", new URLSearchParams())).toBeNull();

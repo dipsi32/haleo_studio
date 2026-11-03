@@ -96,6 +96,11 @@ export type AnalyticsEvent =
   | "visibility_scan_blocked"
   | "invite_brief_started"
   | "invite_brief_sent"
+  // Contractor front door (/c/:slug): their website, Google and text replies
+  | "front_door_viewed"
+  | "front_door_started"
+  | "front_door_link_copied"
+  | "front_door_color_saved"
   // Contractor demo (/demo/:slug)
   | "demo_opened"
   | "demo_record_loaded"

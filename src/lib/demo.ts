@@ -16,12 +16,26 @@ export type DemoConfig = {
   person: string | null;
   /** The name on San Jose permits, which is often the owner's, not the brand. */
   recordName: string;
+  /** Their brand color, from their website, so the demo looks like them. */
+  brandColor?: string | null;
+  /** Their CSLB license number, as they publish it. Checked live with the state. */
+  licenseNumber?: string | null;
+  /** Their website's address, for the "your site, one new button" screen. */
+  website?: string | null;
 };
 
 // Contractors Deepa is demoing to first. Any other contractor works through
 // /demo?record=NAME&brand=BRAND&person=FIRST without a code change.
 export const DEMOS: DemoConfig[] = [
-  { slug: "us-creative-builders", brand: "US Creative Builders", person: "Mehdi", recordName: "BAKHTIARY, MEHDI" },
+  {
+    slug: "us-creative-builders",
+    brand: "US Creative Builders",
+    person: "Mehdi",
+    recordName: "BAKHTIARY, MEHDI",
+    brandColor: "#E31B23",
+    licenseNumber: "1025687",
+    website: "uscbuilders.com",
+  },
 ];
 
 const clean = (v: string | null | undefined, max = 60) => {
@@ -42,7 +56,18 @@ export const resolveDemo = (slug: string | undefined, search: URLSearchParams): 
   const recordName = clean(search.get("record"));
   if (!recordName) return null;
   const brand = clean(search.get("brand")) ?? titleCase(recordName);
-  return { slug: slugify(brand), brand, person: clean(search.get("person"), 24), recordName };
+  const color = clean(search.get("color"), 7);
+  const license = clean(search.get("license"), 10);
+  const website = clean(search.get("site"), 60);
+  return {
+    slug: slugify(brand),
+    brand,
+    person: clean(search.get("person"), 24),
+    recordName,
+    brandColor: color && /^#[0-9a-f]{6}$/i.test(color) ? color : null,
+    licenseNumber: license && /^\d{5,8}$/.test(license) ? license : null,
+    website: website ? website.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : null,
+  };
 };
 
 /** "BAKHTIARY, MEHDI" → "Bakhtiary, Mehdi". */
@@ -51,7 +76,14 @@ export const titleCase = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, (c) 
 /** A link Deepa can send to any contractor. */
 export const demoUrl = (d: DemoConfig, origin: string): string => {
   if (DEMOS.some((k) => k.slug === d.slug)) return `${origin}/demo/${d.slug}`;
-  const q = new URLSearchParams({ record: d.recordName, brand: d.brand, ...(d.person ? { person: d.person } : {}) });
+  const q = new URLSearchParams({
+    record: d.recordName,
+    brand: d.brand,
+    ...(d.person ? { person: d.person } : {}),
+    ...(d.brandColor ? { color: d.brandColor } : {}),
+    ...(d.licenseNumber ? { license: d.licenseNumber } : {}),
+    ...(d.website ? { site: d.website } : {}),
+  });
   return `${origin}/demo?${q.toString()}`;
 };
 

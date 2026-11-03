@@ -46,6 +46,8 @@ import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 import HomeownerNotificationToaster from "./components/HomeownerNotificationToaster.tsx";
 import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
 import AnalyticsTracker from "./components/AnalyticsTracker.tsx";
+import BrandTheme from "./components/BrandTheme.tsx";
+import FrontDoor from "./pages/FrontDoor.tsx";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +67,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AnalyticsTracker />
+          <BrandTheme />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
           <Routes>
@@ -140,6 +143,8 @@ const App = () => (
             {/* Contractor-owned brief links: the homeowner already chose this
                 contractor, so these routes honor that choice. */}
             <Route path="/i/:token" element={<Invite />} />
+            {/* A contractor's permanent front door, for their website and Google profile. */}
+            <Route path="/c/:slug" element={<FrontDoor />} />
             {/* Contractor demo: their real record, a sample client. Nothing saved. */}
             <Route path="/demo" element={<Demo />} />
             <Route path="/demo/:slug" element={<Demo />} />

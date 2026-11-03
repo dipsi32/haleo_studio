@@ -7,6 +7,7 @@ import { Check, Copy, Link2, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import ProHeader from "@/components/pro/ProHeader";
 import BuyBoxCard from "@/components/pro/BuyBoxCard";
+import FrontDoorCard from "@/components/pro/FrontDoorCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
@@ -73,7 +74,7 @@ export default function ProLinks() {
 
   // Honor #fit so "Set your fit criteria" lands on the card.
   useEffect(() => {
-    if (window.location.hash === "#fit") document.getElementById("fit")?.scrollIntoView({ block: "start" });
+    if (window.location.hash === "#fit" || window.location.hash === "#front-door") document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [loading]);
 
   const copy = async (key: string, text: string, what: string) => {
@@ -135,8 +136,14 @@ export default function ProLinks() {
           </p>
         </div>
 
+        {account && (
+          <div className="mb-8">
+            <FrontDoorCard accountId={account.id} contractorId={contractorId} branding={account.branding} onSaved={() => void refetch()} />
+          </div>
+        )}
+
         <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-          <h2 className="font-display text-xl">New link</h2>
+          <h2 className="font-display text-xl">A link for one prospect</h2>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <Input
               value={label}

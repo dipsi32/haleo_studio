@@ -22,7 +22,7 @@ import {
 const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
   Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 
-const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
+export const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
   try {
     const res = await withTimeout(supabase.functions.invoke("verify-cslb-license", { body: { license: num } }), 25_000);
     const d = res?.data;

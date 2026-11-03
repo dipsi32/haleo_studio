@@ -8,6 +8,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import type { BriefSnapshot } from "@/lib/contractors";
+import { isBrandColor } from "@/lib/frontDoor";
 
 export type InviteStatus = "open" | "completed" | "expired" | "revoked";
 
@@ -23,9 +24,11 @@ export type InviteContractor = {
   yearsInBusiness?: number | null;
   specialties?: string | null;
   gallery?: string[];
+  /** Their brand color (#RRGGBB), so their client's pages look like theirs. */
+  brandColor?: string | null;
 };
 
-export type InvitePublic = { status: InviteStatus; contractor: InviteContractor };
+export type InvitePublic = { status: InviteStatus; contractor: InviteContractor; source?: string | null };
 
 export const contractorDisplayName = (c: Pick<InviteContractor, "company" | "name">): string =>
   c.company?.trim() || c.name;
@@ -89,6 +92,8 @@ export const INVITE_LIST_LABEL: Record<InviteListStatus, string> = {
 // lives in localStorage (not sessionStorage) and expires after a week.
 const ACTIVE_KEY = "haleo:active_invite";
 const ACTIVE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Fired when the active contractor changes, so the brand theme can follow. */
+export const ACTIVE_EVENT = "haleo:active-invite";
 
 export type ActiveInvite = {
   token: string;
@@ -96,6 +101,7 @@ export type ActiveInvite = {
   contractorName: string;
   contractorSlug: string | null;
   logoUrl?: string | null;
+  brandColor?: string | null;
   savedAt: number;
 };
 
@@ -109,7 +115,7 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
       localStorage.removeItem(ACTIVE_KEY);
       return null;
     }
-    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, savedAt: v.savedAt };
+    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, brandColor: isBrandColor(v.brandColor) ? v.brandColor : null, savedAt: v.savedAt };
   } catch {
     return null;
   }
@@ -117,8 +123,9 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
 
 export const setActiveInvite = (token: string, c: InviteContractor): void => {
   try {
-    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, logoUrl: c.logoUrl ?? null, savedAt: Date.now() };
+    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, logoUrl: c.logoUrl ?? null, brandColor: c.brandColor ?? null, savedAt: Date.now() };
     localStorage.setItem(ACTIVE_KEY, JSON.stringify(v));
+    window.dispatchEvent(new Event(ACTIVE_EVENT));
   } catch {
     /* private mode: the link in the address bar still works */
   }
@@ -131,42 +138,67 @@ export const inviteCobrand = (i: Pick<ActiveInvite, "token" | "contractorName" |
 export const clearActiveInvite = (): void => {
   try {
     localStorage.removeItem(ACTIVE_KEY);
+    window.dispatchEvent(new Event(ACTIVE_EVENT));
   } catch {
     /* ignore */
   }
 };
 
 // ───── Server calls ─────
-export async function fetchInvite(token: string): Promise<InvitePublic | null> {
-  const { data, error } = await supabase.rpc("get_invite_public", { _token: token });
-  if (error || !data || data.length === 0) return null;
-  // Profile fields arrive from the 20261102 version of the function; older
-  // deployments simply don't send them.
-  const r = data[0] as typeof data[0] & {
-    contractor_tagline?: string | null;
-    contractor_logo_url?: string | null;
-    contractor_years_in_business?: number | null;
-    contractor_specialties?: string | null;
-    contractor_gallery_urls?: unknown;
-  };
+type PublicContractorRow = {
+  contractor_id: string;
+  contractor_slug: string | null;
+  contractor_name: string;
+  contractor_company: string | null;
+  contractor_city: string | null;
+  contractor_tagline?: string | null;
+  contractor_logo_url?: string | null;
+  contractor_years_in_business?: number | null;
+  contractor_specialties?: string | null;
+  contractor_gallery_urls?: unknown;
+  contractor_brand_color?: string | null;
+};
+
+const toContractor = (r: PublicContractorRow): InviteContractor => {
   const gallery = Array.isArray(r.contractor_gallery_urls)
     ? (r.contractor_gallery_urls as unknown[]).filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u))
     : [];
   return {
-    status: r.status as InviteStatus,
-    contractor: {
-      id: r.contractor_id,
-      slug: r.contractor_slug,
-      name: r.contractor_name,
-      company: r.contractor_company,
-      city: r.contractor_city,
-      tagline: r.contractor_tagline ?? null,
-      logoUrl: r.contractor_logo_url && /^https?:\/\//.test(r.contractor_logo_url) ? r.contractor_logo_url : null,
-      yearsInBusiness: r.contractor_years_in_business ?? null,
-      specialties: r.contractor_specialties ?? null,
-      gallery,
-    },
+    id: r.contractor_id,
+    slug: r.contractor_slug,
+    name: r.contractor_name,
+    company: r.contractor_company,
+    city: r.contractor_city,
+    tagline: r.contractor_tagline ?? null,
+    logoUrl: r.contractor_logo_url && /^https?:\/\//.test(r.contractor_logo_url) ? r.contractor_logo_url : null,
+    yearsInBusiness: r.contractor_years_in_business ?? null,
+    specialties: r.contractor_specialties ?? null,
+    gallery,
+    brandColor: isBrandColor(r.contractor_brand_color) ? r.contractor_brand_color : null,
   };
+};
+
+export async function fetchInvite(token: string): Promise<InvitePublic | null> {
+  const { data, error } = await supabase.rpc("get_invite_public", { _token: token });
+  if (error || !data || data.length === 0) return null;
+  // Profile and brand fields arrive from newer versions of the function;
+  // older deployments simply don't send them.
+  const r = data[0] as PublicContractorRow & { status: string; invite_source?: string | null };
+  return { status: r.status as InviteStatus, contractor: toContractor(r), source: r.invite_source ?? null };
+}
+
+/** A contractor's permanent front door (/c/:slug). Null when they don't have one. */
+export async function fetchFrontDoor(slug: string): Promise<InviteContractor | null> {
+  const { data, error } = await supabase.rpc("get_front_door_public", { _slug: slug });
+  if (error || !data || data.length === 0) return null;
+  return toContractor(data[0] as PublicContractorRow);
+}
+
+/** A visitor starts a project at the front door: their own link, minted by the server. */
+export async function openFrontDoor(slug: string, source: string): Promise<{ ok: true; token: string } | { ok: false; busy: boolean }> {
+  const { data, error } = await supabase.rpc("open_front_door", { _slug: slug, _source: source });
+  if (error || !data) return { ok: false, busy: /front_door_busy/.test(error?.message ?? "") };
+  return { ok: true, token: data };
 }
 
 export async function markInviteOpened(token: string): Promise<void> {

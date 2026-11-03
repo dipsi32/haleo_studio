@@ -21,7 +21,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
-import { findPermitRecord } from "@/lib/useShortlistCheck";
+import { findPermitRecord, verifyLicense } from "@/lib/useShortlistCheck";
+import CslbSignals from "@/components/CslbSignals";
+import { brandThemeVars } from "@/lib/frontDoor";
+import type { LicenseStatus } from "@/lib/contractors";
+import type { CSSProperties } from "react";
 import { recordHighlights, type Highlight } from "@/lib/recordHighlights";
 import { formatVisitTime } from "@/lib/visitTimes";
 import { findingsSection } from "@/lib/spaceFindings";
@@ -36,6 +40,7 @@ import {
   demoVisitOptions,
   recordFacts,
   resolveDemo,
+  titleCase,
   topZips,
   type DemoAnswers,
   type DemoConfig,
@@ -44,7 +49,7 @@ import {
 type PermitRecord = { contractor: Contractor; permits: Permit[] } | null;
 type Load = { kind: "loading" } | { kind: "ready"; record: PermitRecord };
 
-const STEPS = ["record", "client", "prep", "start"] as const;
+const STEPS = ["record", "site", "client", "prep", "start"] as const;
 type Step = (typeof STEPS)[number];
 
 const Eyebrow = ({ children }: { children: React.ReactNode }) => (
@@ -88,7 +93,20 @@ const DemoFlow = ({ demo }: { demo: DemoConfig }) => {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [step, setStep] = useState<Step>("record");
   const [answers, setAnswers] = useState<DemoAnswers>({ project: null, zip: "", visitTimes: [] });
+  // undefined while checking, null when the state board didn't answer.
+  const [license, setLicense] = useState<LicenseStatus | null | undefined>(demo.licenseNumber ? undefined : null);
   const short = demo.person ?? demo.brand;
+
+  useEffect(() => {
+    if (!demo.licenseNumber) return;
+    let cancelled = false;
+    verifyLicense(demo.licenseNumber)
+      .then((l) => !cancelled && setLicense(l))
+      .catch(() => !cancelled && setLicense(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [demo.licenseNumber]);
 
   useEffect(() => {
     track("demo_opened", { demo: demo.slug });
@@ -119,7 +137,8 @@ const DemoFlow = ({ demo }: { demo: DemoConfig }) => {
   const record = load.kind === "ready" ? load.record : null;
 
   const nextLabel: { [K in Step]: string } = {
-    record: "See your link on a client's phone",
+    record: "See your website, with one new button",
+    site: "Tap it, like a client would",
     client: "See what lands on your phone",
     prep: "Set up your real link",
     start: "",
@@ -151,7 +170,8 @@ const DemoFlow = ({ demo }: { demo: DemoConfig }) => {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            {step === "record" && <RecordStep demo={demo} short={short} load={load} />}
+            {step === "record" && <RecordStep demo={demo} short={short} load={load} license={license} />}
+            {step === "site" && <SiteStep demo={demo} short={short} />}
             {step === "client" && (
               <ClientStep demo={demo} short={short} record={record} answers={answers} setAnswers={setAnswers} />
             )}
@@ -188,9 +208,34 @@ const DemoFlow = ({ demo }: { demo: DemoConfig }) => {
 
 // ───── 1. Their record ─────
 
-const RecordStep = ({ demo, short, load }: { demo: DemoConfig; short: string; load: Load }) => (
+const LicenseCard = ({ demo, license }: { demo: DemoConfig; license: LicenseStatus | null | undefined }) => {
+  if (!demo.licenseNumber) return null;
+  return (
+    <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-soft">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        California license {demo.licenseNumber}
+      </p>
+      {license === null ? (
+        <p className="mt-2 text-sm text-foreground/80">
+          The number on your website. We couldn't reach the state license board just now, so it isn't checked yet.
+          <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Their words</span>
+        </p>
+      ) : (
+        <div className="mt-3">
+          {/* No name cross-check here: this is the number they publish, shown as the state reports it. */}
+          <CslbSignals license={license ?? null} licenseNumber={demo.licenseNumber} permitDisplayName={null} verifying={license === undefined} variant="card" />
+          {license?.business_name && (
+            <p className="mt-2 text-xs text-muted-foreground">On file with the state as {titleCase(license.business_name)}.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RecordStep = ({ demo, short, load, license }: { demo: DemoConfig; short: string; load: Load; license: LicenseStatus | null | undefined }) => (
   <section>
-    <Eyebrow>Step 1 of 3 · What homeowners can find</Eyebrow>
+    <Eyebrow>Step 1 of 4 · What homeowners can find</Eyebrow>
     <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
       {demo.person ? `${demo.person}, this` : "This"} is what a homeowner sees{" "}
       <span className="italic">before they call you.</span>
@@ -212,6 +257,7 @@ const RecordStep = ({ demo, short, load }: { demo: DemoConfig; short: string; lo
           </div>
         </div>
       )}
+      <LicenseCard demo={demo} license={license} />
       {load.kind === "ready" && load.record && <RecordFacts permits={load.record.permits} />}
       {load.kind === "ready" && load.record && (
         <>
@@ -256,7 +302,71 @@ const RecordFacts = ({ permits }: { permits: Permit[] }) => {
   );
 };
 
-// ───── 2. Their link, on a client's phone ─────
+// ───── 2. Their website, with one new button ─────
+
+const SiteStep = ({ demo, short }: { demo: DemoConfig; short: string }) => {
+  const color = demo.brandColor ?? "#111827";
+  const host = demo.website ?? `${demo.slug}.com`;
+  return (
+    <section>
+      <Eyebrow>Step 2 of 4 · Your website</Eyebrow>
+      <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+        Your website stays yours. <span className="italic">One button changes.</span>
+      </h1>
+      <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+        Your photos sell the work. Haleo takes over the moment after: instead of a contact form that says
+        “kitchen remodel”, your client tells you the whole project, in your colors.
+      </p>
+
+      {/* A plain sketch of their site: their name and color, nothing borrowed. */}
+      <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-lift">
+        <div className="flex items-center gap-2 border-b border-border bg-secondary/70 px-4 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <span className="ml-3 truncate rounded-full bg-background px-3 py-1 text-xs text-muted-foreground">{host}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4 bg-neutral-900 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-white/80">
+          <span className="font-display text-sm normal-case tracking-normal text-white">{demo.brand}</span>
+          <span className="hidden gap-5 sm:flex">
+            <span>Gallery</span>
+            <span>Services</span>
+            <span>About</span>
+            <span>Contact us</span>
+          </span>
+        </div>
+        <div className="relative px-6 py-12 text-center sm:py-16" style={{ background: `linear-gradient(135deg, ${color}26, ${color}0d)` }}>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/50">Your site, as it is today</p>
+          <p className="mx-auto mt-3 max-w-md font-display text-2xl font-light leading-snug">Your photos, your services, your story.</p>
+          <div className="mt-7 flex justify-center">
+            <span className="relative inline-flex">
+              <span className="absolute inset-0 animate-ping rounded-full opacity-30" style={{ background: color }} aria-hidden />
+              <span className="relative inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lift" style={{ background: color }}>
+                Start your project <ArrowRight className="h-4 w-4" />
+              </span>
+            </span>
+          </div>
+          <p className="mt-4 text-xs text-foreground/60">The one new thing</p>
+        </div>
+      </div>
+
+      <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+        {[
+          { t: "One link, forever", b: "Behind your website button, your Google profile and your text replies." },
+          { t: "In your colors", b: `${demo.brand} leads every page. Haleo is a small “powered by” line.` },
+          { t: "Only to you", b: `Your client sees ${short} and no one else. Their brief lands in your inbox.` },
+        ].map((x) => (
+          <li key={x.t} className="rounded-2xl border border-border bg-card p-4 text-sm shadow-soft">
+            <p className="font-medium">{x.t}</p>
+            <p className="mt-1 text-muted-foreground">{x.b}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
+
+// ───── 3. Their link, on a client's phone ─────
 
 const Pill = ({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) => (
   <button
@@ -300,9 +410,9 @@ const ClientStep = ({
 
   return (
     <section>
-      <Eyebrow>Step 2 of 3 · Your link, on your client's phone</Eyebrow>
+      <Eyebrow>Step 3 of 4 · On your client's phone</Eyebrow>
       <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-        You text one link. <span className="italic">Your client sees you first.</span>
+        Still your brand. <span className="italic">Now it asks the right questions.</span>
       </h1>
       <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
         Tap the answers the way a client would. Your record speaks to each one as they go.
@@ -310,12 +420,15 @@ const ClientStep = ({
       <SampleNote>The client is made up. The facts in green are from your real record.</SampleNote>
 
       {/* The phone */}
-      <div className="mx-auto mt-8 max-w-sm rounded-[2.2rem] border-[10px] border-foreground/90 bg-background shadow-lift">
+      <div
+        className="mx-auto mt-8 max-w-sm rounded-[2.2rem] border-[10px] border-foreground/90 bg-background shadow-lift"
+        style={(brandThemeVars(demo.brandColor) ?? undefined) as CSSProperties | undefined}
+      >
         <div className="rounded-[1.5rem] bg-gradient-warm px-5 pb-6 pt-5">
           <div className="pointer-events-none">
             <CobrandLogo brand={brand} />
           </div>
-          <p className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-accent">A personal invitation</p>
+          <p className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Start your project</p>
           <p className="mt-1 font-display text-2xl font-light leading-snug">
             {short} would love to hear <span className="italic">about your project.</span>
           </p>
@@ -400,7 +513,7 @@ const ClientStep = ({
   );
 };
 
-// ───── 3. What lands on their phone ─────
+// ───── 4. What lands on their phone ─────
 
 const PrepStep = ({ demo, short, answers }: { demo: DemoConfig; short: string; answers: DemoAnswers }) => {
   const snapshot = useMemo(() => demoSnapshot(answers), [answers]);
@@ -409,7 +522,7 @@ const PrepStep = ({ demo, short, answers }: { demo: DemoConfig; short: string; a
 
   return (
     <section>
-      <Eyebrow>Step 3 of 3 · Before you drive out</Eyebrow>
+      <Eyebrow>Step 4 of 4 · Before you drive out</Eyebrow>
       <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
         {DEMO_CLIENT}'s brief arrives <span className="italic">with the visit already prepped.</span>
       </h1>
@@ -464,7 +577,7 @@ const PrepStep = ({ demo, short, answers }: { demo: DemoConfig; short: string; a
   );
 };
 
-// ───── 4. Their real link ─────
+// ───── 5. Their real link ─────
 
 const StartStep = ({ demo, record }: { demo: DemoConfig; record: PermitRecord }) => {
   // The select is "*", so the row carries claim state even though the shared type doesn't.
@@ -479,7 +592,7 @@ const StartStep = ({ demo, record }: { demo: DemoConfig; record: PermitRecord })
       </h1>
       <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
         {[
-          "Your link carries your name: “" + demo.brand + ", powered by Haleo.”",
+          "One link for your website, Google profile and texts, in your colors. It never expires.",
           "Your client's brief goes to you and no one else.",
           "Free while we're small. No card.",
         ].map((t) => (
