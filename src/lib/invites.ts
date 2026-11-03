@@ -26,6 +26,10 @@ export type InviteContractor = {
   gallery?: string[];
   /** Their brand color (#RRGGBB), so their client's pages look like theirs. */
   brandColor?: string | null;
+  /** What clients call them ("Matt"), when we know it better than the record does. */
+  personName?: string | null;
+  /** Their CSLB license number, when we have a real one. Checked live, never assumed. */
+  licenseNumber?: string | null;
 };
 
 export type InvitePublic = { status: InviteStatus; contractor: InviteContractor; source?: string | null };
@@ -102,6 +106,10 @@ export type ActiveInvite = {
   contractorSlug: string | null;
   logoUrl?: string | null;
   brandColor?: string | null;
+  personName?: string | null;
+  licenseNumber?: string | null;
+  /** The contractor demo: the real flow, but nothing is sent or saved. */
+  demo?: boolean;
   savedAt: number;
 };
 
@@ -115,7 +123,7 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
       localStorage.removeItem(ACTIVE_KEY);
       return null;
     }
-    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, brandColor: isBrandColor(v.brandColor) ? v.brandColor : null, savedAt: v.savedAt };
+    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, brandColor: isBrandColor(v.brandColor) ? v.brandColor : null, personName: v.personName ?? null, licenseNumber: v.licenseNumber ?? null, demo: v.demo === true && isDemoToken(v.token), savedAt: v.savedAt };
   } catch {
     return null;
   }
@@ -123,13 +131,45 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
 
 export const setActiveInvite = (token: string, c: InviteContractor): void => {
   try {
-    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, logoUrl: c.logoUrl ?? null, brandColor: c.brandColor ?? null, savedAt: Date.now() };
+    const v: ActiveInvite = {
+      token,
+      contractorId: c.id,
+      contractorName: contractorDisplayName(c),
+      contractorSlug: c.slug,
+      logoUrl: c.logoUrl ?? null,
+      brandColor: c.brandColor ?? null,
+      personName: c.personName ?? null,
+      licenseNumber: c.licenseNumber ?? null,
+      demo: isDemoToken(token),
+      savedAt: Date.now(),
+    };
     localStorage.setItem(ACTIVE_KEY, JSON.stringify(v));
     window.dispatchEvent(new Event(ACTIVE_EVENT));
   } catch {
     /* private mode: the link in the address bar still works */
   }
 };
+
+// ───── The contractor demo ─────
+// A demo "link" never reaches the server: its token only names the demo.
+const DEMO_PREFIX = "demo-";
+export const demoToken = (slug: string) => `${DEMO_PREFIX}${slug}`;
+export const isDemoToken = (token: string | null | undefined): boolean => !!token && token.startsWith(DEMO_PREFIX);
+export const demoSlugOf = (token: string) => token.slice(DEMO_PREFIX.length);
+export const isDemoActive = (): boolean => getActiveInvite()?.demo === true;
+
+/** The contractor as their client sees them, rebuilt from the active link (for the demo). */
+export const contractorFromActive = (a: ActiveInvite): InviteContractor => ({
+  id: a.contractorId,
+  slug: a.contractorSlug,
+  name: a.contractorName,
+  company: a.contractorName,
+  city: "San Jose",
+  logoUrl: a.logoUrl ?? null,
+  brandColor: a.brandColor ?? null,
+  personName: a.personName ?? null,
+  licenseNumber: a.licenseNumber ?? null,
+});
 
 /** The co-brand for headers while a homeowner is in a contractor's link. */
 export const inviteCobrand = (i: Pick<ActiveInvite, "token" | "contractorName" | "logoUrl"> | null) =>

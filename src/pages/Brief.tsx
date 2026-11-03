@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
+import { isDemoActive } from "@/lib/invites";
 import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -856,7 +857,8 @@ const Brief = () => {
   // Auto-save the user's draft as they progress (debounced). Only kicks in
   // once they've picked a room — no point persisting empty shells.
   useEffect(() => {
-    if (!data.room) return;
+    // The contractor demo saves nothing to anyone's account.
+    if (!data.room || isDemoActive()) return;
     const t = setTimeout(() => {
       saveDraft(data, projectIdRef.current ?? undefined)
         .then((row) => {

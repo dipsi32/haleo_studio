@@ -47,6 +47,8 @@ import HomeownerNotificationToaster from "./components/HomeownerNotificationToas
 import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
 import AnalyticsTracker from "./components/AnalyticsTracker.tsx";
 import BrandTheme from "./components/BrandTheme.tsx";
+import DemoBanner from "./components/DemoBanner.tsx";
+import InviteSendRoute from "./components/auth/InviteSendRoute.tsx";
 import FrontDoor from "./pages/FrontDoor.tsx";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,7 @@ const App = () => (
         <AuthProvider>
           <AnalyticsTracker />
           <BrandTheme />
+          <DemoBanner />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
           <Routes>
@@ -148,12 +151,13 @@ const App = () => (
             {/* Contractor demo: their real record, a sample client. Nothing saved. */}
             <Route path="/demo" element={<Demo />} />
             <Route path="/demo/:slug" element={<Demo />} />
+            <Route path="/demo/:slug/:view" element={<Demo />} />
             <Route
               path="/i/:token/send"
               element={
-                <ProtectedRoute>
+                <InviteSendRoute>
                   <InviteSend />
-                </ProtectedRoute>
+                </InviteSendRoute>
               }
             />
 

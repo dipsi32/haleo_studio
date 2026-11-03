@@ -1,76 +1,103 @@
-// The contractor demo: /demo/:slug (or /demo?record=…&brand=…&person=…)
+// The contractor demo: /demo/:slug, then /text, /site, /welcome, /matt
 //
-// Three screens and a close, one idea each:
-//   1. Their real public record: what a homeowner can already find.
-//   2. Their link on a client's phone: they tap the answers, and their own
-//      record speaks to each one, in place.
-//   3. What lands on their phone: the brief with visit prep on top.
-//   4. Set up their real link.
-// Step 1 is real. Steps 2 and 3 use a made-up client and say so. Nothing is
-// sent or saved. Logic lives in src/lib/demo.ts.
+// The contractor plays their own next lead in the real product:
+//   /demo/:slug        Pick how the lead reaches them: a text, or their website.
+//   /demo/:slug/text   The lead's phone: their text, the contractor's reply with the link.
+//   /demo/:slug/site   Their website, with "Start your project" front and center.
+//   /demo/:slug/welcome  The real front-door welcome, then the real brief flow
+//                      (/brief, /brief/result, /i/demo-…/send) with their record
+//                      answering each answer.
+//   /demo/:slug/matt   "Send" lands here: the brief as it arrives on their phone.
+// Nothing is sent or saved to anyone's account. Logic: src/lib/demo.ts.
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Eye, Hammer, Lock, MapPin, Smartphone, Sparkles, Timer } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  Globe,
+  Hammer,
+  Home,
+  ImageIcon,
+  MessageCircle,
+  PlusSquare,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import Logo from "@/components/Logo";
-import CobrandLogo from "@/components/CobrandLogo";
-import ProofPanel from "@/components/contractors/ProofPanel";
-import RecordTidbit from "@/components/brief/RecordTidbit";
+import InviteWelcome from "@/components/InviteWelcome";
 import VisitPrepCard from "@/components/pro/VisitPrepCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
-import { findPermitRecord, verifyLicense } from "@/lib/useShortlistCheck";
-import CslbSignals from "@/components/CslbSignals";
-import { brandThemeVars } from "@/lib/frontDoor";
-import type { LicenseStatus } from "@/lib/contractors";
-import type { CSSProperties } from "react";
-import { recordHighlights, type Highlight } from "@/lib/recordHighlights";
-import { formatVisitTime } from "@/lib/visitTimes";
-import { findingsSection } from "@/lib/spaceFindings";
-import type { Contractor, Permit } from "@/lib/contractors";
-import {
-  DEMO_BUY_BOX,
-  DEMO_CLIENT,
-  DEMO_PROJECTS,
-  demoIntake,
-  demoSample,
-  demoSnapshot,
-  demoVisitOptions,
-  recordFacts,
-  resolveDemo,
-  titleCase,
-  topZips,
-  type DemoAnswers,
-  type DemoConfig,
-} from "@/lib/demo";
+import { brandThemeVars, frontDoorPath } from "@/lib/frontDoor";
+import { findPermitRecord } from "@/lib/useShortlistCheck";
+import { clearActiveInvite, demoToken, inviteMessage, setActiveInvite, type InviteContractor } from "@/lib/invites";
+import { DEMO_BUY_BOX, LEAD_TEXT, loadDemoBrief, resolveDemo, type DemoConfig } from "@/lib/demo";
 
-type PermitRecord = { contractor: Contractor; permits: Permit[] } | null;
-type Load = { kind: "loading" } | { kind: "ready"; record: PermitRecord };
-
-const STEPS = ["record", "site", "client", "prep", "start"] as const;
-type Step = (typeof STEPS)[number];
-
-const Eyebrow = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">{children}</p>
-);
-
-const SampleNote = ({ children }: { children: React.ReactNode }) => (
-  <p className="mt-4 inline-flex items-start gap-2 rounded-full border border-border bg-secondary/60 px-3.5 py-1.5 text-xs text-foreground/70">
-    <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-    <span>{children}</span>
-  </p>
-);
+type View = "doors" | "text" | "site" | "welcome" | "matt";
+const VIEWS: View[] = ["doors", "text", "site", "welcome", "matt"];
 
 export default function Demo() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, view } = useParams<{ slug: string; view: string }>();
   const [search] = useSearchParams();
   const demo = useMemo(() => resolveDemo(slug, search), [slug, search]);
+  const v: View = VIEWS.includes(view as View) ? (view as View) : "doors";
+
+  useEffect(() => {
+    if (demo && v === "doors") track("demo_opened", { demo: demo.slug });
+  }, [demo, v]);
+  useEffect(() => window.scrollTo({ top: 0 }), [v]);
 
   if (!demo) return <NoDemo />;
-  return <DemoFlow demo={demo} />;
+  if (v === "text") return <TextDoor demo={demo} />;
+  if (v === "site") return <SiteDoor demo={demo} />;
+  if (v === "welcome") return <Welcome demo={demo} />;
+  if (v === "matt") return <MattView demo={demo} />;
+  return <Doors demo={demo} />;
 }
+
+// ───── Shared ─────
+
+/** Their record, found by the name on their permits, and the contractor as their client sees them. */
+const useDemoContractor = (demo: DemoConfig) => {
+  const [c, setC] = useState<InviteContractor | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const base = {
+      name: demo.brand,
+      company: demo.brand,
+      city: "San Jose",
+      brandColor: demo.brandColor ?? null,
+      personName: demo.person,
+      licenseNumber: demo.licenseNumber ?? null,
+    };
+    findPermitRecord(demo.recordName)
+      .then((r) => !cancelled && setC({ ...base, id: r?.contractor.id ?? "", slug: (r?.contractor as { slug?: string } | undefined)?.slug ?? null }))
+      .catch(() => !cancelled && setC({ ...base, id: "", slug: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, [demo]);
+  return c;
+};
+
+const themeOf = (demo: DemoConfig) => (brandThemeVars(demo.brandColor) ?? undefined) as CSSProperties | undefined;
+const who = (demo: DemoConfig) => demo.person ?? demo.brand;
+
+const Page = ({ demo, children, step }: { demo: DemoConfig; children: ReactNode; step?: string }) => (
+  <div className="min-h-screen bg-gradient-warm">
+    <header className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-5">
+      <Logo />
+      <span className="truncate rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground">
+        {step ?? `A demo for ${demo.brand}`}
+      </span>
+    </header>
+    <main className="mx-auto max-w-4xl px-5 pb-20">{children}</main>
+  </div>
+);
 
 const NoDemo = () => (
   <div className="min-h-screen bg-gradient-warm">
@@ -79,9 +106,7 @@ const NoDemo = () => (
     </header>
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-6">
       <h1 className="font-display text-3xl font-light">This demo link is missing a name</h1>
-      <p className="mt-3 max-w-md text-muted-foreground">
-        Ask for a fresh link, or see how Haleo works for contractors.
-      </p>
+      <p className="mt-3 max-w-md text-muted-foreground">Ask for a fresh link, or see how Haleo works for contractors.</p>
       <Button asChild className="mt-6 rounded-full">
         <Link to="/pro">Haleo for contractors</Link>
       </Button>
@@ -89,526 +114,428 @@ const NoDemo = () => (
   </div>
 );
 
-const DemoFlow = ({ demo }: { demo: DemoConfig }) => {
-  const [load, setLoad] = useState<Load>({ kind: "loading" });
-  const [step, setStep] = useState<Step>("record");
-  const [answers, setAnswers] = useState<DemoAnswers>({ project: null, zip: "", visitTimes: [] });
-  // undefined while checking, null when the state board didn't answer.
-  const [license, setLicense] = useState<LicenseStatus | null | undefined>(demo.licenseNumber ? undefined : null);
-  const short = demo.person ?? demo.brand;
+// ───── 1. Two doors ─────
 
-  useEffect(() => {
-    if (!demo.licenseNumber) return;
-    let cancelled = false;
-    verifyLicense(demo.licenseNumber)
-      .then((l) => !cancelled && setLicense(l))
-      .catch(() => !cancelled && setLicense(null));
-    return () => {
-      cancelled = true;
-    };
-  }, [demo.licenseNumber]);
-
-  useEffect(() => {
-    track("demo_opened", { demo: demo.slug });
-    let cancelled = false;
-    (async () => {
-      let record: PermitRecord = null;
-      try {
-        record = await findPermitRecord(demo.recordName);
-      } catch {
-        record = null;
-      }
-      if (cancelled) return;
-      setLoad({ kind: "ready", record });
-      track("demo_record_loaded", { demo: demo.slug, found: !!record, permits: record?.permits.length ?? 0 });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [demo.slug, demo.recordName]);
-
-  useEffect(() => {
-    track("demo_step_viewed", { demo: demo.slug, step });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [step, demo.slug]);
-
-  const i = STEPS.indexOf(step);
-  const go = (to: Step) => setStep(to);
-  const record = load.kind === "ready" ? load.record : null;
-
-  const nextLabel: { [K in Step]: string } = {
-    record: "See your website, with one new button",
-    site: "Tap it, like a client would",
-    client: "See what lands on your phone",
-    prep: "Set up your real link",
-    start: "",
-  };
-  const canNext = step !== "client" || !!answers.project;
-
-  return (
-    <div className="min-h-screen bg-gradient-warm pb-28">
-      <header className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-6">
-        <Logo />
-        <span className="truncate rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground">
-          A demo for {demo.brand}
-        </span>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-6 pt-2">
-        {/* Progress */}
-        <div className="mb-8 flex gap-1.5" aria-hidden>
-          {STEPS.map((s, idx) => (
-            <span key={s} className={cn("h-1 flex-1 rounded-full", idx <= i ? "bg-accent" : "bg-border")} />
-          ))}
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {step === "record" && <RecordStep demo={demo} short={short} load={load} license={license} />}
-            {step === "site" && <SiteStep demo={demo} short={short} />}
-            {step === "client" && (
-              <ClientStep demo={demo} short={short} record={record} answers={answers} setAnswers={setAnswers} />
-            )}
-            {step === "prep" && <PrepStep demo={demo} short={short} answers={answers} />}
-            {step === "start" && <StartStep demo={demo} record={record} />}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* Sticky bottom action */}
-      {step !== "start" && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
-            {i > 0 ? (
-              <Button variant="ghost" className="rounded-full" onClick={() => go(STEPS[i - 1])}>
-                <ArrowLeft className="h-4 w-4" /> Back
-              </Button>
-            ) : (
-              <span className="text-xs text-muted-foreground">About 3 minutes</span>
-            )}
-            <Button
-              className="rounded-full px-6"
-              disabled={!canNext}
-              onClick={() => go(STEPS[i + 1])}
-            >
-              {canNext ? nextLabel[step] : "Tap a project to continue"} <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ───── 1. Their record ─────
-
-const LicenseCard = ({ demo, license }: { demo: DemoConfig; license: LicenseStatus | null | undefined }) => {
-  if (!demo.licenseNumber) return null;
-  return (
-    <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-soft">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        California license {demo.licenseNumber}
-      </p>
-      {license === null ? (
-        <p className="mt-2 text-sm text-foreground/80">
-          The number on your website. We couldn't reach the state license board just now, so it isn't checked yet.
-          <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Their words</span>
-        </p>
-      ) : (
-        <div className="mt-3">
-          {/* No name cross-check here: this is the number they publish, shown as the state reports it. */}
-          <CslbSignals license={license ?? null} licenseNumber={demo.licenseNumber} permitDisplayName={null} verifying={license === undefined} variant="card" />
-          {license?.business_name && (
-            <p className="mt-2 text-xs text-muted-foreground">On file with the state as {titleCase(license.business_name)}.</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const RecordStep = ({ demo, short, load, license }: { demo: DemoConfig; short: string; load: Load; license: LicenseStatus | null | undefined }) => (
-  <section>
-    <Eyebrow>Step 1 of 4 · What homeowners can find</Eyebrow>
-    <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-      {demo.person ? `${demo.person}, this` : "This"} is what a homeowner sees{" "}
-      <span className="italic">before they call you.</span>
-    </h1>
-    <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-      Haleo reads San Jose permit records and the state license board. Nothing here is a rating or a review.
-      It's the record of work you've already done.
-    </p>
-
-    <div className="mt-8">
-      {load.kind === "loading" && (
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-soft" role="status">
-          <p className="font-display text-lg">Pulling the San Jose permit record for {demo.brand}…</p>
-          <p className="mt-1 text-sm text-muted-foreground">Usually a few seconds.</p>
-          <div className="mt-5 space-y-2">
-            {[0, 1, 2].map((k) => (
-              <div key={k} className="h-4 animate-pulse rounded-full bg-secondary" style={{ width: `${90 - k * 20}%` }} />
-            ))}
-          </div>
-        </div>
-      )}
-      <LicenseCard demo={demo} license={license} />
-      {load.kind === "ready" && load.record && <RecordFacts permits={load.record.permits} />}
-      {load.kind === "ready" && load.record && (
-        <>
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-            The public record for {demo.brand}
-          </p>
-          <ProofPanel contractorId={load.record.contractor.id} city="San Jose" variant="full" />
-        </>
-      )}
-      {load.kind === "ready" && !load.record && (
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-          <p className="font-display text-lg">We couldn't pull {short}'s permit record just now.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The city's records can be slow. The rest of the demo still shows how your link works.
-          </p>
-        </div>
-      )}
-    </div>
-  </section>
-);
-
-const RecordFacts = ({ permits }: { permits: Permit[] }) => {
-  const f = recordFacts(permits);
-  const rows = [
-    f.zips.length > 0 && { icon: MapPin, label: "Where you work", text: `${f.zips.length} San Jose ZIP code${f.zips.length === 1 ? "" : "s"}: ${f.zips.join(", ")}` },
-    f.kinds.length > 0 && { icon: Hammer, label: "Kinds of work", text: f.kinds.join(" · ") },
-    f.active > 0 && { icon: Timer, label: "Right now", text: `${f.active} permit${f.active === 1 ? "" : "s"} active with the city` },
-  ].filter(Boolean) as { icon: typeof MapPin; label: string; text: string }[];
-  if (rows.length === 0) return null;
-  return (
-    <div className="mb-6 grid gap-3 sm:grid-cols-3">
-      {rows.map((r) => (
-        <div key={r.label} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            <r.icon className="h-3.5 w-3.5 text-accent" /> {r.label}
-          </p>
-          <p className="mt-2 text-sm leading-snug text-foreground/90">{r.text}</p>
-          <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-sage">Public record</p>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ───── 2. Their website, with one new button ─────
-
-const SiteStep = ({ demo, short }: { demo: DemoConfig; short: string }) => {
+const Doors = ({ demo }: { demo: DemoConfig }) => {
+  const navigate = useNavigate();
   const color = demo.brandColor ?? "#111827";
-  const host = demo.website ?? `${demo.slug}.com`;
+  const go = (door: "text" | "site") => {
+    track("demo_door_chosen", { demo: demo.slug, door });
+    navigate(`/demo/${demo.slug}/${door}`);
+  };
   return (
-    <section>
-      <Eyebrow>Step 2 of 4 · Your website</Eyebrow>
-      <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-        Your website stays yours. <span className="italic">One button changes.</span>
-      </h1>
-      <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-        Your photos sell the work. Haleo takes over the moment after: instead of a contact form that says
-        “kitchen remodel”, your client tells you the whole project, in your colors.
-      </p>
+    <Page demo={demo}>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Three minutes · it all works for real</p>
+        <h1 className="mt-3 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+          {demo.person ? `${demo.person}, be` : "Be"} your own next lead. <span className="italic">Then see what lands on your phone.</span>
+        </h1>
+        <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+          How do new clients usually reach you? Pick one and do what they'd do. Add a photo of any room for the full effect.
+        </p>
 
-      {/* A plain sketch of their site: their name and color, nothing borrowed. */}
-      <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-lift">
-        <div className="flex items-center gap-2 border-b border-border bg-secondary/70 px-4 py-2.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-          <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
-          <span className="ml-3 truncate rounded-full bg-background px-3 py-1 text-xs text-muted-foreground">{host}</span>
-        </div>
-        <div className="flex items-center justify-between gap-4 bg-neutral-900 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-white/80">
-          <span className="font-display text-sm normal-case tracking-normal text-white">{demo.brand}</span>
-          <span className="hidden gap-5 sm:flex">
-            <span>Gallery</span>
-            <span>Services</span>
-            <span>About</span>
-            <span>Contact us</span>
-          </span>
-        </div>
-        <div className="relative px-6 py-12 text-center sm:py-16" style={{ background: `linear-gradient(135deg, ${color}26, ${color}0d)` }}>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/50">Your site, as it is today</p>
-          <p className="mx-auto mt-3 max-w-md font-display text-2xl font-light leading-snug">Your photos, your services, your story.</p>
-          <div className="mt-7 flex justify-center">
-            <span className="relative inline-flex">
-              <span className="absolute inset-0 animate-ping rounded-full opacity-30" style={{ background: color }} aria-hidden />
-              <span className="relative inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lift" style={{ background: color }}>
-                Start your project <ArrowRight className="h-4 w-4" />
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {/* The text door */}
+          <button
+            type="button"
+            onClick={() => go("text")}
+            className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
+          >
+            <span className="flex items-center gap-2 font-display text-xl">
+              <MessageCircle className="h-5 w-5 text-accent" /> They text you
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">Most jobs start here. You reply with your link.</span>
+            <span className="mt-4 block space-y-2 rounded-2xl bg-secondary/60 p-4">
+              <span className="ml-auto block w-fit max-w-[85%] rounded-2xl rounded-br-md bg-[#0A84FF] px-3 py-2 text-[13px] leading-snug text-white">
+                We're thinking about redoing our kitchen…
+              </span>
+              <span className="block w-fit max-w-[85%] rounded-2xl rounded-bl-md bg-background px-3 py-2 text-[13px] leading-snug text-foreground/85">
+                Thanks for reaching out! So I can come prepared…
+                <span className="mt-1.5 block rounded-lg px-2 py-1 text-[11px] font-medium text-white" style={{ background: color }}>
+                  {demo.brand} · Tell us about your project
+                </span>
               </span>
             </span>
-          </div>
-          <p className="mt-4 text-xs text-foreground/60">The one new thing</p>
-        </div>
-      </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-accent">
+              Start from a text <ArrowRight className="h-4 w-4" />
+            </span>
+          </button>
 
-      <ul className="mt-6 grid gap-3 sm:grid-cols-3">
-        {[
-          { t: "One link, forever", b: "Behind your website button, your Google profile and your text replies." },
-          { t: "In your colors", b: `${demo.brand} leads every page. Haleo is a small “powered by” line.` },
-          { t: "Only to you", b: `Your client sees ${short} and no one else. Their brief lands in your inbox.` },
-        ].map((x) => (
-          <li key={x.t} className="rounded-2xl border border-border bg-card p-4 text-sm shadow-soft">
-            <p className="font-medium">{x.t}</p>
-            <p className="mt-1 text-muted-foreground">{x.b}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
+          {/* The website door */}
+          <button
+            type="button"
+            onClick={() => go("site")}
+            className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
+          >
+            <span className="flex items-center gap-2 font-display text-xl">
+              <Globe className="h-5 w-5 text-accent" /> They find your website
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">One button, front and center, instead of a contact form.</span>
+            <span className="mt-4 block overflow-hidden rounded-2xl border border-border">
+              <span className="block bg-neutral-900 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white">{demo.brand}</span>
+              <span className="block px-4 py-6 text-center" style={{ background: `linear-gradient(135deg, #1f1f1f, ${color})` }}>
+                <span className="inline-block rounded-md px-4 py-2 text-[12px] font-bold uppercase tracking-wide text-white" style={{ background: color, boxShadow: "0 0 0 3px rgba(255,255,255,.35)" }}>
+                  Start your project →
+                </span>
+              </span>
+            </span>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-accent">
+              Start from your website <ArrowRight className="h-4 w-4" />
+            </span>
+          </button>
+        </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          At the end, you'll see the brief as it lands on your phone. Nothing is sent to anyone.
+        </p>
+      </motion.div>
+    </Page>
   );
 };
 
-// ───── 3. Their link, on a client's phone ─────
+// ───── 2a. The lead's phone ─────
 
-const Pill = ({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-pressed={on}
-    className={cn(
-      "rounded-full border px-3.5 py-1.5 text-sm transition-smooth",
-      on ? "border-foreground bg-foreground text-background" : "border-border bg-background hover:border-foreground/40",
-    )}
-  >
-    {children}
-  </button>
-);
-
-const ClientStep = ({
-  demo,
-  short,
-  record,
-  answers,
-  setAnswers,
-}: {
-  demo: DemoConfig;
-  short: string;
-  record: PermitRecord;
-  answers: DemoAnswers;
-  setAnswers: (a: DemoAnswers) => void;
-}) => {
-  const facts = useMemo(() => {
-    if (!record) return {} as Partial<{ [K in Highlight["id"]]: Highlight }>;
-    const hs = recordHighlights(record.permits, demoIntake(answers), demo.brand);
-    return Object.fromEntries(hs.map((h) => [h.id, h])) as Partial<{ [K in Highlight["id"]]: Highlight }>;
-  }, [record, answers, demo.brand]);
-  const zips = useMemo(() => (record ? topZips(record.permits) : []), [record]);
-  const times = useMemo(() => demoVisitOptions(), []);
-  const set = (patch: Partial<DemoAnswers>, what: string) => {
-    setAnswers({ ...answers, ...patch });
-    track("demo_answer_tapped", { demo: demo.slug, what });
+const TextDoor = ({ demo }: { demo: DemoConfig }) => {
+  const navigate = useNavigate();
+  const contractor = useDemoContractor(demo);
+  const color = demo.brandColor ?? "#111827";
+  const link = `haleo.pages.dev${frontDoorPath(contractor?.slug ?? demo.slug)}`;
+  const reply = inviteMessage({ contractor: demo.person ? `${demo.person} from ${demo.brand}` : demo.brand, url: "" }).replace(/:\s*$/, ".");
+  const tap = () => {
+    track("demo_link_tapped", { demo: demo.slug, door: "text" });
+    navigate(`/demo/${demo.slug}/welcome?door=text`);
   };
-  const brand = { name: demo.brand, href: "#" };
-
   return (
-    <section>
-      <Eyebrow>Step 3 of 4 · On your client's phone</Eyebrow>
-      <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-        Still your brand. <span className="italic">Now it asks the right questions.</span>
-      </h1>
-      <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-        Tap the answers the way a client would. Your record speaks to each one as they go.
-      </p>
-      <SampleNote>The client is made up. The facts in green are from your real record.</SampleNote>
-
-      {/* The phone */}
-      <div
-        className="mx-auto mt-8 max-w-sm rounded-[2.2rem] border-[10px] border-foreground/90 bg-background shadow-lift"
-        style={(brandThemeVars(demo.brandColor) ?? undefined) as CSSProperties | undefined}
-      >
-        <div className="rounded-[1.5rem] bg-gradient-warm px-5 pb-6 pt-5">
-          <div className="pointer-events-none">
-            <CobrandLogo brand={brand} />
-          </div>
-          <p className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Start your project</p>
-          <p className="mt-1 font-display text-2xl font-light leading-snug">
-            {short} would love to hear <span className="italic">about your project.</span>
-          </p>
-
-          <div className="mt-5 space-y-5 rounded-2xl border border-border bg-card p-4 shadow-soft">
-            <div>
-              <p className="text-sm font-medium">What are you planning?</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {DEMO_PROJECTS.map((p) => (
-                  <Pill key={p.id} on={answers.project === p.id} onClick={() => set({ project: p.id }, "project")}>
-                    {p.label}
-                  </Pill>
-                ))}
-              </div>
-              {answers.project && (
-                <RecordTidbit demo className="mt-3" h={facts.work ?? facts.track} />
-              )}
-            </div>
-
-            {answers.project && (
-              <div>
-                <p className="text-sm font-medium">Your ZIP code</p>
-                <Input
-                  inputMode="numeric"
-                  maxLength={5}
-                  value={answers.zip}
-                  onChange={(e) => set({ zip: e.target.value.replace(/\D/g, "").slice(0, 5) }, "zip_typed")}
-                  placeholder="95125"
-                  className="mt-2 h-10 rounded-xl bg-background"
-                />
-                {zips.length > 0 && !answers.zip && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {zips.map((z) => (
-                      <Pill key={z} on={false} onClick={() => set({ zip: z }, "zip_tapped")}>
-                        {z}
-                      </Pill>
-                    ))}
-                  </div>
-                )}
-                <RecordTidbit demo className="mt-3" h={facts.nearby ?? facts.structural} />
-              </div>
-            )}
-
-            {answers.project && (
-              <div>
-                <p className="flex items-center gap-1.5 text-sm font-medium">
-                  <CalendarDays className="h-4 w-4 text-accent" /> Times that work for a visit
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {times.map((t) => {
-                    const on = answers.visitTimes.includes(t);
-                    return (
-                      <Pill
-                        key={t}
-                        on={on}
-                        onClick={() =>
-                          set(
-                            { visitTimes: on ? answers.visitTimes.filter((x) => x !== t) : [...answers.visitTimes, t] },
-                            "visit_time",
-                          )
-                        }
-                      >
-                        {formatVisitTime(t)}
-                      </Pill>
-                    );
-                  })}
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">{short} confirms one.</p>
-              </div>
-            )}
-          </div>
-
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" /> Only {demo.brand} sees it.
+    <Page demo={demo} step="Your lead's phone">
+      <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,360px)]">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Step 1 of 3 · You're the homeowner now</p>
+          <h1 className="mt-3 font-display text-3xl font-light leading-tight text-balance md:text-4xl">
+            You texted {who(demo)} about your kitchen. <span className="italic">This came back.</span>
+          </h1>
+          <p className="mt-4 text-muted-foreground">
+            {demo.person ?? "They"} replied with one link instead of twenty questions. Tap it, like your client would.
           </p>
         </div>
+
+        {/* The phone */}
+        <div className="mx-auto w-full max-w-[360px] rounded-[2.4rem] border-[10px] border-foreground/90 bg-background shadow-lift">
+          <div className="rounded-[1.7rem] bg-background">
+            <div className="flex flex-col items-center border-b border-border px-4 pb-3 pt-4">
+              <span className="grid h-10 w-10 place-items-center rounded-full text-sm font-semibold text-white" style={{ background: color }}>
+                {(demo.person ?? demo.brand).slice(0, 1)}
+              </span>
+              <span className="mt-1 text-xs font-medium">{demo.person ? `${demo.person} · ${demo.brand}` : demo.brand}</span>
+            </div>
+            <div className="space-y-3 px-3 py-4">
+              <p className="ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-md bg-[#0A84FF] px-3.5 py-2 text-[14px] leading-snug text-white">{LEAD_TEXT}</p>
+              <div className="w-fit max-w-[86%]">
+                <p className="rounded-2xl rounded-bl-md bg-secondary px-3.5 py-2 text-[14px] leading-snug text-foreground/90">{reply}</p>
+                <button
+                  type="button"
+                  onClick={tap}
+                  className="relative mt-1.5 block w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-soft transition-smooth hover:-translate-y-0.5"
+                  aria-label={`Open ${demo.brand}'s link`}
+                >
+                  <span className="absolute -inset-1 animate-pulse rounded-2xl ring-2 ring-offset-2" style={{ ["--tw-ring-color" as string]: color }} aria-hidden />
+                  <span className="relative block px-4 py-5 text-white" style={{ background: `linear-gradient(135deg, ${color}, #1f1f1f)` }}>
+                    <span className="block text-[11px] uppercase tracking-[0.16em] opacity-80">{demo.brand}</span>
+                    <span className="mt-1 block font-display text-lg leading-snug">Tell us about your project</span>
+                  </span>
+                  <span className="relative block px-4 py-2.5">
+                    <span className="block text-[13px] font-medium">Share photos and ideas. {demo.person ?? "We"} come{demo.person ? "s" : ""} prepared.</span>
+                    <span className="block truncate text-[11px] text-muted-foreground">{link}</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        The real link also takes photos, budget and timing, about five minutes in all, and every question is optional.
-      </p>
-    </section>
+    </Page>
+  );
+};
+
+// ───── 2b. Their website, one new button ─────
+
+const SiteDoor = ({ demo }: { demo: DemoConfig }) => {
+  const navigate = useNavigate();
+  const color = demo.brandColor ?? "#111827";
+  const tap = () => {
+    track("demo_link_tapped", { demo: demo.slug, door: "site" });
+    navigate(`/demo/${demo.slug}/welcome?door=site`);
+  };
+  const services = demo.services?.length ? demo.services : ["Remodels", "Additions & ADUs", "Repairs"];
+  const icons = [Hammer, PlusSquare, Home];
+  return (
+    <div className="min-h-screen bg-white text-neutral-900">
+      {/* What this is, in one line */}
+      <div className="flex items-center justify-center gap-3 bg-foreground px-4 py-2 text-center text-xs text-background">
+        <span>Demo: your website{demo.website ? ` (${demo.website})` : ""} with one new button. Tap it like a visitor would.</span>
+        <Link to={`/demo/${demo.slug}`} className="shrink-0 rounded-full border border-background/30 px-2.5 py-0.5 hover:bg-background/10">
+          Back
+        </Link>
+      </div>
+
+      {/* Their nav */}
+      <nav className="bg-neutral-950 text-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
+          <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color }}>
+            {demo.brand}
+          </span>
+          <span className="hidden items-center gap-7 text-[13px] font-medium uppercase tracking-wide text-white/85 lg:flex">
+            <span>Home</span>
+            <span>Gallery</span>
+            <span>Services</span>
+            <span>About us</span>
+            <span>Contact us</span>
+            {demo.licenseNumber && (
+              <span className="rounded-md border border-dashed px-3 py-1.5 normal-case tracking-normal" style={{ borderColor: color }}>
+                License Number: {demo.licenseNumber}
+              </span>
+            )}
+          </span>
+        </div>
+      </nav>
+
+      {/* Their hero, with the one new thing front and center */}
+      <header className="relative overflow-hidden" style={{ background: `linear-gradient(120deg, #141414 0%, #262626 45%, ${color} 140%)` }}>
+        <div className="mx-auto max-w-6xl px-5 py-14 md:py-24">
+          <div className="max-w-2xl rounded-md border border-dashed border-white/40 bg-white/5 p-6 backdrop-blur-sm md:p-10">
+            <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white md:text-6xl">
+              {demo.headline ?? "Build the home you've been picturing"}
+            </h1>
+            <span className="mt-5 block h-1 w-24 rounded-full" style={{ background: color }} />
+            <p className="mt-5 text-lg leading-relaxed text-white/85">
+              Planning a remodel, an addition or a new home? Tell us about it in five minutes, with a few photos if
+              you have them. {demo.person ?? "We"} will come to your first visit with a plan, not a clipboard.
+            </p>
+            <div className="mt-8 flex flex-col items-start gap-3">
+              <button
+                type="button"
+                onClick={tap}
+                className="relative inline-flex items-center gap-3 rounded-md px-8 py-4 text-lg font-bold uppercase tracking-wide text-white shadow-2xl transition-transform hover:-translate-y-0.5"
+                style={{ background: color }}
+              >
+                <span className="absolute inset-0 animate-ping rounded-md opacity-25" style={{ background: color }} aria-hidden />
+                <span className="relative">Start your project</span>
+                <ArrowRight className="relative h-5 w-5" />
+              </button>
+              <span className="text-sm text-white/70">Free · about 5 minutes · goes straight to {who(demo)}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Their services */}
+      <section className="mx-auto grid max-w-6xl gap-6 px-5 py-12 md:grid-cols-3">
+        {services.map((s, i) => {
+          const Icon = icons[i % icons.length];
+          return (
+            <div key={s} className="border border-neutral-200 p-6">
+              <Icon className="h-9 w-9" style={{ color }} />
+              <p className="mt-4 text-xl font-bold">{s}</p>
+            </div>
+          );
+        })}
+      </section>
+    </div>
+  );
+};
+
+// ───── 3. The real welcome, then the real brief flow ─────
+
+const Welcome = ({ demo }: { demo: DemoConfig }) => {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // From a text, it's a personal invitation; from the website, it's their front door.
+  const door = params.get("door") === "text" ? "personal" : "front";
+  const contractor = useDemoContractor(demo);
+
+  if (!contractor) {
+    return (
+      <div className="min-h-screen bg-gradient-warm p-10" style={themeOf(demo)}>
+        <div className="mx-auto h-64 max-w-3xl animate-pulse rounded-3xl border border-border bg-card/60" aria-label="Loading" />
+      </div>
+    );
+  }
+
+  const start = () => {
+    setActiveInvite(demoToken(demo.slug), contractor);
+    // A fresh brief every run, so each demo starts from the lead's first tap.
+    navigate("/brief?fresh=1");
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-center gap-3 bg-foreground px-4 py-2 text-center text-xs text-background">
+        <span>Demo: this is what your lead sees after tapping. Everything works; nothing is sent.</span>
+      </div>
+      <InviteWelcome
+        contractor={contractor}
+        brand={{ name: demo.brand, logoUrl: null, href: `/demo/${demo.slug}` }}
+        door={door}
+        hasBrief={false}
+        onStart={start}
+        style={themeOf(demo)}
+      />
+    </>
   );
 };
 
 // ───── 4. What lands on their phone ─────
 
-const PrepStep = ({ demo, short, answers }: { demo: DemoConfig; short: string; answers: DemoAnswers }) => {
-  const snapshot = useMemo(() => demoSnapshot(answers), [answers]);
-  const sample = demoSample(answers.project ?? "kitchen");
-  const onSite = findingsSection(sample.findings);
+const MattView = ({ demo }: { demo: DemoConfig }) => {
+  const saved = useMemo(() => loadDemoBrief(demo.slug), [demo.slug]);
+  const contractor = useDemoContractor(demo);
+
+  useEffect(() => {
+    // The demo run is over: their pages go back to normal.
+    clearActiveInvite();
+    track("demo_matt_viewed", { demo: demo.slug, has_brief: !!saved });
+  }, [demo.slug, saved]);
+
+  if (!saved) {
+    return (
+      <Page demo={demo}>
+        <h1 className="font-display text-3xl font-light">No brief yet</h1>
+        <p className="mt-3 text-muted-foreground">Start as your lead, and the brief will land here.</p>
+        <Button asChild className="mt-6 rounded-full">
+          <Link to={`/demo/${demo.slug}`}>Start the demo</Link>
+        </Button>
+      </Page>
+    );
+  }
+
+  const snap = saved.snapshot;
+  const homeowner = snap.homeowner_name || "a new client";
+  const project = snap.projectType || snap.rooms?.[0] || "A project";
+  const claimHref = contractor?.slug ? `/pro/${contractor.slug}/claim` : "/pro/login?next=%2Fpro%2Flinks%23front-door";
 
   return (
-    <section>
-      <Eyebrow>Step 4 of 4 · Before you drive out</Eyebrow>
-      <h1 className="mt-3 font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-        {DEMO_CLIENT}'s brief arrives <span className="italic">with the visit already prepped.</span>
-      </h1>
-      <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-        On your phone, before you get in the truck: whether it's worth the drive, what your client may not know about
-        their own house, and what to ask at the door.
-      </p>
-      <SampleNote>
-        {DEMO_CLIENT} and the home are made up for this demo. With a real client, every line comes from their answers
-        and the city's records for their address.
-      </SampleNote>
-
-      {/* The brief, as the inbox shows it */}
-      <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-soft md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">New brief · {snapshot.neighborhood}</p>
-        <p className="mt-2 font-display text-xl">
-          {DEMO_CLIENT} · {sample.label} · {sample.budget}
+    <Page demo={demo} step="Your phone">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <p className="inline-flex items-center gap-2 rounded-full bg-sage/10 px-3 py-1 text-xs font-medium text-sage">
+          <CheckCircle2 className="h-3.5 w-3.5" /> Your lead pressed send. In the demo, it came only to this screen.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-foreground/80">{sample.scope}</p>
-        <p className="mt-2 text-sm italic text-muted-foreground">“{sample.vision}”</p>
-      </div>
+        <h1 className="mt-4 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+          Now you're {who(demo)}. <span className="italic">This just landed on your phone.</span>
+        </h1>
+        <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+          Before a single call: what they want, what they'll spend, when, the house itself, and whether it's worth the drive.
+        </p>
 
-      <div className="mt-4">
-        <VisitPrepCard demo snapshot={snapshot} buyBox={DEMO_BUY_BOX} homeownerName={DEMO_CLIENT} />
-      </div>
-
-      {onSite && (
-        <div className="mt-4 rounded-3xl border border-border bg-card p-5 shadow-soft md:p-6">
-          <p className="flex items-center gap-2 font-display text-lg">
-            <Eye className="h-4 w-4 text-accent" /> {onSite.title}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">From {DEMO_CLIENT}'s photos, read by Haleo.</p>
-          <ul className="mt-3 space-y-2">
-            {onSite.items.map((it) => (
-              <li key={it.text} className="flex gap-2 text-sm leading-snug text-foreground/85">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-sage" />
-                <span>
-                  {it.text}
-                  <span className="ml-2 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    · {it.basis === "grounded" ? "In the photo" : it.basis === "inferred" ? "Our inference" : "Worth asking"}
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
+          {/* The phone */}
+          <div className="mx-auto w-full max-w-[420px] rounded-[2.4rem] border-[10px] border-foreground/90 bg-background shadow-lift">
+            <div className="max-h-[78vh] overflow-y-auto rounded-[1.7rem] bg-gradient-warm px-3 pb-5 pt-3">
+              <div className="flex items-start gap-3 rounded-2xl bg-background/95 p-3 shadow-soft">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                  <Bell className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 text-[13px] leading-snug">
+                  <span className="block font-semibold">New brief from {homeowner}</span>
+                  <span className="block text-muted-foreground">
+                    {project} · {snap.neighborhood}
+                    {snap.budget ? ` · ${snap.budget}` : ""}
                   </span>
                 </span>
-              </li>
-            ))}
-          </ul>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {snap.scope_summary && (
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">In their words</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{snap.scope_summary}</p>
+                    {saved.note && <p className="mt-2 text-sm italic text-foreground/70">“{saved.note}”</p>}
+                  </div>
+                )}
+
+                <VisitPrepCard demo snapshot={snap} buyBox={DEMO_BUY_BOX} homeownerName={homeowner} />
+
+                {(snap.room_photo_urls?.length ?? 0) > 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <ImageIcon className="h-3 w-3" /> The space
+                    </p>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      {snap.room_photo_urls.slice(0, 6).map((u) => (
+                        <img key={u} src={u} alt="" className="aspect-square w-full rounded-lg object-cover" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {snap.haleo_read && (
+                  <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                      <Sparkles className="h-3 w-3" /> Haleo's read of their photos
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{snap.haleo_read.summary}</p>
+                    {snap.haleo_read.sections.slice(0, 2).map((sec) => (
+                      <div key={sec.title} className="mt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
+                        <ul className="mt-1.5 space-y-1.5">
+                          {sec.items.slice(0, 4).map((it) => (
+                            <li key={it.text} className="flex gap-2 text-[13px] leading-snug text-foreground/85">
+                              <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50")} />
+                              {it.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {(snap.trade_groups?.length ?? 0) > 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Scope by trade</p>
+                    <ul className="mt-2 space-y-2">
+                      {snap.trade_groups.slice(0, 5).map((g) => (
+                        <li key={g.trade} className="text-[13px] leading-snug">
+                          <span className="font-medium">{g.trade}</span>
+                          <span className="text-foreground/70"> · {g.lines.slice(0, 2).join("; ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* What it means for them */}
+          <div className="lg:sticky lg:top-8">
+            <ul className="space-y-3">
+              {[
+                ["No phone tag for the basics.", "Scope, budget, timing, photos and the times they're free, before you call."],
+                ["Drive out for the jobs that fit.", "A plain call on whether it's worth the trip, using the jobs you take on."],
+                ["Walk in knowing the house.", "The city's records for their address: permits that never got a final, lot size, hazard zones."],
+                ["Look like the most prepared bid.", "Your name and colors the whole way. They saw your record before you arrived."],
+              ].map(([t, b]) => (
+                <li key={t} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                  <p className="font-medium">{t}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{b}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button asChild size="lg" className="rounded-full" onClick={() => track("demo_cta_clicked", { demo: demo.slug })}>
+                <Link to={claimHref}>
+                  Use this for my real leads <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">Free while we're small. One link for your texts and your website.</p>
+              <Button asChild variant="ghost" className="rounded-full text-muted-foreground">
+                <Link to={`/demo/${demo.slug}`}>
+                  <RotateCcw className="h-4 w-4" /> Try the other door
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
-      )}
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        {short}, which of these would have changed your last site visit?
-      </p>
-    </section>
-  );
-};
-
-// ───── 5. Their real link ─────
-
-const StartStep = ({ demo, record }: { demo: DemoConfig; record: PermitRecord }) => {
-  // The select is "*", so the row carries claim state even though the shared type doesn't.
-  const row = record?.contractor as (Contractor & { slug?: string | null; claimed?: boolean | null }) | undefined;
-  const claimable = !!row?.slug && !row.claimed;
-  const href = claimable ? `/pro/${row!.slug}/claim` : "/pro/login?next=/pro/links";
-  return (
-    <section className="text-center">
-      <Eyebrow>Ready when you are</Eyebrow>
-      <h1 className="mx-auto mt-3 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-        Your next inquiry could arrive <span className="italic">this prepared.</span>
-      </h1>
-      <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-        {[
-          "One link for your website, Google profile and texts, in your colors. It never expires.",
-          "Your client's brief goes to you and no one else.",
-          "Free while we're small. No card.",
-        ].map((t) => (
-          <li key={t} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-sm shadow-soft">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-sage" /> <span>{t}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-8 flex flex-col items-center gap-3">
-        <Button asChild size="lg" className="rounded-full px-8" onClick={() => track("demo_cta_clicked", { demo: demo.slug, claimable: !!claimable })}>
-          <Link to={href}>
-            <Smartphone className="h-4 w-4" /> Set up your link
-          </Link>
-        </Button>
-        <p className="text-xs text-muted-foreground">About two minutes. Then text it to your next inquiry.</p>
-      </div>
-    </section>
+      </motion.div>
+    </Page>
   );
 };

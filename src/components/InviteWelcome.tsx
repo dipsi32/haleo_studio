@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CalendarDays, FileCheck2, Lock, Map } from "lucide-react";
 import CobrandLogo, { type Cobrand } from "@/components/CobrandLogo";
 import ProofPanel from "@/components/contractors/ProofPanel";
+import LicenseLine from "@/components/LicenseLine";
 import { Button } from "@/components/ui/button";
 import { contractorDisplayName, personFirstName, type InviteContractor } from "@/lib/invites";
 
@@ -34,7 +35,7 @@ type Props = {
 
 export default function InviteWelcome({ contractor: c, brand, door, hasBrief, busy = false, onStart, onResume, style }: Props) {
   const name = contractorDisplayName(c);
-  const person = personFirstName(c);
+  const person = c.personName?.trim() || personFirstName(c);
   // "Matt" when we know the person, otherwise the company.
   const short = person ?? name;
   const front = door === "front";
@@ -75,7 +76,7 @@ export default function InviteWelcome({ contractor: c, brand, door, hasBrief, bu
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
           {front
-            ? `Tell ${short} about your project here instead of a contact form. Share a few details and pick a time, and your first conversation starts with your plans instead of the basics.`
+            ? `Share your ideas and a few photos, and pick a time that works. ${short} comes to your first visit already knowing your project, so it's about your plans, not twenty questions.`
             : `Thanks for reaching out. Before you meet, ${short} invited you to share a few details, so your first conversation starts with your plans instead of the basics.`}
         </p>
 
@@ -109,7 +110,10 @@ export default function InviteWelcome({ contractor: c, brand, door, hasBrief, bu
 
         <div className="mt-8">
           <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">What the public record shows</p>
-          <ProofPanel contractorId={c.id} city={c.city} variant="full" />
+          <div className="space-y-4">
+            {c.licenseNumber && <LicenseLine licenseNumber={c.licenseNumber} />}
+            <ProofPanel contractorId={c.id} city={c.city} variant="full" />
+          </div>
         </div>
 
         {/* The ask: polite, and clear about what they get. */}

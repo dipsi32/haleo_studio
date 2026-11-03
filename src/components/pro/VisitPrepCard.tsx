@@ -125,7 +125,7 @@ export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk, 
         </p>
       )}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className={`mt-5 grid gap-3 ${demo ? "" : "sm:grid-cols-3"}`}>
         <div className="rounded-xl border border-border bg-background p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             <Home className="h-3 w-3" /> Home and lot

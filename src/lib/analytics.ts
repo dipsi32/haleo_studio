@@ -103,9 +103,10 @@ export type AnalyticsEvent =
   | "front_door_color_saved"
   // Contractor demo (/demo/:slug)
   | "demo_opened"
-  | "demo_record_loaded"
-  | "demo_step_viewed"
-  | "demo_answer_tapped"
+  | "demo_door_chosen"
+  | "demo_link_tapped"
+  | "demo_brief_sent"
+  | "demo_matt_viewed"
   | "demo_cta_clicked"
   // Haleo's read of the homeowner's photos
   | "space_read_completed"
@@ -142,8 +143,21 @@ export type AnalyticsEvent =
   // Generic page view
   | "$pageview";
 
+// While a contractor plays their own lead in the demo, only demo events count,
+// so demo runs never inflate the real funnel (briefs started, records shown…).
+// Reads storage directly to keep this module free of app imports.
+const inDemo = (): boolean => {
+  try {
+    const raw = localStorage.getItem("haleo:active_invite");
+    return !!raw && JSON.parse(raw)?.demo === true;
+  } catch {
+    return false;
+  }
+};
+
 export function track(event: AnalyticsEvent, properties?: Record<string, unknown>) {
   if (!initialized) return;
+  if (!event.startsWith("demo_") && inDemo()) return;
   if (isDev) {
     // eslint-disable-next-line no-console
     console.info("[analytics]", event, properties ?? {});
