@@ -144,6 +144,14 @@ describe("computeVisitPrep: the people", () => {
   it("is empty when nothing was shared", () => {
     expect(computeVisitPrep(adu, null).people).toEqual([]);
   });
+
+  it("shows the visit times they suggested, so the contractor can confirm one", () => {
+    const p = computeVisitPrep({ ...adu, context: { visit_times: ["2026-11-06|afternoon", "2026-11-05|morning", "bad"] } }, null);
+    const line = p.people.find((i) => /Times that work/.test(i.text));
+    expect(line?.text).toBe("Times that work for a visit: Thu, Nov 5 · morning; Fri, Nov 6 · afternoon");
+    expect(line?.source).toBe("asked");
+    expect(prepToText(p, { homeowner: "Pat" })).toMatch(/Times that work for a visit/);
+  });
 });
 
 describe("prepToText", () => {

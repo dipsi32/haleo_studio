@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
+import RecordTidbit from "@/components/brief/RecordTidbit";
+import { recordHighlights, type Highlight } from "@/lib/recordHighlights";
+import { useContractorRecord } from "@/lib/useContractorRecord";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -51,6 +54,7 @@ import {
   type Dimensions,
   type Address,
   type ScopeTier,
+  type IntakeData,
   useIntake,
 } from "@/lib/intake";
 
@@ -181,6 +185,8 @@ const ProjectScreen = ({
   onToggleGoal,
   onNote,
   onContinue,
+  trackFact,
+  workFact,
 }: {
   rooms: Room[];
   goals: ProjectGoal[];
@@ -189,6 +195,8 @@ const ProjectScreen = ({
   onToggleGoal: (g: ProjectGoal) => void;
   onNote: (v: string) => void;
   onContinue: () => void;
+  trackFact?: Highlight;
+  workFact?: Highlight;
 }) => {
   const [browsing, setBrowsing] = useState(false);
   const picked = rooms.length + goals.length;
@@ -235,13 +243,15 @@ const ProjectScreen = ({
         sub="One sentence is enough. We'll figure out the rest."
       />
 
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto max-w-lg space-y-3">
+        <RecordTidbit h={trackFact} />
         <VoiceTextField
           value={note}
           onChange={onNote}
           autoFocus
           placeholder="e.g. Remove and fill in two in-ground pools, permitted."
         />
+        <RecordTidbit h={workFact} />
       </div>
 
       {/* What we heard */}
@@ -697,11 +707,13 @@ const AddressScreen = ({
   onSave,
   onSkip,
   onContinue,
+  zipFact,
 }: {
   address?: Address;
   onSave: (a: Address) => void;
   onSkip: () => void;
   onContinue: () => void;
+  zipFact?: (zip: string) => Highlight | undefined;
 }) => {
   return (
     <div className="space-y-10">
@@ -715,6 +727,7 @@ const AddressScreen = ({
         onSave={onSave}
         onSkip={onSkip}
         onContinue={onContinue}
+        renderZipNote={zipFact ? (zip) => <RecordTidbit h={zipFact(zip)} /> : undefined}
       />
     </div>
   );
@@ -735,6 +748,7 @@ const ScopeAndBudgetScreen = ({
   hideScope,
   rooms,
   goals,
+  scopeFact,
 }: {
   scope?: ScopeTier;
   onScopeChange: (s: ScopeTier) => void;
@@ -749,6 +763,7 @@ const ScopeAndBudgetScreen = ({
   hideScope?: boolean;
   rooms?: Room[];
   goals?: ProjectGoal[];
+  scopeFact?: Highlight;
 }) => (
   <div className="space-y-10">
     <StepDots step={5} />
@@ -774,6 +789,7 @@ const ScopeAndBudgetScreen = ({
       hideScope={hideScope}
       rooms={rooms}
       goals={goals}
+      scopeNote={<RecordTidbit h={scopeFact} />}
     />
   </div>
 );
@@ -874,6 +890,13 @@ const Brief = () => {
 
   const isAddition = data.room === "addition";
 
+  // Through a contractor's link, their record speaks to each answer, right
+  // under the field that unlocked it.
+  const record = useContractorRecord();
+  const factsFor = (d: IntakeData): Partial<Record<Highlight["id"], Highlight>> =>
+    record ? Object.fromEntries(recordHighlights(record.permits, d, record.who).map((h) => [h.id, h])) : {};
+  const facts = factsFor(data);
+
   // Auto-skip Step 3 (Haleo's read) in either direction when there's no
   // analyzable media OR when the route doesn't surface media (Addition).
   // Without this, users who skip uploads would land on a stalled "reading…" screen.
@@ -932,6 +955,8 @@ const Brief = () => {
               });
             }}
             onNote={(v) => update({ goalNote: v })}
+            trackFact={facts.track}
+            workFact={facts.work}
             onContinue={() => {
               update({ room: primaryRoom(data.rooms ?? [], data.goals ?? []) });
               setStep(2);
@@ -985,6 +1010,7 @@ const Brief = () => {
             onSave={(a) => update({ address: a })}
             onSkip={() => update({ address: { ...(data.address ?? {}), skipped: true } })}
             onContinue={next}
+            zipFact={(zip) => factsFor({ ...data, address: { ...(data.address ?? {}), zip, skipped: false } }).nearby}
           />
         )}
         {step === 5 && (
@@ -1008,6 +1034,7 @@ const Brief = () => {
             hideScope={isAddition}
             rooms={data.rooms}
             goals={data.goals}
+            scopeFact={facts.structural}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);

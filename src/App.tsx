@@ -19,6 +19,7 @@ import Contractors from "./pages/Contractors.tsx";
 import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
 import Shortlist from "./pages/Shortlist.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
 import Roast from "./pages/Roast.tsx";
 import ADU from "./pages/ADU.tsx";
@@ -73,6 +74,7 @@ const App = () => (
 
             <Route path="/roast" element={<Roast />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/adu" element={<Gated><ADU /></Gated>} />

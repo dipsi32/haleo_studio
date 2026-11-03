@@ -59,8 +59,10 @@ import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard"
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
-import { getActiveInvite, inviteSendPath } from "@/lib/invites";
+import { getActiveInvite, inviteCobrand, inviteSendPath } from "@/lib/invites";
+import CobrandLogo from "@/components/CobrandLogo";
 import { loadShortlist } from "@/lib/shortlist";
+import { projectLabel } from "@/lib/projectName";
 import {
   buildHomeownerLayer,
   buildContractorLayer,
@@ -456,6 +458,7 @@ const BriefResult = () => {
   // the primary path sends the brief to that contractor and nobody else. The
   // open "compare contractors" path stays one click away.
   const invite = useMemo(() => getActiveInvite(), []);
+  const cobrand = useMemo(() => inviteCobrand(invite), [invite]);
   const compareDestination = brUser
     ? "/contractors"
     : "/login?next=%2Fcontractors&intent=match";
@@ -484,14 +487,14 @@ const BriefResult = () => {
         <div className="container flex h-16 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(brUser ? "/account" : "/")}
+              onClick={() => navigate(cobrand ? cobrand.href : brUser ? "/account" : "/")}
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent/40 hover:text-foreground"
               aria-label="Back to my projects"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              {brUser ? "My projects" : "Home"}
+              {cobrand ? "Back" : brUser ? "My projects" : "Home"}
             </button>
-            <span className="hidden sm:inline-flex"><Logo /></span>
+            {cobrand ? <CobrandLogo brand={cobrand} className="max-w-[55vw] sm:max-w-none" /> : <span className="hidden sm:inline-flex"><Logo /></span>}
           </div>
           <div className="flex items-center gap-2">
             {brUser && (
@@ -706,7 +709,7 @@ const BriefResult = () => {
                 preview={
                   <span className="line-clamp-1">
                     {[
-                      data.room ? ROOM_LABELS[data.room] : null,
+                      data.room ? projectLabel(data) : null,
                       budgetLabel !== "—" && budgetLabel !== "Not shared" ? budgetLabel : null,
                       timelineLabel !== "—" ? timelineLabel : null,
                     ]
@@ -716,7 +719,7 @@ const BriefResult = () => {
                 }
               >
                 <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                  <KV label="Room" value={data.room ? ROOM_LABELS[data.room] : "—"} />
+                  <KV label={data.room === "other" ? "Project" : "Room"} value={data.room ? projectLabel(data) : "—"} />
                   <KV label="Project type" value={
                     data.scope === "refresh" ? "Design refresh"
                     : data.scope === "remodel" ? "Full remodel"
@@ -923,14 +926,7 @@ const BriefResult = () => {
 
         {invite && (
           <p className="mt-3 text-xs text-muted-foreground">
-            It goes to {invite.contractorName} only. It's your brief, and you can share it with other contractors later.{" "}
-            <button
-              type="button"
-              onClick={() => navigate(compareDestination)}
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              Compare other contractors first
-            </button>
+            It goes to {invite.contractorName} and no one else.
           </p>
         )}
 
@@ -1154,7 +1150,7 @@ const ExecSummary = ({
   onApprove: () => void;
   onEdit: () => void;
 }) => {
-  const room = data.room ? ROOM_LABELS[data.room] : "Project";
+  const room = data.room ? projectLabel(data) : "Project";
   const scopeLabel =
     data.scope === "refresh"
       ? "Design refresh"

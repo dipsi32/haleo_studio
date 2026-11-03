@@ -1,13 +1,14 @@
 // Landing page for a contractor's brief link: /i/:token
 //
 // The homeowner has already chosen this contractor, so this page honors that
-// choice instead of re-running a match. It says who asked, what the homeowner
-// does, what they get, who sees the brief, and that the brief stays theirs.
+// choice: it opens with who is coming (their profile, then the public record),
+// then politely asks for the project so the contractor arrives prepared.
+// Nothing here points to other contractors.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, FileCheck2, Lock, Map } from "lucide-react";
-import Logo from "@/components/Logo";
+import { ArrowRight, CalendarDays, FileCheck2, Lock, Map } from "lucide-react";
+import CobrandLogo, { type Cobrand } from "@/components/CobrandLogo";
 import ProofPanel from "@/components/contractors/ProofPanel";
 import { Button } from "@/components/ui/button";
 import { useIntake } from "@/lib/intake";
@@ -17,15 +18,16 @@ import {
   fetchInvite,
   markInviteOpened,
   setActiveInvite,
+  personFirstName,
   type InvitePublic,
 } from "@/lib/invites";
 
 type State = { kind: "loading" } | { kind: "missing" } | { kind: "ready"; invite: InvitePublic };
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
   <div className="min-h-screen bg-gradient-warm">
     <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-      <Logo />
+      <CobrandLogo brand={brand} />
     </header>
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-6">{children}</main>
   </div>
@@ -83,6 +85,8 @@ const Invite = () => {
   const { invite } = state;
   const name = contractorDisplayName(invite.contractor);
 
+  const brand: Cobrand = { name, logoUrl: invite.contractor.logoUrl ?? null, href: `/i/${token}` };
+
   if (invite.status !== "open") {
     const why =
       invite.status === "completed"
@@ -91,7 +95,7 @@ const Invite = () => {
           ? `This link to ${name} has expired.`
           : `${name} turned this link off.`;
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">{why}</h1>
         <p className="mt-3 max-w-md text-muted-foreground">
           {invite.status === "completed"
@@ -114,71 +118,123 @@ const Invite = () => {
   }
 
   const hasBrief = Boolean(intake.room);
+  const c = invite.contractor;
+  const person = personFirstName(c);
+  // "Matt" when we know the person, otherwise the company.
+  const short = person ?? name;
 
   const start = () => {
-    track("invite_brief_started", { contractor_id: invite.contractor.id, resumed: false });
+    track("invite_brief_started", { contractor_id: c.id, resumed: false });
     navigate("/brief");
   };
   const resume = () => {
-    track("invite_brief_started", { contractor_id: invite.contractor.id, resumed: true });
+    track("invite_brief_started", { contractor_id: c.id, resumed: true });
     navigate("/brief/result");
   };
 
-  const points = [
-    {
-      icon: FileCheck2,
-      title: "You get a clear written brief",
-      body: "Your photos, plans, scope, budget and timeline in one place, plus Haleo's read of your space and what your city will want to see. It's yours to keep.",
-    },
-    {
-      icon: Lock,
-      title: `Only ${name} gets it`,
-      body: "It goes to this contractor and no one else. You can share it with other contractors whenever you like from your account.",
-    },
-    {
-      icon: Map,
-      title: "A first visit that feels like the second",
-      body: `${name} gets your brief along with what the public record shows for your address, so the visit starts with your project instead of the basics.`,
-    },
+  const initials = name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const steps = [
+    { icon: FileCheck2, title: "Share your project", body: "Photos of the space, what you'd like done, a rough budget and timing. About five minutes, and you can skip anything." },
+    { icon: CalendarDays, title: "Pick a few times", body: `Tap the days and times that work for a visit. ${short} confirms one with you.` },
+    { icon: Map, title: `${short} arrives prepared`, body: "With a prep sheet on your home and project, so the first visit starts with your ideas, not the basics." },
   ];
 
   return (
-    <Shell>
+    <Shell brand={brand}>
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">An invitation from {name}</p>
-        <h1 className="mt-3 font-display text-3xl font-light leading-tight md:text-4xl">
-          {name} asked you to share your project before you meet.
+        {/* Who is coming: the person first, then their record. */}
+        <div className="flex items-center gap-4">
+          {c.logoUrl ? (
+            <img src={c.logoUrl} alt="" className="h-14 w-14 shrink-0 rounded-full border border-border object-cover" />
+          ) : (
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-lg text-accent-soft-foreground">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">A personal invitation</p>
+            <p className="truncate font-display text-lg">{person ? `${person} at ${name}` : name}</p>
+          </div>
+        </div>
+
+        <h1 className="mt-6 font-display text-3xl font-light leading-tight md:text-[2.6rem]">
+          {short} would love to hear <span className="italic">about your project.</span>
         </h1>
-        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          It takes about five minutes: photos of the space, your address, what you want done, and a rough budget and
-          timeline. Skip anything you're not ready to share.
+        <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+          Thanks for reaching out. Before you meet, {short} invited you to share a few details, so your first
+          conversation starts with your plans instead of the basics.
         </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button size="lg" className="rounded-full" onClick={start}>
-            Start my brief <ArrowRight className="h-4 w-4" />
-          </Button>
-          {hasBrief && (
-            <Button size="lg" variant="outline" className="rounded-full" onClick={resume}>
-              Use the brief I already started
+        {(c.tagline || c.yearsInBusiness || c.specialties || (c.gallery?.length ?? 0) > 0) && (
+          <div className="mt-8 rounded-3xl border border-border bg-card p-6 shadow-soft">
+            {c.tagline && <p className="font-display text-xl italic leading-snug">“{c.tagline}”</p>}
+            {(c.yearsInBusiness || c.specialties) && (
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                {c.yearsInBusiness ? (
+                  <span className="rounded-full bg-secondary px-3 py-1">{c.yearsInBusiness} years in business</span>
+                ) : null}
+                {c.specialties
+                  ?.split(/[,;]/)
+                  .map((x) => x.trim())
+                  .filter(Boolean)
+                  .slice(0, 4)
+                  .map((x) => (
+                    <span key={x} className="rounded-full bg-secondary px-3 py-1">{x}</span>
+                  ))}
+              </div>
+            )}
+            {(c.gallery?.length ?? 0) > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {c.gallery!.map((u) => (
+                  <img key={u} src={u} alt={`Recent work by ${name}`} loading="lazy" className="aspect-[4/3] w-full rounded-xl border border-border object-cover" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-8">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">What the public record shows</p>
+          <ProofPanel contractorId={c.id} city={c.city} variant="full" />
+        </div>
+
+        {/* The ask: polite, and clear about what they get. */}
+        <section className="mt-10 rounded-3xl border border-accent/25 bg-card p-6 shadow-soft md:p-8">
+          <h2 className="font-display text-2xl font-light">Help {short} come prepared</h2>
+          <p className="mt-2 max-w-xl text-muted-foreground">
+            Would you share a little about your project? It's the easiest way to make your first visit count.
+          </p>
+          <ol className="mt-6 grid gap-4 sm:grid-cols-3">
+            {steps.map((st, i) => (
+              <li key={st.title} className="rounded-2xl bg-secondary/40 p-4">
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-[11px] text-background">{i + 1}</span>
+                  {st.title}
+                </span>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{st.body}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button size="lg" className="rounded-full" onClick={start}>
+              Share my project <ArrowRight className="h-4 w-4" />
             </Button>
-          )}
-        </div>
-
-        <ul className="mt-12 grid gap-4 sm:grid-cols-3">
-          {points.map((p) => (
-            <li key={p.title} className="rounded-2xl border border-border bg-card/70 p-5">
-              <p.icon className="h-5 w-5 text-accent" />
-              <p className="mt-3 text-balance font-display text-base">{p.title}</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{p.body}</p>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-10">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Who you're sharing with</p>
-          <ProofPanel contractorId={invite.contractor.id} city={invite.contractor.city} variant="compact" />
-        </div>
+            {hasBrief && (
+              <Button size="lg" variant="outline" className="rounded-full" onClick={resume}>
+                Use the brief I already started
+              </Button>
+            )}
+          </div>
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4" /> Only {name} sees it, and it's yours to keep.
+          </p>
+        </section>
       </motion.div>
     </Shell>
   );

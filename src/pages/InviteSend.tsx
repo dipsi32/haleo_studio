@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Send } from "lucide-react";
-import Logo from "@/components/Logo";
+import CobrandLogo, { type Cobrand } from "@/components/CobrandLogo";
 import ProofPanel from "@/components/contractors/ProofPanel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,10 @@ import { loadAddressRisk } from "@/lib/addressRisk";
 import { loadParcelFacts } from "@/lib/parcelFacts";
 import { cleanContext, hasContext, type HomeownerContext } from "@/lib/prepTypes";
 import VisitContextForm from "@/components/brief/VisitContextForm";
+import MoreBidsOffer from "@/components/brief/MoreBidsOffer";
+import VisitTimesPicker from "@/components/brief/VisitTimesPicker";
+import { formatVisitTime } from "@/lib/visitTimes";
+import { projectNoun } from "@/lib/projectName";
 import { buildBriefSnapshot, getSessionId, projectKeywords, projectTypeLabel, type BriefSnapshot } from "@/lib/contractors";
 import {
   INVITE_ERROR_COPY,
@@ -33,10 +37,10 @@ import {
 } from "@/lib/invites";
 import { useIntake } from "@/lib/intake";
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
   <div className="min-h-screen bg-gradient-warm">
     <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-      <Logo />
+      <CobrandLogo brand={brand} />
     </header>
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-4">{children}</main>
   </div>
@@ -94,11 +98,12 @@ const InviteSend = () => {
   }
 
   const name = contractorDisplayName(invite.contractor);
+  const brand: Cobrand = { name, logoUrl: invite.contractor.logoUrl ?? null, href: invitePath(token) };
 
   // ───── Sent ─────
   if (sent) {
     return (
-      <Shell>
+      <Shell brand={brand}>
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-sage/15 text-sage">
@@ -110,6 +115,18 @@ const InviteSend = () => {
             Your brief comes with a prep sheet on your home and project, so your first visit can start with the real conversation. If they have questions, they'll reach you through Haleo and you'll see them in your notifications. Your brief is saved in your account.
           </p>
 
+          {(context.visit_times?.length ?? 0) > 0 && (
+            <div className="mt-6 rounded-2xl border border-sage/25 bg-sage/5 p-5">
+              <p className="font-display text-lg">Times you suggested</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {context.visit_times!.map((t) => (
+                  <li key={t} className="rounded-full bg-background px-3 py-1 text-sm">{formatVisitTime(t)}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-sm text-muted-foreground">{name} will confirm one with you. You'll see it in your notifications.</p>
+            </div>
+          )}
+
           <div className="mt-8">
             <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
               What the public record shows for {name}{city ? ` in ${city}` : ""}
@@ -117,21 +134,12 @@ const InviteSend = () => {
             <ProofPanel contractorId={invite.contractor.id} city={city ?? invite.contractor.city} keywords={keywords} variant="full" />
           </div>
 
-          <div className="mt-8 rounded-2xl border border-border bg-card/70 p-5">
-            <p className="font-display text-lg">It's your brief</p>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
-              You picked {name}, and that's the only place it went. If you'd like other contractors with permit history near
-              you to see it too, you can share it with them whenever you want.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button variant="outline" className="rounded-full" onClick={() => navigate("/contractors")}>
-                See other contractors near me
-              </Button>
-              <Button className="rounded-full" onClick={() => navigate("/account")}>
-                Go to my account
-              </Button>
-            </div>
+          <div className="mt-8">
+            <MoreBidsOffer contractorName={name} projectNoun={projectNoun(data)} city={city} />
           </div>
+          <Button className="mt-6 rounded-full" onClick={() => navigate("/account")}>
+            Go to my account
+          </Button>
         </motion.div>
       </Shell>
     );
@@ -146,7 +154,7 @@ const InviteSend = () => {
           ? INVITE_ERROR_COPY.invite_expired
           : INVITE_ERROR_COPY.invite_revoked;
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">This link can't be used</h1>
         <p className="mt-3 max-w-md text-muted-foreground">{msg}</p>
         <Button asChild className="mt-6 rounded-full">
@@ -159,7 +167,7 @@ const InviteSend = () => {
   // ───── No brief yet ─────
   if (!data.room) {
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">Let's build your brief first</h1>
         <p className="mt-3 max-w-md text-muted-foreground">{name} will see it as soon as you send it. It takes about five minutes.</p>
         <Button asChild className="mt-6 rounded-full">
@@ -221,7 +229,7 @@ const InviteSend = () => {
         })
         .then(() => undefined, () => undefined);
 
-      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel });
+      track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel, visit_times: context.visit_times?.length ?? 0 });
       clearActiveInvite();
       setSent(true);
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -231,7 +239,7 @@ const InviteSend = () => {
   };
 
   return (
-    <Shell>
+    <Shell brand={brand}>
       <button
         onClick={() => navigate("/brief/result")}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground"
@@ -263,6 +271,12 @@ const InviteSend = () => {
 
       <VisitContextForm name={name} value={context} onChange={setContext} />
 
+      <VisitTimesPicker
+        name={name}
+        value={context.visit_times ?? []}
+        onChange={(visit_times) => setContext((c) => ({ ...c, visit_times }))}
+      />
+
       <label htmlFor="invite-note" className="mt-8 block text-sm font-medium">
         Anything you want {name} to know before you meet? <span className="font-normal text-muted-foreground">(optional)</span>
       </label>
@@ -291,12 +305,6 @@ const InviteSend = () => {
         <Button size="lg" className="rounded-full" disabled={!consent || sending} onClick={send}>
           <Send className="h-4 w-4" /> {sending ? "Sending…" : `Send to ${name}`}
         </Button>
-        <button
-          onClick={() => navigate("/contractors")}
-          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          Compare other contractors first
-        </button>
       </div>
     </Shell>
   );

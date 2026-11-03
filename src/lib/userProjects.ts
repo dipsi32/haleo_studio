@@ -1,6 +1,7 @@
 // Per-user persistent storage of intakes + briefs.
 // One row per "room" the user is working on, scoped via RLS to user_id.
 import { supabase } from "@/integrations/supabase/client";
+import { projectLabel } from "@/lib/projectName";
 import type { Json } from "@/integrations/supabase/types";
 import { ROOM_LABELS, type IntakeData, type Room } from "@/lib/intake";
 
@@ -17,7 +18,7 @@ export interface UserProject {
 }
 
 const titleFor = (intake: IntakeData): string => {
-  const room = intake.room ? ROOM_LABELS[intake.room as Room] ?? intake.room : "Project";
+  const room = intake.room ? projectLabel(intake) : "Project";
   const city = intake.address?.city;
   return city ? `${room} · ${city}` : room;
 };

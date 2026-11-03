@@ -10,9 +10,11 @@ import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import { track } from "@/lib/analytics";
-import { getActiveInvite } from "@/lib/invites";
+import { getActiveInvite, inviteCobrand } from "@/lib/invites";
+import CobrandLogo from "@/components/CobrandLogo";
 import { authMessage } from "@/lib/authMessages";
 import CheckEmailCard from "@/components/auth/CheckEmailCard";
+import ForgotPasswordCard from "@/components/auth/ForgotPasswordCard";
 
 const Login = () => {
   const { user, loading } = useAuth();
@@ -33,7 +35,9 @@ const Login = () => {
   const intent = params.get("intent");
   const isMatchIntent = intent === "match";
   // Sent here from a contractor's brief link: the homeowner is new too.
-  const isInviteIntent = intent === "invite";
+  // Also when sign-in was required on the way to sending a brief through a
+  // contractor's link (/i/:token/send), so it stays in their experience.
+  const isInviteIntent = intent === "invite" || /^\/i\/[^/]+\/send$/.test(next);
   const inviteName = isInviteIntent ? getActiveInvite()?.contractorName ?? null : null;
 
   const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent || isInviteIntent ? "signup" : "signin");
@@ -43,6 +47,7 @@ const Login = () => {
   const [busy, setBusy] = useState(false);
   // Set after sign-up when Supabase wants the email confirmed before signing in.
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(params.get("forgot") === "1");
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
@@ -140,7 +145,7 @@ const Login = () => {
         className="w-full max-w-md"
       >
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
-          <Logo />
+          {isInviteIntent ? <CobrandLogo brand={inviteCobrand(getActiveInvite())} /> : <Logo />}
           <h1 className="font-display text-2xl font-light">
             {isInviteIntent && mode === "signup"
               ? `Your brief is ready. Create an account to send it${inviteName ? ` to ${inviteName}` : ""}.`
@@ -172,7 +177,9 @@ const Login = () => {
           </div>
         )}
 
-        {sentTo ? (
+        {forgot ? (
+          <ForgotPasswordCard initialEmail={email} next={next} onBack={() => setForgot(false)} />
+        ) : sentTo ? (
           <CheckEmailCard
             email={sentTo}
             resendIn={resendIn}
@@ -253,6 +260,15 @@ const Login = () => {
                   className="h-11 rounded-xl bg-background pl-9"
                 />
               </div>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={() => setForgot(true)}
+                  className="mt-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="h-11 w-full rounded-full">
               {mode === "signup" ? "Create account" : "Sign in"}
@@ -273,12 +289,14 @@ const Login = () => {
         </div>
         )}
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Don't have access yet?{" "}
-          <Link to="/waitlist" className="text-accent underline-offset-4 hover:underline">
-            Join the waitlist
-          </Link>
-        </p>
+        {!isInviteIntent && (
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Don't have access yet?{" "}
+            <Link to="/waitlist" className="text-accent underline-offset-4 hover:underline">
+              Join the waitlist
+            </Link>
+          </p>
+        )}
       </motion.div>
     </div>
   );

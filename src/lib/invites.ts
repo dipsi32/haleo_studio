@@ -17,12 +17,33 @@ export type InviteContractor = {
   name: string;
   company: string | null;
   city: string | null;
+  /** From the contractor's own profile, when they've filled it in. */
+  tagline?: string | null;
+  logoUrl?: string | null;
+  yearsInBusiness?: number | null;
+  specialties?: string | null;
+  gallery?: string[];
 };
 
 export type InvitePublic = { status: InviteStatus; contractor: InviteContractor };
 
 export const contractorDisplayName = (c: Pick<InviteContractor, "company" | "name">): string =>
   c.company?.trim() || c.name;
+
+/**
+ * The person's first name when the record has one distinct from the company
+ * ("JOHN DOE" at "ACME BUILDERS" → "John"), else null. Permit records are
+ * often all caps, and sometimes repeat the company as the "name".
+ */
+export const personFirstName = (c: Pick<InviteContractor, "company" | "name">): string | null => {
+  const n = c.name?.trim();
+  if (!n || !c.company?.trim()) return null;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+  if (norm(n) === norm(c.company)) return null;
+  if (!/^[A-Za-z'-]+(\s[A-Za-z'.-]+){0,2}$/.test(n)) return null;
+  const first = n.split(/\s+/)[0];
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+};
 
 export const invitePath = (token: string) => `/i/${token}`;
 export const inviteSendPath = (token: string) => `/i/${token}/send`;
@@ -36,7 +57,7 @@ export const inviteUrl = (token: string, origin?: string): string => {
 // says what the homeowner gets so it doesn't read like a form to fill.
 export const inviteMessage = (opts: { contractor: string; url: string; firstName?: string }): string => {
   const hi = opts.firstName ? `Hi ${opts.firstName}, it's ${opts.contractor}.` : `Hi, it's ${opts.contractor}.`;
-  return `${hi} Before we meet, could you put your project details in here? It takes about five minutes, you keep a copy, and it makes our first visit a lot more useful: ${opts.url}`;
+  return `${hi} Thanks for reaching out, I'd love to hear about your project. So I can come prepared, could you share a few details and pick a couple of times that work for a visit? It takes about five minutes and you keep a copy: ${opts.url}`;
 };
 
 // Link state for the contractor's list.
@@ -74,6 +95,7 @@ export type ActiveInvite = {
   contractorId: string;
   contractorName: string;
   contractorSlug: string | null;
+  logoUrl?: string | null;
   savedAt: number;
 };
 
@@ -87,7 +109,7 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
       localStorage.removeItem(ACTIVE_KEY);
       return null;
     }
-    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, savedAt: v.savedAt };
+    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, savedAt: v.savedAt };
   } catch {
     return null;
   }
@@ -95,12 +117,16 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
 
 export const setActiveInvite = (token: string, c: InviteContractor): void => {
   try {
-    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, savedAt: Date.now() };
+    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, logoUrl: c.logoUrl ?? null, savedAt: Date.now() };
     localStorage.setItem(ACTIVE_KEY, JSON.stringify(v));
   } catch {
     /* private mode: the link in the address bar still works */
   }
 };
+
+/** The co-brand for headers while a homeowner is in a contractor's link. */
+export const inviteCobrand = (i: Pick<ActiveInvite, "token" | "contractorName" | "logoUrl"> | null) =>
+  i ? { name: i.contractorName, logoUrl: i.logoUrl ?? null, href: invitePath(i.token) } : null;
 
 export const clearActiveInvite = (): void => {
   try {
@@ -114,7 +140,18 @@ export const clearActiveInvite = (): void => {
 export async function fetchInvite(token: string): Promise<InvitePublic | null> {
   const { data, error } = await supabase.rpc("get_invite_public", { _token: token });
   if (error || !data || data.length === 0) return null;
-  const r = data[0];
+  // Profile fields arrive from the 20261102 version of the function; older
+  // deployments simply don't send them.
+  const r = data[0] as typeof data[0] & {
+    contractor_tagline?: string | null;
+    contractor_logo_url?: string | null;
+    contractor_years_in_business?: number | null;
+    contractor_specialties?: string | null;
+    contractor_gallery_urls?: unknown;
+  };
+  const gallery = Array.isArray(r.contractor_gallery_urls)
+    ? (r.contractor_gallery_urls as unknown[]).filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u))
+    : [];
   return {
     status: r.status as InviteStatus,
     contractor: {
@@ -123,6 +160,11 @@ export async function fetchInvite(token: string): Promise<InvitePublic | null> {
       name: r.contractor_name,
       company: r.contractor_company,
       city: r.contractor_city,
+      tagline: r.contractor_tagline ?? null,
+      logoUrl: r.contractor_logo_url && /^https?:\/\//.test(r.contractor_logo_url) ? r.contractor_logo_url : null,
+      yearsInBusiness: r.contractor_years_in_business ?? null,
+      specialties: r.contractor_specialties ?? null,
+      gallery,
     },
   };
 }
