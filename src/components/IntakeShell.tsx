@@ -1,7 +1,10 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, X, LogOut, UserRound, Check, ChevronDown, LogIn } from "lucide-react";
 import Logo from "./Logo";
+import CobrandLogo from "./CobrandLogo";
+import { getActiveInvite, inviteCobrand } from "@/lib/invites";
 import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
@@ -23,10 +26,13 @@ type Props = {
 const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  // Came through a contractor's link: their brand leads, and leaving goes back to their page.
+  const brand = useMemo(() => inviteCobrand(getActiveInvite()), []);
+  const home = brand?.href ?? (user ? "/account" : "/");
 
   const handleBack = () => {
     if (step > 1 && onBack) onBack();
-    else navigate(user ? "/account" : "/");
+    else navigate(home);
   };
 
   const handleSignOut = async () => {
@@ -45,9 +51,9 @@ const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => 
               aria-label={step > 1 ? "Go back" : "Back to my projects"}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              {step > 1 ? "Back" : user ? "My projects" : "Home"}
+              {step > 1 ? "Back" : brand ? "Back" : user ? "My projects" : "Home"}
             </button>
-            <span className="hidden sm:inline-flex"><Logo /></span>
+            {brand ? <CobrandLogo brand={brand} className="max-w-[50vw] sm:max-w-none" /> : <span className="hidden sm:inline-flex"><Logo /></span>}
           </div>
 
           <div className="flex items-center gap-2">
@@ -87,12 +93,12 @@ const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => 
                 to="/login"
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
               >
-                <LogIn className="h-3.5 w-3.5" /> Sign in
+                <LogIn className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Sign in</span>
               </Link>
             )}
 
             <Link
-              to={exitTo}
+              to={brand ? brand.href : exitTo}
               className="grid h-8 w-8 place-items-center rounded-full border border-border bg-card transition-smooth hover:bg-secondary"
               aria-label="Exit"
               title="Exit — your progress is saved"

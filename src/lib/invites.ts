@@ -95,6 +95,7 @@ export type ActiveInvite = {
   contractorId: string;
   contractorName: string;
   contractorSlug: string | null;
+  logoUrl?: string | null;
   savedAt: number;
 };
 
@@ -108,7 +109,7 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
       localStorage.removeItem(ACTIVE_KEY);
       return null;
     }
-    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, savedAt: v.savedAt };
+    return { token: v.token, contractorId: v.contractorId, contractorName: v.contractorName, contractorSlug: v.contractorSlug ?? null, logoUrl: v.logoUrl ?? null, savedAt: v.savedAt };
   } catch {
     return null;
   }
@@ -116,12 +117,16 @@ export const getActiveInvite = (now: number = Date.now()): ActiveInvite | null =
 
 export const setActiveInvite = (token: string, c: InviteContractor): void => {
   try {
-    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, savedAt: Date.now() };
+    const v: ActiveInvite = { token, contractorId: c.id, contractorName: contractorDisplayName(c), contractorSlug: c.slug, logoUrl: c.logoUrl ?? null, savedAt: Date.now() };
     localStorage.setItem(ACTIVE_KEY, JSON.stringify(v));
   } catch {
     /* private mode: the link in the address bar still works */
   }
 };
+
+/** The co-brand for headers while a homeowner is in a contractor's link. */
+export const inviteCobrand = (i: Pick<ActiveInvite, "token" | "contractorName" | "logoUrl"> | null) =>
+  i ? { name: i.contractorName, logoUrl: i.logoUrl ?? null, href: invitePath(i.token) } : null;
 
 export const clearActiveInvite = (): void => {
   try {

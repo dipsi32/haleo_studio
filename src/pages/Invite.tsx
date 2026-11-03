@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, CalendarDays, FileCheck2, Lock, Map } from "lucide-react";
-import Logo from "@/components/Logo";
+import CobrandLogo, { type Cobrand } from "@/components/CobrandLogo";
 import ProofPanel from "@/components/contractors/ProofPanel";
 import { Button } from "@/components/ui/button";
 import { useIntake } from "@/lib/intake";
@@ -24,10 +24,10 @@ import {
 
 type State = { kind: "loading" } | { kind: "missing" } | { kind: "ready"; invite: InvitePublic };
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
   <div className="min-h-screen bg-gradient-warm">
     <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-      <Logo />
+      <CobrandLogo brand={brand} />
     </header>
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-6">{children}</main>
   </div>
@@ -85,6 +85,8 @@ const Invite = () => {
   const { invite } = state;
   const name = contractorDisplayName(invite.contractor);
 
+  const brand: Cobrand = { name, logoUrl: invite.contractor.logoUrl ?? null, href: `/i/${token}` };
+
   if (invite.status !== "open") {
     const why =
       invite.status === "completed"
@@ -93,7 +95,7 @@ const Invite = () => {
           ? `This link to ${name} has expired.`
           : `${name} turned this link off.`;
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">{why}</h1>
         <p className="mt-3 max-w-md text-muted-foreground">
           {invite.status === "completed"
@@ -144,7 +146,7 @@ const Invite = () => {
   ];
 
   return (
-    <Shell>
+    <Shell brand={brand}>
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {/* Who is coming: the person first, then their record. */}
         <div className="flex items-center gap-4">

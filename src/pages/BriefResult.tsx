@@ -59,7 +59,8 @@ import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard"
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
-import { getActiveInvite, inviteSendPath } from "@/lib/invites";
+import { getActiveInvite, inviteCobrand, inviteSendPath } from "@/lib/invites";
+import CobrandLogo from "@/components/CobrandLogo";
 import { loadShortlist } from "@/lib/shortlist";
 import { projectLabel } from "@/lib/projectName";
 import {
@@ -457,6 +458,7 @@ const BriefResult = () => {
   // the primary path sends the brief to that contractor and nobody else. The
   // open "compare contractors" path stays one click away.
   const invite = useMemo(() => getActiveInvite(), []);
+  const cobrand = useMemo(() => inviteCobrand(invite), [invite]);
   const compareDestination = brUser
     ? "/contractors"
     : "/login?next=%2Fcontractors&intent=match";
@@ -485,14 +487,14 @@ const BriefResult = () => {
         <div className="container flex h-16 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(brUser ? "/account" : "/")}
+              onClick={() => navigate(cobrand ? cobrand.href : brUser ? "/account" : "/")}
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-smooth hover:border-accent/40 hover:text-foreground"
               aria-label="Back to my projects"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              {brUser ? "My projects" : "Home"}
+              {cobrand ? "Back" : brUser ? "My projects" : "Home"}
             </button>
-            <span className="hidden sm:inline-flex"><Logo /></span>
+            {cobrand ? <CobrandLogo brand={cobrand} className="max-w-[55vw] sm:max-w-none" /> : <span className="hidden sm:inline-flex"><Logo /></span>}
           </div>
           <div className="flex items-center gap-2">
             {brUser && (

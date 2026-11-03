@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Send } from "lucide-react";
-import Logo from "@/components/Logo";
+import CobrandLogo, { type Cobrand } from "@/components/CobrandLogo";
 import ProofPanel from "@/components/contractors/ProofPanel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,10 +37,10 @@ import {
 } from "@/lib/invites";
 import { useIntake } from "@/lib/intake";
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
   <div className="min-h-screen bg-gradient-warm">
     <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-      <Logo />
+      <CobrandLogo brand={brand} />
     </header>
     <main className="mx-auto max-w-3xl px-6 pb-24 pt-4">{children}</main>
   </div>
@@ -98,11 +98,12 @@ const InviteSend = () => {
   }
 
   const name = contractorDisplayName(invite.contractor);
+  const brand: Cobrand = { name, logoUrl: invite.contractor.logoUrl ?? null, href: invitePath(token) };
 
   // ───── Sent ─────
   if (sent) {
     return (
-      <Shell>
+      <Shell brand={brand}>
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-sage/15 text-sage">
@@ -153,7 +154,7 @@ const InviteSend = () => {
           ? INVITE_ERROR_COPY.invite_expired
           : INVITE_ERROR_COPY.invite_revoked;
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">This link can't be used</h1>
         <p className="mt-3 max-w-md text-muted-foreground">{msg}</p>
         <Button asChild className="mt-6 rounded-full">
@@ -166,7 +167,7 @@ const InviteSend = () => {
   // ───── No brief yet ─────
   if (!data.room) {
     return (
-      <Shell>
+      <Shell brand={brand}>
         <h1 className="font-display text-3xl font-light">Let's build your brief first</h1>
         <p className="mt-3 max-w-md text-muted-foreground">{name} will see it as soon as you send it. It takes about five minutes.</p>
         <Button asChild className="mt-6 rounded-full">
@@ -238,7 +239,7 @@ const InviteSend = () => {
   };
 
   return (
-    <Shell>
+    <Shell brand={brand}>
       <button
         onClick={() => navigate("/brief/result")}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground"
