@@ -29,6 +29,8 @@ type Props = {
   hideScope?: boolean;
   rooms?: Room[];
   goals?: ProjectGoal[];
+  /** Shown right under the scope choices. */
+  scopeNote?: React.ReactNode;
 };
 
 // Parse loose budget input like "120k", "$80,000", "200" → number in $K.
@@ -56,6 +58,7 @@ const ScopeBudgetStep = ({
   hideScope,
   rooms,
   goals,
+  scopeNote,
 }: Props) => {
   const scopeSet = useMemo(() => scopeSetFor(rooms, goals), [rooms, goals]);
   const active = scopeSet.options.find((o) => o.value === scope);
@@ -167,6 +170,7 @@ const ScopeBudgetStep = ({
               );
             })}
           </div>
+          {scopeNote && <div className="mt-3">{scopeNote}</div>}
         </section>
         )}
 
