@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 import type { AnalysisSection } from "@/lib/brief";
 import { extractVideoFrames } from "@/lib/videoFrames";
+import { cleanFindings, friendlyAnalysisError, type Finding } from "@/lib/spaceFindings";
 
 const SESSION_KEY = "haleo:session:v1";
 const UPLOADED_KEY = "haleo:uploaded:v1"; // map<assetId, publicUrl>
@@ -25,6 +26,10 @@ export type SpaceAnalysisStatus = "idle" | "uploading" | "analyzing" | "ready" |
 export type SpaceAnalysis = {
   summary: string;
   sections: AnalysisSection[];
+  /** What looks right and what needs a closer look, each tied to a photo. */
+  findings?: Finding[];
+  /** Plain notes for the homeowner, e.g. a photo that couldn't be read. */
+  notes?: string[];
 };
 
 export const getSessionId = (): string => {
@@ -76,7 +81,7 @@ export const uploadMediaIfNeeded = async (
   if (!blob) return null;
 
   // Sanitize filename — storage doesn't love spaces.
-  const safeName = asset.name.replace(/[^\w.\-]+/g, "_");
+  const safeName = asset.name.replace(/[^\w.-]+/g, "_");
   const path = `${sessionId}/${asset.id}-${safeName}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
@@ -175,16 +180,29 @@ export const runSpaceAnalysis = async (
   const { data, error } = await supabase.functions.invoke("analyze-space", {
     body: { sessionId, intake, mediaUrls },
   });
-  if (error) throw error;
-  if (!data?.success) throw new Error(data?.error || "analyze-space failed");
-  return data.result as SpaceAnalysis;
+  if (error) {
+    // An older deploy answers with a non-2xx status; its body still says why.
+    let serverMsg: string | null = null;
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") serverMsg = (await ctx.json())?.error ?? null;
+    } catch {
+      /* body wasn't JSON */
+    }
+    console.error("analyze-space failed", error, serverMsg);
+    throw new Error(friendlyAnalysisError(serverMsg ?? error.message));
+  }
+  if (!data?.success) throw new Error(friendlyAnalysisError(data?.error));
+  const result = data.result as SpaceAnalysis;
+  return { ...result, findings: cleanFindings(result.findings) };
 };
 
 // ───── Hook ─────
 // Triggers an analysis whenever the intake "media set" changes. Caches the
 // result in localStorage so navigating away and back doesn't re-spend tokens.
 
-const RESULT_CACHE_KEY = "haleo:analysis:v2";
+// v3: results now carry findings. Older cached reads are re-run once.
+const RESULT_CACHE_KEY = "haleo:analysis:v3";
 const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo, a short video, or a plan PDF to generate a grounded read.";
 const readCachedResult = (key: string): SpaceAnalysis | null => {
   try {
@@ -230,6 +248,7 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
   const [analysis, setAnalysis] = useState<SpaceAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const cacheKey = buildCacheKey(intake);
@@ -277,7 +296,7 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
           }
         }
         if (uploaded.length === 0) {
-          throw new Error("Could not upload any media — try re-adding the files.");
+          throw new Error("Your photos didn't upload. Check your connection and try again, or re-add them.");
         }
         setStatus("analyzing");
         const result = await runSpaceAnalysis(sessionId, intake, uploaded);
@@ -285,8 +304,7 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
         setAnalysis(result);
         setStatus("ready");
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Analysis failed";
-        setError(msg);
+        setError(friendlyAnalysisError(err instanceof Error ? err.message : null));
         setStatus("error");
       } finally {
         inFlight.current = null;
@@ -295,7 +313,12 @@ export const useSpaceAnalysis = (intake: IntakeData) => {
     run();
     // Re-run when the cache key changes (media set, room, scope, pain points).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildCacheKey(intake)]);
+  }, [buildCacheKey(intake), attempt]);
 
-  return { status, analysis, error };
+  const retry = () => {
+    if (inFlight.current) return;
+    setAttempt((n) => n + 1);
+  };
+
+  return { status, analysis, error, retry };
 };

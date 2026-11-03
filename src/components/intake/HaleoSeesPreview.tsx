@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
+import { ReadError, ReadNotes, SpaceFindings } from "@/components/intake/SpaceFindings";
 import type { IntakeData } from "@/lib/intake";
 
 const BASIS_META = {
@@ -41,7 +42,7 @@ const HaleoSeesPreview = ({
   intake: IntakeData;
   onApprove?: (snapshot: NonNullable<IntakeData["approvedAnalysis"]>) => void;
 }) => {
-  const { status, analysis, error } = useSpaceAnalysis(intake);
+  const { status, analysis, error, retry } = useSpaceAnalysis(intake);
   const [expanded, setExpanded] = useState(false);
   // Seed confirmation from persisted approval — so revisiting Step 2 reflects the saved state
   // and we don't ask the user the same question twice.
@@ -116,11 +117,7 @@ const HaleoSeesPreview = ({
           </div>
         )}
 
-        {status === "error" && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-            Couldn't read the space — {error ?? "try re-adding the photos."}
-          </div>
-        )}
+        {status === "error" && <ReadError message={error} onRetry={retry} />}
 
         {status === "ready" && analysis && (
           <>
@@ -128,6 +125,8 @@ const HaleoSeesPreview = ({
             <p className="font-display text-lg font-light leading-snug text-foreground/90 md:text-xl">
               {analysis.summary}
             </p>
+            <ReadNotes notes={analysis.notes} />
+            <SpaceFindings findings={analysis.findings ?? []} />
 
             {/* Bullet read */}
             {visible.length > 0 && (
@@ -190,6 +189,7 @@ const HaleoSeesPreview = ({
                             onApprove?.({
                               summary: analysis.summary,
                               sections: analysis.sections,
+                              findings: analysis.findings,
                               approvedAt: new Date().toISOString(),
                               mediaIds: currentKey ? currentKey.split(",") : [],
                             });

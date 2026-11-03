@@ -96,6 +96,12 @@ export type AnalyticsEvent =
   | "visibility_scan_blocked"
   | "invite_brief_started"
   | "invite_brief_sent"
+  // Haleo's read of the homeowner's photos
+  | "space_read_completed"
+  | "space_read_failed"
+  | "space_read_retried"
+  | "space_finding_photo_opened"
+  | "design_ideas_interest"
   // ADU feasibility
   | "adu_started"
   | "adu_address_submitted"
