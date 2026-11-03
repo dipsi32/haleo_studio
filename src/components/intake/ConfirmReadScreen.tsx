@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
+import { track } from "@/lib/analytics";
+import { DesignIdeasTeaser, ReadError, ReadNotes, SpaceFindings } from "@/components/intake/SpaceFindings";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 
 const BASIS_META = {
@@ -213,9 +215,24 @@ const ConfirmReadScreen = ({
   onBack: () => void;
   stepDots: React.ReactNode;
 }) => {
-  const { status, analysis, error } = useSpaceAnalysis(intake);
+  const { status, analysis, error, retry } = useSpaceAnalysis(intake);
   const [expanded, setExpanded] = useState(false);
   const [progress, setProgress] = useState(8);
+  const findings = analysis?.findings ?? [];
+  const hasFindings = findings.length > 0;
+
+  useEffect(() => {
+    if (status === "ready" && analysis) {
+      track("space_read_completed", {
+        findings: analysis.findings?.length ?? 0,
+        attention: analysis.findings?.filter((f) => f.kind === "attention").length ?? 0,
+        skipped_note: !!analysis.notes?.length,
+      });
+    }
+    if (status === "error") track("space_read_failed", { message: error });
+    // Once per outcome, not per render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   // Smoothly ramp progress while loading — eases toward 95% so it never
   // claims to be done before the analysis actually returns.
@@ -271,7 +288,8 @@ const ConfirmReadScreen = ({
     return flat.sort((a, b) => order[a.basis] - order[b.basis]);
   }, [analysis]);
 
-  const visible = expanded ? items : items.slice(0, 6);
+  // With findings up top, the detailed read is the "more" layer.
+  const visible = expanded ? items : items.slice(0, hasFindings ? 0 : 6);
   const hiddenCount = Math.max(0, items.length - visible.length);
 
   const handleLooksRight = () => {
@@ -281,6 +299,7 @@ const ConfirmReadScreen = ({
       onApprove({
         summary: analysis.summary,
         sections: analysis.sections,
+        findings: analysis.findings,
         approvedAt: new Date().toISOString(),
         mediaIds: currentKey ? currentKey.split(",") : [],
       });
@@ -322,7 +341,9 @@ const ConfirmReadScreen = ({
             <p className="mt-0.5 text-xs text-muted-foreground">
               {status === "ready"
                 ? "Confirm or flag anything that's off."
-                : hasPlans
+                : status === "error"
+                  ? "This read didn't finish."
+                  : hasPlans
                   ? "Reading the drawings you uploaded…"
                   : "Reading the photos you shared…"}
             </p>
@@ -343,17 +364,16 @@ const ConfirmReadScreen = ({
             <SkeletonRead progress={progress} hasPlans={hasPlans} />
           )}
 
-          {status === "error" && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              Couldn't read the space — {error ?? "try going back and re-adding the photos."}
-            </div>
-          )}
+          {status === "error" && <ReadError message={error} onRetry={retry} />}
 
           {status === "ready" && analysis && (
             <>
               <p className="font-display text-lg font-light leading-snug text-foreground/90 md:text-xl">
                 {analysis.summary}
               </p>
+
+              <ReadNotes notes={analysis.notes} />
+              <SpaceFindings findings={findings} />
 
               {visible.length > 0 && (
                 <ul className="mt-5 grid gap-2 md:grid-cols-2">
@@ -390,9 +410,13 @@ const ConfirmReadScreen = ({
                   />
                   {expanded
                     ? "Show less"
-                    : `See ${hiddenCount} more detail${hiddenCount === 1 ? "" : "s"}`}
+                    : hasFindings
+                      ? `See the full read (${hiddenCount} detail${hiddenCount === 1 ? "" : "s"} for your contractor)`
+                      : `See ${hiddenCount} more detail${hiddenCount === 1 ? "" : "s"}`}
                 </button>
               )}
+
+              {!hasPlans && <DesignIdeasTeaser room={intake.room} />}
             </>
           )}
         </div>

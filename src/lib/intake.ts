@@ -101,6 +101,8 @@ export type IntakeData = {
   approvedAnalysis?: {
     summary: string;
     sections: import("@/lib/brief").AnalysisSection[];
+    // What looks right and what needs a closer look, each tied to a photo.
+    findings?: import("@/lib/spaceFindings").Finding[];
     approvedAt: string; // ISO timestamp
     mediaIds: string[]; // ids covered by this approval — invalidates if media changes
   };
@@ -241,29 +243,52 @@ const maybeConvertHeic = async (file: File): Promise<File> => {
   });
 };
 
-const maybeCompressImage = async (file: File): Promise<File> => {
-  if (!file.type.startsWith("image/") || file.size <= 4 * 1024 * 1024) return file;
+// Every photo is resized before upload, not just the huge ones. Phone photos
+// are 3–8 MB; the AI read rejects any image over ~3.7 MB raw, and smaller
+// files upload faster on a phone. 2000px on the long edge keeps every detail
+// a contractor would look for (outlet covers, grout lines, water stains).
+const IMAGE_LIMITS = {
+  photo: { maxDimension: 2000, maxBytes: 1.5 * 1024 * 1024 },
+  inspiration: { maxDimension: 1600, maxBytes: 1 * 1024 * 1024 },
+  // Floor plans carry small text; give them more pixels.
+  floorplan: { maxDimension: 2600, maxBytes: 2.5 * 1024 * 1024 },
+} as const;
+
+const maybeCompressImage = async (file: File, kind: keyof typeof IMAGE_LIMITS): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") return file;
+  const { maxDimension, maxBytes } = IMAGE_LIMITS[kind];
   const src = URL.createObjectURL(file);
   try {
-    const img = await loadImage(src);
-    const maxDimension = 2200;
+    let img: HTMLImageElement;
+    try {
+      img = await loadImage(src);
+    } catch {
+      return file; // The browser can't decode it; the server will name it instead.
+    }
     const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+    const isJpegOrPng = file.type === "image/jpeg" || file.type === "image/png";
+    if (scale === 1 && file.size <= maxBytes && isJpegOrPng) return file;
+
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(img.width * scale));
     canvas.height = Math.max(1, Math.round(img.height * scale));
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
+    // White under transparent PNGs, so they don't turn black as JPEG.
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     let quality = 0.86;
     let output: Blob | null = null;
     while (quality >= 0.5) {
       output = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-      if (output && output.size <= 4 * 1024 * 1024) break;
+      if (output && output.size <= maxBytes) break;
       quality -= 0.08;
     }
 
-    if (!output) return file;
+    if (!output || (output.size >= file.size && scale === 1 && isJpegOrPng)) return file;
     return new File([output], renameWithExt(file.name, ".jpg"), {
       type: "image/jpeg",
       lastModified: file.lastModified,
@@ -276,7 +301,7 @@ const maybeCompressImage = async (file: File): Promise<File> => {
 const normalizeFile = async (file: File, kind: MediaAsset["kind"]) => {
   if (kind === "photo" || kind === "floorplan" || kind === "inspiration") {
     const converted = await maybeConvertHeic(file);
-    return maybeCompressImage(converted);
+    return maybeCompressImage(converted, kind);
   }
   return file;
 };

@@ -407,7 +407,7 @@ const BriefResult = () => {
 
   const analysisStatus = useApproved ? ("ready" as const) : liveStatus;
   const analysis = useApproved
-    ? { summary: data.approvedAnalysis!.summary, sections: data.approvedAnalysis!.sections }
+    ? { summary: data.approvedAnalysis!.summary, sections: data.approvedAnalysis!.sections, findings: data.approvedAnalysis!.findings }
     : liveAnalysis;
 
   // Prefer AI-grounded sections when ready; fall back to heuristic in the meantime.
@@ -805,8 +805,8 @@ const BriefResult = () => {
                   )}
 
                   {analysisStatus === "error" && (
-                    <p className="text-xs text-destructive">
-                      Couldn't read your uploads{analysisError ? ` — ${analysisError}` : ""}.
+                    <p className="text-xs text-muted-foreground">
+                      {analysisError ?? "Haleo couldn't read your photos this time."}
                     </p>
                   )}
 

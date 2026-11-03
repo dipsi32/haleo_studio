@@ -9,6 +9,7 @@
 // Input: { sessionId, intake, mediaUrls: [{ kind, url, mime }] }
 // Output: { sections: [{ key, title, description, items: [{ text, basis }] }], summary, raw }
 import { aiFetch } from "../_shared/ai.ts";
+import { checkImage, MAX_TOTAL_BASE64, skippedNote } from "../_shared/images.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -20,7 +21,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MODEL = "fast";
+// Reading photos accurately is the moment homeowners judge Haleo by: use the stronger model.
+const MODEL = "smart";
 const MAX_PHOTOS = 6;
 const MAX_FLOORPLANS = 2;
 const MAX_VIDEO_FRAMES = 6;
@@ -37,9 +39,23 @@ interface AnalysisSection {
   description: string;
   items: AnalysisItem[];
 }
+interface Finding {
+  title: string;
+  detail: string;
+  why: string;
+  next_step: string;
+  kind: "working" | "attention" | "check";
+  audience: "homeowner" | "contractor" | "both";
+  basis: Basis;
+  /** The image this came from, as a public URL the page can show. */
+  photo_url: string | null;
+}
 interface AnalysisResult {
   summary: string;
   sections: AnalysisSection[];
+  findings?: Finding[];
+  /** Plain notes for the homeowner, e.g. a photo that couldn't be read. */
+  notes?: string[];
 }
 
 const SYSTEM_PROMPT = `You are a senior general-contractor's estimator reviewing a homeowner's project brief (interior remodel OR addition / ADU / JADU).
@@ -82,6 +98,28 @@ STYLE RULES:
 - NEVER mention budget, dollars, price ranges, or cost figures.
 - The "summary" is one tight paragraph (≤ 80 words) — what a GC would tell their PM after glancing at the photos / plans. For an ADU/JADU plan set, lead with the project type, footprint if visible, and permit posture.
 
+WHAT AN EXPERIENCED CONTRACTOR SCANS FOR IN EVERY PHOTO (look for each; report only what you can actually see):
+- Water: stains or rings on ceilings and walls, bubbling paint, warped or swollen cabinet bases and flooring, rust at fixtures, failed caulk or grout at tubs, showers and sinks.
+- Structure: cracks (note whether hairline or wider, and their direction), sagging ceilings, doors or windows out of square, sloping floors.
+- Electrical: outlets near sinks or water and whether they look like GFCI (test buttons), two-prong outlets, few outlets along counters, extension cords or power strips doing permanent work, single ceiling fixture lighting a whole room.
+- Air: bathroom exhaust fan present or not, range hood and whether it seems to vent outside, window ventilation.
+- Plumbing and gas: visible shutoff valves, exposed or corroded pipes, gas range (knobs, pilot, flex line) versus electric, water heater type and venting if visible.
+- Layout and light: walkways and clearances that look tight, where natural light comes from, ceiling height cues (soffits, low beams), storage that's missing or wasted.
+- Finishes: what the surfaces are (tile, laminate, hardwood, LVP, stone), and visible condition (chips, wear, lifting, mismatched transitions).
+- Signs of past work: patched drywall, mismatched materials, DIY-looking wiring or plumbing. Word these as questions ("worth asking whether this was permitted"), never accusations.
+Never state a hidden condition as fact ("there is mold", "the wiring is unsafe"). Say what is visible and what it could mean: "dark staining under the sink, which can mean an old or active leak — worth checking before new cabinets go in".
+
+FINDINGS — the homeowner-facing layer (also used by the contractor):
+Return 4 to 10 "findings", the most useful things from the photos, written for a homeowner who is not in the trades:
+- "title": short and plain, under 10 words ("Staining on the ceiling by the window").
+- "detail": what you see, specifically, and where ("Brown ring about a foot wide, top left of photo 2").
+- "why": why it matters for this project, in one sentence a homeowner understands.
+- "next_step": one concrete action ("Ask your contractor to check for an active leak before you choose ceiling finishes").
+- "kind": "working" for something good to keep or build on (great natural light, solid hardwood worth saving), "attention" for something likely to need work or change the bid, "check" for an unknown that someone should look at in person.
+- "audience": "homeowner", "contractor" or "both".
+- "basis": as above. "photo": the 1-based image number it comes from, or null.
+Include at least one "working" finding when anything genuinely is (people should hear what's good about their home), but never invent praise. Order by usefulness. No prices, no brands, no code citations by number.
+
 Return ONLY the tool call. No prose.`;
 
 const ANALYZE_TOOL = {
@@ -93,6 +131,25 @@ const ANALYZE_TOOL = {
       type: "object",
       properties: {
         summary: { type: "string", description: "One-paragraph GC summary, ≤80 words." },
+        findings: {
+          type: "array",
+          maxItems: 10,
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              detail: { type: "string" },
+              why: { type: "string" },
+              next_step: { type: "string" },
+              kind: { type: "string", enum: ["working", "attention", "check"] },
+              audience: { type: "string", enum: ["homeowner", "contractor", "both"] },
+              basis: { type: "string", enum: ["grounded", "inferred", "question"] },
+              photo: { type: ["integer", "null"] },
+            },
+            required: ["title", "detail", "why", "next_step", "kind", "audience", "basis"],
+            additionalProperties: false,
+          },
+        },
         sections: {
           type: "array",
           minItems: 5,
@@ -125,7 +182,7 @@ const ANALYZE_TOOL = {
           },
         },
       },
-      required: ["summary", "sections"],
+      required: ["summary", "sections", "findings"],
       additionalProperties: false,
     },
   },
@@ -178,22 +235,27 @@ function buildIntakeBrief(intake: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-async function fetchImageAsDataUrl(url: string, mime?: string): Promise<string | null> {
+type FetchedImage =
+  | { ok: true; dataUrl: string; base64Bytes: number }
+  | { ok: false; reason: "unreachable" | "unsupported" | "too_large" };
+
+// Fetch one image and check it the way Claude will: the real type from its
+// bytes (not the label it was uploaded with) and its encoded size. A bad image
+// is skipped with a reason, so it can't sink the whole read.
+async function fetchImage(url: string): Promise<FetchedImage> {
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) return { ok: false, reason: "unreachable" };
     const buf = new Uint8Array(await res.arrayBuffer());
-    // Cap size to keep API payload sane (~5 MB per image)
-    if (buf.byteLength > 5 * 1024 * 1024) {
-      console.warn(`Skipping oversize image (${buf.byteLength} bytes): ${url}`);
-      return null;
+    const check = checkImage(buf);
+    if (!check.ok) {
+      console.warn(`Skipping image (${check.reason}, ${buf.byteLength} bytes): ${url}`);
+      return { ok: false, reason: check.reason === "empty" ? "unreachable" : check.reason };
     }
-    const base64 = encodeBase64(buf);
-    const finalMime = mime || res.headers.get("content-type") || "image/jpeg";
-    return `data:${finalMime};base64,${base64}`;
+    return { ok: true, dataUrl: `data:${check.type};base64,${encodeBase64(buf)}`, base64Bytes: check.base64Bytes };
   } catch (err) {
-    console.error(`fetchImageAsDataUrl failed for ${url}:`, err);
-    return null;
+    console.error(`fetchImage failed for ${url}:`, err);
+    return { ok: false, reason: "unreachable" };
   }
 }
 
@@ -277,6 +339,32 @@ function fallbackSections(
   };
 }
 
+const FINDING_KINDS = ["working", "attention", "check"];
+const AUDIENCES = ["homeowner", "contractor", "both"];
+
+function normalizeFindings(raw: unknown, photoUrls: string[]): Finding[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as Record<string, unknown>[])
+    .map((f) => {
+      const title = asString(f?.title);
+      const detail = asString(f?.detail);
+      if (!title || !detail) return null;
+      const n = typeof f.photo === "number" && Number.isInteger(f.photo) ? f.photo : null;
+      return {
+        title,
+        detail,
+        why: asString(f.why),
+        next_step: asString(f.next_step),
+        kind: (FINDING_KINDS.includes(asString(f.kind)) ? asString(f.kind) : "check") as Finding["kind"],
+        audience: (AUDIENCES.includes(asString(f.audience)) ? asString(f.audience) : "both") as Finding["audience"],
+        basis: (["grounded", "inferred", "question"].includes(asString(f.basis)) ? asString(f.basis) : "inferred") as Basis,
+        photo_url: n && n >= 1 && n <= photoUrls.length ? photoUrls[n - 1] : null,
+      } as Finding;
+    })
+    .filter(Boolean)
+    .slice(0, 10) as Finding[];
+}
+
 function normalize(raw: unknown, intake: Record<string, unknown>): AnalysisResult {
   const src = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const sections = Array.isArray(src.sections) ? src.sections : [];
@@ -321,8 +409,9 @@ serve(async (req) => {
 
   if (!ANTHROPIC_API_KEY) {
     return new Response(
-      JSON.stringify({ success: false, error: "ANTHROPIC_API_KEY not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      // Logged for us; the homeowner gets a plain sentence and a retry.
+      JSON.stringify({ success: false, error: "Haleo's photo reader is offline for a moment. Try again shortly.", retryable: true, detail: "ANTHROPIC_API_KEY not configured" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
@@ -375,10 +464,28 @@ serve(async (req) => {
       ...videoFrames,
     ];
     const dataUrls: string[] = [];
-    for (const img of imageInputs) {
-      const url = await fetchImageAsDataUrl(img.url, img.mime);
-      if (url) dataUrls.push(url);
+    // The public URL of each image we actually send, in order, so a finding's
+    // "photo 3" can show the homeowner that exact photo.
+    const sentUrls: string[] = [];
+    const sentKinds: string[] = [];
+    const skipped = { too_large: 0, unsupported: 0, unreachable: 0, over_budget: 0 };
+    let total = 0;
+    for (const img of imageInputs as Array<{ url: string; kind?: string }>) {
+      const got = await fetchImage(img.url);
+      if (!got.ok) {
+        skipped[got.reason]++;
+        continue;
+      }
+      if (total + got.base64Bytes > MAX_TOTAL_BASE64) {
+        skipped.over_budget++;
+        continue;
+      }
+      total += got.base64Bytes;
+      dataUrls.push(got.dataUrl);
+      sentUrls.push(img.url);
+      sentKinds.push(img.kind === "video_frame" ? "video still" : img.kind === "floorplan" ? "plan" : "photo");
     }
+    const note = skippedNote(skipped);
 
     // Pull the textual layer out of any PDF plans so Haleo can actually
     // read sheet titles, schedules, dimensions, and notes.
@@ -386,6 +493,15 @@ serve(async (req) => {
     for (const p of pdfPlans) {
       const extracted = await extractPlanText(p.url, (p as { name?: string }).name || "Plan.pdf");
       if (extracted && extracted.text.length > 20) planTexts.push(extracted);
+    }
+
+    if (dataUrls.length === 0 && imageInputs.length > 0 && planTexts.length === 0) {
+      // Everything they sent failed the checks: say so plainly, don't pretend.
+      const msg = note ?? "We couldn't read those photos. Re-add them and Haleo will resize them automatically.";
+      await supabase.from("space_analyses").update({ status: "error", error: msg }).eq("id", analysisId);
+      return new Response(JSON.stringify({ success: false, error: msg, retryable: false, analysisId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (dataUrls.length === 0 && videos.length === 0 && planTexts.length === 0) {
@@ -413,7 +529,10 @@ serve(async (req) => {
       userText += `\n=== END PLAN SHEET TEXT ===\n\nIMPORTANT: The text above is extracted directly from the homeowner's plan PDFs. Quote sheet numbers, dimensions, room labels, and schedule entries you can literally read. Lead the "summary" with what kind of plan set this is (architectural, site, structural) and the headline footprint / room program if visible. Use the "structural" and "code" sections to specifically narrate what the plans show.`;
     }
 
-    userText += `\n\nThe images below appear in this order: photos first, then image-format plans, then video frames.\n\nProduce the structured contractor-readable space analysis now.`;
+    if (dataUrls.length > 0) {
+      userText += `\n\nIMAGES ATTACHED, IN ORDER (use these numbers for "photo"):\n${sentKinds.map((k, i) => `${i + 1}. ${k}`).join("\n")}`;
+    }
+    userText += `\n\nRead every image closely before answering. Produce the structured analysis now: the 5 contractor sections and the homeowner findings.`;
 
     const userContent: Array<Record<string, unknown>> = [{ type: "text", text: userText }];
     for (const url of dataUrls) {
@@ -421,9 +540,6 @@ serve(async (req) => {
     }
 
     // 3. Call Claude
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55_000);
-
     const aiRes = await aiFetch({
       method: "POST",
       headers: {
@@ -432,8 +548,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.3,
-        max_tokens: 3500,
+        max_tokens: 6000,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
@@ -441,26 +556,24 @@ serve(async (req) => {
         tools: [ANALYZE_TOOL],
         tool_choice: { type: "function", function: { name: "emit_space_analysis" } },
       }),
-      signal: controller.signal,
     });
-    clearTimeout(timeoutId);
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
       console.error("AI gateway error", aiRes.status, errText.slice(0, 400));
+      // The homeowner sees a plain sentence and a Try again button; the
+      // technical detail stays in the logs and the analyses table.
       const userMsg =
-        aiRes.status === 429
-          ? "Too many requests right now — try again in a moment."
-          : aiRes.status === 402
-            ? "AI credits exhausted on this workspace. Add credits in Settings → Workspace → Usage."
-            : `AI gateway error ${aiRes.status}`;
+        aiRes.status === 429 || aiRes.status === 529 || aiRes.status >= 500
+          ? "Haleo is busy right now. Try again in a moment."
+          : "Haleo couldn't read these photos this time. Try again, or re-add the photos.";
       await supabase
         .from("space_analyses")
-        .update({ status: "error", error: userMsg })
+        .update({ status: "error", error: `AI ${aiRes.status}: ${errText.slice(0, 300)}` })
         .eq("id", analysisId);
       return new Response(
-        JSON.stringify({ success: false, error: userMsg, analysisId }),
-        { status: aiRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ success: false, error: userMsg, retryable: true, analysisId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -487,6 +600,9 @@ serve(async (req) => {
     }
 
     const result = normalize(parsedRaw, intake);
+    const findings = normalizeFindings((parsedRaw as Record<string, unknown> | null)?.findings, sentUrls);
+    if (findings.length) result.findings = findings;
+    if (note) result.notes = [note];
 
     await supabase
       .from("space_analyses")
@@ -498,23 +614,18 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    const message =
-      err instanceof Error
-        ? err.name === "AbortError"
-          ? "Analysis timed out — try with fewer or smaller photos."
-          : err.message
-        : "Unknown error";
+    const detail = err instanceof Error ? err.message : "Unknown error";
     console.error("analyze-space error:", err);
     if (analysisId) {
       await supabase
         .from("space_analyses")
-        .update({ status: "error", error: message })
+        .update({ status: "error", error: detail })
         .eq("id", analysisId)
         .then(() => undefined, () => undefined);
     }
     return new Response(
-      JSON.stringify({ success: false, error: message, analysisId }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ success: false, error: "Haleo couldn't finish reading your photos. Try again in a moment.", retryable: true, analysisId }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
