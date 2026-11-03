@@ -38,6 +38,7 @@ import ProStudio from "./pages/pro/ProStudio.tsx";
 import ProLinks from "./pages/pro/ProLinks.tsx";
 import ProVisibility from "./pages/pro/ProVisibility";
 import Invite from "./pages/Invite.tsx";
+import Demo from "./pages/Demo.tsx";
 import InviteSend from "./pages/InviteSend.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
 import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
@@ -139,6 +140,9 @@ const App = () => (
             {/* Contractor-owned brief links: the homeowner already chose this
                 contractor, so these routes honor that choice. */}
             <Route path="/i/:token" element={<Invite />} />
+            {/* Contractor demo: their real record, a sample client. Nothing saved. */}
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/demo/:slug" element={<Demo />} />
             <Route
               path="/i/:token/send"
               element={

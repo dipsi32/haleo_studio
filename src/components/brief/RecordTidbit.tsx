@@ -6,9 +6,9 @@ import { Check } from "lucide-react";
 import type { Highlight } from "@/lib/recordHighlights";
 import { track } from "@/lib/analytics";
 
-export default function RecordTidbit({ h, className = "" }: { h?: Highlight; className?: string }) {
+export default function RecordTidbit({ h, className = "", demo = false }: { h?: Highlight; className?: string; demo?: boolean }) {
   useEffect(() => {
-    if (h && h.id !== "track") track("record_highlight_shown", { kind: h.id });
+    if (h && h.id !== "track" && !demo) track("record_highlight_shown", { kind: h.id });
   }, [h?.id, h?.text]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

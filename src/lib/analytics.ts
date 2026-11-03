@@ -96,6 +96,12 @@ export type AnalyticsEvent =
   | "visibility_scan_blocked"
   | "invite_brief_started"
   | "invite_brief_sent"
+  // Contractor demo (/demo/:slug)
+  | "demo_opened"
+  | "demo_record_loaded"
+  | "demo_step_viewed"
+  | "demo_answer_tapped"
+  | "demo_cta_clicked"
   // Haleo's read of the homeowner's photos
   | "space_read_completed"
   | "space_read_failed"

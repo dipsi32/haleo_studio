@@ -34,7 +34,7 @@ const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
 };
 
 /** Find this business in San Jose permit records, pulling fresh records for the name first. */
-const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
+export const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
   const term = searchTerm(name);
   if (!term) return null;
   try {
