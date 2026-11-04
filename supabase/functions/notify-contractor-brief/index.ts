@@ -62,10 +62,12 @@ Deno.serve(async (req) => {
     const snap = (batch?.brief_snapshot ?? {}) as Record<string, unknown>;
     const projectType = (snap.projectType as string) ?? (snap.project_type as string) ?? (snap.scope as string) ?? null;
     const neighborhood = batch?.neighborhood ?? null;
-    const homeowner = batch?.homeowner_name ?? "A homeowner";
+    const named = (batch?.homeowner_name ?? "").trim();
+    const homeowner = named || "A homeowner";
 
     const headline = buildHeadline(projectType, neighborhood);
-    const title = `New brief: ${headline}`;
+    // Lead with who it's from when we know: "Priya sent you a brief".
+    const title = named ? `${named} sent you a brief` : `New brief: ${headline}`;
     const body = `${homeowner} sent you a project brief. Open it in your inbox.`;
 
     const results = { in_app: false, push: { sent: 0, failed: 0 }, sms: { sent: 0, stubbed: true } };

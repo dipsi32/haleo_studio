@@ -39,7 +39,8 @@ import {
   setActiveInvite,
   type InvitePublic,
 } from "@/lib/invites";
-import { useIntake } from "@/lib/intake";
+import { cleanName, useIntake } from "@/lib/intake";
+import { Input } from "@/components/ui/input";
 import { saveDemoBrief } from "@/lib/demo";
 
 const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
@@ -54,7 +55,7 @@ const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand
 const InviteSend = () => {
   const { token = "" } = useParams<{ token: string }>();
   const { user } = useAuth();
-  const { data } = useIntake();
+  const { data, update } = useIntake();
   const navigate = useNavigate();
 
   const [invite, setInvite] = useState<InvitePublic | null | undefined>(undefined);
@@ -84,8 +85,10 @@ const InviteSend = () => {
     };
   }, [token, demo]);
 
+  // The name they gave the contractor wins; their account name is the fallback.
   const homeownerName =
-    (user?.user_metadata?.full_name as string | undefined) ?? (user?.email ? user.email.split("@")[0] : undefined);
+    data.homeownerName ||
+    ((user?.user_metadata?.full_name as string | undefined) ?? (user?.email ? user.email.split("@")[0] : undefined));
   const city = data.address?.city && !data.address.skipped ? data.address.city : null;
   const keywords = useMemo(() => projectKeywords(data), [data]);
   const preview = useMemo(() => buildBriefSnapshot(data, homeownerName), [data, homeownerName]);
@@ -289,6 +292,22 @@ const InviteSend = () => {
             Add it
           </Link>
         </p>
+      )}
+
+      {!data.homeownerName && (
+        <div className="mt-8">
+          <label htmlFor="homeowner-name" className="block text-sm font-medium">
+            What should {invite.contractor.personName || name} call you?
+          </label>
+          <Input
+            id="homeowner-name"
+            defaultValue={homeownerName ?? ""}
+            onBlur={(e) => update({ homeownerName: cleanName(e.target.value) })}
+            placeholder="Your first name"
+            autoComplete="given-name"
+            className="mt-2 h-11 max-w-xs rounded-xl bg-background"
+          />
+        </div>
       )}
 
       <VisitContextForm name={name} value={context} onChange={setContext} />

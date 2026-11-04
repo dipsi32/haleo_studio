@@ -11,13 +11,19 @@ import type { IntakeData, ProjectGoal, Room } from "@/lib/intake";
 import { matchesKeyword } from "@/lib/proof";
 import { detectProject } from "@/lib/projectDetect";
 
-export type RecordPermit = Pick<Permit, "city" | "zip" | "issued_date" | "work_type" | "description">;
+export type RecordPermit = Pick<Permit, "city" | "zip" | "issued_date" | "work_type" | "description"> & {
+  status?: string | null;
+};
 
 export type Highlight = {
   /** Which answer unlocked it, so the newest can be highlighted. */
   id: "track" | "work" | "nearby" | "structural";
   text: string;
+  /** The permits behind the fact, newest first, for "show me". */
+  permits?: RecordPermit[];
 };
+
+const newestFirst = (ps: RecordPermit[]) => [...ps].sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""));
 
 type Work = { word: string; keywords: string[] };
 
@@ -78,6 +84,7 @@ export const recordHighlights = (permits: RecordPermit[], d: IntakeData, who: st
   out.push({
     id: "track",
     text: `${who} has ${plural(permits.length, "permit")} on file${where}${dates[0] ? ` since ${new Date(dates[0]).getUTCFullYear()}` : ""}${recent ? `, and pulled one as recently as ${monthYear(latest!)}` : ""}.`,
+    permits: newestFirst(permits),
   });
 
   // Their kind of job.
@@ -89,6 +96,7 @@ export const recordHighlights = (permits: RecordPermit[], d: IntakeData, who: st
       out.push({
         id: "work",
         text: `${plural(match.length, `${work.word} permit`)}${where}${last ? `, the latest in ${monthYear(last)}` : ""}. That's the kind of work you're planning.`,
+        permits: newestFirst(match),
       });
     }
   }
@@ -96,15 +104,39 @@ export const recordHighlights = (permits: RecordPermit[], d: IntakeData, who: st
   // Their neighborhood.
   const zip = d.address && !d.address.skipped ? d.address.zip?.trim() : undefined;
   if (zip && /^\d{5}$/.test(zip)) {
-    const near = permits.filter((p) => (p.zip ?? "").startsWith(zip)).length;
-    if (near > 0) out.push({ id: "nearby", text: `${plural(near, "job")} in ${zip}, your ZIP code. They know your city's inspectors and your neighborhood's homes.` });
+    const near = permits.filter((p) => (p.zip ?? "").startsWith(zip));
+    if (near.length > 0) out.push({ id: "nearby", text: `${plural(near.length, "job")} in ${zip}, your ZIP code. They know your city's inspectors and your neighborhood's homes.`, permits: newestFirst(near) });
   }
 
   // Bigger scope: walls moving, structure, additions.
   if (d.scope === "structural" || d.scope === "reconfigure" || d.room === "addition") {
-    const n = permits.filter((p) => STRUCTURAL.some((k) => matchesKeyword(hay(p), k))).length;
-    if (n > 0) out.push({ id: "structural", text: `${plural(n, "permit")} involving structural work, like walls, foundations and additions.` });
+    const n = permits.filter((p) => STRUCTURAL.some((k) => matchesKeyword(hay(p), k)));
+    if (n.length > 0) out.push({ id: "structural", text: `${plural(n.length, "permit")} involving structural work, like walls, foundations and additions.`, permits: newestFirst(n) });
   }
 
   return out;
+};
+
+/** One permit as a homeowner reads it: what, where (ZIP only), when. Never an address or an owner. */
+export const permitLine = (p: RecordPermit): { what: string; where: string | null; when: string | null; status: string | null } => {
+  const d = (p.description ?? "").trim();
+  const job = d.includes(" · ") ? d.split(" · ")[0] : d.split("—").pop()?.trim() || p.work_type || "Permit";
+  return {
+    what: job.replace(/\//g, " and "),
+    where: p.zip ? `ZIP ${p.zip.slice(0, 5)}` : null,
+    when: p.issued_date ? monthYear(p.issued_date) : null,
+    status: p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).toLowerCase() : null,
+  };
+};
+
+/** A one-line glance at the record: how many permits, the kinds of work, since when. */
+export const recordGlance = (permits: RecordPermit[]): { count: number; kinds: string[]; since: number | null } => {
+  const kinds: string[] = [];
+  for (const p of newestFirst(permits)) {
+    const k = permitLine(p).what.trim();
+    if (!k || /sub-trades/i.test(k) || kinds.some((x) => x.toLowerCase() === k.toLowerCase())) continue;
+    kinds.push(k.charAt(0).toUpperCase() + k.slice(1).toLowerCase());
+  }
+  const years = permits.map((p) => p.issued_date).filter((d): d is string => !!d).sort();
+  return { count: permits.length, kinds: kinds.slice(0, 2), since: years[0] ? new Date(years[0]).getUTCFullYear() : null };
 };

@@ -9,7 +9,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { type Cobrand } from "@/components/CobrandLogo";
 import InviteWelcome, { Shell } from "@/components/InviteWelcome";
 import { Button } from "@/components/ui/button";
-import { useIntake } from "@/lib/intake";
+import { saveIntakeStart, useIntake } from "@/lib/intake";
 import { track } from "@/lib/analytics";
 import {
   contractorDisplayName,
@@ -106,11 +106,13 @@ const Invite = () => {
   }
 
   const c = invite.contractor;
-  const start = () => {
+  const start = (homeownerName: string | undefined) => {
+    saveIntakeStart({ homeownerName });
     track("invite_brief_started", { contractor_id: c.id, resumed: false, source: invite.source ?? "direct" });
     navigate("/brief");
   };
-  const resume = () => {
+  const resume = (homeownerName: string | undefined) => {
+    if (homeownerName) saveIntakeStart({ homeownerName });
     track("invite_brief_started", { contractor_id: c.id, resumed: true, source: invite.source ?? "direct" });
     navigate("/brief/result");
   };
@@ -121,6 +123,7 @@ const Invite = () => {
       brand={brand}
       door={invite.source && invite.source !== "direct" ? "front" : "personal"}
       hasBrief={Boolean(intake.room)}
+      defaultName={intake.homeownerName}
       onStart={start}
       onResume={resume}
     />

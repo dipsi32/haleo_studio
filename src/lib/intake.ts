@@ -96,6 +96,9 @@ export type IntakeData = {
   timeline?: Timeline;
   // homeowner annotations on the brief, keyed by section id (vision, evidence, scope, structural, finishes, constraints, opportunities, code)
   annotations?: Record<string, string>;
+  // How the homeowner would like to be addressed ("Priya"). Asked first in a
+  // contractor's link, so the contractor greets them by name.
+  homeownerName?: string;
   // Snapshot of Haleo's space read once the user has confirmed it's accurate.
   // Persisted so the brief screen doesn't re-run analysis or wait again.
   approvedAnalysis?: {
@@ -152,6 +155,36 @@ const rehydrateMedia = (media: MediaAsset[]): MediaAsset[] =>
       : undefined;
     return { ...m, uploadedUrl: m.uploadedUrl ?? uploaded, url: m.url || m.uploadedUrl || uploaded || "" };
   });
+
+/**
+ * Start (or continue) a brief from outside the brief flow, e.g. the welcome
+ * page of a contractor's link. `fresh` starts a new brief; otherwise the patch
+ * is merged into the one in progress.
+ */
+export const saveIntakeStart = (patch: Partial<IntakeData>, fresh = false): void => {
+  if (typeof window === "undefined") return;
+  try {
+    if (fresh) {
+      sessionFiles.forEach(({ url }) => URL.revokeObjectURL(url));
+      sessionFiles.clear();
+      localStorage.removeItem(LEGACY_KEY);
+      localStorage.removeItem(UPLOADED_KEY);
+      localStorage.removeItem(ANALYSIS_CACHE_KEY);
+      sessionStorage.removeItem("haleo:active_project_id");
+    }
+    const base = fresh ? empty : readStored();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable({ ...base, ...patch })));
+  } catch {
+    /* private mode: the brief still works, just without the name */
+  }
+};
+
+/** A name as someone typed it, tidied: "  priya " → "Priya". Empty → undefined. */
+export const cleanName = (raw: string | null | undefined): string | undefined => {
+  const s = (raw ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+  if (!s) return undefined;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
 const readStored = (): IntakeData => {
   if (typeof window === "undefined") return empty;

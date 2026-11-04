@@ -20,10 +20,12 @@ type Props = {
   total: number;
   onBack?: () => void;
   exitTo?: string;
+  /** Pinned under the header: the contractor's record, in a contractor's link. */
+  companion?: React.ReactNode;
   children: React.ReactNode;
 };
 
-const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => {
+const IntakeShell = ({ step, onBack, exitTo = "/account", companion, children }: Props) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   // Came through a contractor's link: their brand leads, and leaving goes back to their page.
@@ -108,6 +110,7 @@ const IntakeShell = ({ step, onBack, exitTo = "/account", children }: Props) => 
           </div>
         </div>
       </header>
+      {companion}
 
       <main className="flex flex-1 items-start justify-center px-6 py-7 md:py-10 md:items-center md:py-16">
         <motion.div

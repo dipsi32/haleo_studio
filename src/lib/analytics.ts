@@ -82,6 +82,8 @@ export type AnalyticsEvent =
   // Shortlist: names from neighbors, checked against public records
   | "home_door_clicked"
   | "record_highlight_shown"
+  | "record_companion_opened"
+  | "record_glance_opened"
   | "password_reset_requested"
   | "password_reset_opened"
   | "password_reset_completed"

@@ -13,6 +13,7 @@ import { track } from "@/lib/analytics";
 import { getActiveInvite, inviteCobrand } from "@/lib/invites";
 import CobrandLogo from "@/components/CobrandLogo";
 import { authMessage } from "@/lib/authMessages";
+import { useIntake } from "@/lib/intake";
 import CheckEmailCard from "@/components/auth/CheckEmailCard";
 import ForgotPasswordCard from "@/components/auth/ForgotPasswordCard";
 
@@ -43,7 +44,9 @@ const Login = () => {
   const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent || isInviteIntent ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  // Prefilled with what they told the contractor, so they don't type it twice.
+  const { data: intakeData } = useIntake();
+  const [name, setName] = useState(intakeData.homeownerName ?? "");
   const [busy, setBusy] = useState(false);
   // Set after sign-up when Supabase wants the email confirmed before signing in.
   const [sentTo, setSentTo] = useState<string | null>(null);

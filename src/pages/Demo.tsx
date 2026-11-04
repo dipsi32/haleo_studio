@@ -35,6 +35,7 @@ import { track } from "@/lib/analytics";
 import { brandThemeVars, frontDoorPath } from "@/lib/frontDoor";
 import { findPermitRecord } from "@/lib/useShortlistCheck";
 import { clearActiveInvite, demoToken, inviteMessage, setActiveInvite, type InviteContractor } from "@/lib/invites";
+import { saveIntakeStart } from "@/lib/intake";
 import { DEMO_BUY_BOX, LEAD_TEXT, loadDemoBrief, resolveDemo, type DemoConfig } from "@/lib/demo";
 
 type View = "doors" | "text" | "site" | "welcome" | "matt";
@@ -360,10 +361,11 @@ const Welcome = ({ demo }: { demo: DemoConfig }) => {
     );
   }
 
-  const start = () => {
+  const start = (homeownerName: string | undefined) => {
     setActiveInvite(demoToken(demo.slug), contractor);
     // A fresh brief every run, so each demo starts from the lead's first tap.
-    navigate("/brief?fresh=1");
+    saveIntakeStart({ homeownerName }, true);
+    navigate("/brief");
   };
 
   return (
@@ -434,7 +436,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   <Bell className="h-4 w-4" />
                 </span>
                 <span className="min-w-0 text-[13px] leading-snug">
-                  <span className="block font-semibold">New brief from {homeowner}</span>
+                  <span className="block font-semibold">{snap.homeowner_name ? `${snap.homeowner_name} sent you a brief` : "New brief from a new client"}</span>
                   <span className="block text-muted-foreground">
                     {project} · {snap.neighborhood}
                     {snap.budget ? ` · ${snap.budget}` : ""}

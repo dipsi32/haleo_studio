@@ -1,24 +1,11 @@
 // A contractor's California license, checked live with the state board.
 // Shown only when we have a real number; if the board doesn't answer, it
 // says so instead of implying the license is fine.
-import { useEffect, useState } from "react";
 import CslbSignals from "@/components/CslbSignals";
-import { verifyLicense } from "@/lib/useShortlistCheck";
-import type { LicenseStatus } from "@/lib/contractors";
+import { useLicense } from "@/lib/useContractorRecord";
 
 export default function LicenseLine({ licenseNumber }: { licenseNumber: string }) {
-  // undefined while checking, null when the board didn't answer.
-  const [license, setLicense] = useState<LicenseStatus | null | undefined>(undefined);
-
-  useEffect(() => {
-    let cancelled = false;
-    verifyLicense(licenseNumber)
-      .then((l) => !cancelled && setLicense(l))
-      .catch(() => !cancelled && setLicense(null));
-    return () => {
-      cancelled = true;
-    };
-  }, [licenseNumber]);
+  const license = useLicense(licenseNumber);
 
   return (
     <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">

@@ -10,7 +10,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import type { CSSProperties } from "react";
 import InviteWelcome, { Shell } from "@/components/InviteWelcome";
 import { Button } from "@/components/ui/button";
-import { useIntake } from "@/lib/intake";
+import { saveIntakeStart, useIntake } from "@/lib/intake";
 import { track } from "@/lib/analytics";
 import { toast } from "@/hooks/use-toast";
 import { brandThemeVars, frontDoorPath, parseSource } from "@/lib/frontDoor";
@@ -80,7 +80,7 @@ export default function FrontDoor() {
   // Already partway through a brief for this same contractor? Keep going.
   const sameContractor = getActiveInvite()?.contractorId === c.id;
 
-  const begin = async (resumed: boolean) => {
+  const begin = async (resumed: boolean, homeownerName: string | undefined) => {
     setBusy(true);
     const res = await openFrontDoor(slug, source);
     if (!("token" in res)) {
@@ -93,6 +93,7 @@ export default function FrontDoor() {
       return;
     }
     setActiveInvite(res.token, c);
+    if (homeownerName || !resumed) saveIntakeStart({ homeownerName });
     void markInviteOpened(res.token);
     track("front_door_started", { contractor_id: c.id, source, resumed });
     track("invite_brief_started", { contractor_id: c.id, resumed, source });
@@ -106,8 +107,9 @@ export default function FrontDoor() {
       door="front"
       hasBrief={Boolean(intake.room) && sameContractor}
       busy={busy}
-      onStart={() => void begin(false)}
-      onResume={() => void begin(true)}
+      defaultName={intake.homeownerName}
+      onStart={(n) => void begin(false, n)}
+      onResume={(n) => void begin(true, n)}
       style={style}
     />
   );
