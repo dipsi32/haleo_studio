@@ -454,7 +454,8 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     approvedAt: data.approvedAnalysis.approvedAt,
   } : undefined;
   return {
-    homeowner_name: homeownerName,
+    // The name they gave in the contractor's link wins over an account name.
+    homeowner_name: data.homeownerName || homeownerName,
     neighborhood: data.address?.city ?? 'your area',
     scope_summary: buildHomeownerLayer(data),
     vision: data.notes ?? '',

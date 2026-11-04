@@ -29,13 +29,19 @@ import {
   INVITE_ERROR_COPY,
   clearActiveInvite,
   contractorDisplayName,
+  contractorFromActive,
+  demoSlugOf,
   fetchInvite,
+  getActiveInvite,
+  isDemoToken,
   invitePath,
   sendInvitedBrief,
   setActiveInvite,
   type InvitePublic,
 } from "@/lib/invites";
-import { useIntake } from "@/lib/intake";
+import { cleanName, useIntake } from "@/lib/intake";
+import { Input } from "@/components/ui/input";
+import { saveDemoBrief } from "@/lib/demo";
 
 const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand | null }) => (
   <div className="min-h-screen bg-gradient-warm">
@@ -49,7 +55,7 @@ const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand
 const InviteSend = () => {
   const { token = "" } = useParams<{ token: string }>();
   const { user } = useAuth();
-  const { data } = useIntake();
+  const { data, update } = useIntake();
   const navigate = useNavigate();
 
   const [invite, setInvite] = useState<InvitePublic | null | undefined>(undefined);
@@ -59,7 +65,15 @@ const InviteSend = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // The contractor demo never touches the server: the "link" is the active demo.
+  const demo = isDemoToken(token);
+
   useEffect(() => {
+    if (demo) {
+      const active = getActiveInvite();
+      setInvite(active?.demo && active.token === token ? { status: "open", contractor: contractorFromActive(active) } : null);
+      return;
+    }
     let cancelled = false;
     fetchInvite(token).then((inv) => {
       if (cancelled) return;
@@ -69,10 +83,12 @@ const InviteSend = () => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, demo]);
 
+  // The name they gave the contractor wins; their account name is the fallback.
   const homeownerName =
-    (user?.user_metadata?.full_name as string | undefined) ?? (user?.email ? user.email.split("@")[0] : undefined);
+    data.homeownerName ||
+    ((user?.user_metadata?.full_name as string | undefined) ?? (user?.email ? user.email.split("@")[0] : undefined));
   const city = data.address?.city && !data.address.skipped ? data.address.city : null;
   const keywords = useMemo(() => projectKeywords(data), [data]);
   const preview = useMemo(() => buildBriefSnapshot(data, homeownerName), [data, homeownerName]);
@@ -187,7 +203,7 @@ const InviteSend = () => {
   ];
 
   const send = async () => {
-    if (!user || !consent) return;
+    if ((!user && !demo) || !consent) return;
     setSending(true);
     try {
       const [addressRisk, parcel] = await Promise.all([loadAddressRisk(data.address), loadParcelFacts(data.address)]);
@@ -199,6 +215,15 @@ const InviteSend = () => {
         ...(parcel ? { parcel } : {}),
         ...(ctx ? { context: ctx } : {}),
       } as BriefSnapshot & { projectType: string };
+
+      if (demo) {
+        // Everything above was real (their brief, the city's records for their
+        // address). Instead of sending, show the contractor what they'd receive.
+        saveDemoBrief(demoSlugOf(token), snapshot, note.trim() || null);
+        track("demo_brief_sent", { demo: demoSlugOf(token), has_parcel: !!parcel, visit_times: ctx?.visit_times?.length ?? 0 });
+        navigate(`/demo/${demoSlugOf(token)}/matt`);
+        return;
+      }
 
       const res = await sendInvitedBrief({
         token,
@@ -267,6 +292,22 @@ const InviteSend = () => {
             Add it
           </Link>
         </p>
+      )}
+
+      {!data.homeownerName && (
+        <div className="mt-8">
+          <label htmlFor="homeowner-name" className="block text-sm font-medium">
+            What should {invite.contractor.personName || name} call you?
+          </label>
+          <Input
+            id="homeowner-name"
+            defaultValue={homeownerName ?? ""}
+            onBlur={(e) => update({ homeownerName: cleanName(e.target.value) })}
+            placeholder="Your first name"
+            autoComplete="given-name"
+            className="mt-2 h-11 max-w-xs rounded-xl bg-background"
+          />
+        </div>
       )}
 
       <VisitContextForm name={name} value={context} onChange={setContext} />

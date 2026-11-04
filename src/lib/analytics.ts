@@ -82,6 +82,8 @@ export type AnalyticsEvent =
   // Shortlist: names from neighbors, checked against public records
   | "home_door_clicked"
   | "record_highlight_shown"
+  | "record_companion_opened"
+  | "record_glance_opened"
   | "password_reset_requested"
   | "password_reset_opened"
   | "password_reset_completed"
@@ -96,6 +98,18 @@ export type AnalyticsEvent =
   | "visibility_scan_blocked"
   | "invite_brief_started"
   | "invite_brief_sent"
+  // Contractor front door (/c/:slug): their website, Google and text replies
+  | "front_door_viewed"
+  | "front_door_started"
+  | "front_door_link_copied"
+  | "front_door_color_saved"
+  // Contractor demo (/demo/:slug)
+  | "demo_opened"
+  | "demo_door_chosen"
+  | "demo_link_tapped"
+  | "demo_brief_sent"
+  | "demo_matt_viewed"
+  | "demo_cta_clicked"
   // Haleo's read of the homeowner's photos
   | "space_read_completed"
   | "space_read_failed"
@@ -131,8 +145,21 @@ export type AnalyticsEvent =
   // Generic page view
   | "$pageview";
 
+// While a contractor plays their own lead in the demo, only demo events count,
+// so demo runs never inflate the real funnel (briefs started, records shown…).
+// Reads storage directly to keep this module free of app imports.
+const inDemo = (): boolean => {
+  try {
+    const raw = localStorage.getItem("haleo:active_invite");
+    return !!raw && JSON.parse(raw)?.demo === true;
+  } catch {
+    return false;
+  }
+};
+
 export function track(event: AnalyticsEvent, properties?: Record<string, unknown>) {
   if (!initialized) return;
+  if (!event.startsWith("demo_") && inDemo()) return;
   if (isDev) {
     // eslint-disable-next-line no-console
     console.info("[analytics]", event, properties ?? {});

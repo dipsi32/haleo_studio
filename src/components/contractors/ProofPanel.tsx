@@ -10,6 +10,7 @@ import CslbSignals from "@/components/CslbSignals";
 import { cslbDeepLink, type LicenseStatus } from "@/lib/contractors";
 import { toLicenseStatus } from "@/lib/useContractors";
 import { summarizeProof, type ProofPermit } from "@/lib/proof";
+import { isRealLicense } from "@/lib/shortlist";
 
 const monthYear = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
@@ -130,7 +131,10 @@ export default function ProofPanel({ contractorId, city, keywords, variant = "fu
         </div>
         <div className="min-w-0">
           <p className="truncate font-display text-lg">{loaded.name}</p>
-          <p className="text-[13px] text-muted-foreground">CSLB #{loaded.licenseNumber} · Public record</p>
+          <p className="text-[13px] text-muted-foreground">
+            {/* Records found only through permits carry a placeholder, not a license number. */}
+            {isRealLicense(loaded.licenseNumber) ? `CSLB #${loaded.licenseNumber}` : "City permit record"} · Public record
+          </p>
         </div>
       </div>
 

@@ -14,7 +14,8 @@ type Props = {
   onSkip: () => void;
   onContinue: () => void;
   /** Shown right under the ZIP field, from what's typed so far. */
-  renderZipNote?: (zip: string) => React.ReactNode;
+  /** Called as they type the ZIP, before saving. */
+  onDraftZip?: (zip: string) => void;
 };
 
 const PERKS = [
@@ -35,7 +36,7 @@ const PERKS = [
   },
 ];
 
-const AddressStep = ({ value, onSave, onSkip, onContinue, renderZipNote }: Props) => {
+const AddressStep = ({ value, onSave, onSkip, onContinue, onDraftZip }: Props) => {
   const [draft, setDraft] = useState<Address>({
     street: value?.street ?? "",
     city: value?.city ?? "",
@@ -171,10 +172,12 @@ const AddressStep = ({ value, onSave, onSkip, onContinue, renderZipNote }: Props
                     inputMode="numeric"
                     maxLength={10}
                     value={draft.zip ?? ""}
-                    onChange={(e) => setDraft({ ...draft, zip: e.target.value })}
+                    onChange={(e) => {
+                      setDraft({ ...draft, zip: e.target.value });
+                      onDraftZip?.(e.target.value);
+                    }}
                     className="rounded-xl bg-background"
                   />
-                  {renderZipNote?.((draft.zip ?? "").trim())}
                 </div>
                 <Button
                   onClick={save}

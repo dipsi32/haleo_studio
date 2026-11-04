@@ -59,7 +59,7 @@ import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard"
 import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/intake";
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
-import { getActiveInvite, inviteCobrand, inviteSendPath } from "@/lib/invites";
+import { getActiveInvite, inviteCobrand, inviteSendPath, isDemoActive } from "@/lib/invites";
 import CobrandLogo from "@/components/CobrandLogo";
 import { loadShortlist } from "@/lib/shortlist";
 import { projectLabel } from "@/lib/projectName";
@@ -362,7 +362,7 @@ const BriefResult = () => {
   // Auto-save edits made on the result page (annotations, line edits to scope, etc.)
   // so nothing is lost if the homeowner closes the tab or signs out.
   useEffect(() => {
-    if (!brUser || !data.room) return;
+    if (!brUser || !data.room || isDemoActive()) return;
     const t = setTimeout(() => {
       saveDraft(data, projectIdRef.current ?? undefined)
         .then((row) => {
@@ -466,7 +466,7 @@ const BriefResult = () => {
   // the brief now goes into every bid request they send from there.
   const shortlist = useMemo(() => loadShortlist(), []);
   const matchDestination = invite
-    ? brUser
+    ? brUser || invite.demo
       ? inviteSendPath(invite.token)
       : `/login?next=${encodeURIComponent(inviteSendPath(invite.token))}&intent=invite`
     : shortlist
@@ -930,7 +930,7 @@ const BriefResult = () => {
           </p>
         )}
 
-        {!brUser && (
+        {!brUser && !invite?.demo && (
           <p className="mt-3 text-xs text-muted-foreground">
             {invite
               ? `Your brief is saved on this device. Sending needs an account so we can keep it and let ${invite.contractorName} reply to you. It takes about 20 seconds.`

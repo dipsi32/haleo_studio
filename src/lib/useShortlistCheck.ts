@@ -22,7 +22,7 @@ import {
 const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
   Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 
-const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
+export const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
   try {
     const res = await withTimeout(supabase.functions.invoke("verify-cslb-license", { body: { license: num } }), 25_000);
     const d = res?.data;
@@ -34,7 +34,7 @@ const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
 };
 
 /** Find this business in San Jose permit records, pulling fresh records for the name first. */
-const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
+export const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
   const term = searchTerm(name);
   if (!term) return null;
   try {

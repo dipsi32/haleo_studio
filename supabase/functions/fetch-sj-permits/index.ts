@@ -8,6 +8,7 @@
 //   CONTRACTOR, FOLDERNUMBER, FOLDERDESC, FOLDERNAME, SUBTYPEDESCRIPTION,
 //   WORKDESCRIPTION, PERMITAPPROVALS, ISSUEDATE, FINALDATE, DWELLINGUNITS,
 //   PERMITVALUATION, SQUAREFOOTAGE, FOLDERRSN
+import { permitDescription } from "../_shared/permitText.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -260,7 +261,7 @@ Deno.serve(async (req) => {
           contractor_id: contractorId,
           permit_number: folderNumber,
           work_type: r.FOLDERDESC ?? null,
-          description: work || null,
+          description: permitDescription(r.FOLDERNAME, work),
           valuation: safeNum(r.PERMITVALUATION),
           address,
           city: 'San Jose',

@@ -49,13 +49,16 @@ type Props = {
   homeownerName?: string | null;
   /** Called with a ready-to-send question when the contractor taps Ask. */
   onAsk?: (question: string) => void;
+  /** In the demo: show everything, record nothing. */
+  demo?: boolean;
 };
 
-export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk }: Props) {
+export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk, demo = false }: Props) {
   const prep = useMemo(() => computeVisitPrep(snapshot, buyBox), [snapshot, buyBox]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (demo) return;
     track("visit_prep_viewed", { call: prep.call.level, surprises: prep.surprises.length, has_records: !prep.noRecords });
     // One event per brief, not per re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,7 +69,7 @@ export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk }
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      track("visit_prep_copied", { call: prep.call.level });
+      if (!demo) track("visit_prep_copied", { call: prep.call.level });
       setTimeout(() => setCopied(false), 2200);
     } catch {
       // Clipboard can be blocked; the sheet is still on screen.
@@ -122,7 +125,7 @@ export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk }
         </p>
       )}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className={`mt-5 grid gap-3 ${demo ? "" : "sm:grid-cols-3"}`}>
         <div className="rounded-xl border border-border bg-background p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             <Home className="h-3 w-3" /> Home and lot

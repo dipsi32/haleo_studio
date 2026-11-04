@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("heic2any", () => ({ default: vi.fn() }));
 
 import type { IntakeData } from "@/lib/intake";
-import { recordHighlights, type RecordPermit, workFor } from "./recordHighlights";
+import { permitLine, recordGlance, recordHighlights, type RecordPermit, workFor } from "./recordHighlights";
 
 const P = (description: string, issued_date: string, zip = "95110"): RecordPermit => ({ city: "SAN JOSE", zip, issued_date, work_type: "Alteration", description });
 const permits: RecordPermit[] = [
@@ -58,5 +58,25 @@ describe("recordHighlights", () => {
   it("names jobs from goals before rooms", () => {
     expect(workFor(d({ goals: ["roof"], room: "other" }))?.word).toBe("roofing");
     expect(workFor(d({ room: "living" }))).toBeNull();
+  });
+});
+
+describe("drilling into the record", () => {
+  const ps = [
+    { city: "San Jose", zip: "95125", issued_date: "2025-12-26", work_type: "1 & 2 Family", description: "Kitchen remodel · Single-Family — Additions/Alterations", status: "ACTIVE" },
+    { city: "San Jose", zip: "95124", issued_date: "2026-04-01", work_type: "1 & 2 Family", description: "Single-Family — Additions/Alterations", status: "Active" },
+    { city: "San Jose", zip: "95120", issued_date: "2025-08-14", work_type: "1 & 2 Family", description: "Single-Family — Sub-Trades Only", status: "Finaled" },
+  ];
+  it("reads a permit as what, ZIP, month and status, never an address", () => {
+    expect(permitLine(ps[0])).toEqual({ what: "Kitchen remodel", where: "ZIP 95125", when: "Dec 2025", status: "Active" });
+    expect(permitLine(ps[1]).what).toBe("Additions and Alterations");
+  });
+  it("glances: count, kinds of work, since", () => {
+    expect(recordGlance(ps)).toEqual({ count: 3, kinds: ["Additions and alterations", "Kitchen remodel"], since: 2025 });
+  });
+  it("carries the permits behind each fact, newest first", () => {
+    const hs = recordHighlights(ps, { room: "kitchen", rooms: ["kitchen"], goals: [], painPoints: [], media: [], address: { zip: "95125" } } as never, "US Creative Builders", new Date("2026-11-03"));
+    expect(hs.find((h) => h.id === "work")!.permits!.map((p) => p.zip)).toEqual(["95125"]);
+    expect(hs.find((h) => h.id === "track")!.permits!.map((p) => p.issued_date)).toEqual(["2026-04-01", "2025-12-26", "2025-08-14"]);
   });
 });

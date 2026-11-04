@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
+import { isDemoActive } from "@/lib/invites";
 import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -23,9 +24,7 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
-import RecordTidbit from "@/components/brief/RecordTidbit";
-import { recordHighlights, type Highlight } from "@/lib/recordHighlights";
-import { useContractorRecord } from "@/lib/useContractorRecord";
+import RecordCompanion from "@/components/brief/RecordCompanion";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -185,8 +184,7 @@ const ProjectScreen = ({
   onToggleGoal,
   onNote,
   onContinue,
-  trackFact,
-  workFact,
+  name,
 }: {
   rooms: Room[];
   goals: ProjectGoal[];
@@ -195,8 +193,8 @@ const ProjectScreen = ({
   onToggleGoal: (g: ProjectGoal) => void;
   onNote: (v: string) => void;
   onContinue: () => void;
-  trackFact?: Highlight;
-  workFact?: Highlight;
+  /** How they asked to be addressed, from the contractor's welcome page. */
+  name?: string;
 }) => {
   const [browsing, setBrowsing] = useState(false);
   const picked = rooms.length + goals.length;
@@ -239,19 +237,17 @@ const ProjectScreen = ({
     <div className="space-y-8 pb-28">
       <StepDots step={1} />
       <ScreenTitle
-        title="What do you need done?"
+        title={name ? `What do you need done, ${name}?` : "What do you need done?"}
         sub="One sentence is enough. We'll figure out the rest."
       />
 
       <div className="mx-auto max-w-lg space-y-3">
-        <RecordTidbit h={trackFact} />
         <VoiceTextField
           value={note}
           onChange={onNote}
           autoFocus
           placeholder="e.g. Remove and fill in two in-ground pools, permitted."
         />
-        <RecordTidbit h={workFact} />
       </div>
 
       {/* What we heard */}
@@ -707,13 +703,13 @@ const AddressScreen = ({
   onSave,
   onSkip,
   onContinue,
-  zipFact,
+  onDraftZip,
 }: {
   address?: Address;
   onSave: (a: Address) => void;
   onSkip: () => void;
   onContinue: () => void;
-  zipFact?: (zip: string) => Highlight | undefined;
+  onDraftZip?: (zip: string) => void;
 }) => {
   return (
     <div className="space-y-10">
@@ -727,7 +723,7 @@ const AddressScreen = ({
         onSave={onSave}
         onSkip={onSkip}
         onContinue={onContinue}
-        renderZipNote={zipFact ? (zip) => <RecordTidbit h={zipFact(zip)} /> : undefined}
+        onDraftZip={onDraftZip}
       />
     </div>
   );
@@ -748,7 +744,6 @@ const ScopeAndBudgetScreen = ({
   hideScope,
   rooms,
   goals,
-  scopeFact,
 }: {
   scope?: ScopeTier;
   onScopeChange: (s: ScopeTier) => void;
@@ -763,7 +758,6 @@ const ScopeAndBudgetScreen = ({
   hideScope?: boolean;
   rooms?: Room[];
   goals?: ProjectGoal[];
-  scopeFact?: Highlight;
 }) => (
   <div className="space-y-10">
     <StepDots step={5} />
@@ -789,7 +783,6 @@ const ScopeAndBudgetScreen = ({
       hideScope={hideScope}
       rooms={rooms}
       goals={goals}
-      scopeNote={<RecordTidbit h={scopeFact} />}
     />
   </div>
 );
@@ -856,7 +849,8 @@ const Brief = () => {
   // Auto-save the user's draft as they progress (debounced). Only kicks in
   // once they've picked a room — no point persisting empty shells.
   useEffect(() => {
-    if (!data.room) return;
+    // The contractor demo saves nothing to anyone's account.
+    if (!data.room || isDemoActive()) return;
     const t = setTimeout(() => {
       saveDraft(data, projectIdRef.current ?? undefined)
         .then((row) => {
@@ -890,12 +884,13 @@ const Brief = () => {
 
   const isAddition = data.room === "addition";
 
-  // Through a contractor's link, their record speaks to each answer, right
-  // under the field that unlocked it.
-  const record = useContractorRecord();
-  const factsFor = (d: IntakeData): Partial<Record<Highlight["id"], Highlight>> =>
-    record ? Object.fromEntries(recordHighlights(record.permits, d, record.who).map((h) => [h.id, h])) : {};
-  const facts = factsFor(data);
+  // Through a contractor's link, their record keeps the homeowner company in
+  // one quiet strip at the top (RecordCompanion), answering as they go. The
+  // ZIP they're typing counts before they save it.
+  const [draftZip, setDraftZip] = useState<string>("");
+  const companionData: IntakeData = /^\d{5}$/.test(draftZip.trim())
+    ? { ...data, address: { ...(data.address ?? {}), zip: draftZip.trim(), skipped: false } }
+    : data;
 
   // Auto-skip Step 3 (Haleo's read) in either direction when there's no
   // analyzable media OR when the route doesn't surface media (Addition).
@@ -928,7 +923,7 @@ const Brief = () => {
   if (submitting) return <LoadingPage />;
 
   return (
-    <IntakeShell step={step} total={TOTAL} onBack={back}>
+    <IntakeShell step={step} total={TOTAL} onBack={back} companion={<RecordCompanion data={companionData} />}>
       <AnimatePresence mode="wait">
         {step === 1 && (
           <ProjectScreen
@@ -955,8 +950,7 @@ const Brief = () => {
               });
             }}
             onNote={(v) => update({ goalNote: v })}
-            trackFact={facts.track}
-            workFact={facts.work}
+            name={data.homeownerName}
             onContinue={() => {
               update({ room: primaryRoom(data.rooms ?? [], data.goals ?? []) });
               setStep(2);
@@ -1010,7 +1004,7 @@ const Brief = () => {
             onSave={(a) => update({ address: a })}
             onSkip={() => update({ address: { ...(data.address ?? {}), skipped: true } })}
             onContinue={next}
-            zipFact={(zip) => factsFor({ ...data, address: { ...(data.address ?? {}), zip, skipped: false } }).nearby}
+            onDraftZip={setDraftZip}
           />
         )}
         {step === 5 && (
@@ -1034,7 +1028,6 @@ const Brief = () => {
             hideScope={isAddition}
             rooms={data.rooms}
             goals={data.goals}
-            scopeFact={facts.structural}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);

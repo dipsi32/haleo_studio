@@ -308,6 +308,7 @@ export type Database = {
           outreach_send_id: string | null
           prospect_label: string | null
           revoked_at: string | null
+          source: string
           token: string
         }
         Insert: {
@@ -322,6 +323,7 @@ export type Database = {
           outreach_send_id?: string | null
           prospect_label?: string | null
           revoked_at?: string | null
+          source?: string
           token?: string
         }
         Update: {
@@ -336,6 +338,7 @@ export type Database = {
           outreach_send_id?: string | null
           prospect_label?: string | null
           revoked_at?: string | null
+          source?: string
           token?: string
         }
         Relationships: [
@@ -1585,14 +1588,37 @@ export type Database = {
         Args: { _license: string; _name: string }
         Returns: string
       }
+      get_front_door_public: {
+        Args: { _slug: string }
+        Returns: {
+          contractor_brand_color: string | null
+          contractor_city: string
+          contractor_company: string
+          contractor_gallery_urls: Json
+          contractor_id: string
+          contractor_logo_url: string | null
+          contractor_name: string
+          contractor_slug: string
+          contractor_specialties: string | null
+          contractor_tagline: string | null
+          contractor_years_in_business: number | null
+        }[]
+      }
       get_invite_public: {
         Args: { _token: string }
         Returns: {
+          contractor_brand_color: string | null
           contractor_city: string
           contractor_company: string
+          contractor_gallery_urls: Json
           contractor_id: string
+          contractor_logo_url: string | null
           contractor_name: string
           contractor_slug: string
+          contractor_specialties: string | null
+          contractor_tagline: string | null
+          contractor_years_in_business: number | null
+          invite_source: string | null
           status: string
         }[]
       }
@@ -1604,6 +1630,7 @@ export type Database = {
         Returns: boolean
       }
       mark_invite_opened: { Args: { _token: string }; Returns: undefined }
+      open_front_door: { Args: { _slug: string; _source?: string }; Returns: string }
       send_invited_brief: {
         Args: {
           _brief_snapshot: Json

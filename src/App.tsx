@@ -38,6 +38,7 @@ import ProStudio from "./pages/pro/ProStudio.tsx";
 import ProLinks from "./pages/pro/ProLinks.tsx";
 import ProVisibility from "./pages/pro/ProVisibility";
 import Invite from "./pages/Invite.tsx";
+import Demo from "./pages/Demo.tsx";
 import InviteSend from "./pages/InviteSend.tsx";
 import PublicContractorProfile from "./pages/pro/PublicContractorProfile.tsx";
 import ClaimProfile from "./pages/pro/ClaimProfile.tsx";
@@ -45,6 +46,10 @@ import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 import HomeownerNotificationToaster from "./components/HomeownerNotificationToaster.tsx";
 import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
 import AnalyticsTracker from "./components/AnalyticsTracker.tsx";
+import BrandTheme from "./components/BrandTheme.tsx";
+import DemoBanner from "./components/DemoBanner.tsx";
+import InviteSendRoute from "./components/auth/InviteSendRoute.tsx";
+import FrontDoor from "./pages/FrontDoor.tsx";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +69,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AnalyticsTracker />
+          <BrandTheme />
+          <DemoBanner />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
           <Routes>
@@ -139,12 +146,18 @@ const App = () => (
             {/* Contractor-owned brief links: the homeowner already chose this
                 contractor, so these routes honor that choice. */}
             <Route path="/i/:token" element={<Invite />} />
+            {/* A contractor's permanent front door, for their website and Google profile. */}
+            <Route path="/c/:slug" element={<FrontDoor />} />
+            {/* Contractor demo: their real record, a sample client. Nothing saved. */}
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/demo/:slug" element={<Demo />} />
+            <Route path="/demo/:slug/:view" element={<Demo />} />
             <Route
               path="/i/:token/send"
               element={
-                <ProtectedRoute>
+                <InviteSendRoute>
                   <InviteSend />
-                </ProtectedRoute>
+                </InviteSendRoute>
               }
             />
 
