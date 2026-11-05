@@ -1,4 +1,6 @@
-// A contractor's permanent front door: /c/:slug?src=website|google|text
+// A contractor's permanent front door: haleo.pages.dev/us-creative-builders
+// (or /c/:slug, the older form). ?src=website|google tags where it was posted;
+// the bare link is the one people text.
 //
 // The link they put behind "Start your project" on their own website, their
 // Google profile and their text replies. It looks like theirs (their name,
@@ -6,14 +8,15 @@
 // link: when they start, the server mints them their own invite, so the
 // brief goes to this contractor and no one else.
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import NotFound from "@/pages/NotFound";
 import type { CSSProperties } from "react";
 import InviteWelcome, { Shell } from "@/components/InviteWelcome";
 import { Button } from "@/components/ui/button";
 import { saveIntakeStart, useIntake } from "@/lib/intake";
 import { track } from "@/lib/analytics";
 import { toast } from "@/hooks/use-toast";
-import { brandThemeVars, frontDoorPath, parseSource } from "@/lib/frontDoor";
+import { brandThemeVars, parseSource } from "@/lib/frontDoor";
 import {
   contractorDisplayName,
   fetchFrontDoor,
@@ -27,7 +30,10 @@ import {
 type State = { kind: "loading" } | { kind: "missing" } | { kind: "ready"; contractor: InviteContractor };
 
 export default function FrontDoor() {
-  const { slug = "" } = useParams<{ slug: string }>();
+  // /c/:slug or /:handle: either names the contractor.
+  const { slug: cSlug, handle } = useParams<{ slug?: string; handle?: string }>();
+  const slug = cSlug ?? handle ?? "";
+  const { pathname } = useLocation();
   const [params] = useSearchParams();
   const source = parseSource(params.get("src"));
   const navigate = useNavigate();
@@ -60,6 +66,9 @@ export default function FrontDoor() {
       </Shell>
     );
   }
+
+  // A mistyped page at the root (haleo.pages.dev/brif) is just "not found".
+  if (state.kind === "missing" && handle) return <NotFound />;
 
   if (state.kind === "missing") {
     return (
@@ -103,7 +112,7 @@ export default function FrontDoor() {
   return (
     <InviteWelcome
       contractor={c}
-      brand={{ name: contractorDisplayName(c), logoUrl: c.logoUrl ?? null, href: `${frontDoorPath(slug)}${source !== "other" ? `?src=${source}` : ""}` }}
+      brand={{ name: contractorDisplayName(c), logoUrl: c.logoUrl ?? null, href: `${pathname}${source !== "text" && source !== "other" ? `?src=${source}` : ""}` }}
       door="front"
       hasBrief={Boolean(intake.room) && sameContractor}
       busy={busy}

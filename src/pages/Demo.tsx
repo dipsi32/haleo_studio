@@ -32,7 +32,7 @@ import VisitPrepCard from "@/components/pro/VisitPrepCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
-import { brandThemeVars, frontDoorPath } from "@/lib/frontDoor";
+import { brandThemeVars, frontDoorKey, frontDoorPath } from "@/lib/frontDoor";
 import { findPermitRecord } from "@/lib/useShortlistCheck";
 import { clearActiveInvite, demoToken, inviteMessage, setActiveInvite, type InviteContractor } from "@/lib/invites";
 import { saveIntakeStart } from "@/lib/intake";
@@ -200,7 +200,8 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
   const navigate = useNavigate();
   const contractor = useDemoContractor(demo);
   const color = demo.brandColor ?? "#111827";
-  const link = `haleo.pages.dev${frontDoorPath(contractor?.slug ?? demo.slug)}`;
+  // The link he'd text: his business name.
+  const link = `haleo.pages.dev${frontDoorPath(frontDoorKey(demo.brand) || contractor?.slug || demo.slug)}`;
   const reply = inviteMessage({ contractor: demo.person ? `${demo.person} from ${demo.brand}` : demo.brand, url: "" }).replace(/:\s*$/, ".");
   const tap = () => {
     track("demo_link_tapped", { demo: demo.slug, door: "text" });

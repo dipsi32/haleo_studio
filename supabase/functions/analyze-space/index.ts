@@ -571,8 +571,17 @@ serve(async (req) => {
         .from("space_analyses")
         .update({ status: "error", error: `AI ${aiRes.status}: ${errText.slice(0, 300)}` })
         .eq("id", analysisId);
+      // `detail` is Anthropic's own error message (never the key): the page
+      // doesn't show it, but it makes the next failure a one-minute diagnosis.
+      let detail = `AI ${aiRes.status}`;
+      try {
+        const m = (JSON.parse(errText) as { error?: { message?: string } }).error?.message;
+        if (m) detail = `AI ${aiRes.status}: ${m.slice(0, 200)}`;
+      } catch {
+        /* not JSON */
+      }
       return new Response(
-        JSON.stringify({ success: false, error: userMsg, retryable: true, analysisId }),
+        JSON.stringify({ success: false, error: userMsg, retryable: true, analysisId, detail }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

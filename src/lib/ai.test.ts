@@ -39,7 +39,7 @@ describe("toAnthropicBody", () => {
 
   it("joins system messages and keeps the rest", () => {
     const b = toAnthropicBody(req, env) as Record<string, any>;
-    expect(b.system).toBe("Be brief.\n\nBe kind.");
+    expect(b.system).toBe("Be brief.\n\nBe kind.\n\nGive your answer by calling the emit tool exactly once. Do not answer in plain text.");
     expect(b.messages).toHaveLength(1);
     expect(b.max_tokens).toBe(900);
     expect(b.model).toBe("claude-sonnet-5-5");
@@ -57,10 +57,14 @@ describe("toAnthropicBody", () => {
     expect(content[3]).toEqual({ type: "image", source: { type: "url", url: "https://example.com/room.png" } });
   });
 
-  it("maps tools and a forced tool choice", () => {
+  it("maps tools, and asks for the tool instead of forcing it (current models reject forced tool_choice)", () => {
     const b = toAnthropicBody(req, env) as any;
     expect(b.tools).toEqual([{ name: "emit", description: "d", input_schema: { type: "object", properties: { a: { type: "string" } } } }]);
-    expect(b.tool_choice).toEqual({ type: "tool", name: "emit" });
+    expect(b.tool_choice).toEqual({ type: "auto" });
+    expect(JSON.stringify(b)).not.toMatch(/"type":"(tool|any)"/);
+    const r = toAnthropicBody({ ...req, tool_choice: "required" }, env) as any;
+    expect(r.tool_choice).toEqual({ type: "auto" });
+    expect(r.system).toMatch(/calling the emit tool/);
   });
 
   it("defaults max_tokens and rejects unknown attachment types", () => {
@@ -70,6 +74,16 @@ describe("toAnthropicBody", () => {
 });
 
 describe("toChatResponse", () => {
+  it("turns a plain-JSON answer into the tool call the caller asked for", () => {
+    const r = toChatResponse({ content: [{ type: "text", text: 'Here you go:\n```json\n{"a": "b"}\n```' }], stop_reason: "end_turn" }, "emit");
+    expect(r.choices[0].finish_reason).toBe("tool_calls");
+    expect(JSON.parse((r.choices[0].message as any).tool_calls[0].function.arguments)).toEqual({ a: "b" });
+  });
+  it("leaves plain text alone when no tool was asked for, or it isn't JSON", () => {
+    expect((toChatResponse({ content: [{ type: "text", text: '{"a":1}' }], stop_reason: "end_turn" }).choices[0].message as any).tool_calls).toBeUndefined();
+    expect((toChatResponse({ content: [{ type: "text", text: "sorry" }], stop_reason: "end_turn" }, "emit").choices[0].message as any).tool_calls).toBeUndefined();
+  });
+
   it("returns text as message.content", () => {
     const r = toChatResponse({ content: [{ type: "text", text: "Hello " }, { type: "text", text: "there" }], stop_reason: "end_turn" });
     expect(r.choices[0].message.content).toBe("Hello there");

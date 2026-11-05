@@ -14,6 +14,12 @@
 //
 // Temperature is deliberately not forwarded: newer Claude models may not accept it,
 // and these prompts are written to be steady without it.
+//
+// Forced tool use (tool_choice "required" or a named function) is not forced
+// any more: current models reject tool_choice "tool"/"any" with a 400, which
+// took down every AI feature on Nov 5, 2026. We send tool_choice "auto", tell
+// the model in the system prompt which tool to answer with, and if it answers
+// in plain JSON instead, turn that into the tool call the callers expect.
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const API_VERSION = "2023-06-01";
@@ -65,8 +71,17 @@ export const pickModel = (requested: string | undefined, env: (k: string) => str
   return /smart|pro/i.test(requested ?? "") ? smart : fast;
 };
 
+/** The tool the caller insists on, if any: a named function, or the only tool when "required". */
+export const forcedToolName = (req: ChatRequest): string | null => {
+  const tc = req.tool_choice;
+  if (!req.tools?.length) return null;
+  if (tc && typeof tc === "object") return tc.function.name;
+  if (tc === "required" && req.tools.length === 1) return req.tools[0].function.name;
+  return null;
+};
+
 export const toAnthropicBody = (req: ChatRequest, env: (k: string) => string | undefined): Record<string, unknown> => {
-  const system = req.messages
+  let system = req.messages
     .filter((m) => m.role === "system")
     .map((m) => (typeof m.content === "string" ? m.content : m.content.map((p) => (p.type === "text" ? p.text : "")).join("\n")))
     .join("\n\n");
@@ -83,8 +98,6 @@ export const toAnthropicBody = (req: ChatRequest, env: (k: string) => string | u
     max_tokens: req.max_tokens ?? DEFAULT_MAX_TOKENS,
     messages,
   };
-  if (system) body.system = system;
-
   if (req.tools?.length) {
     body.tools = req.tools.map((t) => ({
       name: t.function.name,
@@ -92,17 +105,47 @@ export const toAnthropicBody = (req: ChatRequest, env: (k: string) => string | u
       input_schema: t.function.parameters ?? { type: "object", properties: {} },
     }));
     const tc = req.tool_choice;
-    if (tc && typeof tc === "object") body.tool_choice = { type: "tool", name: tc.function.name };
-    else if (tc === "required") body.tool_choice = { type: "any" };
-    else if (tc === "none") delete body.tools;
+    const forced = forcedToolName(req);
+    if (tc === "none") delete body.tools;
+    else if (forced || tc === "required") {
+      body.tool_choice = { type: "auto" };
+      const ask = forced
+        ? `Give your answer by calling the ${forced} tool exactly once. Do not answer in plain text.`
+        : "Give your answer by calling one of the provided tools. Do not answer in plain text.";
+      system = system ? `${system}\n\n${ask}` : ask;
+    }
   }
+  if (system) body.system = system;
   return body;
 };
 
 type AnthropicBlock = { type: string; text?: string; id?: string; name?: string; input?: unknown };
 
-export const toChatResponse = (j: { id?: string; model?: string; content?: AnthropicBlock[]; stop_reason?: string; usage?: unknown }) => {
-  const blocks = j.content ?? [];
+/** The first JSON object in a reply, for a model that answered in text instead of calling the tool. */
+const jsonIn = (text: string): unknown => {
+  const t = text.replace(/```(?:json)?/gi, "");
+  const start = t.indexOf("{");
+  const end = t.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(t.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+};
+
+export const toChatResponse = (
+  j: { id?: string; model?: string; content?: AnthropicBlock[]; stop_reason?: string; usage?: unknown },
+  forcedTool: string | null = null,
+) => {
+  let blocks = j.content ?? [];
+  if (forcedTool && !blocks.some((b) => b.type === "tool_use")) {
+    const input = jsonIn(blocks.filter((b) => b.type === "text").map((b) => b.text ?? "").join(""));
+    if (input && typeof input === "object") {
+      blocks = [{ type: "tool_use", id: "from_text", name: forcedTool, input }];
+      j = { ...j, stop_reason: "tool_use" };
+    }
+  }
   const text = blocks.filter((b) => b.type === "text").map((b) => b.text ?? "").join("");
   const calls = blocks
     .filter((b) => b.type === "tool_use")
@@ -135,8 +178,11 @@ export async function aiFetch(
   const key = (init.headers?.Authorization ?? init.headers?.authorization ?? "").replace(/^Bearer\s+/i, "") || env("ANTHROPIC_API_KEY") || "";
 
   let body: Record<string, unknown>;
+  let forced: string | null = null;
   try {
-    body = toAnthropicBody(JSON.parse(init.body) as ChatRequest, env);
+    const req = JSON.parse(init.body) as ChatRequest;
+    forced = forcedToolName(req);
+    body = toAnthropicBody(req, env);
   } catch (e) {
     return new Response(JSON.stringify({ error: { message: e instanceof Error ? e.message : "Bad request" } }), {
       status: 400,
@@ -150,6 +196,6 @@ export async function aiFetch(
     body: JSON.stringify(body),
   });
   if (!res.ok) return res;
-  const out = toChatResponse(await res.json());
+  const out = toChatResponse(await res.json(), forced);
   return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json" } });
 }
