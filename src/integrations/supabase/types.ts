@@ -209,6 +209,7 @@ export type Database = {
           contractor_id: string | null
           created_at: string
           facebook: string | null
+          front_door_handle: string | null
           gallery_urls: Json
           houzz: string | null
           id: string
@@ -237,6 +238,7 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string
           facebook?: string | null
+          front_door_handle?: string | null
           gallery_urls?: Json
           houzz?: string | null
           id?: string
@@ -265,6 +267,7 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string
           facebook?: string | null
+          front_door_handle?: string | null
           gallery_urls?: Json
           houzz?: string | null
           id?: string

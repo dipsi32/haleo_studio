@@ -1,12 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { brandThemeVars, frontDoorUrl, hexToHsl, parseSource, websiteButtonHtml } from "./frontDoor";
+import { RESERVED_HANDLES, brandThemeVars, checkHandle, frontDoorHandle, frontDoorKey, frontDoorUrl, hexToHsl, parseSource, websiteButtonHtml } from "./frontDoor";
 
 describe("front door links", () => {
-  it("tags each place it's posted", () => {
-    expect(frontDoorUrl("bakhtiary-mehdi-1d0f", "google", "https://haleo.pages.dev")).toBe("https://haleo.pages.dev/c/bakhtiary-mehdi-1d0f?src=google");
+  it("is his business name, and the texted link is bare", () => {
+    expect(frontDoorKey("US Creative Builders")).toBe("us-creative-builders");
+    expect(frontDoorUrl("us-creative-builders", "text", "https://haleo.pages.dev")).toBe("https://haleo.pages.dev/us-creative-builders");
+    expect(frontDoorUrl("us-creative-builders", "google", "https://haleo.pages.dev")).toBe("https://haleo.pages.dev/us-creative-builders?src=google");
+  });
+  it("reads where a visitor came from", () => {
+    expect(parseSource(null)).toBe("text");
     expect(parseSource("website")).toBe("website");
     expect(parseSource("<x>")).toBe("other");
-    expect(parseSource(null)).toBe("other");
+  });
+  it("prefers the name they chose, then their business name, then the old slug", () => {
+    expect(frontDoorHandle({ chosen: "uscb", companyName: "US Creative Builders", slug: "bakhtiary-mehdi-1d0f" })).toBe("uscb");
+    expect(frontDoorHandle({ companyName: "US Creative Builders", slug: "x" })).toBe("us-creative-builders");
+    expect(frontDoorHandle({ companyName: "", slug: "bakhtiary-mehdi-1d0f" })).toBe("bakhtiary-mehdi-1d0f");
+  });
+  it("only accepts names that make a clean link and aren't ours", () => {
+    expect(checkHandle("  USCB ")).toEqual({ ok: true, handle: "uscb" });
+    expect(checkHandle("Matt's Builds!")).toEqual({ ok: true, handle: "matt-s-builds" });
+    expect(checkHandle("ab").ok).toBe(false);
+    expect(checkHandle("brief").ok).toBe(false);
+    expect(checkHandle("Pro").ok).toBe(false);
   });
 });
 
@@ -31,5 +47,15 @@ describe("website button", () => {
     expect(html).toContain("background:#E31B23");
     expect(websiteButtonHtml("u", "javascript:x")).toContain("background:#111827");
     expect(websiteButtonHtml("u", null, '"><script>')).not.toContain("<script>");
+  });
+});
+
+describe("link names never shadow the app's own pages", () => {
+  it("reserves every first path segment the router uses", async () => {
+    const { readFileSync } = await import("node:fs");
+    const app = readFileSync(`${process.cwd()}/src/App.tsx`, "utf8");
+    const firsts = [...app.matchAll(/path="\/([^/":]+)/g)].map((m) => m[1]).filter((s) => !s.startsWith("."));
+    expect(firsts.length).toBeGreaterThan(10);
+    for (const s of firsts) expect(RESERVED_HANDLES.has(s), `"${s}" must be reserved`).toBe(true);
   });
 });

@@ -138,7 +138,14 @@ export default function ProLinks() {
 
         {account && (
           <div className="mb-8">
-            <FrontDoorCard accountId={account.id} contractorId={contractorId} branding={account.branding} onSaved={() => void refetch()} />
+            <FrontDoorCard
+              accountId={account.id}
+              contractorId={contractorId}
+              branding={account.branding}
+              companyName={account.company_name}
+              handle={(account as { front_door_handle?: string | null }).front_door_handle ?? null}
+              onSaved={() => void refetch()}
+            />
           </div>
         )}
 

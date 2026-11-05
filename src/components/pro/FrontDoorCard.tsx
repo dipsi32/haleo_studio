@@ -3,7 +3,7 @@
 // site. Every brief that comes through it lands in their inbox, tagged with
 // where it came from.
 import { useEffect, useState } from "react";
-import { Check, Code2, Copy, ExternalLink, Globe, Palette } from "lucide-react";
+import { Check, Code2, Copy, ExternalLink, Globe, Palette, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 import {
   FRONT_DOOR_SOURCES,
+  checkHandle,
+  frontDoorHandle,
   frontDoorUrl,
   isBrandColor,
   websiteButtonHtml,
@@ -22,6 +24,10 @@ type Props = {
   accountId: string;
   contractorId: string | null;
   branding: Json | null;
+  /** The name on their account, which makes their default link. */
+  companyName?: string | null;
+  /** A link name they chose, if any. */
+  handle?: string | null;
   onSaved?: () => void;
 };
 
@@ -32,9 +38,12 @@ const HOW_TO: { site: string; steps: string }[] = [
   { site: "Google Business Profile", steps: "Open your profile → Edit profile → Contact → Appointment links, paste the Google link." },
 ];
 
-export default function FrontDoorCard({ accountId, contractorId, branding, onSaved }: Props) {
+export default function FrontDoorCard({ accountId, contractorId, branding, companyName, handle: chosen, onSaved }: Props) {
   const { toast } = useToast();
   const [slug, setSlug] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [savingHandle, setSavingHandle] = useState(false);
   const saved = branding && typeof branding === "object" && !Array.isArray(branding) ? (branding as { color?: unknown }).color : null;
   const [color, setColor] = useState<string>(isBrandColor(saved) ? saved : "");
   const [saving, setSaving] = useState(false);
@@ -52,7 +61,28 @@ export default function FrontDoorCard({ accountId, contractorId, branding, onSav
   }, [contractorId]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const url = (s: FrontDoorSource) => (slug ? frontDoorUrl(slug, s, origin) : "");
+  const handle = slug ? frontDoorHandle({ chosen, companyName, slug }) : null;
+  const url = (s: FrontDoorSource) => (handle ? frontDoorUrl(handle, s, origin) : "");
+  const host = origin.replace(/^https?:\/\//, "");
+  const draftCheck = checkHandle(draft);
+  const draftHandle = "handle" in draftCheck ? draftCheck.handle : null;
+  const draftWhy = "why" in draftCheck ? draftCheck.why : null;
+
+  const saveHandle = async () => {
+    if (!draftHandle) return;
+    setSavingHandle(true);
+    const { error } = await supabase.from("contractor_accounts").update({ front_door_handle: draftHandle }).eq("id", accountId);
+    setSavingHandle(false);
+    if (error) {
+      const taken = /duplicate|unique/i.test(error.message);
+      toast({ title: taken ? "Someone already has that link" : "Couldn't save your link", description: taken ? "Try a different name." : error.message, variant: "destructive" });
+      return;
+    }
+    track("front_door_handle_saved", { length: draftHandle.length });
+    toast({ title: "Your link is updated", description: `${host}/${draftHandle}` });
+    setEditing(false);
+    onSaved?.();
+  };
 
   const copy = async (key: string, text: string, what: string) => {
     try {
@@ -107,28 +137,77 @@ export default function FrontDoorCard({ accountId, contractorId, branding, onSav
         <div className="mt-5 h-24 animate-pulse rounded-2xl bg-muted/40" />
       ) : (
         <>
-          <ul className="mt-5 space-y-3">
-            {FRONT_DOOR_SOURCES.map((s) => (
-              <li key={s.id} className="rounded-2xl border border-border bg-background/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{s.label}</p>
-                    <p className="text-xs text-muted-foreground">{s.where}</p>
-                  </div>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => copy(s.id, url(s.id), "Link")}>
-                    {copied === s.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Copy link
+          {/* The link they share: their name, nothing else. */}
+          <div className="mt-5 rounded-2xl border border-accent/30 bg-accent-soft/40 p-4">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Your link</p>
+            <p className="mt-1 break-all font-display text-xl">
+              <span className="text-muted-foreground">{host}/</span>
+              {handle}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" className="rounded-full" onClick={() => copy("text", url("text"), "Link")}>
+                {copied === "text" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Copy link
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  setDraft(handle ?? "");
+                  setEditing((v) => !v);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" /> Change the name
+              </Button>
+              <a href={url("text")} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2 text-xs text-muted-foreground underline underline-offset-4">
+                See what your clients see <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            {editing && (
+              <div className="mt-4">
+                <label htmlFor="front-door-handle" className="text-sm font-medium">
+                  Pick a short name your clients will recognize
+                </label>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-muted-foreground">{host}/</span>
+                  <Input
+                    id="front-door-handle"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value.slice(0, 40))}
+                    placeholder="uscb"
+                    className="h-10 w-48 rounded-xl bg-background"
+                  />
+                  <Button size="sm" className="rounded-full" disabled={!draftHandle || savingHandle} onClick={saveHandle}>
+                    {savingHandle ? "Saving…" : "Save"}
                   </Button>
                 </div>
-                <p className="mt-2 break-all font-mono text-[11px] text-foreground/60">{url(s.id)}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {draft && draftWhy
+                    ? draftWhy
+                    : draftHandle
+                      ? `Your link: ${host}/${draftHandle}`
+                      : "Letters, numbers and hyphens. Your old link keeps working."}
+                </p>
+              </div>
+            )}
+            <p className="mt-3 text-xs text-muted-foreground">Text it to new inquiries, or put it in your email signature.</p>
+          </div>
+
+          {/* The same link, tagged, for the places that aren't a text. */}
+          <ul className="mt-4 space-y-2">
+            {FRONT_DOOR_SOURCES.filter((s) => s.id !== "text").map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-background/60 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{s.label}</p>
+                  <p className="text-xs text-muted-foreground">{s.where}</p>
+                </div>
+                <Button size="sm" variant="outline" className="rounded-full" onClick={() => copy(s.id, url(s.id), "Link")}>
+                  {copied === s.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Copy link
+                </Button>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Each link says where a brief came from, so you'll see which door your clients use.{" "}
-            <a href={url("website")} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline underline-offset-4">
-              See what your clients see <ExternalLink className="h-3 w-3" />
-            </a>
-          </p>
+          <p className="mt-2 text-xs text-muted-foreground">These carry a small tag, so each brief says where it came from.</p>
 
           {/* Their color */}
           <div className="mt-6 rounded-2xl border border-border bg-background/60 p-4">

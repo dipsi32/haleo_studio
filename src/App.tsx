@@ -211,6 +211,10 @@ const App = () => (
             />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* A contractor's friendly link: haleo.pages.dev/us-creative-builders.
+                Last before the catch-all, so every page above wins; names that
+                match a page are reserved (src/lib/frontDoor.ts). */}
+            <Route path="/:handle" element={<FrontDoor />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

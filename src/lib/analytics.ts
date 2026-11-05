@@ -103,6 +103,7 @@ export type AnalyticsEvent =
   | "front_door_started"
   | "front_door_link_copied"
   | "front_door_color_saved"
+  | "front_door_handle_saved"
   // Contractor demo (/demo/:slug)
   | "demo_opened"
   | "demo_door_chosen"

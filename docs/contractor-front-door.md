@@ -4,7 +4,11 @@ Contractors already have a website: portfolio photos and a "Contact us" form. Ha
 
 ## What it is
 
-- **One permanent link:** `/c/:slug`, tagged with where it's posted: `?src=website`, `?src=google` or `?src=text`. It goes behind "Start your project" on their site, the appointment link on their Google Business Profile, and their reply to new inquiries.
+- **One permanent link, in their name:** `haleo.pages.dev/us-creative-builders`.
+  - It comes from the name on their account, so it works as soon as they claim their record.
+  - They can choose a shorter name in `/pro/links` (`contractor_accounts.front_door_handle`): 3–40 letters, digits and hyphens, unique. Names that match one of the app's pages are reserved; a unit test keeps that list in sync with the router.
+  - The link they text is bare. The website and Google versions carry `?src=website` or `?src=google`, so each brief says where it came from.
+  - Old `/c/:slug` links keep working. `resolve_front_door()` checks the chosen name first, then the permit-record slug, then the account name.
 - **In their colors.** Their brand color (`contractor_accounts.branding.color`) becomes the accent and the main button color on every page of their client's journey (`/c`, `/i`, `/brief`, `/login`), applied by `BrandTheme`. Their name and logo lead, and Haleo is a quiet "powered by" line. Haleo's own pages (Shortlist, home, account) never take a contractor's colors.
 - **The same rules as a personal link.** Opening the page costs nothing. When a visitor taps "Share my project", `open_front_door()` mints them their own one-person invite, so the brief goes to this contractor only, the homeowner keeps it, and it lands in the inbox with visit prep. The invite carries `source`, and its label in the contractor's list says where it came from ("From your website").
 

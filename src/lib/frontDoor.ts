@@ -1,22 +1,54 @@
-// A contractor's front door: one permanent link (/c/:slug) for their website,
-// Google Business Profile and text replies, in their colors. Pure helpers;
-// see docs/contractor-front-door.md.
+// A contractor's front door: one permanent link, haleo.pages.dev/us-creative-builders,
+// for their text replies, website and Google Business Profile, in their
+// colors. Pure helpers; see docs/contractor-front-door.md.
 
 export type FrontDoorSource = "website" | "google" | "text";
 
 export const FRONT_DOOR_SOURCES: { id: FrontDoorSource; label: string; where: string }[] = [
+  { id: "text", label: "Texts and email", where: "Your reply to new inquiries, and your email signature" },
   { id: "website", label: "Your website", where: "Your “Contact us” or “Get a quote” button" },
   { id: "google", label: "Google", where: "Your Google Business Profile booking or website link" },
-  { id: "text", label: "Texts and email", where: "Your reply to new inquiries, and your email signature" },
 ];
 
-export const frontDoorPath = (slug: string) => `/c/${slug}`;
+/** "US Creative Builders" → "us-creative-builders". Mirrors public.front_door_key in SQL. */
+export const frontDoorKey = (name: string | null | undefined): string =>
+  (name ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
-export const frontDoorUrl = (slug: string, source: FrontDoorSource, origin: string) =>
-  `${origin}${frontDoorPath(slug)}?src=${source}`;
+// First path segments the app already uses, plus a few we'll want. A
+// contractor can't take these as their link.
+export const RESERVED_HANDLES = new Set([
+  "account", "admin", "adu", "audit", "brief", "c", "contractor", "contractors", "demo", "home-classic",
+  "i", "login", "pro", "proposal", "reset-password", "roast", "shortlist", "waitlist",
+  "about", "api", "app", "blog", "help", "privacy", "settings", "terms", "haleo", "www",
+]);
 
+export type HandleCheck = { ok: true; handle: string } | { ok: false; why: string };
+
+/** Whether a link name can be used: 3–40 letters, digits and single hyphens, not one of ours. */
+export const checkHandle = (raw: string): HandleCheck => {
+  const handle = frontDoorKey(raw);
+  if (handle.length < 3) return { ok: false, why: "At least 3 letters or numbers." };
+  if (handle.length > 40) return { ok: false, why: "40 characters at most." };
+  if (RESERVED_HANDLES.has(handle)) return { ok: false, why: "That one's taken by Haleo. Try another." };
+  return { ok: true, handle };
+};
+
+/** The link name to show: their chosen one, else their business name, else the permit-record slug. */
+export const frontDoorHandle = (a: { chosen?: string | null; companyName?: string | null; slug?: string | null }): string | null =>
+  a.chosen || frontDoorKey(a.companyName) || a.slug || null;
+
+export const frontDoorPath = (handle: string) => `/${handle}`;
+
+/** Texts carry the bare link; the website and Google links are tagged so briefs say where they came from. */
+export const frontDoorUrl = (handle: string, source: FrontDoorSource, origin: string) =>
+  `${origin}${frontDoorPath(handle)}${source === "text" ? "" : `?src=${source}`}`;
+
+/** No tag means the bare link, which is the one people text. */
 export const parseSource = (raw: string | null): FrontDoorSource | "other" =>
-  raw === "website" || raw === "google" || raw === "text" ? raw : "other";
+  raw === null || raw === "" || raw === "text" ? "text" : raw === "website" || raw === "google" ? raw : "other";
 
 // ───── Brand color → theme ─────
 
