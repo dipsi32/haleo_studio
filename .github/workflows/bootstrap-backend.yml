@@ -64,9 +64,13 @@ jobs:
           fi
           if [ -z "$ANTHROPIC_API_KEY" ]; then echo "::warning::ANTHROPIC_API_KEY is not set, so the AI features will not work yet."; fi
 
+      # Pinned: "latest" became v3.0.0 on Nov 3, 2026, and v3 points
+      # `db push` at a local database unless told otherwise, so every deploy
+      # failed before reaching production. Move this deliberately, after
+      # checking the release notes.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.1
 
       - name: Link the project
         run: supabase link --project-ref "$PROJECT_REF"
