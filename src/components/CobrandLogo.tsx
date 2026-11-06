@@ -16,10 +16,11 @@ const initialsOf = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-export default function CobrandLogo({ brand, className = "" }: { brand?: Cobrand | null; className?: string }) {
+/** quiet: the contractor's name alone, as on their own page; Haleo moves to the footer. */
+export default function CobrandLogo({ brand, className = "", quiet = false }: { brand?: Cobrand | null; className?: string; quiet?: boolean }) {
   if (!brand) return <Logo className={className} />;
   return (
-    <Link to={brand.href} className={`group inline-flex min-w-0 items-center gap-2.5 ${className}`} aria-label={`${brand.name}, powered by Haleo`}>
+    <Link to={brand.href} className={`group inline-flex min-w-0 items-center gap-2.5 ${className}`} aria-label={quiet ? brand.name : `${brand.name}, powered by Haleo`}>
       {brand.logoUrl ? (
         <img src={brand.logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
       ) : (
@@ -29,11 +30,13 @@ export default function CobrandLogo({ brand, className = "" }: { brand?: Cobrand
       )}
       <span className="flex min-w-0 flex-col leading-tight">
         <span className="truncate font-display text-[17px] font-medium tracking-tight">{brand.name}</span>
+        {!quiet && (
         <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
           powered by
           <span className="inline-grid h-3.5 w-3.5 place-items-center rounded-full bg-accent font-display text-[9px] leading-none text-accent-foreground">h</span>
           <span className="font-medium text-foreground/70">Haleo</span>
         </span>
+        )}
       </span>
     </Link>
   );

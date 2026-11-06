@@ -2,11 +2,13 @@
 // what's worth a closer look. Each finding says why it matters and what to
 // do, points to the photo it came from, and says where it came from.
 import { useState } from "react";
-import { ArrowRight, Check, CircleHelp, Eye, Lightbulb, Palette, RotateCcw } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Check, CircleHelp, Eye, Lightbulb, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import { groupForHomeowner, type Finding } from "@/lib/spaceFindings";
+import { ROOM_LABELS } from "@/lib/intake";
 
 const SOURCE: Record<Finding["basis"], { label: string; cls: string }> = {
   grounded: { label: "In your photo", cls: "border-sage/30 bg-sage/10 text-sage" },
@@ -149,48 +151,60 @@ export const ReadError = ({ message, onRetry }: { message: string | null; onRetr
   </div>
 );
 
-/** Interior design ideas: not built yet, so it says so, and counts who wants it. */
+/** "your kitchen", from the room key the intake stores. */
+const roomPhrase = (room?: string) => {
+  const label = room && room !== "other" ? (ROOM_LABELS as Record<string, string>)[room] : undefined;
+  return label ? `your ${label.toLowerCase()}` : "your space";
+};
+
+/**
+ * Interior design ideas: not built yet, so it says so, and counts who wants
+ * it. Bright enough to be noticed after the read, never louder than it.
+ */
 export const DesignIdeasTeaser = ({ room, compact = false }: { room?: string; compact?: boolean }) => {
   const [asked, setAsked] = useState(false);
-  if (compact) {
-    // One quiet line, so it never competes with the read.
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          if (!asked) track("design_ideas_interest", { room: room ?? null });
-          setAsked(true);
-        }}
-        className="mt-5 inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-      >
-        <Palette className="h-3.5 w-3.5 text-accent" />
-        {asked ? "Noted. We'll show you design ideas for your space when they're ready." : "Design ideas for this room · coming soon"}
-      </button>
-    );
-  }
+  const where = roomPhrase(room);
   return (
-    <button
+    <motion.button
       type="button"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
       onClick={() => {
-        if (!asked) track("design_ideas_interest", { room: room ?? null });
+        if (!asked) track("design_ideas_interest", { room: room ?? null, compact });
         setAsked(true);
       }}
-      className="mt-6 flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-background/40 p-3.5 text-left transition-smooth hover:border-accent/40"
+      aria-pressed={asked}
+      className={cn(
+        "group relative flex w-full items-center gap-3.5 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft via-background to-sage-soft text-left shadow-soft transition-smooth hover:border-accent/60",
+        compact ? "mt-5 p-3.5" : "mt-6 p-4",
+      )}
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-        <Palette className="h-4 w-4" />
+      <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground shadow-soft">
+        {asked ? <Check className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-foreground">Design ideas for this room</span>
-        <span className="block text-xs text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <span className="text-[15px] font-medium leading-snug text-foreground">
+            {asked ? "You're on the list" : `Picture ${where}, redesigned`}
+          </span>
+          {!asked && (
+            <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+              Soon
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block text-[13px] leading-snug text-foreground/70">
           {asked
-            ? "Noted. We'll show you ideas for your space when it's ready."
-            : "Layout, color and finish suggestions from your photos."}
+            ? `We'll show you design ideas for ${where} as soon as they're ready.`
+            : "Layouts, colors and finishes, made from your own photos."}
         </span>
       </span>
-      <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-foreground/60">
-        Coming soon
-      </span>
-    </button>
+      {!asked && (
+        <span className="hidden shrink-0 items-center gap-1 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background sm:inline-flex">
+          Get early access <ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      )}
+      {!asked && <ArrowRight className="h-4 w-4 shrink-0 text-accent sm:hidden" />}
+    </motion.button>
   );
 };

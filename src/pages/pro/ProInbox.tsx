@@ -24,10 +24,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import HomeownerContact from "@/components/pro/HomeownerContact";
 import { getPushPermission, subscribeToPush, deferPushPermission, isPushSupported } from "@/lib/push";
 
 type BriefSnapshot = {
   homeowner_name?: string;
+  homeowner_phone?: string;
   neighborhood?: string;
   scope_summary?: string;
   vision?: string;
@@ -627,6 +629,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
         ) : (
           <div className="space-y-6 py-2">
             {/* Deal read: the decision first, the detail after */}
+            <HomeownerContact name={send.outreach_batches?.homeowner_name} phone={snap.homeowner_phone} />
             <VisitPrepCard snapshot={snap} buyBox={buyBox} homeownerName={send.outreach_batches?.homeowner_name} onAsk={askAbout} />
             <DealReadCard snapshot={snap} buyBox={buyBox} hideOpen />
 

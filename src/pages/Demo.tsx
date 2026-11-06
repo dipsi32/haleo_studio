@@ -27,7 +27,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import Logo from "@/components/Logo";
-import InviteWelcome from "@/components/InviteWelcome";
+import HomeownerContact from "@/components/pro/HomeownerContact";
+import InviteWelcome, { type HomeownerStart } from "@/components/InviteWelcome";
 import VisitPrepCard from "@/components/pro/VisitPrepCard";
 import BasisPill from "@/components/intake/BasisPill";
 import { Button } from "@/components/ui/button";
@@ -367,10 +368,10 @@ const Welcome = ({ demo }: { demo: DemoConfig }) => {
     );
   }
 
-  const start = (homeownerName: string | undefined) => {
+  const start = ({ name: homeownerName, phone: homeownerPhone }: HomeownerStart) => {
     setActiveInvite(demoToken(demo.slug), contractor);
     // A fresh brief every run, so each demo starts from the lead's first tap.
-    saveIntakeStart({ homeownerName }, true);
+    saveIntakeStart({ homeownerName, homeownerPhone }, true);
     navigate("/brief");
   };
 
@@ -451,6 +452,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
               </div>
 
               <div className="mt-3 space-y-3">
+                <HomeownerContact name={snap.homeowner_name} phone={snap.homeowner_phone} compact />
                 {snap.scope_summary && (
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">In their words</p>
