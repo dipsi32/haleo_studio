@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import type { CSSProperties } from "react";
-import InviteWelcome, { Shell } from "@/components/InviteWelcome";
+import InviteWelcome, { Shell, type HomeownerStart } from "@/components/InviteWelcome";
 import { Button } from "@/components/ui/button";
 import { saveIntakeStart, useIntake } from "@/lib/intake";
 import { track } from "@/lib/analytics";
@@ -89,7 +89,7 @@ export default function FrontDoor() {
   // Already partway through a brief for this same contractor? Keep going.
   const sameContractor = getActiveInvite()?.contractorId === c.id;
 
-  const begin = async (resumed: boolean, homeownerName: string | undefined) => {
+  const begin = async (resumed: boolean, { name: homeownerName, phone: homeownerPhone }: HomeownerStart) => {
     setBusy(true);
     const res = await openFrontDoor(slug, source);
     if (!("token" in res)) {
@@ -102,7 +102,7 @@ export default function FrontDoor() {
       return;
     }
     setActiveInvite(res.token, c);
-    if (homeownerName || !resumed) saveIntakeStart({ homeownerName });
+    if (homeownerName || homeownerPhone || !resumed) saveIntakeStart({ homeownerName, homeownerPhone });
     void markInviteOpened(res.token);
     track("front_door_started", { contractor_id: c.id, source, resumed });
     track("invite_brief_started", { contractor_id: c.id, resumed, source });
@@ -117,6 +117,7 @@ export default function FrontDoor() {
       hasBrief={Boolean(intake.room) && sameContractor}
       busy={busy}
       defaultName={intake.homeownerName}
+      defaultPhone={intake.homeownerPhone}
       onStart={(n) => void begin(false, n)}
       onResume={(n) => void begin(true, n)}
       style={style}

@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { type Cobrand } from "@/components/CobrandLogo";
-import InviteWelcome, { Shell } from "@/components/InviteWelcome";
+import InviteWelcome, { Shell, type HomeownerStart } from "@/components/InviteWelcome";
 import { Button } from "@/components/ui/button";
 import { saveIntakeStart, useIntake } from "@/lib/intake";
 import { track } from "@/lib/analytics";
@@ -106,13 +106,13 @@ const Invite = () => {
   }
 
   const c = invite.contractor;
-  const start = (homeownerName: string | undefined) => {
-    saveIntakeStart({ homeownerName });
+  const start = ({ name: homeownerName, phone: homeownerPhone }: HomeownerStart) => {
+    saveIntakeStart({ homeownerName, homeownerPhone });
     track("invite_brief_started", { contractor_id: c.id, resumed: false, source: invite.source ?? "direct" });
     navigate("/brief");
   };
-  const resume = (homeownerName: string | undefined) => {
-    if (homeownerName) saveIntakeStart({ homeownerName });
+  const resume = ({ name: homeownerName, phone: homeownerPhone }: HomeownerStart) => {
+    if (homeownerName || homeownerPhone) saveIntakeStart({ homeownerName, homeownerPhone });
     track("invite_brief_started", { contractor_id: c.id, resumed: true, source: invite.source ?? "direct" });
     navigate("/brief/result");
   };
@@ -124,6 +124,7 @@ const Invite = () => {
       door={invite.source && invite.source !== "direct" ? "front" : "personal"}
       hasBrief={Boolean(intake.room)}
       defaultName={intake.homeownerName}
+      defaultPhone={intake.homeownerPhone}
       onStart={start}
       onResume={resume}
     />

@@ -97,6 +97,10 @@ export type AnalyticsEvent =
   | "visibility_scan_run"
   | "visibility_scan_blocked"
   | "invite_brief_started"
+  // Homeowner answered the welcome in a contractor's link (name, and phone if given).
+  | "homeowner_welcome_completed"
+  // Contractor tapped Call or Text on a homeowner's number.
+  | "homeowner_contacted"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"

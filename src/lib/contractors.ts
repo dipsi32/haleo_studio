@@ -375,6 +375,8 @@ export const milesBetween = (a: { lat?: number | null; lng?: number | null }, b:
 // Kept as plain JSON so it's stable in the DB even if the brief logic evolves.
 export type BriefSnapshot = {
   homeowner_name?: string;
+  // The number they gave in the contractor's link, to call or text back.
+  homeowner_phone?: string;
   neighborhood: string;
   scope_summary: string;
   vision: string;
@@ -462,6 +464,7 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
   return {
     // The name they gave in the contractor's link wins over an account name.
     homeowner_name: data.homeownerName || homeownerName,
+    homeowner_phone: data.homeownerPhone || undefined,
     neighborhood: data.address?.city ?? 'your area',
     scope_summary: buildHomeownerLayer(data),
     vision: data.notes ?? '',
