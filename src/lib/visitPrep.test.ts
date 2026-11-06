@@ -33,6 +33,18 @@ const records: DealSnapshot = {
 };
 
 describe("computeVisitPrep: the call", () => {
+  it("asks for a call before a drive when the job fits but the lead is early", () => {
+    const p = computeVisitPrep({ ...adu, timeline: "Exploring" }, { min_budget_k: 100, project_types: ["addition"] });
+    expect(p.call.level).toBe("call-first");
+    expect(p.readiness.level).toBe("early");
+    expect(p.call.why[0]).toMatch(/short call first/);
+  });
+
+  it("carries how they found you into the people section", () => {
+    const p = computeVisitPrep({ ...adu, context: { found_via: "referral" } });
+    expect(p.people.map((x) => x.text)).toContain("How they found you: referred by a friend or neighbor");
+  });
+
   it("says drive when it fits and nothing is missing", () => {
     const p = computeVisitPrep(adu, { min_budget_k: 100, project_types: ["addition"] });
     expect(p.call.level).toBe("drive");

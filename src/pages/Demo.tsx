@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import HomeownerContact from "@/components/pro/HomeownerContact";
+import ReadinessCard from "@/components/pro/ReadinessCard";
+import { computeLeadReadiness } from "@/lib/leadReadiness";
 import InviteWelcome, { type HomeownerStart } from "@/components/InviteWelcome";
 import VisitPrepCard from "@/components/pro/VisitPrepCard";
 import BasisPill from "@/components/intake/BasisPill";
@@ -453,6 +455,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
 
               <div className="mt-3 space-y-3">
                 <HomeownerContact name={snap.homeowner_name} phone={snap.homeowner_phone} compact />
+                <ReadinessCard readiness={computeLeadReadiness(snap, DEMO_BUY_BOX)} compact />
                 {snap.scope_summary && (
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">In their words</p>

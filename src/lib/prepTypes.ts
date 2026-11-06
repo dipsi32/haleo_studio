@@ -30,6 +30,7 @@ export type ParcelFacts = {
 
 // ───── What only the homeowner can say (all optional, all in their words) ─────
 export const WHY_NOW_OPTIONS = [
+  { value: "repair", label: "Something needs fixing", read: "Something needs fixing" },
   { value: "family", label: "Our family is growing", read: "Growing family" },
   { value: "moving-in", label: "A parent or relative is moving in", read: "A relative is moving in" },
   { value: "rental", label: "Rental income", read: "Rental income" },
@@ -56,6 +57,15 @@ export const SHOPPING_OPTIONS = [
   { value: "many", label: "Still looking around", read: "Still looking around" },
 ] as const;
 
+// How they found the contractor. Referrals and past clients are the leads
+// remodelers close most often; a search result is a fine start, nothing more.
+export const FOUND_VIA_OPTIONS = [
+  { value: "referral", label: "A friend or neighbor", read: "Referred by a friend or neighbor" },
+  { value: "past-client", label: "I've worked with them before", read: "A past client" },
+  { value: "saw-work", label: "Saw their work nearby", read: "Saw your work nearby" },
+  { value: "online", label: "Online search or reviews", read: "Found you online" },
+] as const;
+
 type Opt<T extends readonly { value: string }[]> = T[number]["value"];
 
 export type HomeownerContext = {
@@ -63,6 +73,7 @@ export type HomeownerContext = {
   who_decides?: Opt<typeof WHO_DECIDES_OPTIONS>;
   funding?: Opt<typeof FUNDING_OPTIONS>;
   shopping?: Opt<typeof SHOPPING_OPTIONS>;
+  found_via?: Opt<typeof FOUND_VIA_OPTIONS>;
   /** Free text: "we need it done before school starts". */
   hard_date?: string;
   /** Free text: anything from past projects they would like handled differently. */
@@ -74,7 +85,7 @@ export type HomeownerContext = {
 export const CONTEXT_TEXT_LIMIT = 200;
 
 export const hasContext = (c: HomeownerContext | null | undefined): boolean =>
-  Boolean(c && (c.why_now || c.who_decides || c.funding || c.shopping || c.hard_date?.trim() || c.past_note?.trim() || c.visit_times?.length));
+  Boolean(c && (c.why_now || c.who_decides || c.funding || c.shopping || c.found_via || c.hard_date?.trim() || c.past_note?.trim() || c.visit_times?.length));
 
 /** Drop empty strings and trim, so a snapshot carries only what was said. */
 export const cleanContext = (c: HomeownerContext): HomeownerContext | undefined => {
@@ -83,6 +94,7 @@ export const cleanContext = (c: HomeownerContext): HomeownerContext | undefined 
   if (c.who_decides) out.who_decides = c.who_decides;
   if (c.funding) out.funding = c.funding;
   if (c.shopping) out.shopping = c.shopping;
+  if (c.found_via) out.found_via = c.found_via;
   const hd = c.hard_date?.trim().slice(0, CONTEXT_TEXT_LIMIT);
   if (hd) out.hard_date = hd;
   const pn = c.past_note?.trim().slice(0, CONTEXT_TEXT_LIMIT);

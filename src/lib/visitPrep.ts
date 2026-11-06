@@ -14,7 +14,8 @@
 //    and turned into a question worth asking.
 import { cleanVisitTimes, formatVisitTime } from "@/lib/visitTimes";
 import { computeDealRead, type BuyBox, type DealRead, type DealSnapshot } from "@/lib/dealRead";
-import { FUNDING_OPTIONS, SHOPPING_OPTIONS, WHO_DECIDES_OPTIONS, WHY_NOW_OPTIONS } from "@/lib/prepTypes";
+import { FOUND_VIA_OPTIONS, FUNDING_OPTIONS, SHOPPING_OPTIONS, WHO_DECIDES_OPTIONS, WHY_NOW_OPTIONS } from "@/lib/prepTypes";
+import { computeLeadReadiness, type LeadReadiness } from "@/lib/leadReadiness";
 
 export type Source = "record" | "asked" | "math" | "inferred";
 
@@ -43,6 +44,8 @@ export type CallLevel = "drive" | "call-first" | "skip" | "unset";
 
 export type VisitPrep = {
   read: DealRead;
+  /** How ready the lead is to do the project: the lead sheet, answered. */
+  readiness: LeadReadiness;
   call: { level: CallLevel; title: string; why: string[] };
   surprises: Surprise[];
   home: PrepItem[];
@@ -96,6 +99,12 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
   } else {
     level = "drive";
     why = read.fit.reasons;
+  }
+  // A job can fit and still not be ready. An early lead gets a call before a drive.
+  const readiness = computeLeadReadiness(snap, buyBox);
+  if (level === "drive" && readiness.level === "early") {
+    level = "call-first";
+    why = [readiness.summary, ...readiness.dimensions.flatMap((d) => d.signals.filter((x) => x.effect === "down").map((x) => x.text))].slice(0, 3);
   }
 
   // ── what the homeowner may not know (the "how did you know that?" lines) ──
@@ -226,6 +235,8 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
   if (funding) people.push({ text: `Paying with: ${funding.toLowerCase()}`, source: "asked", note: ctx.funding === "construction-loan" || ctx.funding === "heloc" ? "A lender can set the start date. Ask where that stands." : undefined });
   if (ctx.hard_date?.trim()) people.push({ text: `Date that matters: ${ctx.hard_date.trim()}`, source: "asked", tone: "watch" });
   if (shopping) people.push({ text: shopping, source: "asked" });
+  const foundVia = readOf(FOUND_VIA_OPTIONS, ctx.found_via);
+  if (foundVia) people.push({ text: `How they found you: ${foundVia.toLowerCase()}`, source: "asked" });
   if (ctx.past_note?.trim()) people.push({ text: `From past projects: ${ctx.past_note.trim()}`, source: "asked", tone: "info" });
   const times = cleanVisitTimes(ctx.visit_times);
   if (times.length) people.push({ text: `Times that work for a visit: ${times.map(formatVisitTime).join("; ")}`, source: "asked", note: "Reply to confirm one." });
@@ -266,7 +277,7 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
   if (!ctx.shopping) push("Are you talking with other contractors too?", "Helps you decide how quickly to move.");
   for (const u of read.unknowns) if (!asks.some((a) => a.question === u)) push(u, "Open in the homeowner's own brief.");
 
-  return { read, call: { level, title: CALL_TITLE[level], why }, surprises: topSurprises, home, work, people, confirm: confirm.slice(0, 6), asks: asks.slice(0, 5), noRecords };
+  return { read, readiness, call: { level, title: CALL_TITLE[level], why }, surprises: topSurprises, home, work, people, confirm: confirm.slice(0, 6), asks: asks.slice(0, 5), noRecords };
 };
 
 // ───── A plain-text cheat sheet for the phone's notes app or a text to yourself ─────
@@ -275,6 +286,8 @@ export const prepToText = (prep: VisitPrep, who: { homeowner?: string; address?:
   lines.push(`Visit prep${who.homeowner ? `: ${who.homeowner}` : ""}${who.address ? `, ${who.address}` : ""}`);
   lines.push(prep.read.headline);
   lines.push(`${prep.call.title}${prep.call.why.length ? `. ${prep.call.why[0]}` : ""}`);
+  lines.push(`Readiness: ${prep.readiness.title}. ${prep.readiness.summary}`);
+  if (prep.readiness.ask) lines.push(`Ask first: ${prep.readiness.ask.question}`);
   const block = (title: string, items: PrepItem[]) => {
     if (items.length === 0) return;
     lines.push("", title);
