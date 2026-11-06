@@ -197,37 +197,53 @@ export const siteBriefSections = (
 ): { key: string; title: string; description: string; items: { text: string; basis: Basis }[] }[] => {
   const out = [];
   out.push({
-    key: "at_a_glance",
-    title: "At a glance",
-    description: "Haleo's estimate from the photos. Confirm on site.",
+    key: "job_summary",
+    title: "Job summary",
+    description: "Size, trades and duration: Haleo's estimate from the photos.",
     items: [{ text: atAGlance(b), basis: "inferred" as Basis }],
   });
   if (answers.length) {
     out.push({
       key: "homeowner_answers",
-      title: "The homeowner told us",
-      description: "Their answers to questions about their photos.",
+      title: "Homeowner's answers",
+      description: "What they told us about their photos.",
       items: answers.map((a) => ({ text: `${a.question} ${a.answer}`, basis: "grounded" as Basis })),
     });
   }
   if (b.likely_work.length) {
     out.push({
-      key: "likely_work",
-      title: "Likely work",
+      key: "scope_of_work",
+      title: "Scope of work",
       description: "By trade, from the photos and their answers.",
       items: b.likely_work.map((w) => ({ text: `${w.trade}: ${w.work}`, basis: w.basis })),
     });
   }
   if (b.watch_outs.length) {
-    out.push({ key: "watch_outs", title: "Watch-outs", description: "What could change the scope or the price.", items: b.watch_outs });
+    out.push({ key: "risks", title: "Risks & unknowns", description: "What could change the scope or the price.", items: b.watch_outs });
   }
   if (b.check_on_site.length) {
     out.push({
-      key: "check_on_site",
-      title: "Check on site",
+      key: "verify_on_site",
+      title: "Verify on site",
       description: "What only a visit can settle.",
       items: b.check_on_site.map((c) => ({ text: c, basis: "question" as Basis })),
     });
   }
   return out;
+};
+
+// ───── The small tag next to each line ─────
+// No tag for what's plainly in the photo or what the homeowner said: that's
+// the normal case. "Likely" for an assumption, "Verify on site" for an
+// unknown, "Estimate" for the job summary. Never a section name glued to a
+// tag ("Likely work · Seen").
+export type BasisTag = { label: string; tone: "estimate" | "likely" | "verify" } | null;
+
+export const basisTag = (basis: Basis, sectionTitle?: string): BasisTag => {
+  const t = (sectionTitle ?? "").toLowerCase();
+  if (t === "job summary") return { label: "Estimate", tone: "estimate" };
+  if (t === "homeowner's answers" || t === "verify on site") return null;
+  if (basis === "inferred") return { label: "Likely", tone: "likely" };
+  if (basis === "question") return { label: "Verify on site", tone: "verify" };
+  return null;
 };

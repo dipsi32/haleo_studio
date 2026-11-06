@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useContractorAccount } from "@/hooks/useContractorAccount";
 import DealReadCard, { FIT_STYLE } from "@/components/pro/DealReadCard";
 import VisitPrepCard from "@/components/pro/VisitPrepCard";
+import BasisPill from "@/components/intake/BasisPill";
 import ReplyPanel from "@/components/pro/ReplyPanel";
 import { computeDealRead, toBuyBox } from "@/lib/dealRead";
 import { matchesFilter, replyState, triageCompare, type InboxFilter, type ReplyState, type ThreadMsg } from "@/lib/replyDrafts";
@@ -826,7 +827,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
             {snap.haleo_read && (
               <details
                 // The compact read's site brief is short and the most useful thing here: open it.
-                open={snap.haleo_read.sections.some((sec) => sec.title === "At a glance")}
+                open={snap.haleo_read.sections.some((sec) => sec.title === "Job summary" || sec.title === "At a glance")}
                 className="group rounded-2xl border border-accent/30 bg-accent/5 p-5 [&_summary::-webkit-details-marker]:hidden"
               >
                 <summary className="flex cursor-pointer items-start justify-between gap-3">
@@ -852,9 +853,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
                             }`} />
                             <span>
                               {it.text}
-                              <span className="ml-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                                {it.basis === "grounded" ? "seen" : it.basis === "inferred" ? "likely" : "open"}
-                              </span>
+                              <BasisPill basis={it.basis} section={sec.title} />
                             </span>
                           </li>
                         ))}
