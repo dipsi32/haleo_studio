@@ -10,6 +10,7 @@
 // Output: { sections: [{ key, title, description, items: [{ text, basis }] }], summary, raw }
 import { aiFetch } from "../_shared/ai.ts";
 import { checkImage, MAX_TOTAL_BASE64, skippedNote } from "../_shared/images.ts";
+import { normalizeSpaceRead, siteBriefSections, SPACE_READ_TOOL, type SpaceRead } from "../_shared/spaceRead.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -56,137 +57,48 @@ interface AnalysisResult {
   findings?: Finding[];
   /** Plain notes for the homeowner, e.g. a photo that couldn't be read. */
   notes?: string[];
+  /** The compact read: headline, what we noticed, one-tap questions, the site brief. */
+  read?: SpaceRead;
 }
 
-const SYSTEM_PROMPT = `You are a senior general-contractor's estimator reviewing a homeowner's project brief (interior remodel OR addition / ADU / JADU).
+const SYSTEM_PROMPT = `You are a senior general contractor looking at a homeowner's photos (and any plans) before a first site visit. You write a SHORT read with two readers in mind:
+- The homeowner, who should understand it in 15 seconds and answer a few one-tap questions.
+- The contractor, who should walk in prepared: likely work by trade, watch-outs, what to check on site, a rough size and duration.
 
-Your job is to read the uploaded photos AND/OR architectural plans (floor plans, site plans, elevations) — combined with the homeowner's stated intake — and produce a CONTRACTOR-READABLE read of the project, grounded STRICTLY in what was provided.
+Brevity is the product. Every line must help someone decide or act. Leave out anything that doesn't: furniture, generic advice, obvious facts, and anything you would have to guess at.
 
-WHEN ARCHITECTURAL PLANS ARE PROVIDED (additions / ADU / JADU):
-- Read the plans like a permit-set reviewer. Call out: footprint and approximate square footage IF labeled, number of rooms, room program (bed/bath/kitchen/living), door & window schedule cues, ceiling heights if noted, foundation type if shown, structural callouts (shear walls, beams, posts), MEP routing if shown (panel, water heater, plumbing stacks), site setbacks, lot coverage, easements.
-- Quote labels and dimensions you can literally read from the sheet (e.g. "Sheet A1.0 shows 24'-0" × 32'-0" footprint, ~768 sq ft").
-- Note sheet types you see (A-series architectural, S-series structural, T-24 energy, etc.) and what's missing.
-- For ADU/JADU specifically: flag state ADU law cues (parking exemption proximity to transit, owner-occupancy for JADU, kitchen requirements for JADU, separate entrance, fire-rated separation from primary dwelling).
-- If plans are blurry, low-res, or partial, say so and mark items "question".
+WHAT TO LOOK FOR (report only what you can actually see, and only the few things that matter most):
+- Water: stains, bubbling paint, swollen cabinet bases or floors, failed caulk or grout.
+- Structure: cracks, sagging, out-of-square openings, exposed framing that likely carries load.
+- Electrical: lighting that can't serve the room, outlets near water (GFCI?), few outlets, cords doing permanent work.
+- Air: missing exhaust fans or range hoods.
+- Plumbing and gas: visible shutoffs, corroded pipes, gas vs electric cooking.
+- Layout and light: where daylight comes from, tight clearances, wasted or missing storage.
+- Finishes worth keeping, and finishes that will likely be replaced.
+- Signs of past work, worded as questions, never accusations.
+Never state a hidden condition as fact. Say what is visible and what it could mean.
 
-OUTPUT STRUCTURE — return exactly these 5 sections, in this order, using the keys provided:
-1. key: "structural"      — title: "Structural read"             — bones, walls, openings, load paths, ceiling, floor system, foundation. For plans: framing callouts, beams, shear, foundation type.
-2. key: "finishes"        — title: "Visible items & finishes"     — cabinetry, tile, flooring, counters, fixtures, hardware, appliances, condition. For plans: schedules / specs if shown, otherwise mark TBD.
-3. key: "constraints"     — title: "Constraints"                  — timeline, jurisdiction, MEP access, site access, setbacks, lot coverage, anything that boxes the project in.
-4. key: "opportunities"   — title: "Design opportunities"         — where the project earns its keep — light, layout, storage, flow, indoor-outdoor, rental income for ADUs.
-5. key: "code"            — title: "Code & permitting"            — likely permits, code triggers (Title 24, egress, ventilation, electrical, ADU state law, fire separation), inspection cadence.
+PLANS (additions, ADUs, JADUs): read them like a permit reviewer. Quote dimensions, sheet numbers and room labels you can literally read. Put what matters into likely_work, watch_outs and check_on_site. If plans are blurry or partial, say so in a question.
 
-For each item set "basis":
-- "grounded"  — directly visible in the photo / plan, OR explicitly stated by the homeowner. Quote what you see when relevant.
-- "inferred"  — a reasonable read a contractor would make from what's visible/stated; must be field-verified.
-- "question"  — an explicit unknown the contractor must answer before bidding.
+STAY HONEST:
+- Use only the homeowner's stated intake and what is visible. One photo is not evidence of a gut remodel; do not invent scope, rooms, dimensions, materials or ages.
+- With little to go on, ask instead of guessing: put it in questions or check_on_site.
+- No prices, no dollar figures, no brands, no code section numbers.
 
-ANTI-HALLUCINATION RULES (CRITICAL):
-- Stick to the FACTS in the intake and what is literally visible in the supplied images / plans. Nothing else.
-- Do NOT extrapolate scope. If the homeowner has not said "gut", "full remodel", "down to studs", "reconfigure", "move walls", "add fixtures", etc., DO NOT use those words or concepts. A single photo is NOT evidence of a gut remodel.
-- Do NOT invent fixtures, rooms, dimensions, or features that are not visible or labeled.
-- Do NOT invent finishes, materials, ages ("dated", "original 1970s tile") unless clearly visible. Avoid judgment words unless the user said so.
-- The number and kind of media supplied bounds your confidence. With only 1 photo or a partial plan, most claims about the rest of the project are "question", not "grounded" or "inferred".
-- If the scope tier is generic (e.g. "refresh", "mid", "premium") DO NOT translate that into specific work items the homeowner didn't ask for. Treat scope as a budget signal, not a work order.
-- When in doubt, mark it as a "question". Under-claiming is always safer than over-claiming.
+RETURN (via the tool):
+- headline: one plain sentence, at most 16 words. What this space is and the one thing that matters most for the project. e.g. "A dark, character-rich kitchen. Better lighting is the quickest win."
+- noticed: at most 3, the most decision-relevant things in the photos. kind "good" (worth keeping or building on; include one if anything genuinely is), "watch" (likely needs work or changes the bid), "unknown" (can't tell from the photo). title at most 8 words; note at most 20 words, saying what you see and why it matters. photo: the 1-based image number.
+- questions: 2 or 3 questions ONLY the homeowner can answer, prompted by what you see or can't see in THESE photos, whose answers would change the contractor's plan or price. Each answerable in one tap: 2 to 4 short options (at most 4 words each), always including "Not sure" when it could apply. Plain words. e.g. "Is there a window on the walls we can't see?" [Yes, one / Yes, several / No / Not sure]. why: at most 16 words, for the contractor.
+- photo_request: if one more photo would clearly help, what it should show, at most 10 words ("the other walls, especially any windows"); otherwise null.
+- site_brief, for the contractor:
+  - likely_work: at most 5 items, each one trade and at most 14 words, tied to what the homeowner asked for and what you see. basis: grounded (seen or stated), inferred, or question.
+  - watch_outs: at most 3, things that could change scope, structure, permits or price. At most 22 words each.
+  - check_on_site: at most 4 short items only a visit can settle.
+  - job_size: small (days, one trade), medium (weeks, a few trades), large (months, structure or many trades), or unclear.
+  - trades: the trades likely involved.
+  - duration: rough working time, e.g. "about 2–4 weeks", or "unclear". This is an estimate the page labels as ours.
 
-STYLE RULES:
-- Be specific about what IS visible. "Sheet A2.1: 12'-0" wide great room with 9'-0" plate, two 6'-0" sliders to rear yard" beats "open layout" — but only say this if you actually see it.
-- Detect 4–10 items per section when the inputs support it. With sparse inputs, fewer items is correct. Quality over count.
-- Reference the homeowner's pain points, vision, permit status, and stated scope when they shape your read — don't go beyond them.
-- If video frames are provided, treat them as time-of-day-anchored snapshots — call out lighting, finish condition, visible MEP cues; note exact dimensions can't come from video.
-- NEVER mention budget, dollars, price ranges, or cost figures.
-- The "summary" is one tight paragraph (≤ 80 words) — what a GC would tell their PM after glancing at the photos / plans. For an ADU/JADU plan set, lead with the project type, footprint if visible, and permit posture.
-
-WHAT AN EXPERIENCED CONTRACTOR SCANS FOR IN EVERY PHOTO (look for each; report only what you can actually see):
-- Water: stains or rings on ceilings and walls, bubbling paint, warped or swollen cabinet bases and flooring, rust at fixtures, failed caulk or grout at tubs, showers and sinks.
-- Structure: cracks (note whether hairline or wider, and their direction), sagging ceilings, doors or windows out of square, sloping floors.
-- Electrical: outlets near sinks or water and whether they look like GFCI (test buttons), two-prong outlets, few outlets along counters, extension cords or power strips doing permanent work, single ceiling fixture lighting a whole room.
-- Air: bathroom exhaust fan present or not, range hood and whether it seems to vent outside, window ventilation.
-- Plumbing and gas: visible shutoff valves, exposed or corroded pipes, gas range (knobs, pilot, flex line) versus electric, water heater type and venting if visible.
-- Layout and light: walkways and clearances that look tight, where natural light comes from, ceiling height cues (soffits, low beams), storage that's missing or wasted.
-- Finishes: what the surfaces are (tile, laminate, hardwood, LVP, stone), and visible condition (chips, wear, lifting, mismatched transitions).
-- Signs of past work: patched drywall, mismatched materials, DIY-looking wiring or plumbing. Word these as questions ("worth asking whether this was permitted"), never accusations.
-Never state a hidden condition as fact ("there is mold", "the wiring is unsafe"). Say what is visible and what it could mean: "dark staining under the sink, which can mean an old or active leak — worth checking before new cabinets go in".
-
-FINDINGS — the homeowner-facing layer (also used by the contractor):
-Return 4 to 10 "findings", the most useful things from the photos, written for a homeowner who is not in the trades:
-- "title": short and plain, under 10 words ("Staining on the ceiling by the window").
-- "detail": what you see, specifically, and where ("Brown ring about a foot wide, top left of photo 2").
-- "why": why it matters for this project, in one sentence a homeowner understands.
-- "next_step": one concrete action ("Ask your contractor to check for an active leak before you choose ceiling finishes").
-- "kind": "working" for something good to keep or build on (great natural light, solid hardwood worth saving), "attention" for something likely to need work or change the bid, "check" for an unknown that someone should look at in person.
-- "audience": "homeowner", "contractor" or "both".
-- "basis": as above. "photo": the 1-based image number it comes from, or null.
-Include at least one "working" finding when anything genuinely is (people should hear what's good about their home), but never invent praise. Order by usefulness. No prices, no brands, no code citations by number.
-
-Return ONLY the tool call. No prose.`;
-
-const ANALYZE_TOOL = {
-  type: "function",
-  function: {
-    name: "emit_space_analysis",
-    description: "Return the structured contractor-readable space analysis.",
-    parameters: {
-      type: "object",
-      properties: {
-        summary: { type: "string", description: "One-paragraph GC summary, ≤80 words." },
-        findings: {
-          type: "array",
-          maxItems: 10,
-          items: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              detail: { type: "string" },
-              why: { type: "string" },
-              next_step: { type: "string" },
-              kind: { type: "string", enum: ["working", "attention", "check"] },
-              audience: { type: "string", enum: ["homeowner", "contractor", "both"] },
-              basis: { type: "string", enum: ["grounded", "inferred", "question"] },
-              photo: { type: ["integer", "null"] },
-            },
-            required: ["title", "detail", "why", "next_step", "kind", "audience", "basis"],
-            additionalProperties: false,
-          },
-        },
-        sections: {
-          type: "array",
-          minItems: 5,
-          maxItems: 5,
-          items: {
-            type: "object",
-            properties: {
-              key: {
-                type: "string",
-                enum: ["structural", "finishes", "constraints", "opportunities", "code"],
-              },
-              title: { type: "string" },
-              description: { type: "string" },
-              items: {
-                type: "array",
-                minItems: 1,
-                items: {
-                  type: "object",
-                  properties: {
-                    text: { type: "string" },
-                    basis: { type: "string", enum: ["grounded", "inferred", "question"] },
-                  },
-                  required: ["text", "basis"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["key", "title", "description", "items"],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ["summary", "sections", "findings"],
-      additionalProperties: false,
-    },
-  },
-};
+Return ONLY the tool call.`;
 
 // ───── helpers ─────
 function asString(v: unknown, fallback = ""): string {
@@ -339,66 +251,6 @@ function fallbackSections(
   };
 }
 
-const FINDING_KINDS = ["working", "attention", "check"];
-const AUDIENCES = ["homeowner", "contractor", "both"];
-
-function normalizeFindings(raw: unknown, photoUrls: string[]): Finding[] {
-  if (!Array.isArray(raw)) return [];
-  return (raw as Record<string, unknown>[])
-    .map((f) => {
-      const title = asString(f?.title);
-      const detail = asString(f?.detail);
-      if (!title || !detail) return null;
-      const n = typeof f.photo === "number" && Number.isInteger(f.photo) ? f.photo : null;
-      return {
-        title,
-        detail,
-        why: asString(f.why),
-        next_step: asString(f.next_step),
-        kind: (FINDING_KINDS.includes(asString(f.kind)) ? asString(f.kind) : "check") as Finding["kind"],
-        audience: (AUDIENCES.includes(asString(f.audience)) ? asString(f.audience) : "both") as Finding["audience"],
-        basis: (["grounded", "inferred", "question"].includes(asString(f.basis)) ? asString(f.basis) : "inferred") as Basis,
-        photo_url: n && n >= 1 && n <= photoUrls.length ? photoUrls[n - 1] : null,
-      } as Finding;
-    })
-    .filter(Boolean)
-    .slice(0, 10) as Finding[];
-}
-
-function normalize(raw: unknown, intake: Record<string, unknown>): AnalysisResult {
-  const src = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-  const sections = Array.isArray(src.sections) ? src.sections : [];
-  const ALLOWED_KEYS = ["structural", "finishes", "constraints", "opportunities", "code"];
-  const cleaned: AnalysisSection[] = sections
-    .map((s) => {
-      const sec = s as Record<string, unknown>;
-      const key = asString(sec.key);
-      if (!ALLOWED_KEYS.includes(key)) return null;
-      const items = Array.isArray(sec.items)
-        ? (sec.items as unknown[])
-            .map((it) => {
-              const i = it as Record<string, unknown>;
-              const basis = ["grounded", "inferred", "question"].includes(asString(i.basis))
-                ? (asString(i.basis) as Basis)
-                : "inferred";
-              const text = asString(i.text);
-              return text ? { text, basis } : null;
-            })
-            .filter(Boolean) as AnalysisItem[]
-        : [];
-      if (items.length === 0) return null;
-      return {
-        key,
-        title: asString(sec.title) || key,
-        description: asString(sec.description),
-        items,
-      } as AnalysisSection;
-    })
-    .filter(Boolean) as AnalysisSection[];
-  if (cleaned.length === 0) return fallbackSections(intake);
-  return { summary: asString(src.summary), sections: cleaned };
-}
-
 // ───── handler ─────
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -526,13 +378,13 @@ serve(async (req) => {
       for (const pt of planTexts) {
         userText += `\n--- File: ${pt.name} (${pt.pages} page${pt.pages === 1 ? "" : "s"}) ---\n${pt.text}\n`;
       }
-      userText += `\n=== END PLAN SHEET TEXT ===\n\nIMPORTANT: The text above is extracted directly from the homeowner's plan PDFs. Quote sheet numbers, dimensions, room labels, and schedule entries you can literally read. Lead the "summary" with what kind of plan set this is (architectural, site, structural) and the headline footprint / room program if visible. Use the "structural" and "code" sections to specifically narrate what the plans show.`;
+      userText += `\n=== END PLAN SHEET TEXT ===\n\nIMPORTANT: The text above is extracted directly from the homeowner's plan PDFs. Quote sheet numbers, dimensions, room labels, and schedule entries you can literally read. Lead the "summary" with what kind of plan set this is (architectural, site, structural) and the headline footprint / room program if visible. Put what the plans show into likely_work, watch_outs and check_on_site.`;
     }
 
     if (dataUrls.length > 0) {
       userText += `\n\nIMAGES ATTACHED, IN ORDER (use these numbers for "photo"):\n${sentKinds.map((k, i) => `${i + 1}. ${k}`).join("\n")}`;
     }
-    userText += `\n\nRead every image closely before answering. Produce the structured analysis now: the 5 contractor sections and the homeowner findings.`;
+    userText += `\n\nRead every image closely, then return the short read: headline, at most 3 things noticed, 2 or 3 one-tap questions, and the site brief.`;
 
     const userContent: Array<Record<string, unknown>> = [{ type: "text", text: userText }];
     for (const url of dataUrls) {
@@ -548,13 +400,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 6000,
+        max_tokens: 2500,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
         ],
-        tools: [ANALYZE_TOOL],
-        tool_choice: { type: "function", function: { name: "emit_space_analysis" } },
+        tools: [SPACE_READ_TOOL],
+        tool_choice: { type: "function", function: { name: "emit_space_read" } },
       }),
     });
 
@@ -608,9 +460,22 @@ serve(async (req) => {
       }
     }
 
-    const result = normalize(parsedRaw, intake);
-    const findings = normalizeFindings((parsedRaw as Record<string, unknown> | null)?.findings, sentUrls);
-    if (findings.length) result.findings = findings;
+    const read = normalizeSpaceRead(parsedRaw, sentUrls);
+    if (!read) {
+      const detail = "AI returned no usable read";
+      await supabase.from("space_analyses").update({ status: "error", error: detail }).eq("id", analysisId);
+      return new Response(
+        JSON.stringify({ success: false, error: "Haleo couldn't read these photos this time. Try again, or re-add the photos.", retryable: true, analysisId, detail }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    // The compact read, plus the same thing as sections for screens that
+    // render sections (the contractor inbox, older briefs).
+    const result: AnalysisResult = {
+      summary: read.headline,
+      sections: siteBriefSections(read.site_brief),
+      read,
+    };
     if (note) result.notes = [note];
 
     await supabase

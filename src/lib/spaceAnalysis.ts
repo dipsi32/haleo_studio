@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 import type { AnalysisSection } from "@/lib/brief";
 import { extractVideoFrames } from "@/lib/videoFrames";
-import { cleanFindings, friendlyAnalysisError, type Finding } from "@/lib/spaceFindings";
+import { cleanFindings, friendlyAnalysisError, readOf, type Finding } from "@/lib/spaceFindings";
 
 const SESSION_KEY = "haleo:session:v1";
 const UPLOADED_KEY = "haleo:uploaded:v1"; // map<assetId, publicUrl>
@@ -30,6 +30,8 @@ export type SpaceAnalysis = {
   findings?: Finding[];
   /** Plain notes for the homeowner, e.g. a photo that couldn't be read. */
   notes?: string[];
+  /** The compact read: headline, what we noticed, one-tap questions, the site brief. */
+  read?: import("@/lib/spaceFindings").SpaceRead;
 };
 
 export const getSessionId = (): string => {
@@ -194,15 +196,15 @@ export const runSpaceAnalysis = async (
   }
   if (!data?.success) throw new Error(friendlyAnalysisError(data?.error));
   const result = data.result as SpaceAnalysis;
-  return { ...result, findings: cleanFindings(result.findings) };
+  return { ...result, findings: cleanFindings(result.findings), read: readOf(result.read) ?? undefined };
 };
 
 // ───── Hook ─────
 // Triggers an analysis whenever the intake "media set" changes. Caches the
 // result in localStorage so navigating away and back doesn't re-spend tokens.
 
-// v3: results now carry findings. Older cached reads are re-run once.
-const RESULT_CACHE_KEY = "haleo:analysis:v3";
+// v4: results now carry the compact read. Older cached reads are re-run once.
+const RESULT_CACHE_KEY = "haleo:analysis:v4";
 const FALLBACK_SUMMARY = "No analyzable visuals on file yet. Add at least one photo, a short video, or a plan PDF to generate a grounded read.";
 const readCachedResult = (key: string): SpaceAnalysis | null => {
   try {

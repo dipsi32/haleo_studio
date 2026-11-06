@@ -16,7 +16,9 @@ export default function DemoBanner() {
     window.addEventListener(ACTIVE_EVENT, sync);
     return () => window.removeEventListener(ACTIVE_EVENT, sync);
   }, []);
-  useEffect(() => setActive(getActiveInvite()), [pathname]);
+  useEffect(() => {
+    setActive(getActiveInvite());
+  }, [pathname]);
 
   if (!active?.demo || !IN_FLOW.test(pathname)) return null;
   const who = active.personName ?? active.contractorName;

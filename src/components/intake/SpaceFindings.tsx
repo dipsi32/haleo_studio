@@ -150,8 +150,24 @@ export const ReadError = ({ message, onRetry }: { message: string | null; onRetr
 );
 
 /** Interior design ideas: not built yet, so it says so, and counts who wants it. */
-export const DesignIdeasTeaser = ({ room }: { room?: string }) => {
+export const DesignIdeasTeaser = ({ room, compact = false }: { room?: string; compact?: boolean }) => {
   const [asked, setAsked] = useState(false);
+  if (compact) {
+    // One quiet line, so it never competes with the read.
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (!asked) track("design_ideas_interest", { room: room ?? null });
+          setAsked(true);
+        }}
+        className="mt-5 inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+      >
+        <Palette className="h-3.5 w-3.5 text-accent" />
+        {asked ? "Noted. We'll show you design ideas for your space when they're ready." : "Design ideas for this room · coming soon"}
+      </button>
+    );
+  }
   return (
     <button
       type="button"

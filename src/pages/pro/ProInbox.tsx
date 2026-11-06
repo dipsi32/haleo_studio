@@ -824,7 +824,11 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
 
             {/* Haleo's read — attachment style, collapsible */}
             {snap.haleo_read && (
-              <details className="group rounded-2xl border border-accent/30 bg-accent/5 p-5 [&_summary::-webkit-details-marker]:hidden">
+              <details
+                // The compact read's site brief is short and the most useful thing here: open it.
+                open={snap.haleo_read.sections.some((sec) => sec.title === "At a glance")}
+                className="group rounded-2xl border border-accent/30 bg-accent/5 p-5 [&_summary::-webkit-details-marker]:hidden"
+              >
                 <summary className="flex cursor-pointer items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-accent">

@@ -106,6 +106,10 @@ export type IntakeData = {
     sections: import("@/lib/brief").AnalysisSection[];
     // What looks right and what needs a closer look, each tied to a photo.
     findings?: import("@/lib/spaceFindings").Finding[];
+    // The compact read (headline, what we noticed, questions, site brief)…
+    read?: import("@/lib/spaceFindings").SpaceRead;
+    // …and the homeowner's one-tap answers to its questions.
+    answers?: { id: string; question: string; answer: string }[];
     approvedAt: string; // ISO timestamp
     mediaIds: string[]; // ids covered by this approval — invalidates if media changes
   };

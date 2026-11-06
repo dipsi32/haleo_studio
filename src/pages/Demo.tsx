@@ -50,7 +50,11 @@ export default function Demo() {
   useEffect(() => {
     if (demo && v === "doors") track("demo_opened", { demo: demo.slug });
   }, [demo, v]);
-  useEffect(() => window.scrollTo({ top: 0 }), [v]);
+  // A block body, never an expression: whatever scrollTo returns must not
+  // become React's cleanup (a library on the page makes it return a value).
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [v]);
 
   if (!demo) return <NoDemo />;
   if (v === "text") return <TextDoor demo={demo} />;
@@ -454,6 +458,28 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   </div>
                 )}
 
+                {snap.haleo_read && (
+                  <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                      <Sparkles className="h-3 w-3" /> Site brief, from their photos
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{snap.haleo_read.summary}</p>
+                    {snap.haleo_read.sections.slice(0, 5).map((sec) => (
+                      <div key={sec.title} className="mt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
+                        <ul className="mt-1.5 space-y-1.5">
+                          {sec.items.slice(0, 5).map((it) => (
+                            <li key={it.text} className="flex gap-2 text-[13px] leading-snug text-foreground/85">
+                              <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50")} />
+                              {it.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <VisitPrepCard demo snapshot={snap} buyBox={DEMO_BUY_BOX} homeownerName={homeowner} />
 
                 {(snap.room_photo_urls?.length ?? 0) > 0 && (
@@ -469,27 +495,6 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   </div>
                 )}
 
-                {snap.haleo_read && (
-                  <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
-                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                      <Sparkles className="h-3 w-3" /> Haleo's read of their photos
-                    </p>
-                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{snap.haleo_read.summary}</p>
-                    {snap.haleo_read.sections.slice(0, 2).map((sec) => (
-                      <div key={sec.title} className="mt-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
-                        <ul className="mt-1.5 space-y-1.5">
-                          {sec.items.slice(0, 4).map((it) => (
-                            <li key={it.text} className="flex gap-2 text-[13px] leading-snug text-foreground/85">
-                              <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50")} />
-                              {it.text}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 {(snap.trade_groups?.length ?? 0) > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-4">
