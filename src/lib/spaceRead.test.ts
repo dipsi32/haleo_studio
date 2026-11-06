@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atAGlance, normalizeSpaceRead, siteBriefSections } from "../../supabase/functions/_shared/spaceRead";
+import { atAGlance, basisTag, normalizeSpaceRead, siteBriefSections } from "../../supabase/functions/_shared/spaceRead";
 
 const urls = ["https://x/1.jpg", "https://x/2.jpg"];
 const raw = {
@@ -57,8 +57,19 @@ describe("the contractor's site brief", () => {
     const r = normalizeSpaceRead(raw, urls)!;
     expect(atAGlance(r.site_brief)).toBe("Medium job · Electrician, Finish carpenter · about 2–4 weeks");
     const secs = siteBriefSections(r.site_brief, [{ question: "Is there a window on the walls we can't see?", answer: "No" }]);
-    expect(secs.map((s) => s.title)).toEqual(["At a glance", "The homeowner told us", "Likely work", "Watch-outs", "Check on site"]);
+    expect(secs.map((s) => s.title)).toEqual(["Job summary", "Homeowner's answers", "Scope of work", "Risks & unknowns", "Verify on site"]);
     expect(secs[1].items[0].text).toBe("Is there a window on the walls we can't see? No");
     expect(secs[2].items[0].text).toMatch(/^Electrical: Layered lighting/);
+  });
+});
+
+describe("line tags", () => {
+  it("say what kind of claim a line is, in plain words, and stay quiet for the normal case", () => {
+    expect(basisTag("grounded", "Scope of work")).toBeNull();
+    expect(basisTag("inferred", "Scope of work")).toEqual({ label: "Likely", tone: "likely" });
+    expect(basisTag("question", "Risks & unknowns")).toEqual({ label: "Verify on site", tone: "verify" });
+    expect(basisTag("question", "Verify on site")).toBeNull();
+    expect(basisTag("grounded", "Homeowner's answers")).toBeNull();
+    expect(basisTag("inferred", "Job summary")).toEqual({ label: "Estimate", tone: "estimate" });
   });
 });

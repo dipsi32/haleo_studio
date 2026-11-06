@@ -23,6 +23,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BasisPill from "@/components/intake/BasisPill";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import { ReadError, ReadNotes, SpaceFindings } from "@/components/intake/SpaceFindings";
 import type { IntakeData } from "@/lib/intake";
@@ -142,10 +143,11 @@ const HaleoSeesPreview = ({
                       <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", meta.cls)} />
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/50">
-                          {it.section} · {meta.label}
+                          {it.section}
                         </p>
                         <p className="mt-0.5 text-sm leading-relaxed text-foreground/85">
                           {it.text}
+                          <BasisPill basis={it.basis} section={it.section} />
                         </p>
                       </div>
                     </li>

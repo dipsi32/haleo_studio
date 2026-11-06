@@ -29,6 +29,7 @@ import {
 import Logo from "@/components/Logo";
 import InviteWelcome from "@/components/InviteWelcome";
 import VisitPrepCard from "@/components/pro/VisitPrepCard";
+import BasisPill from "@/components/intake/BasisPill";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
@@ -470,8 +471,11 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                         <ul className="mt-1.5 space-y-1.5">
                           {sec.items.slice(0, 5).map((it) => (
                             <li key={it.text} className="flex gap-2 text-[13px] leading-snug text-foreground/85">
-                              <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", it.basis === "grounded" ? "bg-sage" : it.basis === "inferred" ? "bg-accent" : "bg-muted-foreground/50")} />
-                              {it.text}
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-foreground/40" />
+                              <span>
+                                {it.text}
+                                <BasisPill basis={it.basis} section={sec.title} />
+                              </span>
                             </li>
                           ))}
                         </ul>

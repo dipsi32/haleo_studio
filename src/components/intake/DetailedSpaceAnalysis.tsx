@@ -10,14 +10,22 @@ import {
   Lock,
   Lightbulb,
   ScrollText,
-  Check,
-  AlertCircle,
-  HelpCircle,
+  Clock,
+  MessageCircle,
+  Hammer,
+  AlertTriangle,
+  ClipboardCheck,
 } from "lucide-react";
 import type { AnalysisSection } from "@/lib/brief";
+import BasisPill from "@/components/intake/BasisPill";
 import { cn } from "@/lib/utils";
 
 const SECTION_ICONS: Record<string, typeof Layers> = {
+  job_summary: Clock,
+  homeowner_answers: MessageCircle,
+  scope_of_work: Hammer,
+  risks: AlertTriangle,
+  verify_on_site: ClipboardCheck,
   structural: Layers,
   finishes: Palette,
   constraints: Lock,
@@ -25,11 +33,6 @@ const SECTION_ICONS: Record<string, typeof Layers> = {
   code: ScrollText,
 };
 
-const BASIS_META = {
-  grounded: { label: "From you", icon: Check, cls: "text-sage" },
-  inferred: { label: "Inferred", icon: AlertCircle, cls: "text-accent" },
-  question: { label: "Open", icon: HelpCircle, cls: "text-foreground/60" },
-} as const;
 
 type Props = {
   sections: AnalysisSection[];
@@ -40,36 +43,17 @@ const DetailedSpaceAnalysis = ({ sections, defaultOpen = 0 }: Props) => {
   const [open, setOpen] = useState<Set<number>>(new Set([defaultOpen]));
   const toggle = (i: number) => {
     const next = new Set(open);
-    next.has(i) ? next.delete(i) : next.add(i);
+    if (next.has(i)) next.delete(i);
+    else next.add(i);
     setOpen(next);
   };
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-      {/* Legend strip — explains the badges once */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] text-foreground/70 md:px-6">
-        <span className="font-medium uppercase tracking-wider text-foreground/60">
-          How to read it
-        </span>
-        {(["grounded", "inferred", "question"] as const).map((b) => {
-          const m = BASIS_META[b];
-          const Icon = m.icon;
-          return (
-            <span key={b} className="inline-flex items-center gap-1">
-              <Icon className={cn("h-3 w-3", m.cls)} />
-              {m.label}
-            </span>
-          );
-        })}
-      </div>
-
       <ul className="divide-y divide-border">
         {sections.map((s, i) => {
           const Icon = SECTION_ICONS[s.key] ?? Layers;
           const isOpen = open.has(i);
-          const groundedCount = s.items.filter((it) => it.basis === "grounded").length;
-          const inferredCount = s.items.filter((it) => it.basis === "inferred").length;
-          const questionCount = s.items.filter((it) => it.basis === "question").length;
           return (
             <li key={s.key}>
               <button
@@ -86,23 +70,7 @@ const DetailedSpaceAnalysis = ({ sections, defaultOpen = 0 }: Props) => {
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
                 </div>
-                <span className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-foreground/60 sm:flex">
-                  {groundedCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sage-soft px-2 py-0.5 text-sage">
-                      <Check className="h-2.5 w-2.5" /> {groundedCount}
-                    </span>
-                  )}
-                  {inferredCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-accent">
-                      <AlertCircle className="h-2.5 w-2.5" /> {inferredCount}
-                    </span>
-                  )}
-                  {questionCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-foreground/60">
-                      <HelpCircle className="h-2.5 w-2.5" /> {questionCount}
-                    </span>
-                  )}
-                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{s.items.length}</span>
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 shrink-0 text-foreground/50 transition-transform",
@@ -121,17 +89,13 @@ const DetailedSpaceAnalysis = ({ sections, defaultOpen = 0 }: Props) => {
                   >
                     <ul className="space-y-2 px-5 pb-5 md:px-6 md:pb-6">
                       {s.items.map((it, idx) => {
-                        const meta = BASIS_META[it.basis];
-                        const Icon = meta.icon;
                         return (
                           <li
                             key={idx}
-                            className="flex items-start gap-3 rounded-xl border border-border bg-background/60 p-3"
+                            className="rounded-xl border border-border bg-background/60 p-3 text-sm leading-relaxed text-foreground/85"
                           >
-                            <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", meta.cls)} />
-                            <p className="text-sm leading-relaxed text-foreground/85">
-                              {it.text}
-                            </p>
+                            {it.text}
+                            <BasisPill basis={it.basis} section={s.title} />
                           </li>
                         );
                       })}

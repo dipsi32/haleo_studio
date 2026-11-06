@@ -4,7 +4,8 @@
 import type { AnalysisItem, AnalysisSection } from "@/lib/brief";
 import type { SpaceRead } from "../../supabase/functions/_shared/spaceRead";
 export type { SpaceRead, ReadQuestion, Noticed, SiteBrief } from "../../supabase/functions/_shared/spaceRead";
-export { siteBriefSections, atAGlance } from "../../supabase/functions/_shared/spaceRead";
+export { siteBriefSections, atAGlance, basisTag } from "../../supabase/functions/_shared/spaceRead";
+export type { BasisTag } from "../../supabase/functions/_shared/spaceRead";
 
 /** A read from the server, if it has the compact shape. Older cached reads don't. */
 export const readOf = (v: unknown): SpaceRead | null => {
