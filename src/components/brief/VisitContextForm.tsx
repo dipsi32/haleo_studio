@@ -5,6 +5,7 @@
 import { Input } from "@/components/ui/input";
 import {
   CONTEXT_TEXT_LIMIT,
+  FOUND_VIA_OPTIONS,
   FUNDING_OPTIONS,
   SHOPPING_OPTIONS,
   WHO_DECIDES_OPTIONS,
@@ -62,6 +63,7 @@ export default function VisitContextForm({ name, value, onChange }: Props) {
         <Chips legend="What's prompting this project?" options={WHY_NOW_OPTIONS} value={value.why_now} onSelect={(v) => set("why_now", v as HomeownerContext["why_now"])} />
         <Chips legend="Who weighs in on the decision?" options={WHO_DECIDES_OPTIONS} value={value.who_decides} onSelect={(v) => set("who_decides", v as HomeownerContext["who_decides"])} />
         <Chips legend="How are you planning to pay for it?" options={FUNDING_OPTIONS} value={value.funding} onSelect={(v) => set("funding", v as HomeownerContext["funding"])} />
+        <Chips legend={`How did you hear about ${name}?`} options={FOUND_VIA_OPTIONS} value={value.found_via} onSelect={(v) => set("found_via", v as HomeownerContext["found_via"])} />
         <Chips legend="Are you talking with other contractors?" options={SHOPPING_OPTIONS} value={value.shopping} onSelect={(v) => set("shopping", v as HomeownerContext["shopping"])} />
 
         <div>

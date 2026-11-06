@@ -25,6 +25,8 @@ import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import HomeownerContact from "@/components/pro/HomeownerContact";
+import ReadinessCard, { READY_CHIP } from "@/components/pro/ReadinessCard";
+import { computeLeadReadiness } from "@/lib/leadReadiness";
 import { getPushPermission, subscribeToPush, deferPushPermission, isPushSupported } from "@/lib/push";
 
 type BriefSnapshot = {
@@ -303,6 +305,7 @@ const ProInbox = () => {
               const preview = snap.scope_summary || snap.vision || (snap.trade_groups?.[0]?.lines?.[0] ?? "");
               const photoCount = (snap.room_photo_urls?.length ?? 0) + (snap.floorplan_urls?.length ?? 0) + (snap.rendering_urls?.length ?? 0);
               const deal = isUnlocked ? computeDealRead(snap, buyBox) : null;
+              const ready = isUnlocked ? computeLeadReadiness(snap, buyBox) : null;
               return (
                 <li key={s.id}>
                   <button
@@ -317,6 +320,11 @@ const ProInbox = () => {
                         {isUnlocked && <CheckCircle2 className="h-4 w-4 text-accent" />}
                         {deal && deal.fit.level !== "unset" && (
                           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_STYLE[deal.fit.level]}`}>{deal.fit.title}</span>
+                        )}
+                        {ready && ready.level !== "unclear" && (
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${READY_CHIP[ready.level].cls}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${READY_CHIP[ready.level].dot}`} /> {ready.title}
+                          </span>
                         )}
                         {s.source === "contractor_invite" && (
                           <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">Your link</span>
@@ -630,6 +638,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
           <div className="space-y-6 py-2">
             {/* Deal read: the decision first, the detail after */}
             <HomeownerContact name={send.outreach_batches?.homeowner_name} phone={snap.homeowner_phone} />
+            <ReadinessCard readiness={computeLeadReadiness(snap, buyBox)} />
             <VisitPrepCard snapshot={snap} buyBox={buyBox} homeownerName={send.outreach_batches?.homeowner_name} onAsk={askAbout} />
             <DealReadCard snapshot={snap} buyBox={buyBox} hideOpen />
 

@@ -101,6 +101,8 @@ export type AnalyticsEvent =
   | "homeowner_welcome_completed"
   // Contractor tapped Call or Text on a homeowner's number.
   | "homeowner_contacted"
+  // A lead readiness read was shown to a contractor (level: ready, serious, early, unclear).
+  | "lead_readiness_shown"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"
