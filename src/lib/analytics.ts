@@ -117,6 +117,9 @@ export type AnalyticsEvent =
   | "space_read_retried"
   | "space_finding_photo_opened"
   | "design_ideas_interest"
+  | "space_read_question_answered"
+  | "space_read_photo_requested"
+  | "space_read_confirmed"
   // ADU feasibility
   | "adu_started"
   | "adu_address_submitted"

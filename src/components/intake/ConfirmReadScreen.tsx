@@ -35,6 +35,9 @@ import { cn } from "@/lib/utils";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import { track } from "@/lib/analytics";
 import { DesignIdeasTeaser, ReadError, ReadNotes, SpaceFindings } from "@/components/intake/SpaceFindings";
+import QuickRead from "@/components/intake/QuickRead";
+import { readOf } from "@/lib/spaceFindings";
+import { getActiveInvite } from "@/lib/invites";
 import type { IntakeData, MediaAsset } from "@/lib/intake";
 
 const BASIS_META = {
@@ -216,6 +219,14 @@ const ConfirmReadScreen = ({
   stepDots: React.ReactNode;
 }) => {
   const { status, analysis, error, retry } = useSpaceAnalysis(intake);
+  // The compact read, when the server sent one (older cached reads don't have it).
+  const quick = readOf(analysis?.read);
+  // Answers to its one-tap questions: kept if they come back to this step.
+  const [answers, setAnswers] = useState<Record<string, string>>(() =>
+    Object.fromEntries((intake.approvedAnalysis?.answers ?? []).map((a) => [a.id, a.answer])),
+  );
+  const invite = getActiveInvite();
+  const who = invite ? invite.personName || invite.contractorName : "your contractor";
   const [expanded, setExpanded] = useState(false);
   const [progress, setProgress] = useState(8);
   const findings = analysis?.findings ?? [];
@@ -296,10 +307,16 @@ const ConfirmReadScreen = ({
     setConfirmed("ok");
     setJustConfirmedThisSession(true);
     if (analysis) {
+      const qa = (quick?.questions ?? [])
+        .filter((q) => answers[q.id])
+        .map((q) => ({ id: q.id, question: q.question, answer: answers[q.id] }));
+      track("space_read_confirmed", { questions: quick?.questions.length ?? 0, answered: qa.length });
       onApprove({
         summary: analysis.summary,
         sections: analysis.sections,
         findings: analysis.findings,
+        read: quick ?? undefined,
+        answers: qa,
         approvedAt: new Date().toISOString(),
         mediaIds: currentKey ? currentKey.split(",") : [],
       });
@@ -317,7 +334,9 @@ const ConfirmReadScreen = ({
           Here's what Haleo sees.
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-pretty text-base text-muted-foreground">
-          A grounded read of your space. Skim it — does it match reality before we send it to a contractor?
+          {quick
+            ? `What stands out in your photos, and a few quick questions for ${who}.`
+            : "A grounded read of your space. Skim it — does it match reality before we send it to a contractor?"}
         </p>
       </div>
 
@@ -366,7 +385,21 @@ const ConfirmReadScreen = ({
 
           {status === "error" && <ReadError message={error} onRetry={retry} />}
 
-          {status === "ready" && analysis && (
+          {status === "ready" && analysis && quick && (
+            <>
+              <QuickRead
+                read={quick}
+                answers={answers}
+                onAnswer={(id, a) => setAnswers((cur) => ({ ...cur, [id]: a }))}
+                who={who}
+                onAddPhoto={onBack}
+                notes={analysis.notes}
+              />
+              {!hasPlans && <DesignIdeasTeaser room={intake.room} compact />}
+            </>
+          )}
+
+          {status === "ready" && analysis && !quick && (
             <>
               <p className="font-display text-lg font-light leading-snug text-foreground/90 md:text-xl">
                 {analysis.summary}

@@ -212,7 +212,9 @@ const AnnotationBlock = ({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
 
-  useEffect(() => setDraft(value ?? ""), [value]);
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
 
   if (value && !open) {
     return (

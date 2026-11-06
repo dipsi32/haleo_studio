@@ -5,7 +5,7 @@ import { ROOM_LABELS, scopeFor } from "@/lib/intake";
 import { projectLabel, projectNoun } from "@/lib/projectName";
 import { buildHomeownerLayer, buildContractorLayer, groupContractorLinesByTrade } from "@/lib/brief";
 import type { HomeownerContext, ParcelFacts } from "@/lib/prepTypes";
-import { findingsSection } from "@/lib/spaceFindings";
+import { findingsSection, siteBriefSections } from "@/lib/spaceFindings";
 
 export type Contractor = {
   id: string;
@@ -443,11 +443,17 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     .map(urlOf)
     .filter(Boolean);
   const groups = groupContractorLinesByTrade(buildContractorLayer(data));
-  // The photo findings ride along as "Worth checking on site" for the contractor.
-  const onSite = findingsSection(data.approvedAnalysis?.findings ?? []);
+  // The compact read becomes the contractor's site brief, with the homeowner's
+  // answers to its questions. Older reads carry their findings as
+  // "Worth checking on site" instead.
+  const read = data.approvedAnalysis?.read;
+  const onSite = read ? null : findingsSection(data.approvedAnalysis?.findings ?? []);
+  const readSections = read
+    ? siteBriefSections(read.site_brief, (data.approvedAnalysis?.answers ?? []).map(a => ({ question: a.question, answer: a.answer })))
+    : null;
   const haleo = data.approvedAnalysis ? {
     summary: data.approvedAnalysis.summary,
-    sections: [...(onSite ? [onSite] : []), ...data.approvedAnalysis.sections].map(s => ({
+    sections: (readSections ?? [...(onSite ? [onSite] : []), ...data.approvedAnalysis.sections]).map(s => ({
       title: s.title,
       items: s.items.map(it => ({ text: it.text, basis: it.basis })),
     })),
