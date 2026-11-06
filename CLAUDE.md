@@ -15,6 +15,7 @@ Haleo helps homeowners hire the right contractor and pay a fair price, and helps
    Each loop needs an event that measures it (see `src/lib/analytics.ts`).
 6. **One product, whichever door they came through.** Shortlist (`/shortlist`), brief (`/brief`), contractor invite (`/i/:token`), quote check (`/roast`, `/proposal`) and the contractor side (`/pro`) share one visual language, one voice and one set of components. A user who moves between flows should never feel they changed apps. When adding a screen, reuse the existing patterns (eyebrow, display headline with an italic turn, rounded cards with `shadow-soft`, source badges, sticky bottom action) before inventing new ones. Known drift to fix: `/roast` uses its own serif and orange look, the homepage hero is its own design world, and the homepage and `SiteHeader` have separate navs.
 7. **Measure what matters for YC.** Prefer metrics that show pull: shortlists completed, bid requests sent, contractors who open what homeowners send, profiles claimed from those, briefs sent through contractor links, repeat use. Name events in `analytics.ts` and say in the PR which metric a change should move.
+8. **Build for pull, not praise.** Read `docs/pmf-pull.md` (PULL: Project, Unavoidable, List, Limitations). Pull belongs to a specific person. A contractor routing a real lead through their link is pull; compliments are not. Never pitch "pilots" or "design partners".
 
 ## Engineering notes
 
