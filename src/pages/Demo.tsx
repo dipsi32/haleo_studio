@@ -29,7 +29,7 @@ import Logo from "@/components/Logo";
 import HomeownerContact from "@/components/pro/HomeownerContact";
 import LeadToast from "@/components/pro/LeadToast";
 import { computeLeadReadiness } from "@/lib/leadReadiness";
-import { projectKindOf } from "@/lib/dealRead";
+import { isGlanceSection, jobGlance } from "@/lib/jobGlance";
 import InviteWelcome, { type HomeownerStart } from "@/components/InviteWelcome";
 import BasisPill from "@/components/intake/BasisPill";
 import { Button } from "@/components/ui/button";
@@ -378,14 +378,6 @@ const Card = ({ title, children }: { title: string; children: ReactNode }) => (
   </section>
 );
 
-const PROJECT_NAME: Record<ReturnType<typeof projectKindOf>, string> = {
-  kitchen: "Kitchen remodel",
-  bathroom: "Bathroom remodel",
-  addition: "Addition or ADU",
-  "whole-home": "Whole-home remodel",
-  other: "Home project",
-};
-
 const MattView = ({ demo }: { demo: DemoConfig }) => {
   const saved = useMemo(() => loadDemoBrief(demo.slug), [demo.slug]);
   const contractor = useDemoContractor(demo);
@@ -415,7 +407,8 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
   const snap = saved.snapshot;
   const name = snap.homeowner_name || DEMO_LEAD.name;
   // "Kitchen remodel", not the first line of what they typed.
-  const project = PROJECT_NAME[projectKindOf(snap)];
+  const job = jobGlance(snap);
+  const project = job.title;
   const ready = computeLeadReadiness(snap, DEMO_BUY_BOX);
   const times = cleanVisitTimes(snap.context?.visit_times);
   const claimHref = contractor?.slug ? `/pro/${contractor.slug}/claim` : "/pro/login?next=%2Fpro%2Flinks%23front-door";
@@ -506,24 +499,60 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   <span className="w-14" />
                 </div>
                 <div className="space-y-3 px-3 pb-6 pt-3">
-                  <LeadToast readiness={ready} />
-
-                  {/* Who and what */}
-                  <section className="rounded-2xl border border-border bg-card p-4">
-                    <div className="flex items-center gap-3">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-lg text-accent-soft-foreground">{name[0]}</span>
-                      <span className="min-w-0">
-                        <span className="block font-display text-xl leading-tight">{name}</span>
-                        <span className="block text-[13px] text-muted-foreground">{project}</span>
-                      </span>
-                    </div>
-                    {facts.length > 0 && (
+                  {/* The job, in one glance: the first thing they need */}
+                  <section className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">The job</p>
+                    <h2 className="mt-1 font-display text-[26px] font-light leading-tight">{job.title}</h2>
+                    {job.goal && <p className="mt-1.5 text-[15px] leading-snug text-foreground/85">“{job.goal}”</p>}
+                    {job.facts.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {facts.map((f) => (
-                          <span key={f} className="rounded-full bg-secondary px-2.5 py-1 text-[12px]">{f}</span>
+                        {job.facts.map((f) => (
+                          <span key={f} className="rounded-full bg-secondary px-2.5 py-1 text-[12px] font-medium">{f}</span>
                         ))}
                       </div>
                     )}
+                    {job.size && (
+                      <p className="mt-3 text-[13px] leading-snug text-foreground/80">
+                        {job.size}
+                        <BasisPill basis="inferred" section="Job summary" />
+                      </p>
+                    )}
+                    {job.scope.length > 0 && (
+                      <ul className="mt-3 space-y-1.5 border-t border-border pt-3">
+                        {job.scope.map((line) => {
+                          const [trade, ...rest] = line.split(":");
+                          return (
+                            <li key={line} className="flex gap-2 text-[13px] leading-snug">
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" />
+                              <span>
+                                {rest.length ? (
+                                  <>
+                                    <span className="font-medium">{trade}:</span>
+                                    {rest.join(":")}
+                                  </>
+                                ) : (
+                                  line
+                                )}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    {saved.note && <p className="mt-3 text-[13px] italic text-foreground/70">“{saved.note}”</p>}
+                  </section>
+
+                  <LeadToast readiness={ready} />
+
+                  {/* Who */}
+                  <section className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-lg text-accent-soft-foreground">{name[0]}</span>
+                      <span className="min-w-0">
+                        <span className="block font-display text-lg leading-tight">{name}</span>
+                        <span className="block text-[12px] text-muted-foreground">Homeowner · {snap.neighborhood}</span>
+                      </span>
+                    </div>
                     <div className="mt-3">
                       <HomeownerContact name={name} phone={snap.homeowner_phone} compact />
                     </div>
@@ -556,13 +585,6 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                     </Card>
                   )}
 
-                  {(snap.scope_summary || saved.note) && (
-                    <Card title="In their words">
-                      {snap.scope_summary && <p className="text-[14px] leading-relaxed text-foreground/85">{snap.scope_summary}</p>}
-                      {saved.note && <p className="mt-2 text-[14px] italic text-foreground/70">“{saved.note}”</p>}
-                    </Card>
-                  )}
-
                   {(snap.room_photo_urls?.length ?? 0) > 0 && (
                     <Card title="The space">
                       <div className="grid grid-cols-3 gap-1.5">
@@ -576,10 +598,10 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   {snap.haleo_read && (
                     <section className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
                       <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                        <Sparkles className="h-3 w-3" /> Site brief, from their photos
+                        <Sparkles className="h-3 w-3" /> The rest of the site brief, from their photos
                       </p>
                       <p className="mt-1.5 text-[14px] leading-relaxed text-foreground/85">{snap.haleo_read.summary}</p>
-                      {snap.haleo_read.sections.slice(0, 5).map((sec) => (
+                      {snap.haleo_read.sections.filter((sec) => !isGlanceSection(sec.title)).slice(0, 4).map((sec) => (
                         <div key={sec.title} className="mt-3">
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">{sec.title}</p>
                           <ul className="mt-1.5 space-y-1.5">
@@ -598,10 +620,10 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                     </section>
                   )}
 
-                  {(snap.trade_groups?.length ?? 0) > 0 && (
-                    <Card title="Scope by trade">
+                  {!snap.haleo_read && (snap.trade_groups?.length ?? 0) > 4 && (
+                    <Card title="More scope by trade">
                       <ul className="space-y-2">
-                        {snap.trade_groups.slice(0, 6).map((g) => (
+                        {snap.trade_groups.slice(4, 10).map((g) => (
                           <li key={g.trade} className="text-[13px] leading-snug">
                             <span className="font-medium">{g.trade}</span>
                             <span className="text-foreground/70"> · {g.lines.slice(0, 2).join("; ")}</span>
