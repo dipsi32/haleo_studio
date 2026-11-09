@@ -227,3 +227,24 @@ export const readinessLine = (r: LeadReadiness): string => {
   const strong = r.dimensions.filter((d) => d.strength === "strong").map((d) => d.label);
   return strong.length ? `${r.title} · strong on ${strong.join(", ").toLowerCase()}` : r.title;
 };
+
+// ───── The spectrum: where this lead sits, from early to ready ─────
+
+/** 0–100 along "Early days → Serious → Ready to move". Null when there isn't enough to place it. */
+export const readinessPosition = (r: LeadReadiness): number | null => {
+  if (r.level === "unclear") return null;
+  const base = { early: 17, serious: 50, ready: 83 }[r.level];
+  const signals = r.dimensions.flatMap((d) => d.signals);
+  const net = signals.filter((s) => s.effect === "up").length - signals.filter((s) => s.effect === "down").length;
+  return Math.max(4, Math.min(96, base + Math.max(-12, Math.min(12, net * 3))));
+};
+
+/** The few reasons behind the call, strongest first: what's for it, then what's against it. */
+export const topReasons = (r: LeadReadiness, max = 3): Signal[] => {
+  const all = r.dimensions.flatMap((d) => d.signals).filter((s) => s.effect !== "neutral");
+  const ups = all.filter((s) => s.effect === "up").sort((a, b) => b.weight - a.weight);
+  const downs = all.filter((s) => s.effect === "down").sort((a, b) => b.weight - a.weight);
+  // Always show the strongest concern if there is one: a read that only praises isn't honest.
+  const picked = downs.length ? [...ups.slice(0, max - 1), downs[0]] : ups.slice(0, max);
+  return picked.slice(0, max);
+};

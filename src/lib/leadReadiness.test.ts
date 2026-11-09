@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeLeadReadiness, readinessLine } from "@/lib/leadReadiness";
+import { computeLeadReadiness, readinessLine, readinessPosition, topReasons } from "@/lib/leadReadiness";
 import type { DealSnapshot } from "@/lib/dealRead";
 
 const kitchen: DealSnapshot = {
@@ -79,5 +79,22 @@ describe("lead readiness", () => {
   it("asks the question that changes the read most, budget first", () => {
     expect(computeLeadReadiness({ ...kitchen, budget: undefined }).ask?.question).toMatch(/range you'd like to stay within/);
     expect(computeLeadReadiness({ ...kitchen, context: { ...kitchen.context, shopping: undefined } }).ask?.question).toMatch(/other contractors/);
+  });
+});
+
+describe("readiness spectrum", () => {
+  it("places ready leads to the right, early ones to the left, and unclear ones nowhere", () => {
+    const ready = readinessPosition(computeLeadReadiness(kitchen))!;
+    const early = readinessPosition(computeLeadReadiness({ ...kitchen, timeline: "Exploring" }))!;
+    expect(ready).toBeGreaterThan(66);
+    expect(early).toBeLessThan(ready);
+    expect(readinessPosition(computeLeadReadiness({ neighborhood: "San Jose" }))).toBeNull();
+  });
+
+  it("always includes the strongest concern among the reasons", () => {
+    const r = computeLeadReadiness({ ...kitchen, context: { ...kitchen.context, shopping: "many" } });
+    const reasons = topReasons(r);
+    expect(reasons.length).toBeLessThanOrEqual(3);
+    expect(reasons.some((s) => s.effect === "down")).toBe(true);
   });
 });
