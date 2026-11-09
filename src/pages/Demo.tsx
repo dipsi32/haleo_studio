@@ -12,13 +12,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  Bell,
   CheckCircle2,
   Globe,
   Hammer,
+  Hand,
   Home,
   ImageIcon,
   MessageCircle,
@@ -40,7 +40,7 @@ import { brandThemeVars, frontDoorKey, frontDoorPath } from "@/lib/frontDoor";
 import { findPermitRecord } from "@/lib/useShortlistCheck";
 import { clearActiveInvite, demoToken, inviteMessage, setActiveInvite, type InviteContractor } from "@/lib/invites";
 import { saveIntakeStart } from "@/lib/intake";
-import { DEMO_BUY_BOX, LEAD_TEXT, loadDemoBrief, resolveDemo, type DemoConfig } from "@/lib/demo";
+import { DEMO_BUY_BOX, DEMO_LEAD, leadText, loadDemoBrief, resolveDemo, type DemoConfig } from "@/lib/demo";
 
 type View = "doors" | "text" | "site" | "welcome" | "matt";
 const VIEWS: View[] = ["doors", "text", "site", "welcome", "matt"];
@@ -96,7 +96,33 @@ const useDemoContractor = (demo: DemoConfig) => {
 const themeOf = (demo: DemoConfig) => (brandThemeVars(demo.brandColor) ?? undefined) as CSSProperties | undefined;
 const who = (demo: DemoConfig) => demo.person ?? demo.brand;
 
-const Page = ({ demo, children, step }: { demo: DemoConfig; children: ReactNode; step?: string }) => (
+const STEPS = [`${DEMO_LEAD.name} reaches out`, `${DEMO_LEAD.name} shares the project`, "It lands on your phone"];
+
+/** Where you are in the demo, in three plain steps. */
+const Stepper = ({ at }: { at: 1 | 2 | 3 }) => (
+  <ol className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    {STEPS.map((label, i) => {
+      const n = i + 1;
+      const on = n === at;
+      const done = n < at;
+      return (
+        <li key={label} className="flex items-center gap-2">
+          <span
+            className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-semibold ${
+              on ? "bg-accent text-accent-foreground" : done ? "bg-sage text-white" : "bg-secondary text-muted-foreground"
+            }`}
+          >
+            {done ? "✓" : n}
+          </span>
+          <span className={on ? "font-medium text-foreground" : "text-muted-foreground"}>{label}</span>
+          {n < STEPS.length && <span className="mx-1 h-px w-5 bg-border" aria-hidden />}
+        </li>
+      );
+    })}
+  </ol>
+);
+
+const Page = ({ demo, children, step, at }: { demo: DemoConfig; children: ReactNode; step?: string; at?: 1 | 2 | 3 }) => (
   <div className="min-h-screen bg-gradient-warm">
     <header className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-5">
       <Logo />
@@ -104,7 +130,10 @@ const Page = ({ demo, children, step }: { demo: DemoConfig; children: ReactNode;
         {step ?? `A demo for ${demo.brand}`}
       </span>
     </header>
-    <main className="mx-auto max-w-4xl px-5 pb-20">{children}</main>
+    <main className="mx-auto max-w-4xl px-5 pb-20">
+      {at && <Stepper at={at} />}
+      {children}
+    </main>
   </div>
 );
 
@@ -135,15 +164,31 @@ const Doors = ({ demo }: { demo: DemoConfig }) => {
   return (
     <Page demo={demo}>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Three minutes · it all works for real</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">A three-minute demo · everything works for real</p>
         <h1 className="mt-3 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-          {demo.person ? `${demo.person}, be` : "Be"} your own next lead. <span className="italic">Then see what lands on your phone.</span>
+          A new lead wants a new kitchen. <span className="italic">See it from both sides.</span>
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-          How do new clients usually reach you? Pick one and do what they'd do. Add a photo of any room for the full effect.
+          First, play the homeowner and tap through exactly what they'd see from {who(demo)}. Then switch seats and see
+          what lands on your phone.
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        {/* The persona, so it's obvious who you're playing */}
+        <div className="mt-6 flex max-w-xl items-center gap-3 rounded-2xl border border-border bg-card/80 p-3.5 shadow-soft">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-lg text-accent-soft-foreground">
+            {DEMO_LEAD.name[0]}
+          </span>
+          <span className="min-w-0 text-sm leading-snug">
+            <span className="block font-medium">
+              Meet {DEMO_LEAD.name}, your lead <span className="font-normal text-muted-foreground">· {DEMO_LEAD.where}</span>
+            </span>
+            <span className="block text-muted-foreground">{DEMO_LEAD.project}. You'll be {DEMO_LEAD.name} for the next three minutes.</span>
+          </span>
+        </div>
+
+        <p className="mt-8 text-sm font-medium">How does {DEMO_LEAD.name} reach you?</p>
+
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
           {/* The text door */}
           <button
             type="button"
@@ -151,7 +196,7 @@ const Doors = ({ demo }: { demo: DemoConfig }) => {
             className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
           >
             <span className="flex items-center gap-2 font-display text-xl">
-              <MessageCircle className="h-5 w-5 text-accent" /> They text you
+              <MessageCircle className="h-5 w-5 text-accent" /> {DEMO_LEAD.name} texts you
             </span>
             <span className="mt-1 block text-sm text-muted-foreground">Most jobs start here. You reply with your link.</span>
             <span className="mt-4 block space-y-2 rounded-2xl bg-secondary/60 p-4">
@@ -177,7 +222,7 @@ const Doors = ({ demo }: { demo: DemoConfig }) => {
             className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
           >
             <span className="flex items-center gap-2 font-display text-xl">
-              <Globe className="h-5 w-5 text-accent" /> They find your website
+              <Globe className="h-5 w-5 text-accent" /> {DEMO_LEAD.name} finds your website
             </span>
             <span className="mt-1 block text-sm text-muted-foreground">One button, front and center, instead of a contact form.</span>
             <span className="mt-4 block overflow-hidden rounded-2xl border border-border">
@@ -195,7 +240,7 @@ const Doors = ({ demo }: { demo: DemoConfig }) => {
         </div>
 
         <p className="mt-6 text-sm text-muted-foreground">
-          At the end, you'll see the brief as it lands on your phone. Nothing is sent to anyone.
+          Add a photo of any room in your own home for the full effect. Nothing is sent to anyone.
         </p>
       </motion.div>
     </Page>
@@ -216,15 +261,15 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
     navigate(`/demo/${demo.slug}/welcome?door=text`);
   };
   return (
-    <Page demo={demo} step="Your lead's phone">
+    <Page demo={demo} step={`${DEMO_LEAD.name}'s phone`} at={1}>
       <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,360px)]">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Step 1 of 3 · You're the homeowner now</p>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">You're {DEMO_LEAD.name} now</p>
           <h1 className="mt-3 font-display text-3xl font-light leading-tight text-balance md:text-4xl">
-            You texted {who(demo)} about your kitchen. <span className="italic">This came back.</span>
+            {DEMO_LEAD.name} just texted {who(demo)} about the kitchen. <span className="italic">Here's the reply.</span>
           </h1>
           <p className="mt-4 text-muted-foreground">
-            {demo.person ?? "They"} replied with one link instead of twenty questions. Tap it, like your client would.
+            One link instead of twenty questions back and forth. Tap it, the way {DEMO_LEAD.name} would.
           </p>
         </div>
 
@@ -238,7 +283,7 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
               <span className="mt-1 text-xs font-medium">{demo.person ? `${demo.person} · ${demo.brand}` : demo.brand}</span>
             </div>
             <div className="space-y-3 px-3 py-4">
-              <p className="ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-md bg-[#0A84FF] px-3.5 py-2 text-[14px] leading-snug text-white">{LEAD_TEXT}</p>
+              <p className="ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-md bg-[#0A84FF] px-3.5 py-2 text-[14px] leading-snug text-white">{leadText(demo.person)}</p>
               <div className="w-fit max-w-[86%]">
                 <p className="rounded-2xl rounded-bl-md bg-secondary px-3.5 py-2 text-[14px] leading-snug text-foreground/90">{reply}</p>
                 <button
@@ -380,13 +425,14 @@ const Welcome = ({ demo }: { demo: DemoConfig }) => {
   return (
     <>
       <div className="flex items-center justify-center gap-3 bg-foreground px-4 py-2 text-center text-xs text-background">
-        <span>Demo: this is what your lead sees after tapping. Everything works; nothing is sent.</span>
+        <span>Step 2 of 3 · You're {DEMO_LEAD.name}. This is what a lead sees after tapping. Nothing is sent.</span>
       </div>
       <InviteWelcome
         contractor={contractor}
         brand={{ name: demo.brand, logoUrl: null, href: `/demo/${demo.slug}` }}
         door={door}
         hasBrief={false}
+        defaultName={DEMO_LEAD.name}
         onStart={start}
         style={themeOf(demo)}
       />
@@ -399,6 +445,7 @@ const Welcome = ({ demo }: { demo: DemoConfig }) => {
 const MattView = ({ demo }: { demo: DemoConfig }) => {
   const saved = useMemo(() => loadDemoBrief(demo.slug), [demo.slug]);
   const contractor = useDemoContractor(demo);
+  const [opened, setOpened] = useState(false);
 
   useEffect(() => {
     // The demo run is over: their pages go back to normal.
@@ -423,29 +470,107 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
   const project = snap.projectType || snap.rooms?.[0] || "A project";
   const claimHref = contractor?.slug ? `/pro/${contractor.slug}/claim` : "/pro/login?next=%2Fpro%2Flinks%23front-door";
 
+  const ready = computeLeadReadiness(snap, DEMO_BUY_BOX);
+  const name = snap.homeowner_name || DEMO_LEAD.name;
+  const openBrief = () => {
+    setOpened(true);
+    track("demo_brief_opened", { demo: demo.slug });
+  };
+
   return (
-    <Page demo={demo} step="Your phone">
+    <Page demo={demo} step="Your phone" at={3}>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <p className="inline-flex items-center gap-2 rounded-full bg-sage/10 px-3 py-1 text-xs font-medium text-sage">
-          <CheckCircle2 className="h-3.5 w-3.5" /> Your lead pressed send. In the demo, it came only to this screen.
-        </p>
-        <h1 className="mt-4 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
-          Now you're {who(demo)}. <span className="italic">This just landed on your phone.</span>
-        </h1>
-        <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-          Before a single call: what they want, what they'll spend, when, the house itself, and whether it's worth the drive.
-        </p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Now you're {who(demo)}</p>
+        <AnimatePresence mode="wait" initial={false}>
+          {!opened ? (
+            <motion.div key="buzz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <h1 className="mt-3 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+                Your phone just buzzed. <span className="italic">{name} finished telling you about the project.</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+                No calls yet, no drive yet. Tap the notification to open it.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div key="open" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <h1 className="mt-3 max-w-2xl font-display text-4xl font-light leading-tight text-balance md:text-5xl">
+                {name}'s project, <span className="italic">before the first call.</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+                What they want, how ready they are, the house itself, and whether it's worth the drive. Scroll inside the phone.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
           {/* The phone */}
-          <div className="mx-auto w-full max-w-[420px] rounded-[2.4rem] border-[10px] border-foreground/90 bg-background shadow-lift">
-            <div className="max-h-[78vh] overflow-y-auto rounded-[1.7rem] bg-gradient-warm px-3 pb-5 pt-3">
+          <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-[2.4rem] border-[10px] border-foreground/90 bg-background shadow-lift">
+            <AnimatePresence mode="wait" initial={false}>
+            {!opened ? (
+              <motion.div
+                key="lock"
+                exit={{ opacity: 0, scale: 1.04 }}
+                transition={{ duration: 0.25 }}
+                className="relative flex h-[640px] max-h-[78vh] flex-col items-center rounded-[1.7rem] px-4 pt-14 text-white"
+                style={{ background: "linear-gradient(160deg, #1e293b 0%, #334155 45%, #0f172a 100%)" }}
+              >
+                <p className="text-sm font-medium opacity-80">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+                <p className="mt-1 font-display text-7xl font-light tracking-tight">9:41</p>
+                <motion.button
+                  type="button"
+                  onClick={openBrief}
+                  initial={{ opacity: 0, y: -24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, type: "spring", stiffness: 260, damping: 22 }}
+                  className="relative mt-10 w-full rounded-2xl bg-white/85 p-3.5 text-left text-foreground shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.01]"
+                  aria-label={`Open ${name}'s brief`}
+                >
+                  <span className="absolute -inset-1 animate-pulse rounded-[1.1rem] ring-2 ring-white/70" aria-hidden />
+                  <span className="relative flex items-center gap-2 text-[11px] text-foreground/60">
+                    <span className="grid h-5 w-5 place-items-center rounded-md bg-accent text-[10px] font-bold text-accent-foreground">h</span>
+                    <span className="font-medium uppercase tracking-wide">{demo.brand}</span>
+                    <span className="ml-auto">now</span>
+                  </span>
+                  <span className="relative mt-1.5 block text-[15px] font-semibold leading-snug">{name} sent you a project brief</span>
+                  <span className="relative block text-[13px] leading-snug text-foreground/75">
+                    {project} · {snap.neighborhood}
+                    {snap.budget ? ` · ${snap.budget}` : ""}
+                  </span>
+                  <span className="relative mt-1 block text-[13px] leading-snug text-foreground/75">
+                    Photos, scope and answers inside. Readiness: {ready.title.toLowerCase()}.
+                  </span>
+                </motion.button>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.4 }}
+                  className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium"
+                >
+                  <Hand className="h-3.5 w-3.5" /> Tap to open
+                </motion.p>
+              </motion.div>
+            ) : (
+            <motion.div
+              key="brief"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="max-h-[78vh] overflow-y-auto rounded-[1.7rem] bg-gradient-warm px-3 pb-5 pt-3"
+            >
+              <div className="sticky top-0 z-10 -mx-3 -mt-3 mb-3 flex items-center justify-between border-b border-border bg-background/95 px-3 py-2.5 backdrop-blur">
+                <button type="button" onClick={() => setOpened(false)} className="text-xs font-medium text-accent">
+                  ‹ Back
+                </button>
+                <span className="text-[13px] font-semibold">{name}'s brief</span>
+                <span className="w-10" />
+              </div>
               <div className="flex items-start gap-3 rounded-2xl bg-background/95 p-3 shadow-soft">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
-                  <Bell className="h-4 w-4" />
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-sm text-accent-soft-foreground">
+                  {name[0]}
                 </span>
                 <span className="min-w-0 text-[13px] leading-snug">
-                  <span className="block font-semibold">{snap.homeowner_name ? `${snap.homeowner_name} sent you a brief` : "New brief from a new client"}</span>
+                  <span className="block font-semibold">{name}</span>
                   <span className="block text-muted-foreground">
                     {project} · {snap.neighborhood}
                     {snap.budget ? ` · ${snap.budget}` : ""}
@@ -455,7 +580,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
 
               <div className="mt-3 space-y-3">
                 <HomeownerContact name={snap.homeowner_name} phone={snap.homeowner_phone} compact />
-                <ReadinessCard readiness={computeLeadReadiness(snap, DEMO_BUY_BOX)} compact />
+                <ReadinessCard readiness={ready} compact />
                 {snap.scope_summary && (
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">In their words</p>
@@ -519,11 +644,13 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
+            )}
+            </AnimatePresence>
           </div>
 
-          {/* What it means for them */}
-          <div className="lg:sticky lg:top-8">
+          {/* What it means for them: shown once the brief is open */}
+          <div className={`lg:sticky lg:top-8 transition-opacity duration-500 ${opened ? "opacity-100" : "pointer-events-none opacity-40"}`}>
             <ul className="space-y-3">
               {[
                 ["No phone tag for the basics.", "Scope, budget, timing, photos and the times they're free, before you call."],
