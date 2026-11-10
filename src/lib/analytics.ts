@@ -116,6 +116,8 @@ export type AnalyticsEvent =
   | "demo_link_tapped"
   | "demo_brief_sent"
   | "demo_matt_viewed"
+  // The contractor tapped the notification and opened the brief in the demo.
+  | "demo_brief_opened"
   | "demo_cta_clicked"
   // Haleo's read of the homeowner's photos
   | "space_read_completed"

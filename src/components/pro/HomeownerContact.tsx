@@ -15,7 +15,7 @@ export default function HomeownerContact({ name, phone, compact = false }: { nam
         <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {first ? `Reach ${first}` : "Their number"}
         </span>
-        <span className="block text-sm font-medium tabular-nums">{shown}</span>
+        <span className="block whitespace-nowrap text-sm font-medium tabular-nums">{shown}</span>
       </span>
       <a
         href={`sms:${digits}`}

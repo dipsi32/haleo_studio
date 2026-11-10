@@ -116,8 +116,16 @@ export const demoUrl = (d: DemoConfig, origin: string): string => {
 
 // ───── The text door ─────
 
+/** The homeowner the contractor plays in the demo: one name, the whole way through. */
+export const DEMO_LEAD = {
+  name: "Priya",
+  where: "Willow Glen, San Jose",
+  project: "A kitchen that's too dark and too cramped",
+} as const;
+
 /** The first text a lead sends. Ordinary on purpose: this is how most jobs start. */
-export const LEAD_TEXT = "Hi! A neighbor gave me your number. We're thinking about redoing our kitchen. Could you come take a look?";
+export const leadText = (person?: string | null) =>
+  `Hi${person ? ` ${person}` : ""}! This is ${DEMO_LEAD.name}. A neighbor gave me your number. We're thinking about redoing our kitchen. Could you come take a look?`;
 
 // ───── After "Send": what lands on the contractor's phone ─────
 
