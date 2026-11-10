@@ -173,16 +173,19 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
       <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,360px)]">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-            {DEMO_LEAD.name} · homeowner in {DEMO_LEAD.where}
+            For {demo.brand}
           </p>
-          <h1 className="mt-3 font-display text-3xl font-light leading-tight text-balance md:text-5xl">
-            {DEMO_LEAD.name} texts {who(demo)} about a kitchen. <span className="italic">{who(demo)} replies with one link.</span>
+          <h1 className="mt-3 font-display text-4xl font-light leading-[1.08] text-balance md:text-6xl">
+            Know the job <span className="italic">before you get in the truck.</span>
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            No twenty questions back and forth. Tap the link to see exactly what {DEMO_LEAD.name} sees, all the way to
-            sending {who(demo)} a fully scoped project brief.
+            Your next lead texts you. You reply with one link. They send photos, ideas and times to meet, and you get a
+            scoped brief, so your evenings go to the jobs worth winning.
           </p>
-          <p className="mt-4 text-sm text-muted-foreground">Tip: add a photo of any room in your own home for the full effect. Nothing is sent to anyone.</p>
+          <p className="mt-6 text-sm font-medium text-foreground">
+            See it with {DEMO_LEAD.name}, a homeowner in {DEMO_LEAD.where}. Tap the link in the text.
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Add a photo of any room in your own home for the full effect. Nothing is sent to anyone.</p>
         </motion.div>
 
         {/* The homeowner's phone */}
