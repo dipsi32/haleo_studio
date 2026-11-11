@@ -41,6 +41,8 @@ jobs:
       VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
       VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
       VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM: ${{ vars.RESEND_FROM }}
       GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
       GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
     steps:
@@ -83,7 +85,7 @@ jobs:
       - name: Function secrets
         run: |
           : > /tmp/secrets.env
-          for v in ANTHROPIC_API_KEY GEMINI_API_KEY OPENAI_API_KEY GOOGLE_PLACES_API_KEY YELP_API_KEY FIRECRAWL_API_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT; do
+          for v in ANTHROPIC_API_KEY GEMINI_API_KEY OPENAI_API_KEY GOOGLE_PLACES_API_KEY YELP_API_KEY FIRECRAWL_API_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT RESEND_API_KEY RESEND_FROM; do
             val="${!v}"
             [ -n "$val" ] || continue
             echo "::add-mask::$val"
@@ -123,7 +125,14 @@ jobs:
           app="${APP_URL%/}"
           body=$(jq -n --arg site "$app" --arg allow "$app,$app/**" \
             --arg gid "$GOOGLE_OAUTH_CLIENT_ID" --arg gsec "$GOOGLE_OAUTH_CLIENT_SECRET" '
-            {site_url: $site, uri_allow_list: $allow, external_email_enabled: true}
+            {site_url: $site, uri_allow_list: $allow, external_email_enabled: true,
+             # Homeowners send a brief through a contractor link as a guest, with no sign-up wall.
+             external_anonymous_users_enabled: true,
+             # Sign-in emails carry the 6-digit code the claim screen asks for, plus a link.
+             mailer_subjects_magic_link: "Your Haleo sign-in code",
+             mailer_templates_magic_link_content: "<h2>Your Haleo code: {{ .Token }}</h2><p>Enter it on the screen you came from, or <a href=\"{{ .ConfirmationURL }}\">tap here to sign in</a>.</p><p>If you did not ask for this, you can ignore this email.</p>",
+             mailer_subjects_confirmation: "Your Haleo sign-in code",
+             mailer_templates_confirmation_content: "<h2>Your Haleo code: {{ .Token }}</h2><p>Enter it on the screen you came from, or <a href=\"{{ .ConfirmationURL }}\">tap here to confirm your email</a>.</p><p>If you did not ask for this, you can ignore this email.</p>"}
             + (if $gid != "" and $gsec != "" then {external_google_enabled: true, external_google_client_id: $gid, external_google_secret: $gsec} else {} end)')
           echo "::add-mask::$GOOGLE_OAUTH_CLIENT_SECRET"
           code=$(curl -sS -o /tmp/auth.out -w '%{http_code}' -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \

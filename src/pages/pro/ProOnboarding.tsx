@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Instagram, Globe, Plus, X, Loader2, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const detectLinkType = (url: string): PortfolioLink["type"] => {
 const ProOnboarding = () => {
   const { user } = useAuth();
   const { account, refetch, loading } = useContractorAccount();
+  const [params] = useSearchParams();
   const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState("");
@@ -80,7 +81,9 @@ const ProOnboarding = () => {
       await refetch();
       track("contractor_onboarded", { portfolio_links_count: links.length, has_logo: !!logoUrl });
       toast({ title: "Workspace ready", description: "Welcome in." });
-      navigate("/pro/profile", { replace: true });
+      // Straight to their link when they came from claiming; otherwise their profile.
+      const next = params.get("next");
+      navigate(next && /^\/pro\/[a-z-]+$/.test(next) ? next : "/pro/profile", { replace: true });
     } catch (err) {
       toast({
         title: "Couldn't save",

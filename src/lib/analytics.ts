@@ -66,6 +66,7 @@ export type AnalyticsEvent =
   | "access_gate_hit"
   // Contractor side
   | "contractor_profile_viewed"
+  | "contractor_claim_started"
   | "contractor_claimed_profile"
   | "contractor_onboarded"
   | "lead_unlock_attempted"

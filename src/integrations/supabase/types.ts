@@ -1586,6 +1586,7 @@ export type Database = {
       }
     }
     Functions: {
+      claim_contractor_profile: { Args: { _contractor_id: string; _license: string }; Returns: string }
       current_user_email: { Args: never; Returns: string }
       generate_contractor_slug: {
         Args: { _license: string; _name: string }
