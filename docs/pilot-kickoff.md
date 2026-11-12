@@ -14,8 +14,9 @@ it to work.
 1. **Claim the profile.** Open `haleo.pages.dev/pro/<slug>/claim`
    (Matt: `/pro/bakhtiary-mehdi-1d0f/claim`) on the contractor's phone.
    - They enter their license number. It's checked on the server too.
-   - They enter their email and get a 6-digit code, or a sign-in link.
-     Either one works.
+   - They enter their email and tap the sign-in link it sends, which brings
+     them back to finish. (If the email app opens it in another browser,
+     they re-enter the license number there and it completes.)
    - `claim_contractor_profile()` links their account, grants the
      contractor role, marks the profile claimed and saves the email Haleo
      uses to reach them.
@@ -47,7 +48,7 @@ The contractor gets their number and can text back.
 | What | How it gets set | Check |
 |---|---|---|
 | Claim works | Migration `20261111120000_claim_contractor_profile.sql`, run by **Bootstrap backend** | Claim flow reaches "You're in" |
-| Sign-in email shows a 6-digit code | Bootstrap "Sign-in settings" sets the email templates | The code arrives in the email |
+| Sign-in email works | Supabase's default email (a link). A 6-digit code in the email needs custom SMTP or a paid plan | The link signs them in |
 | Homeowners send without an account | Bootstrap sets `external_anonymous_users_enabled` | The send page opens without asking to sign in |
 | Contractor gets a phone alert | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` GitHub secrets, then Bootstrap | Alert arrives after the test send |
 | Contractor gets an email | `RESEND_API_KEY` secret and `RESEND_FROM` variable (a sender on a verified domain), then Bootstrap | Email arrives after the test send |

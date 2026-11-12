@@ -1,7 +1,7 @@
 // Three-screen claim flow.
 // /pro/:slug/claim
 //   Screen 1 — license verify
-//   Screen 2 — email: a 6-digit code (or a sign-in link) to sign in
+//   Screen 2 — email: a sign-in link (or, where the email carries one, a code)
 //   Screen 3 — payoff: their own link, or a brief that's already waiting
 // The claim itself happens on the server (claim_contractor_profile), which
 // re-checks the license and links the account. Signing in by tapping the
@@ -148,7 +148,7 @@ const ClaimProfile = () => {
       });
       if (error) throw error;
       setStep("verify-otp");
-      toast({ title: "We sent you a 6-digit code", description: `Check ${emailInput}` });
+      toast({ title: "Check your email", description: `We sent a sign-in link to ${emailInput}` });
     } catch (err) {
       toast({
         title: "Couldn't send code",
@@ -298,7 +298,7 @@ const ClaimProfile = () => {
                 Your email, to sign in.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                We'll send a 6-digit code. It's also where Haleo reaches you about new briefs.
+                We'll email you a sign-in link. It's also where Haleo reaches you about new briefs.
               </p>
 
               <form onSubmit={handleSendOtp} className="mt-8 space-y-4">
@@ -316,7 +316,7 @@ const ClaimProfile = () => {
                     className="h-12 rounded-xl bg-background"
                   />
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    We'll send a 6-digit code to confirm.
+                    Tap the link in that email and you're in.
                   </p>
                 </div>
 
@@ -325,7 +325,7 @@ const ClaimProfile = () => {
                   disabled={busy || !emailInput}
                   className="h-12 w-full rounded-full text-base"
                 >
-                  {busy ? "Sending…" : "Send my code"}
+                  {busy ? "Sending…" : "Email me a sign-in link"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </form>
@@ -342,15 +342,18 @@ const ClaimProfile = () => {
               transition={{ duration: 0.3 }}
             >
               <h1 className="font-display text-2xl font-light leading-tight">
-                Enter the code we just sent.
+                Check your email.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Check <span className="text-foreground">{emailInput}</span>. Or just tap the sign-in link in that email.
+                Tap the sign-in link we sent to <span className="text-foreground">{emailInput}</span>. It brings you back
+                here to finish. If it opens in a different browser, just enter your license number again there.
+              </p>
+              <p className="mt-6 text-sm text-muted-foreground">
+                Got a 6-digit code instead? Enter it here.
               </p>
 
-              <form onSubmit={handleVerifyOtp} className="mt-8 space-y-3">
+              <form onSubmit={handleVerifyOtp} className="mt-3 space-y-3">
                 <Input
-                  autoFocus
                   inputMode="numeric"
                   maxLength={6}
                   value={otp}
