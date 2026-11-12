@@ -127,12 +127,9 @@ jobs:
             --arg gid "$GOOGLE_OAUTH_CLIENT_ID" --arg gsec "$GOOGLE_OAUTH_CLIENT_SECRET" '
             {site_url: $site, uri_allow_list: $allow, external_email_enabled: true,
              # Homeowners send a brief through a contractor link as a guest, with no sign-up wall.
-             external_anonymous_users_enabled: true,
-             # Sign-in emails carry the 6-digit code the claim screen asks for, plus a link.
-             mailer_subjects_magic_link: "Your Haleo sign-in code",
-             mailer_templates_magic_link_content: "<h2>Your Haleo code: {{ .Token }}</h2><p>Enter it on the screen you came from, or <a href=\"{{ .ConfirmationURL }}\">tap here to sign in</a>.</p><p>If you did not ask for this, you can ignore this email.</p>",
-             mailer_subjects_confirmation: "Your Haleo sign-in code",
-             mailer_templates_confirmation_content: "<h2>Your Haleo code: {{ .Token }}</h2><p>Enter it on the screen you came from, or <a href=\"{{ .ConfirmationURL }}\">tap here to confirm your email</a>.</p><p>If you did not ask for this, you can ignore this email.</p>"}
+             external_anonymous_users_enabled: true}
+             # (Custom sign-in email templates need a paid plan or our own SMTP, so the
+             # claim screen relies on the default email's sign-in link.)
             + (if $gid != "" and $gsec != "" then {external_google_enabled: true, external_google_client_id: $gid, external_google_secret: $gsec} else {} end)')
           echo "::add-mask::$GOOGLE_OAUTH_CLIENT_SECRET"
           code=$(curl -sS -o /tmp/auth.out -w '%{http_code}' -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
