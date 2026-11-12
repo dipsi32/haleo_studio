@@ -21,7 +21,9 @@ import {
   contractorDisplayName,
   fetchFrontDoor,
   getActiveInvite,
+  markFrontDoorViewed,
   markInviteOpened,
+  markInviteStarted,
   openFrontDoor,
   setActiveInvite,
   type InviteContractor,
@@ -48,6 +50,7 @@ export default function FrontDoor() {
       if (cancelled) return;
       setState(contractor ? { kind: "ready", contractor } : { kind: "missing" });
       track("front_door_viewed", { found: !!contractor, source });
+      if (contractor?.id) void markFrontDoorViewed(contractor.id);
     })();
     return () => {
       cancelled = true;
@@ -104,6 +107,7 @@ export default function FrontDoor() {
     setActiveInvite(res.token, c);
     if (homeownerName || homeownerPhone || !resumed) saveIntakeStart({ homeownerName, homeownerPhone });
     void markInviteOpened(res.token);
+    void markInviteStarted(res.token);
     track("front_door_started", { contractor_id: c.id, source, resumed });
     track("invite_brief_started", { contractor_id: c.id, resumed, source });
     navigate(resumed ? "/brief/result" : "/brief");

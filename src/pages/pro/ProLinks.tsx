@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import ProHeader from "@/components/pro/ProHeader";
 import BuyBoxCard from "@/components/pro/BuyBoxCard";
 import FrontDoorCard from "@/components/pro/FrontDoorCard";
+import YourLinkHero from "@/components/pro/YourLinkHero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
@@ -123,19 +124,16 @@ export default function ProLinks() {
     <div className="min-h-screen bg-background">
       <ProHeader />
       <main className="mx-auto max-w-5xl px-6 py-7 md:py-10">
-        <div className="mb-8 max-w-2xl">
-          <h1 className="font-display text-2xl font-light">Brief links</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A big one comes in? Send the link. The homeowner adds their photos, plans, scope and budget. You get a prep
-            sheet for the visit: the lot, the permit risks, what to ask, and a plain call on whether it's worth the drive. Free, and it comes only to you.
-          </p>
-          <p className="mt-3 rounded-xl border border-sage/25 bg-sage/5 px-4 py-3 text-sm text-foreground/80">
-            <span className="font-medium">Your link, your lead.</span> While a homeowner builds and sends their brief
-            through your link, Haleo shows them you and no one else. After they send it, the brief is theirs to keep,
-            like any document they wrote.
-          </p>
+        <h1 className="sr-only">Your link</h1>
+        <div className="mb-8">
+          <YourLinkHero
+            contractorId={contractorId}
+            companyName={account?.company_name ?? null}
+            handle={(account as { front_door_handle?: string | null } | null)?.front_door_handle ?? null}
+          />
         </div>
 
+        <h2 className="mb-3 font-display text-xl">On your website and Google</h2>
         {account && (
           <div className="mb-8">
             <FrontDoorCard
@@ -149,8 +147,10 @@ export default function ProLinks() {
           </div>
         )}
 
-        <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-          <h2 className="font-display text-xl">A link for one prospect</h2>
+        <details className="group rounded-3xl border border-border bg-card p-6 shadow-soft">
+          <summary className="cursor-pointer list-none font-display text-xl">
+            A link for one person <span className="text-sm font-normal text-muted-foreground">Optional. Track one lead by name.</span>
+          </summary>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <Input
               value={label}
@@ -169,20 +169,13 @@ export default function ProLinks() {
           <p className="mt-3 text-xs text-muted-foreground">
             Each link is for one prospect and works for 45 days. The homeowner sees that it came from {account?.company_name ? account.company_name : "you"}, and their brief stays theirs.
           </p>
-        </section>
+        </details>
 
+        {(loading || invites.length > 0) && (
         <section className="mt-8">
-          <h2 className="font-display text-xl">Your links</h2>
+          <h2 className="font-display text-xl">Links you've sent to one person</h2>
           {loading ? (
             <div className="mt-4 space-y-3">{[0, 1].map((i) => <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted/40" />)}</div>
-          ) : invites.length === 0 ? (
-            <div className="mt-4 rounded-3xl border border-dashed border-border bg-card/40 p-10 text-center">
-              <Link2 className="mx-auto h-8 w-8 text-muted-foreground/60" />
-              <p className="mt-3 font-display text-lg">No links yet</p>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                Make one above and send it to the next serious inquiry before you spend an hour on a visit.
-              </p>
-            </div>
           ) : (
             <ul className="mt-4 space-y-3">
               {invites.map((i) => {
@@ -241,6 +234,7 @@ export default function ProLinks() {
             </ul>
           )}
         </section>
+        )}
 
         <div className="mt-10">
           {account ? (

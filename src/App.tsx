@@ -27,6 +27,7 @@ import OAuthConsent from "./pages/OAuthConsent.tsx";
 
 import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
+import AdminPilot from "./pages/AdminPilot.tsx";
 import ProposalIntelligencePage from "./pages/ProposalIntelligencePage.tsx";
 import ProposalsCompare from "./pages/ProposalsCompare.tsx";
 import ContractorSubmit from "./pages/ContractorSubmit.tsx";
@@ -98,6 +99,16 @@ const App = () => (
             />
 
             {/* Admin only */}
+            <Route
+              path="/admin/pilot"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminPilot />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin"
               element={

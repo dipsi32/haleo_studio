@@ -176,10 +176,10 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
             For {demo.brand}
           </p>
           <h1 className="mt-3 font-display text-4xl font-light leading-[1.08] text-balance md:text-6xl">
-            Know the job <span className="italic">before you get in the truck.</span>
+            Know the job <span className="italic">before you make the trip.</span>
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            Reply to new leads with one link. Get the job scoped before the first visit.
+            Photos, scope, budget and timing in one brief, before the first visit. Spot the fit, raise the right questions, make the visit count.
           </p>
           <p className="mt-6 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">See it with {DEMO_LEAD.name}, a homeowner. Tap the link.</span> Nothing is sent.

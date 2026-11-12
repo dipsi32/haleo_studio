@@ -1,7 +1,7 @@
 // Contractor inbox: list of received briefs with locked/unlocked states,
 // push prompt, notification bell, and an unlock-then-annotate flow.
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Inbox, Lock, MapPin, Sparkles, Bell as BellIcon, X, CheckCircle2,
   Wallet, Clock, Hammer, Heart, AlertCircle, ImageIcon,
@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import HomeownerContact from "@/components/pro/HomeownerContact";
 import ReadinessCard, { READY_CHIP } from "@/components/pro/ReadinessCard";
+import BriefOutcomePanel from "@/components/pro/BriefOutcomePanel";
+import PilotPrompts from "@/components/pro/PilotPrompts";
 import { computeLeadReadiness } from "@/lib/leadReadiness";
 import { getPushPermission, subscribeToPush, deferPushPermission, isPushSupported } from "@/lib/push";
 
@@ -242,8 +244,10 @@ const ProInbox = () => {
       <main className="mx-auto max-w-5xl px-6 py-7 md:py-10">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-light">Your inbox</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Projects from homeowners, with the brief already done.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Your leads' projects, scoped before the first visit. You make the call.</p>
         </div>
+
+        <PilotPrompts contractorId={account?.contractor_id ?? null} />
 
         {loading ? (
           <div className="space-y-3">{[0,1,2].map(i => <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted/40" />)}</div>
@@ -251,10 +255,10 @@ const ProInbox = () => {
           <div className="grid place-items-center rounded-3xl border border-dashed border-border bg-card/40 p-16 text-center">
             <Inbox className="h-10 w-10 text-muted-foreground/60" />
             <h3 className="mt-4 font-display text-xl">No briefs yet</h3>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">When a homeowner sends you one, it'll appear here.</p>
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-xs font-medium text-accent">
-              <Sparkles className="h-3 w-3" /> You'll be notified across every channel
-            </div>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">Text your link to your next lead. Their project lands here, scoped, before you head out.</p>
+            <Button asChild className="mt-6 rounded-full">
+              <Link to="/pro/links">Get my link</Link>
+            </Button>
           </div>
         ) : (
           <>
@@ -639,6 +643,7 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
             {/* Deal read: the decision first, the detail after */}
             <HomeownerContact name={send.outreach_batches?.homeowner_name} phone={snap.homeowner_phone} />
             <ReadinessCard readiness={computeLeadReadiness(snap, buyBox)} />
+            <BriefOutcomePanel sendId={send.id} contractorId={contractorId} homeowner={(send.outreach_batches?.homeowner_name ?? "them").split(" ")[0]} />
             <VisitPrepCard snapshot={snap} buyBox={buyBox} homeownerName={send.outreach_batches?.homeowner_name} onAsk={askAbout} />
             <DealReadCard snapshot={snap} buyBox={buyBox} hideOpen />
 

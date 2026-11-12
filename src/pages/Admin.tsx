@@ -124,6 +124,9 @@ const Admin = () => {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">Founder console</p>
           <h1 className="mt-3 font-display text-2xl font-light leading-tight">Mission control</h1>
           <p className="mt-2 text-sm text-muted-foreground">Add pilots, grant early or test access, and triage the waitlist.</p>
+          <Link to="/admin/pilot" className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background">
+            Contractor pilot and launch scorecard →
+          </Link>
         </motion.div>
 
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">

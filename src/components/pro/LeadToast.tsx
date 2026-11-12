@@ -84,7 +84,7 @@ export default function LeadToast({ readiness: r }: { readiness: LeadReadiness }
               {more && <p className="mt-1 text-[12.5px] leading-snug text-foreground/80">“{r.ask.question}” {r.ask.why}</p>}
             </>
           )}
-          <p className="mt-2 text-[10.5px] text-muted-foreground">From their answers and the brief. Your judgment wins.</p>
+          <p className="mt-2 text-[10.5px] text-muted-foreground">From their answers and the brief. Haleo gathers the context; you make the call.</p>
         </motion.div>
       )}
     </AnimatePresence>

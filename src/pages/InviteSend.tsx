@@ -13,6 +13,7 @@ import ProofPanel from "@/components/contractors/ProofPanel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
+import HomeownerEase from "@/components/HomeownerEase";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
@@ -20,10 +21,8 @@ import { loadAddressRisk } from "@/lib/addressRisk";
 import { loadParcelFacts } from "@/lib/parcelFacts";
 import { cleanContext, hasContext, type HomeownerContext } from "@/lib/prepTypes";
 import VisitContextForm from "@/components/brief/VisitContextForm";
-import MoreBidsOffer from "@/components/brief/MoreBidsOffer";
 import VisitTimesPicker from "@/components/brief/VisitTimesPicker";
 import { formatVisitTime } from "@/lib/visitTimes";
-import { projectNoun } from "@/lib/projectName";
 import { buildBriefSnapshot, getSessionId, projectKeywords, projectTypeLabel, type BriefSnapshot } from "@/lib/contractors";
 import {
   INVITE_ERROR_COPY,
@@ -55,6 +54,7 @@ const Shell = ({ children, brand }: { children: React.ReactNode; brand?: Cobrand
 const InviteSend = () => {
   const { token = "" } = useParams<{ token: string }>();
   const { user } = useAuth();
+  const guest = !!user?.is_anonymous;
   const { data, update } = useIntake();
   const navigate = useNavigate();
 
@@ -64,6 +64,7 @@ const InviteSend = () => {
   const [context, setContext] = useState<HomeownerContext>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentId, setSentId] = useState<string | null>(null);
 
   // The contractor demo never touches the server: the "link" is the active demo.
   const demo = isDemoToken(token);
@@ -128,8 +129,16 @@ const InviteSend = () => {
             <h1 className="font-display text-3xl font-light">Sent to {name}</h1>
           </div>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            Your brief comes with a prep sheet on your home and project, so your first visit can start with the real conversation. If they have questions, they'll reach you through Haleo and you'll see them in your notifications. Your brief is saved in your account.
+            {name} now has your photos, what you want, and the questions worth asking, so your first conversation starts
+            with your project, not a blank page.{" "}
+            {guest
+              ? data.homeownerPhone
+                ? `They'll reach you at ${data.homeownerPhone}.`
+                : "They'll be in touch."
+              : "If they have questions, you'll see them in your notifications. Your brief is saved in your account."}
           </p>
+
+          <HomeownerEase sendId={sentId} contractorId={invite.contractor.id} />
 
           {(context.visit_times?.length ?? 0) > 0 && (
             <div className="mt-6 rounded-2xl border border-sage/25 bg-sage/5 p-5">
@@ -150,12 +159,12 @@ const InviteSend = () => {
             <ProofPanel contractorId={invite.contractor.id} city={city ?? invite.contractor.city} keywords={keywords} variant="full" />
           </div>
 
-          <div className="mt-8">
-            <MoreBidsOffer contractorName={name} projectNoun={projectNoun(data)} city={city} />
-          </div>
-          <Button className="mt-6 rounded-full" onClick={() => navigate("/account")}>
-            Go to my account
-          </Button>
+          {/* This is the contractor's own link: nothing here points to other contractors. */}
+          {!guest && (
+            <Button className="mt-8 rounded-full" onClick={() => navigate("/account")}>
+              Go to my account
+            </Button>
+          )}
         </motion.div>
       </Shell>
     );
@@ -256,6 +265,7 @@ const InviteSend = () => {
 
       track("invite_brief_sent", { contractor_id: invite.contractor.id, has_note: !!note.trim(), has_context: hasContext(context), has_parcel: !!parcel, visit_times: context.visit_times?.length ?? 0 });
       clearActiveInvite();
+      setSentId(res.sendId);
       setSent(true);
       window.scrollTo({ top: 0, behavior: "auto" });
     } finally {
