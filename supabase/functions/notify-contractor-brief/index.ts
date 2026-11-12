@@ -1,5 +1,6 @@
 // Fan-out notifications when a brief is sent to a contractor.
-// Channels: in-app (always), push (if subscribed), SMS (stub - logs only).
+// Channels: in-app (always), push (if subscribed), email (when RESEND_API_KEY
+// and RESEND_FROM are set), SMS (stub - logs only).
 // Called once per outreach_send. Voice rule: every channel must include
 // project type + neighborhood ("Kitchen remodel in Willow Glen").
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
 
     const { data: contractor } = await admin
       .from("contractors")
-      .select("id, company, name, notification_phone, phone, notification_preference, first_brief_received_at")
+      .select("id, company, name, notification_phone, phone, notification_email, email, notification_preference, first_brief_received_at")
       .eq("id", send.contractor_id)
       .maybeSingle();
     if (!contractor) throw new Error("contractor not found");
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     const title = named ? `${named} sent you a brief` : `New brief: ${headline}`;
     const body = `${homeowner} sent you a project brief. Open it in your inbox.`;
 
-    const results = { in_app: false, push: { sent: 0, failed: 0 }, sms: { sent: 0, stubbed: true } };
+    const results = { in_app: false, push: { sent: 0, failed: 0 }, email: { sent: false, configured: false }, sms: { sent: 0, stubbed: true } };
 
     // 1. In-app notification
     const { error: notifErr } = await admin.from("contractor_notifications").insert({
@@ -115,7 +116,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. SMS — stub. Real Twilio wiring goes here later.
+    // 3. Email: the channel every contractor already checks.
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const resendFrom = Deno.env.get("RESEND_FROM");
+    const to = (contractor.notification_email ?? contractor.email ?? "").trim();
+    results.email.configured = Boolean(resendKey && resendFrom);
+    if (resendKey && resendFrom && to) {
+      const app = (Deno.env.get("PUBLIC_APP_URL") ?? "").replace(/\/$/, "");
+      const link = `${app}/pro/inbox?send=${send.id}`;
+      const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+      try {
+        const r = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: [to],
+            subject: `${title}: ${headline}`,
+            text: `${homeowner} sent you a project brief: ${headline}.\n\nOpen it: ${link}`,
+            html: `<p>${esc(homeowner)} sent you a project brief: <strong>${esc(headline)}</strong>.</p><p><a href="${link}">Open the brief</a></p>`,
+          }),
+        });
+        results.email.sent = r.ok;
+        if (!r.ok) console.error("email failed", r.status, await r.text());
+      } catch (err) {
+        console.error("email failed", err);
+      }
+    }
+
+    // 4. SMS — stub. Real Twilio wiring goes here later.
     const phone = contractor.notification_phone ?? contractor.phone;
     if (phone && contractor.notification_preference !== "email_only") {
       console.log(`[SMS STUB] -> ${phone}: "${headline} — open ${Deno.env.get("PUBLIC_APP_URL") ?? ""}/pro/inbox"`);

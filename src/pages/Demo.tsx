@@ -173,16 +173,17 @@ const TextDoor = ({ demo }: { demo: DemoConfig }) => {
       <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,360px)]">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
-            {DEMO_LEAD.name} · homeowner in {DEMO_LEAD.where}
+            For {demo.brand}
           </p>
-          <h1 className="mt-3 font-display text-3xl font-light leading-tight text-balance md:text-5xl">
-            {DEMO_LEAD.name} texts {who(demo)} about a kitchen. <span className="italic">{who(demo)} replies with one link.</span>
+          <h1 className="mt-3 font-display text-4xl font-light leading-[1.08] text-balance md:text-6xl">
+            Know the job <span className="italic">before you make the trip.</span>
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            No twenty questions back and forth. Tap the link to see exactly what {DEMO_LEAD.name} sees, all the way to
-            sending {who(demo)} a fully scoped project brief.
+            Photos, scope, budget and timing in one brief, before the first visit. Spot the fit, raise the right questions, make the visit count.
           </p>
-          <p className="mt-4 text-sm text-muted-foreground">Tip: add a photo of any room in your own home for the full effect. Nothing is sent to anyone.</p>
+          <p className="mt-6 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">See it with {DEMO_LEAD.name}, a homeowner. Tap the link.</span> Nothing is sent.
+          </p>
         </motion.div>
 
         {/* The homeowner's phone */}
@@ -348,7 +349,7 @@ const Welcome = ({ demo }: { demo: DemoConfig }) => {
   return (
     <>
       <div className="flex items-center justify-center gap-3 bg-foreground px-4 py-2 text-center text-xs text-background">
-        <span>The homeowner's side · What {DEMO_LEAD.name} sees after tapping {who(demo)}'s link. Nothing is sent.</span>
+        <span>{DEMO_LEAD.name}'s view · nothing is sent</span>
       </div>
       <InviteWelcome
         contractor={contractor}
@@ -395,7 +396,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
       <Page demo={demo} side="contractor">
         <h1 className="font-display text-3xl font-light">Nothing has landed yet</h1>
         <p className="mt-3 max-w-md text-muted-foreground">
-          Send {DEMO_LEAD.name}'s brief from the homeowner's side first. It takes about three minutes, and it lands here.
+          Send {DEMO_LEAD.name}'s brief from the homeowner's side first.
         </p>
         <Button asChild className="mt-6 rounded-full">
           <Link to={`/demo/${demo.slug}`}>Start on the homeowner's side</Link>
@@ -428,7 +429,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
             </>
           ) : (
             <>
-              A text lands on {who(demo)}'s phone. <span className="italic">Tap the link.</span>
+              {who(demo)} gets a text. <span className="italic">Tap it.</span>
             </>
           )}
         </h1>
@@ -645,7 +646,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
             Use this for my real leads <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
-        <p className="text-xs text-muted-foreground">Free while we're small. One friendly link for every lead who texts you.</p>
+        <p className="text-xs text-muted-foreground">Free while we're small.</p>
         <Button asChild variant="ghost" className="rounded-full text-muted-foreground">
           <Link to={`/demo/${demo.slug}`}>
             <RotateCcw className="h-4 w-4" /> Replay the homeowner's side

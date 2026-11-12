@@ -30,11 +30,12 @@ const ProLanding = () => {
             Haleo for contractors
           </span>
           <h1 className="mt-6 font-display text-3xl font-light leading-tight md:text-4xl">
-            Know the job <em className="text-accent">before</em> you drive out.
+            Know the job <em className="text-accent">before</em> you make the trip.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-            When a big inquiry lands, send the Haleo link. By the time you pull into the driveway, you know the lot, the
-            permit risks and what to ask, and the homeowner already feels looked after.
+            You can't visit every lead, and you shouldn't have to guess which ones are worth it. Haleo gets the
+            homeowner's photos, scope, budget and timing together before you head out, so you can spot a fit, raise
+            the right questions, and spend your time on the jobs you want to win.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full">

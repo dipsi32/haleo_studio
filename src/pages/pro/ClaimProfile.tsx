@@ -1,18 +1,23 @@
 // Three-screen claim flow.
 // /pro/:slug/claim
 //   Screen 1 — license verify
-//   Screen 2 — notification email (sends magic link OTP)
-//   Screen 3 — payoff (waiting brief OR portfolio prompt)
+//   Screen 2 — email: a 6-digit code (or a sign-in link) to sign in
+//   Screen 3 — payoff: their own link, or a brief that's already waiting
+// The claim itself happens on the server (claim_contractor_profile), which
+// re-checks the license and links the account. Signing in by tapping the
+// emailed link instead of typing the code lands back here and finishes.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { toast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/context/AuthContext";
+import { claimErrorMessage, clearPendingClaim, hasLicenseOnFile, licenseAccepted, readPendingClaim, savePendingClaim } from "@/lib/claim";
 
 type ContractorRow = {
   id: string;
@@ -41,6 +46,7 @@ const ClaimProfile = () => {
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [waitingBrief, setWaitingBrief] = useState<{ count: number } | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!slug) return;
@@ -56,15 +62,36 @@ const ClaimProfile = () => {
         return;
       }
       setContractor(data as ContractorRow);
-      // Mark claim_started_at on first landing
-      supabase
-        .from("contractors")
-        .update({ claim_started_at: new Date().toISOString() })
-        .eq("id", data.id)
-        .is("claim_started_at", null)
-        .then(() => {});
+      track("contractor_claim_started", { contractor_id: data.id });
     })();
   }, [slug, navigate]);
+
+  // The claim itself: on the server, which re-checks the license and links the account.
+  const finishClaim = async (license: string) => {
+    if (!contractor) return;
+    const { error } = await supabase.rpc("claim_contractor_profile", { _contractor_id: contractor.id, _license: license });
+    if (error) throw new Error(claimErrorMessage(error.message));
+    clearPendingClaim();
+    const { count } = await supabase
+      .from("outreach_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("contractor_id", contractor.id);
+    setWaitingBrief({ count: count ?? 0 });
+    track("contractor_claimed_profile", { contractor_id: contractor.id, slug: contractor.slug, waiting_briefs: count ?? 0 });
+    setStep("payoff");
+  };
+
+  // Back from the emailed sign-in link: finish the claim they started.
+  useEffect(() => {
+    if (!contractor || !user || user.is_anonymous || step === "payoff") return;
+    const pending = readPendingClaim(contractor.id);
+    if (!pending) return;
+    setBusy(true);
+    finishClaim(pending)
+      .catch((err) => toast({ title: "Couldn't finish claiming", description: err instanceof Error ? err.message : "Try again.", variant: "destructive" }))
+      .finally(() => setBusy(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractor, user]);
 
   // Verify license
   const handleLicense = async (e: React.FormEvent) => {
@@ -72,9 +99,21 @@ const ClaimProfile = () => {
     if (!contractor) return;
     setBusy(true);
     const cleaned = licenseInput.replace(/\D/g, "");
-    const matches = cleaned === contractor.license_number.replace(/\D/g, "");
+    const matches = licenseAccepted(cleaned, contractor.license_number);
     if (matches) {
       setLicenseOk(true);
+      savePendingClaim(contractor.id, cleaned);
+      if (user && !user.is_anonymous) {
+        // Already signed in: no code needed.
+        try {
+          await finishClaim(cleaned);
+        } catch (err) {
+          toast({ title: "Couldn't claim this profile", description: err instanceof Error ? err.message : "Try again.", variant: "destructive" });
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
       setTimeout(() => {
         setStep("notify");
         setBusy(false);
@@ -108,16 +147,6 @@ const ClaimProfile = () => {
         },
       });
       if (error) throw error;
-      // Pre-stamp notification email on the contractor row so handle_new_user picks it up
-      await supabase
-        .from("contractors")
-        .update({
-          notification_email: emailInput.trim().toLowerCase(),
-          notification_preference: "email",
-          invitation_source: ref === "homeowner" ? "homeowner_referral" : (ref === "admin" ? "admin_email" : "direct"),
-          invited_at: new Date().toISOString(),
-        })
-        .eq("id", contractor.id);
       setStep("verify-otp");
       toast({ title: "We sent you a 6-digit code", description: `Check ${emailInput}` });
     } catch (err) {
@@ -143,38 +172,7 @@ const ClaimProfile = () => {
         type: "email",
       });
       if (error) throw error;
-
-      // Belt-and-suspenders: ensure contractor + account are linked even if trigger missed
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("contractors")
-          .update({
-            claimed: true,
-            claimed_at: new Date().toISOString(),
-            claim_completed_at: new Date().toISOString(),
-          })
-          .eq("id", contractor.id);
-
-        // Make sure contractor_account exists & points to this contractor row
-        await supabase.from("contractor_accounts").upsert(
-          {
-            user_id: user.id,
-            contractor_id: contractor.id,
-            company_name: contractor.company || contractor.name,
-          },
-          { onConflict: "user_id" },
-        );
-      }
-
-      // Look for any waiting briefs addressed to this contractor
-      const { count } = await supabase
-        .from("outreach_sends")
-        .select("id", { count: "exact", head: true })
-        .eq("contractor_id", contractor.id);
-      setWaitingBrief({ count: count ?? 0 });
-      track("contractor_claimed_profile", { contractor_id: contractor.id, slug: contractor.slug, waiting_briefs: count ?? 0 });
-      setStep("payoff");
+      await finishClaim(licenseInput.replace(/\D/g, ""));
     } catch (err) {
       toast({
         title: "That code didn't work",
@@ -240,6 +238,7 @@ const ClaimProfile = () => {
               <p className="mt-2 text-sm text-muted-foreground">
                 Enter your CSLB license number for{" "}
                 <span className="text-foreground">{displayName}</span>.
+                {!hasLicenseOnFile(contractor.license_number) && " Your city permit record doesn't list it yet, so we'll add it to your profile."}
               </p>
 
               <form onSubmit={handleLicense} className="mt-8 space-y-3">
@@ -296,10 +295,10 @@ const ClaimProfile = () => {
               transition={{ duration: 0.3 }}
             >
               <h1 className="font-display text-2xl font-light leading-tight">
-                Where should we send homeowner brief notifications?
+                Your email, to sign in.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                We'll email you the moment a brief arrives. No spam — only real projects.
+                We'll send a 6-digit code. It's also where Haleo reaches you about new briefs.
               </p>
 
               <form onSubmit={handleSendOtp} className="mt-8 space-y-4">
@@ -346,7 +345,7 @@ const ClaimProfile = () => {
                 Enter the code we just sent.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Check <span className="text-foreground">{emailInput}</span> — the 6-digit code expires in 10 minutes.
+                Check <span className="text-foreground">{emailInput}</span>. Or just tap the sign-in link in that email.
               </p>
 
               <form onSubmit={handleVerifyOtp} className="mt-8 space-y-3">
@@ -416,26 +415,18 @@ const ClaimProfile = () => {
               ) : (
                 <>
                   <h1 className="mt-5 font-display text-2xl font-light leading-tight">
-                    You're all set, {displayName}.
+                    You're in, {displayName}.
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    We'll email you the moment a homeowner in {contractor.city ?? "your area"} sends you a brief.
+                    Next: your own link. Text it to your next lead, and their project comes back to you scoped.
                   </p>
-
-                  <div className="mt-8 rounded-3xl border border-accent/30 bg-accent/5 p-5 text-left">
-                    <Sparkles className="h-5 w-5 text-accent" />
-                    <p className="mt-2 text-sm font-medium">While you wait —</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Bring your work to life. Drop one Instagram or website link and we'll pull in your portfolio.
-                    </p>
-                    <Button
-                      onClick={() => navigate("/pro/onboarding")}
-                      variant="outline"
-                      className="mt-4 h-10 w-full rounded-full text-sm"
-                    >
-                      Add a portfolio link
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => navigate("/pro/onboarding?next=%2Fpro%2Flinks")}
+                    className="mt-6 h-12 w-full rounded-full text-base"
+                  >
+                    Get my link
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
 
                   <Link
                     to={`/pro/${slug}`}

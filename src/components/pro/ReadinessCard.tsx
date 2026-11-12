@@ -104,7 +104,7 @@ export default function ReadinessCard({ readiness: r, compact = false }: { readi
       {!compact && (
         <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
           Our read of how ready the project is, from their answers and what they did in the brief. It isn't a rating of
-          anyone, and your judgment wins.
+          anyone. Haleo gathers the context; you make the call.
         </p>
       )}
     </section>

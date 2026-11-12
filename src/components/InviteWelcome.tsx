@@ -97,8 +97,9 @@ export default function InviteWelcome({
           {short} would love to hear <span className="italic">about your project.</span>
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-          Share a few photos and your rough idea, however it comes out. {short} comes to your first visit already
-          knowing your space, ready with ideas instead of a long list of questions.
+          Share a few photos and your rough idea, however it comes out. You don't need to know construction, and if
+          you're not sure about budget or scope yet, say so. {short} comes to your first visit already knowing your
+          space.
         </p>
 
         <div className="mt-4 flex items-start gap-3 rounded-2xl bg-accent-soft/50 px-4 py-3">

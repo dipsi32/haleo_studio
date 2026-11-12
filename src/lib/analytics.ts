@@ -66,6 +66,7 @@ export type AnalyticsEvent =
   | "access_gate_hit"
   // Contractor side
   | "contractor_profile_viewed"
+  | "contractor_claim_started"
   | "contractor_claimed_profile"
   | "contractor_onboarded"
   | "lead_unlock_attempted"
@@ -103,6 +104,21 @@ export type AnalyticsEvent =
   | "homeowner_contacted"
   // A lead readiness read was shown to a contractor (level: ready, serious, early, unclear).
   | "lead_readiness_shown"
+  // Pilot measurement (the launch scorecard): what contractors did with each brief…
+  | "brief_decision_made"
+  | "brief_effort_rated"
+  | "brief_visit_reported"
+  | "brief_result_reported"
+  // …what they tell us each week, and whether they'd pay…
+  | "weekly_inquiries_reported"
+  | "would_pay_answered"
+  | "pilot_prompt_dismissed"
+  // …how homeowners found it, and how contractors share their link.
+  | "homeowner_ease_rated"
+  | "your_link_copied"
+  | "your_link_shared"
+  | "pilot_contractor_added"
+  | "pilot_updated"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"

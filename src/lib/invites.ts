@@ -249,6 +249,24 @@ export async function markInviteOpened(token: string): Promise<void> {
   }
 }
 
+/** The homeowner pressed Start: the middle of the link funnel (seen → started → sent). */
+export async function markInviteStarted(token: string): Promise<void> {
+  try {
+    await supabase.rpc("mark_invite_started", { _token: token });
+  } catch {
+    /* funnel ping only */
+  }
+}
+
+/** Someone opened a contractor's front door. Counted per day, for the pilot scorecard. */
+export async function markFrontDoorViewed(contractorId: string): Promise<void> {
+  try {
+    await supabase.rpc("mark_front_door_viewed", { _contractor_id: contractorId });
+  } catch {
+    /* funnel ping only */
+  }
+}
+
 export type InviteErrorCode =
   | "not_authenticated"
   | "invite_not_found"

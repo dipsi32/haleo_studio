@@ -15,6 +15,7 @@ import {
   contractorDisplayName,
   fetchInvite,
   markInviteOpened,
+  markInviteStarted,
   setActiveInvite,
   type InvitePublic,
 } from "@/lib/invites";
@@ -108,6 +109,7 @@ const Invite = () => {
   const c = invite.contractor;
   const start = ({ name: homeownerName, phone: homeownerPhone }: HomeownerStart) => {
     saveIntakeStart({ homeownerName, homeownerPhone });
+    if (token) void markInviteStarted(token);
     track("invite_brief_started", { contractor_id: c.id, resumed: false, source: invite.source ?? "direct" });
     navigate("/brief");
   };

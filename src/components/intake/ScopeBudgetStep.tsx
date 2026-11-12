@@ -181,14 +181,14 @@ const ScopeBudgetStep = ({
               Have a budget in mind?
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Totally optional. Sharing one helps tailor recommendations — skipping it is just as fine.
+              Optional. A rough number helps your contractor see what's realistic. Not sure yet? Say so. That's part of the conversation.
             </p>
           </div>
 
           {budgetSkipped ? (
             <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-foreground/80">
-                Skipped — we'll keep things open.
+                Not sure yet. We'll keep it open for the conversation.
               </p>
               <button
                 onClick={() => {
@@ -230,7 +230,7 @@ const ScopeBudgetStep = ({
                 }}
                 className="w-full rounded-2xl border-2 border-dashed border-border bg-secondary/40 px-5 py-4 text-center font-display text-base font-medium text-foreground/80 transition-smooth hover:border-accent/60 hover:bg-accent-soft/40 hover:text-foreground"
               >
-                I'd rather not say
+                Not sure yet
               </button>
             </div>
           )}

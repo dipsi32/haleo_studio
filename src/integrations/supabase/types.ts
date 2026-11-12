@@ -14,6 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
+      brief_outcomes: {
+        Row: {
+          outreach_send_id: string
+          contractor_id: string
+          decision: string | null
+          decision_reasons: string[]
+          decided_at: string | null
+          effort: string | null
+          visit_match: string | null
+          mismatch_note: string | null
+          visit_reported_at: string | null
+          result: string | null
+          contract_value_k: number | null
+          result_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          outreach_send_id: string
+          contractor_id: string
+          decision?: string | null
+          decision_reasons?: string[]
+          decided_at?: string | null
+          effort?: string | null
+          visit_match?: string | null
+          mismatch_note?: string | null
+          visit_reported_at?: string | null
+          result?: string | null
+          contract_value_k?: number | null
+          result_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          outreach_send_id?: string
+          contractor_id?: string
+          decision?: string | null
+          decision_reasons?: string[]
+          decided_at?: string | null
+          effort?: string | null
+          visit_match?: string | null
+          mismatch_note?: string | null
+          visit_reported_at?: string | null
+          result?: string | null
+          contract_value_k?: number | null
+          result_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contractor_feedback: {
+        Row: {
+          id: string
+          contractor_id: string
+          kind: string
+          value: Json
+          week_start: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          contractor_id: string
+          kind: string
+          value?: Json
+          week_start?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          contractor_id?: string
+          kind?: string
+          value?: Json
+          week_start?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      contractor_pilots: {
+        Row: {
+          contractor_id: string
+          status: string
+          started_at: string
+          baseline: Json
+          price_offered_monthly: number | null
+          paying_since: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          contractor_id: string
+          status?: string
+          started_at?: string
+          baseline?: Json
+          price_offered_monthly?: number | null
+          paying_since?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          contractor_id?: string
+          status?: string
+          started_at?: string
+          baseline?: Json
+          price_offered_monthly?: number | null
+          paying_since?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homeowner_feedback: {
+        Row: {
+          id: string
+          outreach_send_id: string | null
+          contractor_id: string | null
+          ease: string
+          comment: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          outreach_send_id?: string | null
+          contractor_id?: string | null
+          ease: string
+          comment?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          outreach_send_id?: string | null
+          contractor_id?: string | null
+          ease?: string
+          comment?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           action: string
@@ -306,6 +453,7 @@ export type Database = {
           created_by: string
           expires_at: string
           first_opened_at: string | null
+          started_at: string | null
           id: string
           open_count: number
           outreach_send_id: string | null
@@ -321,6 +469,7 @@ export type Database = {
           created_by?: string
           expires_at?: string
           first_opened_at?: string | null
+          started_at?: string | null
           id?: string
           open_count?: number
           outreach_send_id?: string | null
@@ -336,6 +485,7 @@ export type Database = {
           created_by?: string
           expires_at?: string
           first_opened_at?: string | null
+          started_at?: string | null
           id?: string
           open_count?: number
           outreach_send_id?: string | null
@@ -1586,6 +1736,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_pilot_scorecard: { Args: never; Returns: Json }
+      mark_front_door_viewed: { Args: { _contractor_id: string }; Returns: undefined }
+      mark_invite_started: { Args: { _token: string }; Returns: undefined }
+      claim_contractor_profile: { Args: { _contractor_id: string; _license: string }; Returns: string }
       current_user_email: { Args: never; Returns: string }
       generate_contractor_slug: {
         Args: { _license: string; _name: string }
