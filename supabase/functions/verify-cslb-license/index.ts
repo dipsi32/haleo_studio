@@ -94,8 +94,45 @@ const rowFromDb = (row: Record<string, unknown>): CslbRecord => ({
 })
 
 // ─── Firecrawl scrape ─────────────────────────────────────────────────────────
+// Without a Firecrawl key, read CSLB's public license page directly: it is a
+// plain GET that renders the license details server-side. The page text
+// (tags stripped) goes to the same AI extraction as the Firecrawl markdown.
+const htmlToText = (html: string) =>
+  html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<(br|\/p|\/div|\/tr|\/li|\/h\d)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&rsquo;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim()
+
+const directScrape = async (license: string): Promise<{ markdown: string | null; html: string | null; error?: string }> => {
+  try {
+    const resp = await fetch(CSLB_DETAIL(license), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; HaleoLicenseCheck/1.0)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    })
+    if (!resp.ok) return { markdown: null, html: null, error: `CSLB ${resp.status}` }
+    const text = htmlToText(await resp.text())
+    // The detail page names the license; anything else (an error page, a search form) is not a read.
+    if (!text.includes(license) || !/business information|license status|expiration date/i.test(text)) {
+      return { markdown: null, html: null, error: 'CSLB page had no license details' }
+    }
+    const start = Math.max(0, text.search(/business information/i))
+    return { markdown: text.slice(start, start + 8000), html: null }
+  } catch (e) {
+    return { markdown: null, html: null, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 const firecrawlScrape = async (license: string): Promise<{ markdown: string | null; html: string | null; error?: string }> => {
-  if (!FIRECRAWL_API_KEY) return { markdown: null, html: null, error: 'FIRECRAWL_API_KEY missing' }
+  if (!FIRECRAWL_API_KEY) return directScrape(license)
   try {
     const resp = await fetch('https://api.firecrawl.dev/v2/scrape', {
       method: 'POST',

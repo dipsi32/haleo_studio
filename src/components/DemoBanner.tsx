@@ -25,7 +25,7 @@ export default function DemoBanner() {
   return (
     <div className="flex items-center justify-center gap-3 bg-foreground px-4 py-2 text-center text-xs text-background">
       <span>
-        Demo: you're {who}'s next lead. It all works for real, and nothing is sent to anyone.
+        Demo: what {who}'s lead sees. It all works for real, and nothing is sent.
       </span>
       <button
         type="button"
