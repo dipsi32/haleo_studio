@@ -25,6 +25,7 @@ import { track } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import HomeownerContact from "@/components/pro/HomeownerContact";
+import ProjectSummaryCard from "@/components/ProjectSummaryCard";
 import ReadinessCard, { READY_CHIP } from "@/components/pro/ReadinessCard";
 import BriefOutcomePanel from "@/components/pro/BriefOutcomePanel";
 import PilotPrompts from "@/components/pro/PilotPrompts";
@@ -641,6 +642,8 @@ function BriefDetailDialog({ send, contractorId, onUnlocked, onMessage, onClose 
         ) : (
           <div className="space-y-6 py-2">
             {/* Deal read: the decision first, the detail after */}
+            {/* The job, in one card, before anything else */}
+            <ProjectSummaryCard snapshot={snap} audience="contractor" homeownerName={send.outreach_batches?.homeowner_name} />
             <HomeownerContact name={send.outreach_batches?.homeowner_name} phone={snap.homeowner_phone} />
             <ReadinessCard readiness={computeLeadReadiness(snap, buyBox)} />
             <BriefOutcomePanel sendId={send.id} contractorId={contractorId} homeowner={(send.outreach_batches?.homeowner_name ?? "them").split(" ")[0]} />

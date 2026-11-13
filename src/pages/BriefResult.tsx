@@ -60,6 +60,8 @@ import { ROOM_LABELS, useIntake, type MediaAsset, type IntakeData } from "@/lib/
 import DetailedSpaceAnalysis from "@/components/intake/DetailedSpaceAnalysis";
 import { useSpaceAnalysis } from "@/lib/spaceAnalysis";
 import { getActiveInvite, inviteCobrand, inviteSendPath, isDemoActive } from "@/lib/invites";
+import ProjectSummaryCard from "@/components/ProjectSummaryCard";
+import { buildBriefSnapshot } from "@/lib/contractors";
 import CobrandLogo from "@/components/CobrandLogo";
 import { loadShortlist } from "@/lib/shortlist";
 import { projectLabel } from "@/lib/projectName";
@@ -460,6 +462,8 @@ const BriefResult = () => {
   // the primary path sends the brief to that contractor and nobody else. The
   // open "compare contractors" path stays one click away.
   const invite = useMemo(() => getActiveInvite(), []);
+  // The same summary the contractor will get, so the homeowner sees what they're sending.
+  const summarySnapshot = useMemo(() => ({ ...buildBriefSnapshot(data), projectType: projectLabel(data) }), [data]);
   const cobrand = useMemo(() => inviteCobrand(invite), [invite]);
   const compareDestination = brUser
     ? "/contractors"
@@ -553,6 +557,15 @@ const BriefResult = () => {
             {projectTitle.title}
           </h1>
         </motion.div>
+
+        {/* ────────── THE PROJECT SUMMARY: exactly what the contractor gets ────────── */}
+        <div className="mt-6">
+          <ProjectSummaryCard
+            snapshot={summarySnapshot}
+            audience="homeowner"
+            contractorName={invite ? invite.personName || invite.contractorName : undefined}
+          />
+        </div>
 
         {/* ────────── AT-A-GLANCE STRIP — the only summary you need ────────── */}
         <ExecSummary

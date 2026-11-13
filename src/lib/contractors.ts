@@ -1,5 +1,6 @@
 // Pure helpers for the Contractor Discovery feature.
 // Trust score, project-type matching, and brief snapshots — kept testable.
+import { finishLabel, primaryRoom, sizeLabel } from "@/lib/roomFacts";
 import type { IntakeData } from "@/lib/intake";
 import { ROOM_LABELS, scopeFor } from "@/lib/intake";
 import { projectLabel, projectNoun } from "@/lib/projectName";
@@ -377,6 +378,9 @@ export type BriefSnapshot = {
   homeowner_name?: string;
   // The number they gave in the contractor's link, to call or text back.
   homeowner_phone?: string;
+  // "Medium, 100–200 sq ft" or "About 150 sq ft", and "Mid-range": what contractors price from first.
+  room_size?: string;
+  finish_level?: string;
   neighborhood: string;
   scope_summary: string;
   vision: string;
@@ -465,6 +469,8 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     // The name they gave in the contractor's link wins over an account name.
     homeowner_name: data.homeownerName || homeownerName,
     homeowner_phone: data.homeownerPhone || undefined,
+    room_size: sizeLabel(data.roomSize, primaryRoom(data)) ?? (data.dimensions?.length && data.dimensions?.width ? `About ${Math.round(data.dimensions.length * data.dimensions.width)} sq ${data.dimensions.unit === "m" ? "m" : "ft"}` : undefined),
+    finish_level: finishLabel(data.finishLevel) ?? undefined,
     neighborhood: data.address?.city ?? 'your area',
     scope_summary: buildHomeownerLayer(data),
     vision: data.notes ?? '',

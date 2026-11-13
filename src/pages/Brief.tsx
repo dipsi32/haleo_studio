@@ -25,6 +25,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import IntakeShell from "@/components/IntakeShell";
 import RecordCompanion from "@/components/brief/RecordCompanion";
+import RoomFactsStep from "@/components/intake/RoomFactsStep";
+import { primaryRoom as projectRoom, type FinishLevel, type RoomSize } from "@/lib/roomFacts";
 import PillGroup from "@/components/PillGroup";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -744,7 +746,17 @@ const ScopeAndBudgetScreen = ({
   hideScope,
   rooms,
   goals,
+  room,
+  roomSize,
+  finishLevel,
+  onRoomSize,
+  onFinishLevel,
 }: {
+  room?: Room;
+  roomSize?: RoomSize;
+  finishLevel?: FinishLevel;
+  onRoomSize: (s: RoomSize) => void;
+  onFinishLevel: (f: FinishLevel) => void;
   scope?: ScopeTier;
   onScopeChange: (s: ScopeTier) => void;
   min?: number;
@@ -769,6 +781,7 @@ const ScopeAndBudgetScreen = ({
           : "Pick the type of project that fits. Budget is optional — share if you have one in mind."
       }
     />
+    {!hideScope && <RoomFactsStep room={room} size={roomSize} finish={finishLevel} onSize={onRoomSize} onFinish={onFinishLevel} />}
     <ScopeBudgetStep
       scope={scope}
       onScopeChange={onScopeChange}
@@ -1028,6 +1041,11 @@ const Brief = () => {
             hideScope={isAddition}
             rooms={data.rooms}
             goals={data.goals}
+            room={projectRoom(data)}
+            roomSize={data.roomSize}
+            finishLevel={data.finishLevel}
+            onRoomSize={(roomSize) => update({ roomSize })}
+            onFinishLevel={(finishLevel) => update({ finishLevel })}
             onPickTimeline={(t) => {
               update({ timeline: t });
               setTimeout(submit, 350);

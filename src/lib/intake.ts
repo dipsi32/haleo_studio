@@ -88,6 +88,9 @@ export type IntakeData = {
   address?: Address;
   // scope of work — orientates budget
   scope?: ScopeTier;
+  // Roughly how big the room is, and the finish level they have in mind (src/lib/roomFacts.ts).
+  roomSize?: import("@/lib/roomFacts").RoomSize;
+  finishLevel?: import("@/lib/roomFacts").FinishLevel;
   // budget
   budgetMin?: number;
   budgetMax?: number;
@@ -771,8 +774,8 @@ export const scopeSetFor = (
     );
   }
   return set(
-    "How big is this job?",
-    "Pick the closest match. It tells your contractor the size of job to plan for.",
+    "What kind of job is it?",
+    "Pick the closest match. It tells your contractor what's involved and how long it usually takes.",
     [
       o("refresh", "Small job", "A focused fix or upgrade.", ["One trade, one area", "Little or no demo", "Usually no permit"], "A few days", false, { min: 2, max: 10 }),
       o("remodel", "Standard project", "A full replacement or build.", ["One or two trades", "Permit and inspection likely", "Some demo and patching"], "2–6 weeks", true, { min: 10, max: 45 }),
