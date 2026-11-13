@@ -784,6 +784,7 @@ export type Database = {
           city: string | null
           claim_completed_at: string | null
           claim_started_at: string | null
+          claimed_license_number: string | null
           claimed: boolean
           claimed_at: string | null
           company: string | null
@@ -817,6 +818,7 @@ export type Database = {
           city?: string | null
           claim_completed_at?: string | null
           claim_started_at?: string | null
+          claimed_license_number?: string | null
           claimed?: boolean
           claimed_at?: string | null
           company?: string | null
@@ -850,6 +852,7 @@ export type Database = {
           city?: string | null
           claim_completed_at?: string | null
           claim_started_at?: string | null
+          claimed_license_number?: string | null
           claimed?: boolean
           claimed_at?: string | null
           company?: string | null
