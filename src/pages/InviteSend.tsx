@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import HomeownerEase from "@/components/HomeownerEase";
+import ProjectSummaryCard from "@/components/ProjectSummaryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
@@ -202,14 +203,6 @@ const InviteSend = () => {
     );
   }
 
-  const shared: { label: string; value: string }[] = [
-    { label: "Project", value: projectTypeLabel(data).replace(/^./, (c) => c.toUpperCase()) },
-    { label: "City", value: city ?? "Not shared" },
-    { label: "Budget", value: preview.budget ?? "Not shared" },
-    { label: "Timeline", value: preview.timeline ?? "Not shared" },
-    { label: "Photos and plans", value: `${preview.room_photo_urls.length} photo${preview.room_photo_urls.length === 1 ? "" : "s"}, ${preview.floorplan_urls.length} plan${preview.floorplan_urls.length === 1 ? "" : "s"}` },
-    { label: "Haleo's read of your space", value: preview.haleo_read ? "Included, as you approved it" : "Not included" },
-  ];
 
   const send = async () => {
     if ((!user && !demo) || !consent) return;
@@ -287,14 +280,12 @@ const InviteSend = () => {
         This is what {name} will see. It goes to them and no one else.
       </p>
 
-      <dl className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
-        {shared.map((s) => (
-          <div key={s.label} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
-            <dt className="text-sm text-muted-foreground">{s.label}</dt>
-            <dd className="text-right text-sm font-medium">{s.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <ProjectSummaryCard
+        className="mt-6"
+        snapshot={{ ...preview, projectType: projectTypeLabel(data) }}
+        audience="homeowner"
+        contractorName={invite.contractor.personName || name}
+      />
       {!city && (
         <p className="mt-3 text-sm text-muted-foreground">
           You haven't added an address, so {name} can't check permits and hazard zones for your property.{" "}

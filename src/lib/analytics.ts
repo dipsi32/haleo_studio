@@ -119,6 +119,10 @@ export type AnalyticsEvent =
   | "your_link_shared"
   | "pilot_contractor_added"
   | "pilot_updated"
+  // Intake: the two facts contractors price from first.
+  | "room_size_picked"
+  | "finish_level_picked"
+  | "project_summary_viewed"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"
