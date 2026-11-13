@@ -2,91 +2,37 @@
 // One card at a time, peek of the next two behind it. Pass dismisses
 // the current match; Send sends ONE brief (committed, considered).
 // After the user works through the curated set, we offer to reveal more.
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  Hammer, MapPin, Calendar, ShieldCheck, Sparkles,
-  X as XIcon, Send, ArrowRight, Star, Check,
-} from "lucide-react";
+import { Sparkles, X as XIcon, Send, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RankedContractor } from "@/lib/useContractors";
-import { evaluateDiscipline } from "@/lib/cslbSignals";
-import { trustTier, trustChecks, tierChipClass } from "@/lib/contractors";
+import type { IntakeData } from "@/lib/intake";
+import type { JobFit } from "@/lib/jobFit";
+import { useJobFit } from "@/lib/useJobFit";
+import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
 
-const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
+/** Lead with the facts that line up, strongest first. */
+const leadFacts = (fit: JobFit): string[] =>
+  fit.rows.filter((r) => r.level === "yes").concat(fit.rows.filter((r) => r.level === "some")).map((r) => r.fact).slice(0, 2);
 
-/** Hand-tuned, opinionated reasons drawn from real signals on the rank object. */
-function buildReasons(rc: RankedContractor, projectLabel: string, neighborhood: string): string[] {
-  const reasons: string[] = [];
-  const { contractor, permits, license, matchCount, recentPermit, score } = rc;
-
-  if (matchCount > 0) {
-    reasons.push(
-      `${matchCount} permitted ${projectLabel} job${matchCount === 1 ? "" : "s"} in ${neighborhood} — straight from city records`
-    );
-  } else if (permits.length > 0) {
-    const recent = permits.filter(p => p.issued_date && new Date(p.issued_date).getTime() > Date.now() - 365 * 24 * 60 * 60 * 1000);
-    reasons.push(`${permits.length} permit${permits.length === 1 ? "" : "s"} on record in ${neighborhood}${recent.length > 0 ? `, ${recent.length} in the last 12 months` : ""}`);
-  }
-
-  if (recentPermit?.issued_date) {
-    const last = fmtDate(recentPermit.issued_date);
-    if (last) reasons.push(`Most recent job: ${last}${recentPermit.address ? ` · ${recentPermit.address}` : ""}`);
-  }
-
-  if (license?.status?.toLowerCase().includes("active")) {
-    if (license.issue_date) {
-      const years = Math.max(0, Math.floor((Date.now() - new Date(license.issue_date).getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-      if (years >= 1) reasons.push(`CSLB license active ${years} year${years === 1 ? "" : "s"} — clean standing`);
-      else reasons.push(`CSLB license active and in clean standing`);
-    } else {
-      reasons.push(`CSLB license active and in clean standing`);
-    }
-  }
-
-  // Top component highlight (e.g. "Local track record")
-  const top = [...score.components].filter(c => c.weight > 0 && c.earned > 0)
-    .sort((a, b) => (b.earned / Math.max(1, b.weight)) - (a.earned / Math.max(1, a.weight)))[0];
-  if (top && reasons.length < 3) {
-    reasons.push(top.detail);
-  }
-
-  if (reasons.length === 0) reasons.push(`Verified local contractor near ${neighborhood}`);
-  return reasons.slice(0, 3);
-}
-
-function rankHeadline(idx: number): { eyebrow: string; rationale: string } {
-  if (idx === 0) return {
-    eyebrow: "Top pick · the one I'd call first",
-    rationale: "Closest fit by project type, location, and local permit footprint.",
-  };
-  if (idx === 1) return {
-    eyebrow: "Strong second",
-    rationale: "Different style, equally credible — worth a conversation.",
-  };
-  return {
-    eyebrow: "Wild card worth meeting",
-    rationale: "A specialist that brings a sharper angle on your scope.",
-  };
-}
+const EYEBROW = ["Start here", "Also worth a call", "One more to compare"];
 
 type CardProps = {
   rc: RankedContractor;
   index: number;
-  projectLabel: string;
-  neighborhood: string;
+  data: IntakeData;
   onPass: () => void;
   onSend: () => void;
 };
 
-const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: CardProps) => {
+const MatchCard = ({ rc, index, data, onPass, onSend }: CardProps) => {
   const navigate = useNavigate();
-  const { contractor, license, score } = rc;
-  const reasons = useMemo(() => buildReasons(rc, projectLabel, neighborhood), [rc, projectLabel, neighborhood]);
-  const head = rankHeadline(index);
-  const discipline = evaluateDiscipline(license);
+  const { contractor, license } = rc;
+  const fit = useJobFit(contractor.id, rc.permits, data, license);
+  const lead = leadFacts(fit);
+  const name = contractor.company ?? contractor.name;
   const [exitDir, setExitDir] = useState<-1 | 0 | 1>(0);
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -116,70 +62,31 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
       style={{ touchAction: "pan-y" }}
       className="relative overflow-hidden rounded-[28px] border border-border bg-card shadow-lift"
     >
-      {/* Amber rank ribbon */}
-      {(() => {
-        const hasPenalty = score.components.some(c => c.status === 'penalty');
-        const tier = trustTier(score.total, hasPenalty);
-        const checks = trustChecks(score);
-        return (
-          <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-amber-50 via-card to-card px-5 py-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">{head.eyebrow}</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-[3px] text-[10px] font-semibold leading-tight whitespace-nowrap ${tierChipClass(tier.tone)}`}>
-                <ShieldCheck className="h-3 w-3" /> {tier.label}
-              </span>
-              <span className="text-[10px] text-muted-foreground opacity-60">{checks.passed}/{checks.total} signals</span>
-            </div>
-          </div>
-        );
-      })()}
-
       <div className="px-6 pt-6 pb-5 md:px-7">
-        <h3 className="font-display text-2xl font-light leading-tight text-foreground">
-          {contractor.company ?? contractor.name}
-        </h3>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{fit.flag ? "Read this first" : EYEBROW[index] ?? "Worth a look"}</p>
+        <h3 className="mt-2 font-display text-2xl font-light leading-tight text-foreground">{name}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           {contractor.specialty ?? "General contractor"} · {contractor.city ?? "San Jose"}
         </p>
 
-        {/* The opinionated bit — why Haleo picked them */}
-        <div className="mt-5 rounded-2xl bg-secondary/50 p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Why this match
-          </p>
-          <p className="mt-1.5 text-sm text-foreground/90">{head.rationale}</p>
-          <ul className="mt-3 space-y-2">
-            {reasons.map((r, i) => {
-              const Icon = i === 0 ? Hammer : i === 1 ? Calendar : ShieldCheck;
-              return (
-                <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
-                  <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                  <span>{r}</span>
-                </li>
-              );
-            })}
+        {lead.length > 0 && !fit.flag && (
+          <ul className="mt-4 space-y-1.5">
+            {lead.map((l) => (
+              <li key={l} className="flex gap-2 text-[15px] leading-snug text-foreground">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sage" />
+                {l}
+              </li>
+            ))}
           </ul>
-        </div>
-
-        {discipline.hasRecord && (
-          <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-            Heads up: CSLB shows a disciplinary record. Tap "View profile" for details.
-          </div>
         )}
 
-        <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>Based in {contractor.city ?? "San Jose"}{contractor.zip ? ` · ${contractor.zip}` : ""}</span>
-        </div>
+        <JobFitBreakdown fit={fit} who={name} defaultOpen className="mt-5" surface="curated" />
 
         <button
           onClick={() => navigate(`/contractors/${contractor.id}`)}
           className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent underline-offset-4 hover:underline"
         >
-          View full profile <ArrowRight className="h-3.5 w-3.5" />
+          See every permit <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </div>
 
@@ -194,12 +101,11 @@ const MatchCard = ({ rc, index, projectLabel, neighborhood, onPass, onSend }: Ca
         </button>
         <Button
           onClick={() => { setExitDir(1); setTimeout(onSend, 160); }}
-          className="h-12 rounded-full bg-amber-500 px-6 text-white shadow-soft hover:bg-amber-600"
+          className="h-12 rounded-full px-6 shadow-soft"
         >
           <Send className="h-4 w-4" /> Send my brief
         </Button>
       </div>
-
     </motion.article>
   );
 };
@@ -208,8 +114,8 @@ type Decision = "sent" | "passed";
 
 type Props = {
   matches: RankedContractor[];           // top 3 (or fewer)
-  projectLabel: string;
-  neighborhood: string;
+  /** The homeowner's intake: the job each record is read against. */
+  data: IntakeData;
   onSend: (rc: RankedContractor) => void;
   onSendMany?: (rcs: RankedContractor[]) => void;  // second-chance mass invite
   onUnlockMore?: () => void;             // user wants to see the rest → paywall
@@ -277,7 +183,6 @@ function RecapView({
           {matches.map((rc, i) => {
             const d = decisions[rc.contractor.id];
             const checked = picks.has(rc.contractor.id);
-            const label = i === 0 ? "Top pick · " : i === 1 ? "Strong second · " : "Wild card · ";
             if (d === "sent") {
               return (
                 <li
@@ -285,7 +190,7 @@ function RecapView({
                   className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
                 >
                   <p className="min-w-0 truncate font-medium text-foreground">
-                    {label}{rc.contractor.company ?? rc.contractor.name}
+                    {rc.contractor.company ?? rc.contractor.name}
                   </p>
                   <span className="inline-flex items-center gap-1 rounded-full bg-sage/15 px-2.5 py-0.5 text-[11px] font-medium text-sage">
                     <Send className="h-3 w-3" /> Brief sent
@@ -311,7 +216,7 @@ function RecapView({
                       {checked && <Check className="h-3 w-3" strokeWidth={3} />}
                     </span>
                     <p className="min-w-0 truncate font-medium text-foreground">
-                      {label}{rc.contractor.company ?? rc.contractor.name}
+                      {rc.contractor.company ?? rc.contractor.name}
                     </p>
                   </div>
                   <input
@@ -403,7 +308,7 @@ function RecapView({
   );
 }
 
-export default function CuratedMatchStack({ matches, projectLabel, neighborhood, onSend, onSendMany, onUnlockMore }: Props) {
+export default function CuratedMatchStack({ matches, data, onSend, onSendMany, onUnlockMore }: Props) {
   const [cursor, setCursor] = useState(0);
   const [decisions, setDecisions] = useState<Record<string, "sent" | "passed">>({});
   const total = matches.length;
@@ -452,8 +357,7 @@ export default function CuratedMatchStack({ matches, projectLabel, neighborhood,
             key={active.contractor.id}
             rc={active}
             index={cursor}
-            projectLabel={projectLabel}
-            neighborhood={neighborhood}
+            data={data}
             onPass={() => record(active.contractor.id, "passed")}
             onSend={() => { onSend(active); record(active.contractor.id, "sent"); }}
           />

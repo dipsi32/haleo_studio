@@ -363,6 +363,8 @@ export const SHORTLIST_KEY = "haleo:shortlist";
 
 export type SavedShortlist = {
   project: ShortlistProject;
+  /** Their ZIP, so "Do they work near you?" can be answered. Optional. */
+  zip?: string;
   candidates: Candidate[];
   results: CheckedCandidate[];
   selected: string[];

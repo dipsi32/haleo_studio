@@ -19,6 +19,7 @@ import Contractors from "./pages/Contractors.tsx";
 import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
 import Shortlist from "./pages/Shortlist.tsx";
+import ShareIn from "./pages/ShareIn";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
 import Roast from "./pages/Roast.tsx";
@@ -122,6 +123,8 @@ const App = () => (
 
             {/* Brief is open to everyone — sign-up is offered at the match step */}
             <Route path="/shortlist" element={<Shortlist />} />
+            {/* The phone's share sheet lands here (public/manifest.webmanifest share_target) */}
+            <Route path="/share" element={<ShareIn />} />
             <Route path="/brief" element={<Brief />} />
             <Route path="/brief/result" element={<BriefResult />} />
             {/* Matches require login (paywall lives in-page at the unlock step) */}

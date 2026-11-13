@@ -1,57 +1,43 @@
 // Contractor Discovery — surfaces real San Jose contractors who pulled
-// permits matching the homeowner's project type, ranked by Trust Score.
+// permits matching the homeowner's project type, ranked by how their record lines up with this job (src/lib/jobFit.ts).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, MapPin, Calendar, Hammer, Check,
+  ArrowLeft, MapPin, Check,
   Send, X, Info, Sparkles, AlertCircle, Paperclip,
   CheckCircle2, FileText, Clock, Wallet, Home, ChevronDown,
-  ShieldCheck,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useIntake } from "@/lib/intake";
+import { useIntake, type IntakeData } from "@/lib/intake";
+import { useJobFit } from "@/lib/useJobFit";
+import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
 import { loadParcelFacts } from "@/lib/parcelFacts";
-import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot, trustTier, trustChecks, tierChipClass } from "@/lib/contractors";
-import CslbSignals from "@/components/CslbSignals";
-import { evaluateDiscipline } from "@/lib/cslbSignals";
+import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
 import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 
-const formatDate = (d: string | null) => {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-};
-
-const TrustBadge = ({ rc }: { rc: RankedContractor }) => {
-  const hasPenalty = rc.score.components.some(c => c.status === 'penalty');
-  const tier = trustTier(rc.score.total, hasPenalty);
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-[3px] text-[10px] font-semibold leading-tight whitespace-nowrap ${tierChipClass(tier.tone)}`}>
-      <ShieldCheck className="h-3 w-3" /> {tier.label}
-    </span>
-  );
-};
-
 const ContractorCard = ({
-  rc, selected, onToggle, projectLabel, neighborhood,
+  rc, selected, onToggle, data, live,
 }: {
   rc: RankedContractor;
   selected: boolean;
   onToggle: () => void;
-  projectLabel: string;
-  neighborhood: string;
+  data: IntakeData;
+  /** Fetch the city's inspection sign-offs for this card (the first few on screen). */
+  live: boolean;
 }) => {
   const navigate = useNavigate();
-  const { contractor, permits, license, score, matchCount, recentPermit, verifying } = rc;
-  const discipline = evaluateDiscipline(license);
+  const { contractor, license } = rc;
+  const name = contractor.company ?? contractor.name;
+  const fit = useJobFit(contractor.id, rc.permits, data, license, live);
   return (
     <motion.div
       layout
@@ -66,69 +52,22 @@ const ContractorCard = ({
           <Check className="h-4 w-4" />
         </div>
       )}
-      <div className="flex items-start gap-4">
+      <h3 className="pr-8 font-display text-lg font-medium leading-tight text-foreground">{name}</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {contractor.specialty ?? "General"} · {contractor.city ?? "San Jose"}
+      </p>
+
+      <JobFitBreakdown fit={fit} who={name} className="mt-4" surface="discovery" />
+
+      <div className="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
         <button
           type="button"
           onClick={() => navigate(`/contractors/${contractor.id}`)}
-          aria-label="See trust score breakdown"
-          className="shrink-0 rounded-full transition-smooth hover:opacity-80"
+          className="text-sm font-medium text-accent underline-offset-4 hover:underline"
         >
-          <TrustBadge rc={rc} />
+          See every permit →
         </button>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-lg font-medium leading-tight text-foreground">
-            {contractor.company ?? contractor.name}
-          </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {contractor.specialty ?? "General"} · {contractor.city ?? "San Jose"}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate(`/contractors/${contractor.id}`)}
-            className="mt-1 text-[11px] text-muted-foreground/80 underline-offset-2 hover:text-accent hover:underline"
-          >
-            See the records behind this →
-          </button>
-        </div>
-      </div>
-
-      {/* CSLB signals — license, bond/WC, discipline, tenure, name match */}
-      <div className="mt-4">
-        <CslbSignals
-          license={license}
-          licenseNumber={contractor.license_number}
-          permitDisplayName={contractor.company ?? contractor.name}
-          variant="card"
-          verifying={verifying}
-          onDisciplineClick={() => navigate(`/contractors/${contractor.id}`)}
-        />
-      </div>
-
-      {/* Permit history snippet */}
-      <div className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm text-foreground/80">
-        <div className="flex items-center gap-1.5">
-          <Hammer className="h-3.5 w-3.5 text-accent" />
-          <span><strong className="font-medium text-foreground">{matchCount || permits.length}</strong> {projectLabel} permit{(matchCount || permits.length) === 1 ? "" : "s"} in {neighborhood}</span>
-        </div>
-        {recentPermit && (
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-accent" />
-            <span>Last job: {formatDate(recentPermit.issued_date)}{recentPermit.address ? ` · ${recentPermit.address}` : ""}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
-        <Link to={`/contractors/${contractor.id}`} className="text-sm font-medium text-accent underline-offset-4 hover:underline">
-          View profile →
-        </Link>
-        <Button
-          size="sm"
-          variant={selected ? "default" : "outline"}
-          onClick={onToggle}
-          className="rounded-full"
-          disabled={discipline.hasRecord && !selected ? false : false}
-        >
+        <Button size="sm" variant={selected ? "default" : "outline"} onClick={onToggle} className="rounded-full">
           {selected ? <><Check className="h-3.5 w-3.5" /> Selected</> : "Select"}
         </Button>
       </div>
@@ -136,12 +75,12 @@ const ContractorCard = ({
   );
 };
 
-// ───── Phased loading — "magic moment" while we score contractors ─────
+// ───── Phased loading, while we read the records ─────
 const LOADING_PHASES = [
   { label: "Reading San José permit records…", ms: 900 },
   { label: "Cross-checking CSLB license files…", ms: 900 },
-  { label: "Scoring local footprint & project fit…", ms: 900 },
-  { label: "Curating your top 3…", ms: 700 },
+  { label: "Reading the city's inspection sign-offs…", ms: 900 },
+  { label: "Lining each record up with your job…", ms: 700 },
 ];
 
 const MatchingProgress = ({ note }: { note?: string | null }) => {
@@ -424,15 +363,15 @@ const Contractors = () => {
 
       <main className="container max-w-3xl py-7 md:py-10">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">
-            Curated by Haleo
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+            Who's built this near you
           </p>
           <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl text-balance">
-            The 3 contractors I'd actually call if it were my house.
+            Three whose record lines up with <span className="italic">your {projectLabel}.</span>
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
-            Hand-picked from {ranked.length || "every"} licensed {projectLabel} contractor with permits in {neighborhood}, ranked by
-            permit proximity to your address, project-type fit, and clean license history. Haleo doesn't vet contractors — we read public records.
+            Read from {ranked.length || "every"} contractor{ranked.length === 1 ? "" : "s"} with San Jose permits: who's done this
+            kind of job, near you, lately, with city sign-offs and an active license. Public records, not ratings.
           </p>
         </motion.div>
 
@@ -454,8 +393,7 @@ const Contractors = () => {
           <div className="mt-8">
             <CuratedMatchStack
               matches={curated}
-              projectLabel={projectLabel}
-              neighborhood={neighborhood}
+              data={data}
               onSend={(rc) => {
                 setSelected(new Set([rc.contractor.id]));
                 setOutreachOpen(true);
@@ -488,14 +426,14 @@ const Contractors = () => {
               <p className="text-xs text-muted-foreground">{rest.length} more</p>
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {rest.map(rc => (
+              {rest.map((rc, i) => (
                 <ContractorCard
                   key={rc.contractor.id}
                   rc={rc}
                   selected={selected.has(rc.contractor.id)}
                   onToggle={() => toggle(rc.contractor.id)}
-                  projectLabel={projectLabel}
-                  neighborhood={neighborhood}
+                  data={data}
+                  live={i < 6}
                 />
               ))}
             </div>
@@ -505,19 +443,22 @@ const Contractors = () => {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-4 w-4 text-accent" />
             <div>
-              <p className="font-display text-lg font-medium">How we group contractors</p>
+              <p className="font-display text-lg font-medium">How we read each record</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Haleo doesn't vet, endorse, or rate contractors. We read public records — every permit pulled in your city plus the contractor's CSLB license file — and group them by what the data shows. No paid placements. No self-reported reviews. No stars.
+                Haleo doesn't vet, endorse or rate contractors. For each one we answer five questions about your job from
+                public records: San Jose permits, the city's inspection sign-offs and the state license board. No paid
+                placements, no stars, no score.
               </p>
-              <div className="mt-4 grid gap-2 text-sm md:grid-cols-5">
-                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Heavy local footprint</p><p className="text-[11px] text-muted-foreground">65+ · lots of nearby permits</p></div>
-                <div className="rounded-xl border border-sage/30 bg-sage/5 p-3"><p className="text-xs font-semibold text-sage">Strong local footprint</p><p className="text-[11px] text-muted-foreground">45–64</p></div>
-                <div className="rounded-xl border border-accent/30 bg-accent/5 p-3"><p className="text-xs font-semibold text-accent">Active locally</p><p className="text-[11px] text-muted-foreground">28–44 · licensed and pulling permits</p></div>
-                <div className="rounded-xl border border-amber-400/40 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-700">Light footprint</p><p className="text-[11px] text-muted-foreground">12–27 · smaller local trail</p></div>
-                <div className="rounded-xl border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold text-muted-foreground">Sparse record</p><p className="text-[11px] text-muted-foreground">Below 12 · not enough data yet</p></div>
-              </div>
+              <ol className="mt-4 grid gap-2 text-sm md:grid-cols-5">
+                {["Have they done this kind of job?", "Do they work near you?", "Are they active lately?", "Does their work pass inspection?", "Is their license active?"].map((q, i) => (
+                  <li key={q} className="rounded-xl border border-border bg-secondary/40 p-3">
+                    <p className="text-[11px] text-muted-foreground">{i + 1}</p>
+                    <p className="text-xs font-medium text-foreground">{q}</p>
+                  </li>
+                ))}
+              </ol>
               <p className="mt-4 text-xs text-muted-foreground">
-                Tap any contractor to see the exact permits, the CSLB license file, and the raw signals behind their group. You decide who to trust.
+                Anything we couldn't check reads "Not checked", never a pass. Tap a contractor to see every permit behind the answers. You make the call.
               </p>
             </div>
           </div>

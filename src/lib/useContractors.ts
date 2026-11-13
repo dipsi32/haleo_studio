@@ -22,6 +22,7 @@ import {
   cslbDeepLink,
 } from "@/lib/contractors";
 import type { IntakeData } from "@/lib/intake";
+import { jobFit, type JobFit } from "@/lib/jobFit";
 
 export type RankedContractor = {
   contractor: Contractor;
@@ -30,6 +31,8 @@ export type RankedContractor = {
   score: TrustScoreBreakdown;
   matchCount: number;
   recentPermit: Permit | null;
+  /** How their public record lines up with this homeowner's job (no inspections yet; the card adds those). */
+  fit: JobFit;
   /** True while a Firecrawl verification request is in flight for this license. */
   verifying?: boolean;
 };
@@ -235,16 +238,13 @@ export const useContractors = (data: IntakeData) => {
             }).length;
             const recentPermit = cPermits.find(p => p.issued_date) ?? null;
             const verifying = !license && verifyingSet.has(c.license_number);
-            return { contractor: c, permits: cPermits, license, score, matchCount, recentPermit, verifying };
+            const fit = jobFit(cPermits, data, { license });
+            return { contractor: c, permits: cPermits, license, score, matchCount, recentPermit, verifying, fit };
           });
-          // Disciplinary records sort last; otherwise project match → trust score
-          out.sort((a, b) => {
-            const aBad = a.license?.scrape_succeeded && a.license.has_disciplinary_action ? 1 : 0;
-            const bBad = b.license?.scrape_succeeded && b.license.has_disciplinary_action ? 1 : 0;
-            if (aBad !== bBad) return aBad - bBad;
-            if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
-            return b.score.total - a.score.total;
-          });
+          // Job fit: license flags last, then the most answers that line up with
+          // this job (same kind of work and license count double), then more of
+          // the same work. Same order the homeowner can read on each card.
+          out.sort((a, b) => b.fit.rank - a.fit.rank);
           return out;
         };
 

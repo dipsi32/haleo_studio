@@ -180,22 +180,33 @@ const differences = [
   ["Apples-to-oranges quotes", "Every line item, side by side"],
 ];
 
+// Four moments a homeowner is already in. Each door starts from what they
+// already have in hand, and asks for nothing else first.
 const entryDoors = [
   {
     id: "shortlist",
     to: "/shortlist",
-    when: "You asked around and got 40 names",
+    when: "Someone sent you 40 names",
     title: "Find the three worth calling.",
-    body: "Paste the Nextdoor thread or drop in screenshots. We check every license and permit record and put them in order for your project.",
+    body: "Paste the Nextdoor thread or drop in screenshots. We read each name's permits, city inspections and license against your job.",
     cta: "Check my names",
     featured: true,
+  },
+  {
+    id: "one_name",
+    to: "/shortlist?one=1",
+    when: "You have one name in mind",
+    title: "A truck on your street. A friend's guy.",
+    body: "Type the name. See what they've built, where, whether the city signed it off, and if their license is active.",
+    cta: "Check one contractor",
+    featured: false,
   },
   {
     id: "brief",
     to: "/brief",
     when: "You're starting from scratch",
     title: "Meet the ones who've built it nearby.",
-    body: "Describe the project once. We match it to contractors who've pulled permits for the same kind of work in your city.",
+    body: "Describe the project once. We find who has permits for the same kind of work near you, and send your brief to the ones you pick.",
     cta: "Find a contractor",
     featured: false,
   },
@@ -261,14 +272,14 @@ const Index = () => {
           gets reconciled with the rest of the site's design system later. */}
       <HeroStory />
 
-      {/* THREE DOORS: wherever the homeowner is in the search, start there. */}
+      {/* FOUR DOORS: wherever the homeowner is in the search, start there. */}
       <section className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <p className="eyebrow text-accent">Wherever you are in it</p>
           <h2 className="mt-5 max-w-2xl font-display text-[30px] leading-tight tracking-tight md:text-[38px]">
             Finding the right contractor, without the second job.
           </h2>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
             {entryDoors.map((d) => (
               <Link
                 key={d.to}
