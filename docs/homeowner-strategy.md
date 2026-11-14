@@ -49,6 +49,8 @@ Nobody downloads an app to find a contractor. They're already somewhere, holding
 | Anything, on their phone | **Share → Haleo** from Nextdoor, Messages, Yelp or email (`/share`) | Live on Android once Haleo is added to the home screen. iOS doesn't support web share targets. |
 | A link from a contractor | `/i/:token` (contractor's brief link) | Live |
 
+**The homepage is one box.** "Tell us about your project, or paste the names you've been given." Whatever they type, `src/lib/homeEntry.ts` works out the door: a project goes to `/brief` with their words and rooms already filled in, names go to `/shortlist` prefilled, and a quote goes to `/roast`. Quiet links underneath cover screenshots, one name and a quote file. Below it, the page walks the four doubts between "who do I even call?" and signing (Will they get what I want? Have they done this? Is the price fair? Am I ready?) and what answers each. Event: `home_entry_started` (where, kind).
+
 Next, in order of leverage:
 
 1. **Post it back.** After a shortlist, one tap writes a reply for the thread they came from ("I checked the 6 names here against city permits: …"). It gives the neighbor something worth posting and carries Haleo into the next thread. This is the homeowner-to-homeowner loop. Measure `shortlist_shared_back`.

@@ -1,110 +1,141 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowUp, Check, Menu, Upload } from "lucide-react";
+import { ArrowRight, ArrowUp, Menu } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { setPendingQuoteFile, setPendingQuoteText } from "@/lib/quoteHandoff";
 import { track } from "@/lib/analytics";
-import HeroStory from "@/components/hero-story/HeroStory";
+import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
+import { classifyHomeEntry, type HomeEntry } from "@/lib/homeEntry";
+import { jobFit } from "@/lib/jobFit";
 
 /* ---------------------------------------------------------------- */
-/* Quote entry — upload first, paste as a quiet fallback              */
+/* The one box: whatever they have, it finds the door                 */
 /* ---------------------------------------------------------------- */
 
-const QuoteEntry = ({ where }: { where: "hero" | "closing" }) => {
+const NEXT: Record<HomeEntry, { button: string; hint: string }> = {
+  project: { button: "Start with my project", hint: "We'll turn this into a clear brief, then show you who's built it near you." },
+  names: { button: "Check these names", hint: "We'll pull out each contractor and read their permits, inspections and license against your job." },
+  quote: { button: "Check this quote", hint: "We'll go through it line by line: what's fair, what's missing, what to ask." },
+};
+
+const FrontDoorBox = ({ where }: { where: "hero" | "closing" }) => {
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [pasteOpen, setPasteOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
+  const typed = text.trim().length >= 4;
+  const kind = classifyHomeEntry(text);
+  const next = NEXT[kind];
 
-  const goWithFile = (file: File) => {
-    setPendingQuoteFile(file);
-    track("cta_roast_clicked", { where, mode: "upload" });
-    navigate("/roast");
+  const go = () => {
+    const t = text.trim();
+    track("home_entry_started", { where, kind: typed ? kind : "empty" });
+    if (!typed) return navigate("/brief");
+    if (kind === "quote") {
+      setPendingQuoteText(t);
+      return navigate("/roast");
+    }
+    if (kind === "names") return navigate(`/shortlist?text=${encodeURIComponent(t.slice(0, 6000))}`);
+    return navigate(`/brief?note=${encodeURIComponent(t.slice(0, 500))}`);
   };
 
-  const goWithText = () => {
-    setPendingQuoteText(text.trim());
-    track("cta_roast_clicked", { where, mode: "paste" });
-    navigate("/roast");
-  };
-
+  const quiet = "underline-offset-4 transition-smooth hover:text-foreground hover:underline";
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-2xl text-left">
+      <div className="rounded-3xl border border-border bg-card p-3 shadow-soft focus-within:border-foreground/30">
+        <label htmlFor={`front-door-${where}`} className="sr-only">
+          Tell us about your project, or paste the names you've been given
+        </label>
+        <Textarea
+          id={`front-door-${where}`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) go();
+          }}
+          rows={4}
+          placeholder={"“Our kitchen is dark and cramped. We'd love to open it up.”\n\nOr paste the names neighbors sent you."}
+          className="min-h-[150px] resize-none border-0 bg-transparent px-3 py-2 text-[16px] leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
+        <div className="flex flex-col gap-3 px-2 pb-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-h-[20px] text-[13px] leading-snug text-muted-foreground" aria-live="polite">
+            {typed ? next.hint : "Your project in your words, or the names you've got. Messy is fine."}
+          </p>
+          <button
+            type="button"
+            onClick={go}
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-[15px] font-medium text-background transition-smooth hover:opacity-90"
+          >
+            {typed ? next.button : "Start with my project"} <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
+
       <input
-        ref={inputRef}
+        ref={fileRef}
         type="file"
         accept="application/pdf,image/*,.txt,.doc,.docx"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) goWithFile(f);
+          if (!f) return;
+          setPendingQuoteFile(f);
+          track("home_entry_started", { where, kind: "quote_file" });
+          navigate("/roast");
         }}
       />
-
-      {!pasteOpen ? (
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const f = e.dataTransfer.files?.[0];
-            if (f) goWithFile(f);
-          }}
-          className="space-y-3"
-        >
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-foreground px-8 text-base font-medium text-background transition-smooth hover:opacity-90 sm:w-auto"
-          >
-            <Upload className="h-[18px] w-[18px]" strokeWidth={1.8} />
-            Upload your quote
-          </button>
-          <p className="text-[13.5px] text-muted-foreground">
-            PDF, photo or screenshot — or{" "}
-            <button
-              type="button"
-              onClick={() => setPasteOpen(true)}
-              className="underline underline-offset-4 transition-smooth hover:text-foreground"
-            >
-              paste the text instead
-            </button>
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={6}
-            autoFocus
-            placeholder={"Kitchen remodel\nCabinets — $31,000\nCountertops — $9,400\n…\nTotal: $84,200"}
-            className="rounded-2xl text-[14px]"
-          />
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              disabled={text.trim().length < 40}
-              onClick={goWithText}
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 text-[15px] font-medium text-background transition-smooth hover:opacity-90 disabled:opacity-40"
-            >
-              Check it <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPasteOpen(false)}
-              className="text-[13.5px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
-            >
-              Upload a file instead
-            </button>
-          </div>
-        </div>
-      )}
+      <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 px-2 text-[13.5px] text-muted-foreground">
+        <Link to="/shortlist" onClick={() => track("home_door_clicked", { door: "screenshots", where })} className={quiet}>
+          Add screenshots of a thread
+        </Link>
+        <Link to="/shortlist?one=1" onClick={() => track("home_door_clicked", { door: "one_name", where })} className={quiet}>
+          Check one contractor
+        </Link>
+        <button type="button" onClick={() => fileRef.current?.click()} className={quiet}>
+          Upload a quote
+        </button>
+      </p>
     </div>
   );
 };
+
+/* ---------------------------------------------------------------- */
+/* An example of what each name gets: the same component the product  */
+/* uses, on example records                                           */
+/* ---------------------------------------------------------------- */
+
+const exampleFit = (() => {
+  const d = (m: number) => new Date(Date.now() - m * 30 * 864e5).toISOString().slice(0, 10);
+  const permits = [
+    { permit_number: "e1", zip: "95125", city: "SAN JOSE", issued_date: d(2), work_type: "Alteration", description: "Kitchen remodel", address: "1 Cabana Dr" },
+    { permit_number: "e2", zip: "95125", city: "SAN JOSE", issued_date: d(5), work_type: "Alteration", description: "Kitchen remodel, new circuits", address: "2 Minnesota Av" },
+    { permit_number: "e3", zip: "95118", city: "SAN JOSE", issued_date: d(9), work_type: "Alteration", description: "Kitchen and bath remodel", address: "3 Branham Ln" },
+    { permit_number: "e4", zip: "95112", city: "SAN JOSE", issued_date: d(14), work_type: "Alteration", description: "Bathroom remodel", address: "4 Taylor St" },
+  ];
+  const ok = (code: string, label: string) => ({ code, label, status: "complete" as const });
+  return jobFit(permits, { room: "kitchen", address: { zip: "95125" }, painPoints: [], media: [] }, {
+    inspections: [
+      { folder_number: "e1", found: true, lifecycle: "closed", approvals: [ok("B", "Building"), ok("E", "Electrical"), ok("P", "Plumbing")] },
+      { folder_number: "e2", found: true, lifecycle: "in_inspection", approvals: [ok("E", "Electrical"), ok("B", "Building")] },
+    ],
+    license: {
+      license_number: "0000000", status: "Active", business_name: null, classifications: ["B"], issue_date: "2012-01-01",
+      expiration_date: new Date(Date.now() + 700 * 864e5).toISOString(), has_disciplinary_action: false, disciplinary_notes: null,
+      workers_comp_status: null, bond_status: null, scrape_succeeded: true, last_checked_at: new Date().toISOString(), deep_link: "",
+    },
+  });
+})();
+
+const ExampleFitCard = () => (
+  <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-7">
+    <p className="eyebrow text-muted-foreground">Example · what every name gets</p>
+    <p className="mt-3 font-display text-xl">A contractor you were sent</p>
+    <p className="mt-1 text-[13px] text-muted-foreground">Read against a kitchen remodel in 95125</p>
+    <JobFitBreakdown fit={exampleFit} who="this contractor" defaultOpen className="mt-5" surface="home_example" />
+  </div>
+);
 
 /* ---------------------------------------------------------------- */
 /* Sample verdict card                                                */
@@ -176,55 +207,29 @@ const VerdictCard = () => (
 const differences = [
   ["Star ratings from strangers", "Permits pulled, inspections passed"],
   ["Matched by zip code", "Matched by what you're building"],
-  ["Five calls in five minutes", "A brief they read before they bid"],
+  ["Explaining your project eight times", "One brief they read before they call"],
   ["Apples-to-oranges quotes", "Every line item, side by side"],
 ];
 
-// Four moments a homeowner is already in. Each door starts from what they
-// already have in hand, and asks for nothing else first.
-const entryDoors = [
+// The doubts a homeowner carries from "who do I even call?" to signing,
+// in their words, and what answers each one.
+const doubts = [
   {
-    id: "shortlist",
-    to: "/shortlist",
-    when: "Someone sent you 40 names",
-    title: "Find the three worth calling.",
-    body: "Paste the Nextdoor thread or drop in screenshots. We read each name's permits, city inspections and license against your job.",
-    cta: "Check my names",
-    featured: true,
+    doubt: "“Will they get what I want?”",
+    answer: "Describe it once, in your words and a few photos. Every contractor gets the same clear brief, so you stop explaining it on every call, and they show up already knowing the job.",
   },
   {
-    id: "one_name",
-    to: "/shortlist?one=1",
-    when: "You have one name in mind",
-    title: "A truck on your street. A friend's guy.",
-    body: "Type the name. See what they've built, where, whether the city signed it off, and if their license is active.",
-    cta: "Check one contractor",
-    featured: false,
+    doubt: "“Have they actually done this before?”",
+    answer: "For every name, from a neighbor or from us: jobs like yours, near you, lately, whether the city signed the work off, and whether their license is active. Receipts, not ratings.",
   },
   {
-    id: "brief",
-    to: "/brief",
-    when: "You're starting from scratch",
-    title: "Meet the ones who've built it nearby.",
-    body: "Describe the project once. We find who has permits for the same kind of work near you, and send your brief to the ones you pick.",
-    cta: "Find a contractor",
-    featured: false,
+    doubt: "“Is this price fair?”",
+    answer: "Bids written against the same brief can finally be compared. Every line is checked against what's normal nearby: what's included, what's missing, what to ask.",
   },
   {
-    id: "quote",
-    to: "/roast",
-    when: "You already have a quote",
-    title: "Know if it's fair before you sign.",
-    body: "Every line checked against your neighborhood: what's included, what's missing, and what to push back on.",
-    cta: "Check a quote",
-    featured: false,
+    doubt: "“Am I ready to sign?”",
+    answer: "By now you know who's done it, what it should cost and what you're agreeing to. Haleo gathers the facts. The call is yours, and you'll make it with confidence.",
   },
-];
-
-const contractorProof = [
-  "Pulled 9 kitchen permits within two miles of you",
-  "Every one passed final inspection",
-  "License clear since 2009 — no stop-work orders",
 ];
 
 const Index = () => {
@@ -237,9 +242,6 @@ const Index = () => {
           <a href="#how-it-works" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             How it works
           </a>
-          <Link to="/shortlist" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
-            Check my names
-          </Link>
           <Link to="/pro" className="text-[15px] text-muted-foreground transition-smooth hover:text-foreground">
             For contractors
           </Link>
@@ -267,56 +269,58 @@ const Index = () => {
         </Sheet>
       </header>
 
-      {/* HERO — "Text From Mike": an interactive pain-simulation story.
-          Deliberately its own design world (see src/components/hero-story) —
-          gets reconciled with the rest of the site's design system later. */}
-      <HeroStory />
-
-      {/* FOUR DOORS: wherever the homeowner is in the search, start there. */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <p className="eyebrow text-accent">Wherever you are in it</p>
-          <h2 className="mt-5 max-w-2xl font-display text-[30px] leading-tight tracking-tight md:text-[38px]">
-            Finding the right contractor, without the second job.
-          </h2>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            {entryDoors.map((d) => (
-              <Link
-                key={d.to}
-                to={d.to}
-                onClick={() => track("home_door_clicked", { door: d.id })}
-                className={`group flex flex-col rounded-3xl border p-7 transition-smooth hover:-translate-y-0.5 hover:shadow-soft ${
-                  d.featured ? "border-foreground/20 bg-card shadow-soft" : "border-border bg-card/60"
-                }`}
-              >
-                <p className="text-[13px] font-medium text-muted-foreground">{d.when}</p>
-                <p className="mt-3 font-display text-[22px] leading-snug">{d.title}</p>
-                <p className="mt-3 flex-1 text-[15px] leading-relaxed text-muted-foreground">{d.body}</p>
-                <span className="mt-6 inline-flex items-center gap-2 text-[15px] font-medium">
-                  {d.cta} <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-0.5" />
-                </span>
-              </Link>
-            ))}
+      {/* HERO: one box, whatever they have */}
+      <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-20 pt-8 md:pb-28 md:pt-16 lg:grid-cols-[1.25fr_0.75fr]">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-3xl">
+          <p className="eyebrow text-accent">Hiring someone for your home</p>
+          <h1 className="mt-5 font-display text-[40px] font-light leading-[1.05] tracking-tight md:text-[60px]">
+            Find the contractor you'll be <span className="italic">glad you trusted.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-muted-foreground">
+            Everyone has a guy. What you can't tell is who has built a job like yours, nearby, and passed the city's
+            inspections. We read the record, so you hire on facts, not hope.
+          </p>
+          <div className="mt-10">
+            <FrontDoorBox where="hero" />
           </div>
-        </div>
+        </motion.div>
+        {/* What you'll know about every name, right where the doubt starts (desktop) */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="hidden lg:block"
+        >
+          <ExampleFitCard />
+        </motion.div>
       </section>
 
-      {/* SAMPLE */}
-      <section className="border-t border-border bg-secondary/40">
+      {/* FROM HOPING TO KNOWING: each doubt, and what answers it */}
+      <section id="how-it-works" className="border-t border-border bg-secondary/40">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-          <div className="grid items-center gap-12 md:grid-cols-[0.85fr_1.15fr] md:gap-20">
-            <div>
-              <p className="eyebrow text-accent">What you get back</p>
-              <h2 className="mt-5 font-display text-[30px] leading-tight tracking-tight md:text-[38px]">
-                Every line, checked against the neighborhood.
-              </h2>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.5 }}
-            >
+          <p className="eyebrow text-accent">From hoping to knowing</p>
+          <h2 className="mt-5 max-w-2xl font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
+            Every doubt you have, <span className="italic">answered before you sign.</span>
+          </h2>
+          <ol className="mt-12 grid gap-10 md:grid-cols-2 md:gap-x-16 md:gap-y-14">
+            {doubts.map((d, i) => (
+              <li key={d.doubt} className="flex gap-5">
+                <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-card text-[13px] text-muted-foreground">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="font-display text-[22px] leading-snug">{d.doubt}</p>
+                  <p className="mt-2 text-[15.5px] leading-relaxed text-muted-foreground">{d.answer}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-16 grid items-start gap-6 md:grid-cols-2 lg:mx-auto lg:max-w-2xl lg:grid-cols-1">
+            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.5 }} className="lg:hidden">
+              <ExampleFitCard />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.5, delay: 0.1 }}>
               <VerdictCard />
             </motion.div>
           </div>
@@ -333,54 +337,6 @@ const Index = () => {
             Someone in the trades who'll look at the quote and tell you what's real — with no stake in
             whether you sign. Haleo is that person, for everyone else.
           </p>
-        </div>
-      </section>
-
-      {/* CONTRACTORS */}
-      <section id="how-it-works" className="border-t border-border bg-secondary/40">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:gap-20 md:py-28">
-          <div>
-            <p className="eyebrow text-accent">Then, when you're ready</p>
-            <h2 className="mt-5 font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
-              We'll show you who has actually done it.
-            </h2>
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
-              We read the city's permit records — who built what, where, and whether it passed
-              inspection. Not star ratings from strangers.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-border bg-card p-7 shadow-soft sm:p-9">
-            <div className="flex items-center gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-medium text-accent-soft-foreground">
-                WB
-              </div>
-              <div>
-                <p className="font-display text-lg">Wise Builders</p>
-                <p className="text-[13px] text-muted-foreground">CSLB #812440 · Willow Glen</p>
-              </div>
-            </div>
-
-            <ul className="mt-7 space-y-3.5">
-              {contractorProof.map((line) => (
-                <li key={line} className="flex items-start gap-3">
-                  <Check className="mt-[3px] h-[17px] w-[17px] shrink-0 text-success" strokeWidth={2} />
-                  <span className="text-[15px] leading-snug">{line}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">
-              <p className="hidden text-[13px] text-muted-foreground sm:block">Last job closed March 2026</p>
-              <Link
-                to="/brief"
-                onClick={() => track("cta_match_clicked", { where: "contractor_card" })}
-                className="inline-flex h-12 w-full items-center justify-center rounded-full border border-foreground/15 px-6 text-[15px] font-medium transition-smooth hover:bg-foreground hover:text-background sm:w-auto"
-              >
-                Send my brief
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -408,17 +364,20 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CLOSING */}
+      {/* CLOSING: the same box, wherever they are in it */}
       <section className="border-t border-border bg-secondary/40">
         <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center md:py-32">
           <h2 className="font-display text-[30px] leading-tight tracking-tight md:text-[40px]">
-            Got a quote sitting in your inbox right now?
+            Wherever you are in it, <span className="italic">start here.</span>
           </h2>
-          <div className="mt-10 flex justify-center">
-            <QuoteEntry where="closing" />
+          <p className="mt-4 max-w-md text-[16px] leading-relaxed text-muted-foreground">
+            A project you've been putting off, a thread full of names, or a quote you're not sure about.
+          </p>
+          <div className="mt-10 flex w-full justify-center">
+            <FrontDoorBox where="closing" />
           </div>
           <p className="mt-8 max-w-md text-[13.5px] leading-relaxed text-muted-foreground">
-            Quote checks work anywhere in the U.S. Permit-matched contractors are live in San Jose.
+            Contractor records are live in San Jose. Quote checks work anywhere in the U.S.
           </p>
         </div>
       </section>

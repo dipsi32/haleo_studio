@@ -126,6 +126,8 @@ export type AnalyticsEvent =
   // Job fit (homeowner side): which of the five answers they open, and shares in from other apps
   | "job_fit_opened"
   | "share_received"
+  // Homepage: the one box, and which door it found (project, names, quote)
+  | "home_entry_started"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"
