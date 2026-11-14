@@ -859,6 +859,24 @@ const Brief = () => {
     setParams(next, { replace: true });
   }
 
+  // From the homepage box (?note=…): their words become the project, with
+  // the rooms and jobs we can read from them already picked.
+  const didNote = useRef(false);
+  useEffect(() => {
+    const note = params.get("note")?.trim();
+    if (!note || didNote.current) return;
+    didNote.current = true;
+    const found = detectProject(note);
+    const rooms = found.rooms.length ? found.rooms : data.rooms ?? [];
+    const goals = found.goals.length ? found.goals : data.goals ?? [];
+    update({ goalNote: note.slice(0, 500), rooms, goals, room: primaryRoom(rooms, goals) });
+    const next = new URLSearchParams(params);
+    next.delete("note");
+    setParams(next, { replace: true });
+    // once, on arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-save the user's draft as they progress (debounced). Only kicks in
   // once they've picked a room — no point persisting empty shells.
   useEffect(() => {
