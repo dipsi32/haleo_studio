@@ -21,7 +21,7 @@ export const frontDoorKey = (name: string | null | undefined): string =>
 // contractor can't take these as their link.
 export const RESERVED_HANDLES = new Set([
   "account", "admin", "adu", "audit", "brief", "c", "contractor", "contractors", "demo", "home-classic",
-  "i", "login", "pro", "proposal", "reset-password", "roast", "shortlist", "waitlist",
+  "i", "login", "pro", "proposal", "reset-password", "roast", "share", "shortlist", "waitlist",
   "about", "api", "app", "blog", "help", "privacy", "settings", "terms", "haleo", "www",
 ]);
 

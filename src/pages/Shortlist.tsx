@@ -20,9 +20,6 @@ import {
   Mail,
   MessageSquare,
   Plus,
-  ShieldAlert,
-  ShieldCheck,
-  ShieldQuestion,
   X,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
@@ -34,8 +31,10 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { track } from "@/lib/analytics";
-import { useIntake } from "@/lib/intake";
-import { buildBriefSnapshot, cslbDeepLink, tierChipClass, trustChecks, trustTier } from "@/lib/contractors";
+import { useIntake, type IntakeData } from "@/lib/intake";
+import { buildBriefSnapshot, cslbDeepLink } from "@/lib/contractors";
+import { useJobFit } from "@/lib/useJobFit";
+import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
 import {
   bidRequestMessage,
   type Candidate,
@@ -108,9 +107,32 @@ const Shortlist = () => {
   const { data: intake } = useIntake();
   const saved = useMemo(() => loadShortlist(), []);
 
-  const [step, setStep] = useState<Step>(saved ? "compare" : "bring");
+  // Arriving with something new (a share, or "check one contractor") starts fresh, even with a saved list.
+  const arrivingWithNew = useMemo(() => {
+    const q = new URLSearchParams(window.location.search);
+    return q.has("text") || q.has("one");
+  }, []);
+  const [step, setStep] = useState<Step>(saved && !arrivingWithNew ? "compare" : "bring");
   const [project, setProject] = useState<ShortlistProject | null>(saved?.project ?? projectFromRoom(intake.room));
-  const [text, setText] = useState("");
+  // Text shared in from another app (/share) or a link (?text=) lands here, ready to read.
+  const [text, setText] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("text")?.slice(0, 20000) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [zip, setZip] = useState(saved?.zip ?? intake.address?.zip ?? "");
+
+  // "Check one contractor" (/shortlist?one=1): straight to the name field.
+  useEffect(() => {
+    if (step !== "bring" || !new URLSearchParams(window.location.search).has("one")) return;
+    const el = document.getElementById("shortlist-name");
+    el?.scrollIntoView({ block: "center" });
+    el?.focus();
+    // once, on arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [shots, setShots] = useState<Shot[]>([]);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
@@ -143,8 +165,19 @@ const Shortlist = () => {
   // Keep the shortlist through a detour (building a brief, a reload).
   useEffect(() => {
     if (results.length === 0 || running) return;
-    saveShortlist({ project: project ?? "other", candidates, results, selected: [...selected] });
-  }, [project, candidates, results, selected, running]);
+    saveShortlist({ project: project ?? "other", zip: /^\d{5}$/.test(zip) ? zip : undefined, candidates, results, selected: [...selected] });
+  }, [project, zip, candidates, results, selected, running]);
+
+  // The job each record is read against: their project and ZIP on top of whatever the brief knows.
+  const fitData: IntakeData = useMemo(() => {
+    const room = project ?? intake.room;
+    return {
+      ...intake,
+      room,
+      rooms: project && project !== "other" ? [project] : intake.rooms,
+      address: /^\d{5}$/.test(zip) ? { ...(intake.address ?? {}), zip, skipped: false } : intake.address,
+    };
+  }, [intake, project, zip]);
 
   // "Not them": drop a wrong permit match from that card.
   const shown: CheckedCandidate[] = useMemo(
@@ -225,15 +258,17 @@ const Shortlist = () => {
     setManualPhone("");
     setManualLicense("");
     setCandidates(all);
-    setStep("confirm");
+    // Names they typed themselves need no "did we get this right?" step.
+    if (found.length === 0) checkThem(all);
+    else setStep("confirm");
   };
 
   // ───── Step 2 → 3: check them ─────
   const editCandidate = (id: string, patch: Partial<Candidate>) =>
     setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
 
-  const checkThem = () => {
-    const list = candidates.filter((c) => c.name.trim());
+  function checkThem(from: Candidate[] = candidates) {
+    const list = from.filter((c) => c.name.trim());
     if (list.length === 0) return;
     setRejected(new Set());
     setSelected(new Set());
@@ -241,7 +276,7 @@ const Shortlist = () => {
     setStep("compare");
     track("shortlist_checked", { count: list.length, with_license: list.filter((c) => c.license_number).length, project: opt.id });
     void run(list, opt.keywords);
-  };
+  }
 
   const startOver = () => {
     clearShortlist();
@@ -378,7 +413,7 @@ const Shortlist = () => {
                   <p className="text-sm font-medium">Or add someone by name</p>
                   <p className="mt-1 text-[13px] text-muted-foreground">A license number makes the check much stronger, if you have it.</p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-[1.4fr_1fr_1fr_auto]">
-                    <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Business or name" />
+                    <Input id="shortlist-name" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Business or name" />
                     <Input value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} placeholder="Phone (optional)" inputMode="tel" />
                     <Input value={manualLicense} onChange={(e) => setManualLicense(e.target.value)} placeholder="License # (optional)" inputMode="numeric" />
                     <Button type="button" variant="outline" onClick={addManual} disabled={!manualName.trim()}>
@@ -420,6 +455,20 @@ const Shortlist = () => {
                     </button>
                   ))}
                 </div>
+                <label className="mt-5 block text-sm font-medium" htmlFor="shortlist-zip">
+                  Your ZIP <span className="font-normal text-muted-foreground">Optional</span>
+                </label>
+                <p className="mt-1 text-[13px] text-muted-foreground">So we can show who has worked near you.</p>
+                <Input
+                  id="shortlist-zip"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={5}
+                  value={zip}
+                  onChange={(e) => setZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  placeholder="95125"
+                  className="mt-2 w-32 text-[15px]"
+                />
               </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -490,7 +539,7 @@ const Shortlist = () => {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button size="lg" className="rounded-full px-7" onClick={checkThem} disabled={candidates.length === 0}>
+                <Button size="lg" className="rounded-full px-7" onClick={() => checkThem()} disabled={candidates.length === 0}>
                   Check {candidates.length === 1 ? "them" : `all ${candidates.length}`} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 <Button variant="ghost" className="rounded-full" onClick={() => setStep("bring")}>
@@ -528,6 +577,7 @@ const Shortlist = () => {
                         rank={i + 1}
                         r={r}
                         projectWord={opt?.word ?? "similar"}
+                        data={fitData}
                         selected={selected.has(r.candidate.id)}
                         onToggle={() => toggle(r.candidate.id)}
                         onReject={() => {
@@ -594,6 +644,7 @@ const ResultCard = ({
   rank,
   r,
   projectWord,
+  data,
   selected,
   onToggle,
   onReject,
@@ -601,11 +652,13 @@ const ResultCard = ({
   rank: number;
   r: CheckedCandidate;
   projectWord: string;
+  data: IntakeData;
   selected: boolean;
   onToggle: () => void;
   onReject: () => void;
 }) => {
   const c = r.candidate;
+  const fit = useJobFit(r.contractor?.id, r.permits, data, r.license, r.status === "done" && !!r.contractor, r.status === "done" && !r.contractor);
   if (r.status === "checking") {
     return (
       <li className="rounded-2xl border border-border bg-card p-5 shadow-soft">
@@ -620,8 +673,6 @@ const ResultCard = ({
   const flag = redFlag(r);
   const state = licenseState(r.license);
   const neighbors = neighborRead(c);
-  const tier = r.score ? trustTier(r.score.total, !!(r.license?.scrape_succeeded && r.license.has_disciplinary_action)) : null;
-  const checks = r.score ? trustChecks(r.score) : null;
   const latest = r.permits.find((p) => p.issued_date);
   const license = r.license?.license_number ?? c.license_number;
 
@@ -632,7 +683,6 @@ const ResultCard = ({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-display text-xl leading-tight">{c.name}</p>
-            {tier && !flag && <span className={`rounded-full border px-2.5 py-0.5 text-[12px] ${tierChipClass(tier.tone)}`}>{tier.label}</span>}
           </div>
           <p className={`mt-1 text-[14px] ${flag ? "text-destructive" : "text-muted-foreground"}`}>{fitLine(r, projectWord)}</p>
         </div>
@@ -643,84 +693,31 @@ const ResultCard = ({
       </div>
 
       <dl className="mt-5 space-y-3 border-t border-border pt-4 text-[14px]">
-        {/* License */}
-        <div className="flex gap-3">
-          {state === "active" || state === "expiring" ? (
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-sage" />
-          ) : state === "not_checked" ? (
-            <ShieldQuestion className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <JobFitBreakdown fit={fit} who={c.name} defaultOpen={rank === 1} surface="shortlist" />
+
+        {/* Which record we read, and where to see it */}
+        <p className="text-[13px] text-muted-foreground">
+          {r.contractor ? (
+            <>
+              Permits matched to “{r.contractor.company ?? r.contractor.name}”
+              {latest?.issued_date ? `, most recent ${new Date(latest.issued_date).toLocaleDateString(undefined, { month: "short", year: "numeric" })}` : ""}.{" "}
+              <button type="button" onClick={onReject} className="text-foreground underline-offset-4 hover:underline">
+                Not them?
+              </button>{" "}
+            </>
           ) : (
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <>No San Jose permits we could tie to this name. That's common for newer or out-of-city businesses, and it isn't a judgment. </>
           )}
-          <div>
-            <dt className="font-medium">
-              License
-              <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Public record</span>
-            </dt>
-            <dd className="mt-0.5 text-muted-foreground">
-              {state === "active" && <>Active with CSLB{r.license?.business_name ? ` as ${r.license.business_name}` : ""}. </>}
-              {state === "expiring" && <>Active, but it expires within 90 days. </>}
-              {state === "expired" && <>Expired on the CSLB record. </>}
-              {state === "suspended" && <>Not active on the CSLB record. </>}
-              {state === "not_checked" && (
-                <>
-                  {license ? "We couldn't reach the license board for this one. " : "We don't have a license number yet. "}
-                  Ask them for it: a licensed contractor can give it to you in seconds.{" "}
-                </>
-              )}
-              {(state === "active" || state === "expiring") && (
-                <>
-                  {r.license?.workers_comp_status ? `Workers' comp: ${r.license.workers_comp_status}. ` : ""}
-                  {r.license?.bond_status ? `Bond: ${r.license.bond_status}.` : ""}
-                </>
-              )}
-              <a
-                href={license ? cslbDeepLink(license) : CSLB_NAME_SEARCH}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-1 inline-flex items-center gap-1 text-foreground underline-offset-4 hover:underline"
-              >
-                {license ? "See it on CSLB" : "Search CSLB by name"} <ExternalLink className="h-3 w-3" />
-              </a>
-            </dd>
-          </div>
-        </div>
-
-        {/* Permits */}
-        <div className="flex gap-3">
-          <span className="mt-0.5 h-4 w-4 shrink-0 text-center text-[13px] text-muted-foreground">§</span>
-          <div>
-            <dt className="font-medium">
-              San Jose permits
-              <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Public record</span>
-            </dt>
-            <dd className="mt-0.5 text-muted-foreground">
-              {r.contractor ? (
-                <>
-                  {r.permits.length} on file, {r.likeYours} like your {projectWord === "similar" ? "" : `${projectWord} `}project
-                  {latest?.issued_date ? `. Most recent ${new Date(latest.issued_date).toLocaleDateString(undefined, { month: "short", year: "numeric" })}` : ""}
-                  .{" "}
-                  <span className="text-[13px]">
-                    Matched to “{r.contractor.company ?? r.contractor.name}”.{" "}
-                    <button type="button" onClick={onReject} className="text-foreground underline-offset-4 hover:underline">
-                      Not them?
-                    </button>
-                  </span>
-                </>
-              ) : (
-                <>No San Jose permits we could tie to this name. That's common for newer or out-of-city businesses, and it isn't a judgment.</>
-              )}
-            </dd>
-          </div>
-        </div>
-
-        {checks && checks.total > 0 && (
-          <p className="pl-7 text-[13px] text-muted-foreground">
-            {checks.passed} of {checks.total} public records line up
-            {/* The tier blurbs assume a checked, clean license. Only use them when that's true. */}
-            {tier && !flag && (state === "active" || state === "expiring") ? `. ${tier.blurb}` : state === "not_checked" ? ". Permit record only, license not checked yet." : "."}
-          </p>
-        )}
+          {(state === "active" || state === "expiring") && r.license?.workers_comp_status ? `Workers' comp: ${r.license.workers_comp_status}. ` : ""}
+          <a
+            href={license ? cslbDeepLink(license) : CSLB_NAME_SEARCH}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-foreground underline-offset-4 hover:underline"
+          >
+            {license ? "License on CSLB" : "Search CSLB by name"} <ExternalLink className="h-3 w-3" />
+          </a>
+        </p>
 
         {/* Neighbors */}
         {c.quotes.length > 0 && (
