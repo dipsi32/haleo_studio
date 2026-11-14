@@ -50,7 +50,9 @@ export default function ProjectSummaryCard({ snapshot, audience, contractorName,
           {p.title}
           {p.where && <span className="text-muted-foreground"> · {p.where}</span>}
         </h2>
-        {p.goal && <p className="mt-1.5 text-[15px] leading-snug text-foreground/85">“{p.goal}”</p>}
+        {p.goal && (
+          <p className="mt-1.5 text-[15px] leading-snug text-foreground/85">{p.goalIsTheirs ? `“${p.goal}”` : p.goal}</p>
+        )}
       </header>
 
       {/* The numbers they price from */}

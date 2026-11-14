@@ -380,6 +380,8 @@ export type BriefSnapshot = {
   homeowner_phone?: string;
   // "Medium, 100–200 sq ft" or "About 150 sq ft", and "Mid-range": what contractors price from first.
   room_size?: string;
+  /** What they typed about the project, in their own words (quoted as theirs). */
+  goal_note?: string;
   finish_level?: string;
   neighborhood: string;
   scope_summary: string;
@@ -469,6 +471,7 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     // The name they gave in the contractor's link wins over an account name.
     homeowner_name: data.homeownerName || homeownerName,
     homeowner_phone: data.homeownerPhone || undefined,
+    goal_note: data.goalNote?.trim() ? data.goalNote.trim().slice(0, 500) : undefined,
     room_size: sizeLabel(data.roomSize, primaryRoom(data)) ?? (data.dimensions?.length && data.dimensions?.width ? `About ${Math.round(data.dimensions.length * data.dimensions.width)} sq ${data.dimensions.unit === "m" ? "m" : "ft"}` : undefined),
     finish_level: finishLabel(data.finishLevel) ?? undefined,
     neighborhood: data.address?.city ?? 'your area',

@@ -202,6 +202,18 @@ export const pickPermitMatch = (name: string, rows: Contractor[]): Contractor | 
   return best?.row ?? null;
 };
 
+/**
+ * The orders to search a name in. Neighbors write "Mehdi Bakhtiary"; the city
+ * files a sole proprietor as "BAKHTIARY, MEHDI". A two-word name is tried both ways.
+ */
+const TRADE_WORD = /^(remodel\w*|construct\w*|build\w*|contract\w*|plumb\w*|electric\w*|roof\w*|homes?|design\w*|paint\w*|renovat\w*|kitchens?|baths?|floor\w*|services?|group|works|solutions)$/;
+export const nameOrders = (name: string): string[] => {
+  const words = normalizeName(name).split(" ").filter(Boolean);
+  // Only a person's name ("Mehdi Bakhtiary") flips; "Pacific Remodeling" stays as written.
+  if (words.length !== 2 || words.some((w) => TRADE_WORD.test(w))) return [words.slice(0, 3).join(" ")].filter(Boolean);
+  return [words.join(" "), [...words].reverse().join(" ")];
+};
+
 /** Words worth sending to a name search: drops trade filler so "Mike's Plumbing Inc" searches "mike plumbing". */
 export const searchTerm = (name: string): string => normalizeName(name).split(" ").slice(0, 4).join(" ");
 

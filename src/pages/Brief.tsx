@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
-import { isDemoActive } from "@/lib/invites";
+import { getActiveInvite, isDemoActive } from "@/lib/invites";
 import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -981,7 +981,8 @@ const Brief = () => {
               });
             }}
             onNote={(v) => update({ goalNote: v })}
-            name={data.homeownerName}
+            // Only a name they gave on a contractor's link; never one left by someone else's run.
+            name={getActiveInvite() ? data.homeownerName : undefined}
             onContinue={() => {
               update({ room: primaryRoom(data.rooms ?? [], data.goals ?? []) });
               setStep(2);

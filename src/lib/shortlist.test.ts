@@ -204,3 +204,11 @@ describe("bid request", () => {
     expect(smsHref("call me", "hi")).toBeNull();
   });
 });
+
+describe("name orders", () => {
+  it("tries a person's name both ways, a business name as written", async () => {
+    const { nameOrders } = await import("@/lib/shortlist");
+    expect(nameOrders("Mehdi Bakhtiary")).toEqual(["mehdi bakhtiary", "bakhtiary mehdi"]);
+    expect(nameOrders("Pacific Remodeling Inc")).toEqual(["pacific remodeling"]);
+  });
+});

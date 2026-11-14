@@ -58,8 +58,12 @@ import {
   smsHref,
 } from "@/lib/shortlist";
 import { useShortlistCheck } from "@/lib/useShortlistCheck";
+import { jobFit } from "@/lib/jobFit";
+import { contractorFromTyped } from "@/lib/homeGateway";
+import { takePendingShots } from "@/lib/homeStart";
+import { clearActiveInvite } from "@/lib/invites";
 
-type Step = "bring" | "confirm" | "compare" | "request";
+type Step = "bring" | "reading" | "confirm" | "compare" | "request";
 type Shot = { id: string; name: string; preview: string; media_type: string; data: string };
 
 const MAX_SHOTS = 6;
@@ -107,13 +111,26 @@ const Shortlist = () => {
   const { data: intake } = useIntake();
   const saved = useMemo(() => loadShortlist(), []);
 
-  // Arriving with something new (a share, or "check one contractor") starts fresh, even with a saved list.
-  const arrivingWithNew = useMemo(() => {
+  // What they arrived with. From the homepage gateway (?go=1) it runs straight
+  // through: names read, records checked, best fit shown, no form in between.
+  const arrival = useMemo(() => {
     const q = new URLSearchParams(window.location.search);
-    return q.has("text") || q.has("one");
+    const p = q.get("project");
+    return {
+      go: q.get("go") === "1",
+      name: q.get("name")?.trim() ?? "",
+      shots: q.get("shots") === "1",
+      project: PROJECT_OPTIONS.some((o) => o.id === p) ? (p as ShortlistProject) : null,
+      zip: /^\d{5}$/.test(q.get("zip") ?? "") ? (q.get("zip") as string) : null,
+      fresh: q.has("text") || q.has("one") || q.get("go") === "1",
+    };
   }, []);
-  const [step, setStep] = useState<Step>(saved && !arrivingWithNew ? "compare" : "bring");
-  const [project, setProject] = useState<ShortlistProject | null>(saved?.project ?? projectFromRoom(intake.room));
+  // Arriving with something new (a share, the gateway, "check one contractor") starts fresh, even with a saved list.
+  const arrivingWithNew = arrival.fresh;
+  const [step, setStep] = useState<Step>(arrival.go ? "reading" : saved && !arrivingWithNew ? "compare" : "bring");
+  const [project, setProject] = useState<ShortlistProject | null>(
+    arrival.project ?? (arrivingWithNew ? null : saved?.project) ?? projectFromRoom(intake.room),
+  );
   // Text shared in from another app (/share) or a link (?text=) lands here, ready to read.
   const [text, setText] = useState(() => {
     try {
@@ -122,7 +139,8 @@ const Shortlist = () => {
       return "";
     }
   });
-  const [zip, setZip] = useState(saved?.zip ?? intake.address?.zip ?? "");
+  const [zip, setZip] = useState(arrival.zip ?? saved?.zip ?? intake.address?.zip ?? "");
+  const [showRest, setShowRest] = useState(false);
 
   // "Check one contractor" (/shortlist?one=1): straight to the name field.
   useEffect(() => {
@@ -214,6 +232,57 @@ const Shortlist = () => {
 
   const hasInput = text.trim().length > 0 || shots.length > 0 || manual.length > 0 || manualName.trim().length > 0;
 
+  // The thread or screenshots → contractors, read by Claude (extract-referrals).
+  const extract = async (t: string, imgs: Shot[]): Promise<Candidate[]> => {
+    const { data, error } = await supabase.functions.invoke("extract-referrals", {
+      body: { text: t.trim() || undefined, images: imgs.map(({ media_type, data }) => ({ media_type, data })) },
+    });
+    if (error || !data?.ok) throw new Error(data?.error ?? "We couldn't read that.");
+    return fromExtraction(data.candidates, imgs.length && !t.trim() ? "screenshot" : "pasted");
+  };
+
+  // From the gateway: read, check and rank without stopping. If the thread has
+  // no names in it, land on the form with everything they brought still there.
+  useEffect(() => {
+    if (!arrival.go) return;
+    clearActiveInvite();
+    void (async () => {
+      if (arrival.name) {
+        const typed = contractorFromTyped(arrival.name);
+        const c = manualCandidate({ name: typed.name, phone: typed.phone, license_number: typed.license });
+        setCandidates([c]);
+        track("shortlist_extracted", { found: 0, manual: 1, merged: 1, has_text: false, screenshots: 0, via: "gateway" });
+        checkThem([c]);
+        return;
+      }
+      const imgs: Shot[] = [];
+      for (const f of arrival.shots ? takePendingShots() : []) {
+        try {
+          imgs.push(await shrinkImage(f));
+        } catch {
+          /* an unreadable image is skipped; the rest still count */
+        }
+      }
+      setShots(imgs);
+      if (!text.trim() && imgs.length === 0) return setStep("bring");
+      try {
+        const found = mergeCandidates(await extract(text, imgs));
+        track("shortlist_extracted", { found: found.length, manual: 0, merged: found.length, has_text: !!text.trim(), screenshots: imgs.length, via: "gateway" });
+        if (found.length === 0) {
+          toast({ title: "We didn't spot a contractor's name in there", description: "Add one by hand below, or try a clearer screenshot." });
+          return setStep("bring");
+        }
+        setCandidates(found);
+        checkThem(found);
+      } catch (e) {
+        toast({ title: "We couldn't read that", description: e instanceof Error ? e.message : "Try again, or add the names by hand.", variant: "destructive" });
+        setStep("bring");
+      }
+    })();
+    // once, on arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const findContractors = async () => {
     // Never a dead grey button: say what's missing and point at it.
     if (!hasInput) {
@@ -226,11 +295,7 @@ const Shortlist = () => {
     if (text.trim() || shots.length) {
       setExtracting(true);
       try {
-        const { data, error } = await supabase.functions.invoke("extract-referrals", {
-          body: { text: text.trim() || undefined, images: shots.map(({ media_type, data }) => ({ media_type, data })) },
-        });
-        if (error || !data?.ok) throw new Error(data?.error ?? "We couldn't read that.");
-        found = fromExtraction(data.candidates, shots.length && !text.trim() ? "screenshot" : "pasted");
+        found = await extract(text, shots);
       } catch (e) {
         toast({
           title: "We couldn't read that",
@@ -328,7 +393,22 @@ const Shortlist = () => {
     track("shortlist_bid_requested", { via, has_brief: hasBrief });
   };
 
-  const top = shown.find((r) => r.status === "done" && !redFlag(r) && (r.score || licenseState(r.license) !== "not_checked"));
+  // Best fit first: red flags last, then how their record lines up with this
+  // job (the same five answers on each card), then neighbors who vouched.
+  // Order holds still while records are still coming in.
+  const ranked: CheckedCandidate[] = useMemo(() => {
+    if (running) return shown;
+    const key = (r: CheckedCandidate) =>
+      (redFlag(r) ? -1e6 : 0) +
+      jobFit(r.permits, fitData, { license: r.license, noRecord: r.status === "done" && !r.contractor }).rank * 10 +
+      Math.min(neighborRead(r.candidate).positive, 9);
+    return [...shown].sort((a, b) => key(b) - key(a));
+  }, [shown, running, fitData]);
+  // "Best fit" is only ever said of someone with a record we could read.
+  const onRecord = (r: CheckedCandidate) => r.status === "done" && !redFlag(r) && (!!r.contractor || licenseState(r.license) !== "not_checked");
+  const top = ranked.find(onRecord);
+  const bestCount = ranked.length > 3 ? 2 : ranked.length;
+  const second = ranked.find((r) => r !== top && onRecord(r)) ?? null;
   const doneCount = shown.filter((r) => r.status === "done").length;
 
   return (
@@ -496,6 +576,21 @@ const Shortlist = () => {
           )}
 
           {/* ───── 2. Is this right? ───── */}
+          {step === "reading" && (
+            <motion.section key="reading" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Eyebrow>{arrival.name ? "Looking them up" : arrival.shots ? "Reading your screenshots" : "Reading the thread"}</Eyebrow>
+              <h1 className="mt-4 font-display text-[2rem] font-light leading-[1.1] tracking-tight md:text-[2.6rem]">
+                {arrival.name ? "Finding their city record…" : <>Pulling out every name <span className="italic">your neighbors mentioned…</span></>}
+              </h1>
+              <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
+                Then we read each one's permits, the city's inspections and their license, against your job.
+              </p>
+              <div className="mt-10 flex items-center gap-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> This takes a few seconds.
+              </div>
+            </motion.section>
+          )}
+
           {step === "confirm" && (
             <motion.section key="confirm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <Eyebrow>Here's who we found</Eyebrow>
@@ -554,24 +649,47 @@ const Shortlist = () => {
             <motion.section key="compare" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {step === "compare" && (
                 <>
-                  <Eyebrow>Your shortlist{project ? ` · ${opt.label}` : ""}</Eyebrow>
+                  <Eyebrow>{shown.length === 1 ? "Their record" : "Your shortlist"}{project ? ` · ${opt.label}` : ""}</Eyebrow>
                   <h1 className="mt-4 font-display text-[1.9rem] font-light leading-tight tracking-tight md:text-[2.4rem]">
                     {running
-                      ? `Checking ${shown.length - doneCount} of ${shown.length}…`
-                      : top
-                        ? <>Start with <span className="italic">{top.candidate.name}</span>.</>
-                        : "Here's what the records show."}
+                      ? shown.length === 1
+                        ? <>Reading <span className="italic">{shown[0].candidate.name}</span>'s record…</>
+                        : `Checking ${shown.length - doneCount} of ${shown.length}…`
+                      : shown.length === 1
+                        ? <>Here's what <span className="italic">{shown[0].candidate.name}</span>'s record shows.</>
+                        : top
+                          ? <>Your best fit: <span className="italic">{top.candidate.name}</span>{second ? <> and <span className="italic">{second.candidate.name}</span></> : null}.</>
+                          : "Here's what the records show."}
                   </h1>
                   <p className="mt-4 max-w-xl text-muted-foreground">
                     {running
-                      ? "Looking each one up with the state license board and San Jose's permit records."
-                      : top
-                        ? `${fitLine(top, opt?.word ?? "similar")}. Everyone's in order below, with the reasons.`
-                        : "Not much on public record for these names yet. A license number is the fastest way to know more."}
+                      ? "Looking each one up with San Jose's permits, the city's inspections and the state license board."
+                      : shown.length === 1
+                        ? "Read against your job, from public records. Open each answer to see the facts behind it."
+                        : top
+                          ? `Out of ${shown.length} names, ${second ? "these line up" : "this one lines up"} best with your job. ${fitLine(top, opt?.word ?? "similar")}.`
+                          : "Not much on public record for these names yet. A license number is the fastest way to know more."}
                   </p>
 
+                  {!running && !/^\d{5}$/.test(zip) && (
+                    <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+                      <span className="text-muted-foreground">Add your ZIP to see who has worked near you</span>
+                      <Input
+                        aria-label="Your ZIP"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="95125"
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+                          if (v.length === 5) setZip(v);
+                        }}
+                        className="h-9 w-24"
+                      />
+                    </div>
+                  )}
+
                   <ul className="mt-8 space-y-4">
-                    {shown.map((r, i) => (
+                    {(showRest || running ? ranked : ranked.slice(0, bestCount)).map((r, i) => (
                       <ResultCard
                         key={r.candidate.id}
                         rank={i + 1}
@@ -587,6 +705,24 @@ const Shortlist = () => {
                       />
                     ))}
                   </ul>
+
+                  {!running && !showRest && ranked.length > bestCount && (
+                    <button
+                      type="button"
+                      onClick={() => setShowRest(true)}
+                      className="mt-5 w-full rounded-2xl border border-dashed border-border px-5 py-4 text-left text-[15px] transition-smooth hover:bg-secondary/50"
+                    >
+                      See the other {ranked.length - bestCount} we checked
+                      <span className="block text-[13px] text-muted-foreground">
+                        {ranked
+                          .slice(bestCount)
+                          .map((r) => r.candidate.name)
+                          .slice(0, 4)
+                          .join(", ")}
+                        {ranked.length - bestCount > 4 ? "…" : ""}
+                      </span>
+                    </button>
+                  )}
 
                   <div className="mt-8 flex flex-wrap gap-3 text-sm">
                     <button type="button" onClick={startOver} className="text-muted-foreground underline-offset-4 hover:underline">
