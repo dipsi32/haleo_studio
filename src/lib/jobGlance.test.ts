@@ -37,3 +37,13 @@ describe("job at a glance", () => {
     expect(isGlanceSection("Risks & unknowns")).toBe(false);
   });
 });
+
+describe("whose words the goal is", () => {
+  it("quotes what they typed, and never dresses our opener up as theirs", async () => {
+    const { jobGlance } = await import("@/lib/jobGlance");
+    const theirs = jobGlance({ rooms: ["Kitchen"], goal_note: "Our kitchen is dark and cramped", scope_summary: "We're remodeling the kitchen." });
+    expect(theirs).toMatchObject({ goal: "Our kitchen is dark and cramped", goalIsTheirs: true });
+    const ours = jobGlance({ rooms: ["Kitchen"], scope_summary: "We're remodeling the kitchen." });
+    expect(ours.goalIsTheirs).toBe(false);
+  });
+});

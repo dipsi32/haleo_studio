@@ -49,7 +49,16 @@ Nobody downloads an app to find a contractor. They're already somewhere, holding
 | Anything, on their phone | **Share → Haleo** from Nextdoor, Messages, Yelp or email (`/share`) | Live on Android once Haleo is added to the home screen. iOS doesn't support web share targets. |
 | A link from a contractor | `/i/:token` (contractor's brief link) | Live |
 
-**The homepage is one box.** "Tell us about your project, or paste the names you've been given." Whatever they type, `src/lib/homeEntry.ts` works out the door: a project goes to `/brief` with their words and rooms already filled in, names go to `/shortlist` prefilled, and a quote goes to `/roast`. Quiet links underneath cover screenshots, one name and a quote file. Below it, the page walks the four doubts between "who do I even call?" and signing (Will they get what I want? Have they done this? Is the price fair? Am I ready?) and what answers each. Event: `home_entry_started` (where, kind).
+**The homepage asks one question: "Where are you in your search?"** Four answers, each opening only what that path needs and saying what happens next (`src/components/home/Gateway.tsx`, config in `src/lib/homeGateway.ts`):
+
+| Answer | They give | It goes to |
+|---|---|---|
+| I'm just getting started | their project in a sentence (optional) | `/brief?note=`, their words and rooms filled in |
+| I have a few names from neighbors | the pasted thread and/or screenshots, optional project and ZIP | `/shortlist?go=1`: names read by Claude (`extract-referrals`, which reads screenshots too), records checked, best 1–2 shown, the rest one tap away |
+| I have a contractor in mind | a name, license number or their quote | `/shortlist?go=1&name=` (straight to their record), or `/roast` if it's a quote |
+| I have a quote | upload or paste | `/roast` |
+
+Beside it, `src/components/home/PathDemo.tsx` plays the chosen path from first tap to best fit, on example data. Starting from the homepage clears any contractor link or demo left in the browser (`src/lib/homeStart.ts`), so nobody inherits another person's name or co-brand. Events: `home_door_clicked` (which answer), `home_entry_started` (where, kind).
 
 Next, in order of leverage:
 

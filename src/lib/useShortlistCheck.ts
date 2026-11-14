@@ -14,6 +14,7 @@ import {
   type CheckedCandidate,
   isRealLicense,
   normalizeName,
+  nameOrders,
   pickPermitMatch,
   rankShortlist,
   searchTerm,
@@ -37,17 +38,25 @@ export const verifyLicense = async (num: string): Promise<LicenseStatus | null> 
 export const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
   const term = searchTerm(name);
   if (!term) return null;
+  // "Mehdi Bakhtiary" is filed as "BAKHTIARY, MEHDI": a two-word name is searched both ways.
+  const orders = nameOrders(name);
   try {
-    await withTimeout(supabase.functions.invoke("fetch-sj-permits", { body: { contractor: term, limit: 200 } }), 20_000);
+    await withTimeout(
+      Promise.all(orders.map((o) => supabase.functions.invoke("fetch-sj-permits", { body: { contractor: o, limit: 200 } }))),
+      20_000,
+    );
   } catch {
     // Fall through to whatever is already indexed.
   }
-  // ilike over the first words, in order. Only letters, digits and spaces reach the filter.
-  const pattern = `%${normalizeName(name).split(" ").slice(0, 3).join("%")}%`;
+  // ilike over the words, in order. Only letters, digits and spaces reach the filter.
+  const filters = orders.flatMap((o) => {
+    const pattern = `%${o.split(" ").join("%")}%`;
+    return [`company.ilike.${pattern}`, `name.ilike.${pattern}`];
+  });
   const { data: rows } = await supabase
     .from("contractors")
     .select("*")
-    .or(`company.ilike.${pattern},name.ilike.${pattern}`)
+    .or(filters.join(","))
     .order("permit_count", { ascending: false })
     .limit(25);
   const match = pickPermitMatch(name, (rows ?? []) as Contractor[]);

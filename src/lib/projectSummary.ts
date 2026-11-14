@@ -22,6 +22,7 @@ export type Fact = { label: string; value: string; open?: boolean };
 export type ProjectSummary = {
   title: string;
   goal: string | null;
+  goalIsTheirs: boolean;
   where: string | null;
   facts: Fact[];
   /** Haleo's size, trades and duration estimate from the photos, labelled as an estimate. */
@@ -92,6 +93,7 @@ export const projectSummary = (s: DealSnapshot): ProjectSummary => {
   return {
     title: job.title,
     goal: job.goal,
+    goalIsTheirs: job.goalIsTheirs,
     where: city,
     facts,
     estimate: job.size,
