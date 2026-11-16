@@ -409,6 +409,10 @@ export type BriefSnapshot = {
   addition_size_sqft?: number;
   permit_status?: "yes" | "in-progress" | "not-yet";
   is_addition?: boolean;
+  /** Bigger jobs: who's on the team, and whether floor plans are attached. */
+  architect?: "yes" | "looking" | "no";
+  designer?: "yes" | "looking" | "no";
+  has_plans?: boolean;
   // City intelligence — surfaced so the contractor catches hazard-zone
   // implications (materials, insurance, soils reports) before they bid.
   address_risk?: {
@@ -491,6 +495,9 @@ export const buildBriefSnapshot = (data: IntakeData, homeownerName?: string): Br
     addition_size_sqft: data.room === 'addition' ? data.additionSize : undefined,
     permit_status: data.room === 'addition' ? data.permitStatus : undefined,
     is_addition: data.room === 'addition',
+    architect: data.architect,
+    designer: data.designer,
+    has_plans: data.media.some((m) => m.kind === 'floorplan') || undefined,
   };
 };
 

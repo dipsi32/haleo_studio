@@ -103,6 +103,8 @@ export const useContractors = (data: IntakeData) => {
   const [error, setError] = useState<string | null>(null);
   const [ranked, setRanked] = useState<RankedContractor[]>([]);
   const [backfillNote, setBackfillNote] = useState<string | null>(null);
+  /** Permits filed in their ZIP (any contractor), for what was declared on similar jobs nearby. */
+  const [areaPermits, setAreaPermits] = useState<Permit[]>([]);
   // Track which licenses we've already kicked off a verify call for in this
   // session so we don't spam the edge function on re-renders.
   const verifyingRef = useRef<Set<string>>(new Set());
@@ -135,15 +137,25 @@ export const useContractors = (data: IntakeData) => {
           }
         }
 
-        // 2. Read contractors with permits
-        const { data: contractorsData, error: cErr } = await supabase
-          .from("contractors")
-          .select("*")
-          .order("permit_count", { ascending: false })
-          .limit(50);
+        // 2. Who to consider: everyone with a permit in their ZIP (so a small
+        //    contractor who built on their street isn't crowded out), plus the
+        //    contractors with the most permits citywide.
+        const { data: nearRows } = await supabase
+          .from("contractor_permits")
+          .select("contractor_id, zip, valuation, issued_date, work_type, description")
+          .eq("zip", zip)
+          .order("issued_date", { ascending: false })
+          .limit(1000);
+        if (!cancelled) setAreaPermits((nearRows ?? []) as Permit[]);
+        const nearIds = [...new Set((nearRows ?? []).map((r) => r.contractor_id))].slice(0, 150);
+        const [{ data: topRows, error: cErr }, { data: nearContractors }] = await Promise.all([
+          supabase.from("contractors").select("*").gt("permit_count", 0).order("permit_count", { ascending: false }).limit(40),
+          nearIds.length
+            ? supabase.from("contractors").select("*").in("id", nearIds)
+            : Promise.resolve({ data: [] as Contractor[] }),
+        ]);
         if (cErr) throw cErr;
-
-        const contractors = (contractorsData ?? []) as Contractor[];
+        const contractors = [...new Map([...((nearContractors ?? []) as Contractor[]), ...((topRows ?? []) as Contractor[])].map((c) => [c.id, c])).values()];
         if (contractors.length === 0) {
           if (!cancelled) {
             setRanked([]);
@@ -245,7 +257,8 @@ export const useContractors = (data: IntakeData) => {
           // this job (same kind of work and license count double), then more of
           // the same work. Same order the homeowner can read on each card.
           out.sort((a, b) => b.fit.rank - a.fit.rank);
-          return out;
+          // No permit on record means no evidence to show: leave them out.
+          return out.filter((r) => r.permits.length > 0);
         };
 
         if (!cancelled) {
@@ -309,5 +322,5 @@ export const useContractors = (data: IntakeData) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zip, room]);
 
-  return { status, error, ranked, backfillNote, zip, keywords };
+  return { status, error, ranked, backfillNote, zip, keywords, areaPermits };
 };

@@ -16,13 +16,13 @@ export const GATEWAY: {
     id: "scratch",
     title: "I'm just getting started",
     sub: "No one in mind yet. Tell us what you want done, and we'll find who has built it near you.",
-    next: ["Describe it in your words", "See who has built it near you", "Send your brief to the ones you like"],
+    next: ["Tell us what and where", "See who has done this nearby, and what it tends to cost", "Ask the ones you like if they're interested"],
   },
   {
     id: "thread",
     title: "I have a few names from neighbors",
     sub: "From Nextdoor, Reddit or a group chat. Paste the thread or add screenshots. Don't worry about the mess, we'll narrow it down.",
-    next: ["We pull out every name", "We read each one's permits, inspections and license", "You see the best fit for your job"],
+    next: ["We pull out every name", "We read each one's permits, inspections and license", "You see the strongest matches for your job, and why"],
   },
   {
     id: "one",

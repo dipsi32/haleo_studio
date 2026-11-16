@@ -127,23 +127,9 @@ const App = () => (
             <Route path="/share" element={<ShareIn />} />
             <Route path="/brief" element={<Brief />} />
             <Route path="/brief/result" element={<BriefResult />} />
-            {/* Matches require login (paywall lives in-page at the unlock step) */}
-            <Route
-              path="/contractors"
-              element={
-                <ProtectedRoute>
-                  <Contractors />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/contractors/:id"
-              element={
-                <ProtectedRoute>
-                  <ContractorProfile />
-                </ProtectedRoute>
-              }
-            />
+            {/* Matches are public records: anyone can see them. Sign-in comes when they ask contractors (in-page). */}
+            <Route path="/contractors" element={<Contractors />} />
+            <Route path="/contractors/:id" element={<ContractorProfile />} />
             <Route path="/audit" element={<Navigate to="/proposal" replace />} />
             <Route path="/proposal" element={<ProposalIntelligencePage />} />
             <Route path="/proposal/:reportId" element={<ProposalIntelligencePage />} />

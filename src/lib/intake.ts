@@ -102,6 +102,10 @@ export type IntakeData = {
   // How the homeowner would like to be addressed ("Priya"). Asked first in a
   // contractor's link, so the contractor greets them by name.
   homeownerName?: string;
+  // Bigger jobs: who's on the team, and whether they'd rather not share plans.
+  architect?: "yes" | "looking" | "no";
+  designer?: "yes" | "looking" | "no";
+  plansSkipped?: boolean;
   // The best number for the contractor to call or text them back. Optional.
   homeownerPhone?: string;
   // Snapshot of Haleo's space read once the user has confirmed it's accurate.

@@ -19,7 +19,7 @@ describe("job fit", () => {
     const permits = [p({}), p({ permit_number: "2" }), p({ permit_number: "3", address: "10 LINCOLN AV" }), p({ zip: "95112", description: "Bath remodel", permit_number: "4" })];
     const f = jobFit(permits, kitchen, { license: lic(), now });
     expect(f.rows.map((r) => r.id)).toEqual(["done_it", "near_you", "active", "inspections", "license"]);
-    expect(f.rows[0]).toMatchObject({ level: "yes", fact: "3 kitchen permits on their San Jose record" });
+    expect(f.rows[0]).toMatchObject({ level: "yes", fact: "Associated with 3 kitchen-related permit records in San Jose" });
     expect(f.rows[1].fact).toBe("3 jobs in 95125, on Ilikai Av and Lincoln Av");
     expect(f.rows[3].level).toBe("not_checked");
     expect(f.headline).toBe("Lines up with your kitchen job on 4 of 5 · 1 not checked yet");

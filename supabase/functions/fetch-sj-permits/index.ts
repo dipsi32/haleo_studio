@@ -274,15 +274,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // The city feed can list one permit more than once (one row per sub-permit
+    // or trade). An upsert that touches the same key twice is rejected whole,
+    // which silently saved contractors with no permits. One row per permit.
+    const uniquePermits = [...new Map(permitRows.map((p) => [`${p.source}|${p.permit_number}`, p])).values()]
+
     // Chunked upsert (avoid huge payloads)
     let permitsUpserted = 0
+    const permitErrors: string[] = []
     const CHUNK = 500
-    for (let i = 0; i < permitRows.length; i += CHUNK) {
-      const chunk = permitRows.slice(i, i + CHUNK)
+    for (let i = 0; i < uniquePermits.length; i += CHUNK) {
+      const chunk = uniquePermits.slice(i, i + CHUNK)
       const { error: pErr } = await supabase
         .from('contractor_permits')
         .upsert(chunk, { onConflict: 'source,permit_number' })
-      if (!pErr) permitsUpserted += chunk.length
+      if (pErr) {
+        console.error('permit upsert failed', pErr.message)
+        permitErrors.push(pErr.message)
+      } else permitsUpserted += chunk.length
     }
 
     // Recompute permit_count for affected contractors from the DB so the value
@@ -309,6 +318,7 @@ Deno.serve(async (req) => {
       filtered_rows: zipFiltered.length,
       contractors_upserted: contractorsUpserted,
       permits_upserted: permitsUpserted,
+      ...(permitErrors.length ? { permit_errors: permitErrors.slice(0, 3) } : {}),
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }),

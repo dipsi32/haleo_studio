@@ -84,7 +84,8 @@ export const jobFit = (
       id: "done_it",
       question: `Have they done ${word} work?`,
       level: same >= 3 ? "yes" : same >= 1 ? "some" : "no",
-      fact: same > 0 ? `${plural(same, `${word} permit`)} on their San Jose record` : `No ${word} permits on their San Jose record`,
+      // A permit record isn't a finished job: say what the record shows.
+      fact: same > 0 ? `Associated with ${plural(same, `${word}-related permit record`)} in San Jose` : `No ${word}-related permit records in San Jose`,
       source: "Public record",
     });
   }
