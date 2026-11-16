@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { track } from "@/lib/analytics";
 import { GATEWAY, GATEWAY_PROJECTS, shortlistUrl, type GatewayPath } from "@/lib/homeGateway";
-import { setPendingShots, startOwnSearch } from "@/lib/homeStart";
+import { canMatchFrom, setPendingShots, startOwnSearch } from "@/lib/homeStart";
 import { setPendingQuoteFile, setPendingQuoteText } from "@/lib/quoteHandoff";
 import { classifyHomeEntry } from "@/lib/homeEntry";
 import type { ShortlistProject } from "@/lib/shortlist";
@@ -92,9 +92,12 @@ export default function Gateway({ selected, onSelect, where }: Props) {
     navigate(to);
   };
 
+  // Their words and a ZIP are enough to show who has done this nearby (and
+  // what similar jobs declared) before asking for anything else.
   const startScratch = () => {
-    startOwnSearch(note);
-    go("scratch", note.trim() ? `/brief?note=${encodeURIComponent(note.trim().slice(0, 500))}` : "/brief", { has_note: !!note.trim() });
+    startOwnSearch(note, zip);
+    if (canMatchFrom(note, zip)) return go("scratch", "/contractors", { has_note: true, match_first: true });
+    go("scratch", note.trim() ? `/brief?note=${encodeURIComponent(note.trim().slice(0, 500))}` : "/brief", { has_note: !!note.trim(), match_first: false });
   };
 
   const startThread = () => {
@@ -174,9 +177,21 @@ export default function Gateway({ selected, onSelect, where }: Props) {
                             placeholder="“Our kitchen is dark and cramped. We'd love to open it up.”"
                             className="resize-none rounded-2xl bg-card text-[15px]"
                           />
-                          <p className="mt-2 text-[12.5px] text-muted-foreground">One sentence is plenty. You can skip this and pick from a list.</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <Input
+                              aria-label="Your ZIP"
+                              inputMode="numeric"
+                              autoComplete="postal-code"
+                              maxLength={5}
+                              value={zip}
+                              onChange={(e) => setZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                              placeholder="Your ZIP"
+                              className="h-10 w-28 rounded-full bg-card text-[14px]"
+                            />
+                            <span className="text-[12.5px] text-muted-foreground">So we can show who has done this near you</span>
+                          </div>
                           <Next steps={g.next} />
-                          <Go onClick={startScratch}>Start my project</Go>
+                          <Go onClick={startScratch}>{canMatchFrom(note, zip) ? "Show me who's done this nearby" : "Start my project"}</Go>
                         </>
                       )}
 

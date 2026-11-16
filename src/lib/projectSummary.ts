@@ -14,6 +14,7 @@
 // reads "Not shared yet" (an open question), never a guess.
 import type { DealSnapshot } from "@/lib/dealRead";
 import { jobGlance } from "@/lib/jobGlance";
+import { TEAM_LABEL } from "@/lib/bigJob";
 import { FOUND_VIA_OPTIONS, FUNDING_OPTIONS, WHO_DECIDES_OPTIONS, WHY_NOW_OPTIONS } from "@/lib/prepTypes";
 import { cleanVisitTimes, formatVisitTime } from "@/lib/visitTimes";
 
@@ -87,6 +88,10 @@ export const projectSummary = (s: DealSnapshot): ProjectSummary => {
   if (funding) logistics.push({ label: "Paying with", value: funding });
   const found = readOf(FOUND_VIA_OPTIONS, ctx.found_via);
   if (found) logistics.push({ label: "Found you", value: found });
+  // Bigger jobs: who's on the team, and whether plans are attached.
+  if (s.architect) logistics.push({ label: "Architect", value: TEAM_LABEL[s.architect] });
+  if (s.designer) logistics.push({ label: "Designer", value: TEAM_LABEL[s.designer] });
+  if (s.has_plans) logistics.push({ label: "Plans", value: "Attached" });
 
   const city = s.neighborhood && s.neighborhood !== "your area" ? s.neighborhood : null;
 

@@ -1,10 +1,10 @@
 // The homepage walkthrough: each way in, played from the first tap to the
-// best fit, so a homeowner sees exactly what will happen before they start.
+// strongest match, so a homeowner sees exactly what will happen before they start.
 // Example data, labelled as such. It follows the path they pick in the
 // gateway; with nothing picked it plays them in turn.
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, FileText, ImageIcon, Loader2, Send } from "lucide-react";
+import { Check, FileText, Loader2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GatewayPath } from "@/lib/homeGateway";
 
@@ -59,7 +59,7 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 
 const FitRow = ({ name, levels, line, i, best = false }: { name: string; levels: Level[]; line: string; i: number; best?: boolean }) => (
   <motion.div {...fade(i)} className={cn("rounded-2xl border bg-card p-3.5", best ? "border-foreground/30 shadow-soft" : "border-border")}>
-    {best && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Best fit</p>}
+    {best && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Strong match</p>}
     <p className="font-display text-[15px] leading-tight">{name}</p>
     <div className="mt-2 flex items-center gap-2">
       <Dots levels={levels} />
@@ -127,10 +127,10 @@ const FRAMES: Record<GatewayPath, Frame[]> = {
       ),
     },
     {
-      caption: "You see the best fit for your job, and why",
+      caption: "You see the strongest matches for your job, and why",
       body: (
         <div className="space-y-2.5">
-          <Label>Your best fit · Kitchen · 95125</Label>
+          <Label>Strongest matches · Kitchen · 95125</Label>
           <FitRow i={0} best name="Oak & Stone Builders" levels={["yes", "yes", "yes", "yes", "yes"]} line="Lines up on 5 of 5" />
           <FitRow i={1} best name="Brightline Remodeling" levels={["yes", "some", "yes", "yes", "not_checked"]} line="4 of 5 · 1 not checked" />
           <motion.p {...fade(2)} className="rounded-xl border border-dashed border-border px-3 py-2 text-[11.5px] text-muted-foreground">
@@ -242,61 +242,63 @@ const FRAMES: Record<GatewayPath, Frame[]> = {
   ],
   scratch: [
     {
-      caption: "Tell us what you want done, in your words",
+      caption: "Tell us what you want done, and where",
       body: (
         <div className="space-y-3">
-          <Label>What do you need done?</Label>
-          <div className="min-h-[96px] rounded-xl border border-foreground/30 bg-card px-3 py-2.5 text-[14px] leading-snug">
-            <Typing text="Our kitchen is dark and cramped. We'd love to open it up and get more light." />
+          <Label>What do you want done?</Label>
+          <div className="min-h-[84px] rounded-xl border border-foreground/30 bg-card px-3 py-2.5 text-[14px] leading-snug">
+            <Typing text="Our kitchen is dark and cramped. We'd love to open it up." />
           </div>
+          <motion.div {...fade(3)} className="inline-flex rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px]">
+            95125
+          </motion.div>
         </div>
       ),
     },
     {
-      caption: "A few quick taps, and a photo or two",
+      caption: "Right away: who has done this nearby, and what it tends to cost",
       body: (
-        <div className="space-y-3">
-          <Label>Your project</Label>
-          <motion.div {...fade(0)} className="flex gap-1.5">
-            {["bg-amber-100", "bg-stone-200", "bg-orange-100"].map((c) => (
-              <div key={c} className={cn("grid h-14 w-14 place-items-center rounded-lg", c)}>
-                <ImageIcon className="h-4 w-4 text-foreground/40" />
-              </div>
-            ))}
+        <div className="space-y-2.5">
+          <motion.div {...fade(0)} className="rounded-2xl border border-border bg-card p-3">
+            <Label>What similar jobs declared nearby</Label>
+            <p className="mt-1 font-display text-[22px] leading-none">$55K – $95K</p>
+            <p className="mt-1 text-[10.5px] text-muted-foreground">From 14 kitchen permits in 95125 · a floor, not a quote</p>
           </motion.div>
+          <motion.p {...fade(1)} className="pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Most permits for jobs like yours</motion.p>
+          <FitRow i={2} name="Oak & Stone Builders" levels={["yes", "yes", "yes", "yes", "yes"]} line="6 kitchen-related permit records" />
+          <motion.p {...fade(3)} className="pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Others in your neighborhood</motion.p>
+          <FitRow i={4} name="Ridgeline Builders" levels={["some", "yes", "yes", "yes", "not_checked"]} line="Worked on Cabana Dr, Jun 2026" />
+        </div>
+      ),
+    },
+    {
+      caption: "Ask the ones you like if they're interested",
+      body: (
+        <div className="space-y-2.5">
+          <Label>You pick who hears about it</Label>
           {[
-            ["Size", "Medium, 100–200 sq ft"],
-            ["Finish", "Mid-range"],
-            ["Budget", "$60K – $90K"],
-            ["Start", "In 1–3 months"],
-          ].map(([k, v], i) => (
-            <motion.div key={k} {...fade(i + 1)} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 text-[12.5px]">
-              <span className="text-muted-foreground">{k}</span>
-              <span className="font-medium">{v}</span>
+            ["Oak & Stone Builders", true],
+            ["Ridgeline Builders", true],
+            ["Bay Craft Homes", false],
+          ].map(([n, on], i) => (
+            <motion.div key={n as string} {...fade(i)} className={cn("flex items-center justify-between rounded-xl border px-3 py-2.5", on ? "border-foreground/40 bg-card" : "border-border bg-card")}>
+              <span className="text-[13px] font-medium">{n}</span>
+              <span className={cn("rounded-full px-2.5 py-1 text-[11px]", on ? "bg-foreground text-background" : "border border-border text-muted-foreground")}>
+                {on ? "Asking them" : "Ask if interested"}
+              </span>
             </motion.div>
           ))}
         </div>
       ),
     },
     {
-      caption: "We show you who has built it near you",
-      body: (
-        <div className="space-y-2.5">
-          <Label>Who's built this near you</Label>
-          <FitRow i={0} best name="Oak & Stone Builders" levels={["yes", "yes", "yes", "yes", "yes"]} line="5 of 5" />
-          <FitRow i={1} name="Ridgeline Builders" levels={["yes", "yes", "some", "yes", "not_checked"]} line="4 of 5 · 1 not checked" />
-          <FitRow i={2} name="Bay Craft Homes" levels={["some", "yes", "yes", "some", "yes"]} line="5 of 5" />
-        </div>
-      ),
-    },
-    {
-      caption: "Send your brief to the ones you like",
+      caption: "A few details so they can say if it's a fit. Then it's sent",
       body: (
         <div className="space-y-3">
           <Label>Your brief · what they get</Label>
           <motion.div {...fade(0)} className="rounded-2xl border border-border bg-card p-3.5">
             <p className="font-display text-[16px]">Kitchen remodel · Willow Glen</p>
-            <p className="mt-1 text-[12px] italic text-foreground/80">“Dark and cramped. Open it up, more light.”</p>
+            <p className="mt-1 text-[12px] italic text-foreground/80">“Dark and cramped. We'd love to open it up.”</p>
             <div className="mt-2.5 grid grid-cols-2 gap-1.5 text-[11px]">
               {["~150 sq ft", "Mid-range", "$60K – $90K", "1–3 months"].map((t) => (
                 <span key={t} className="rounded-md bg-secondary px-2 py-1">{t}</span>
@@ -304,7 +306,7 @@ const FRAMES: Record<GatewayPath, Frame[]> = {
             </div>
           </motion.div>
           <motion.div {...fade(2)} className="flex items-center justify-center gap-2 rounded-full bg-sage/15 py-2.5 text-[13px] font-medium text-sage">
-            <Check className="h-3.5 w-3.5" /> Sent to 2 contractors
+            <Check className="h-3.5 w-3.5" /> Asked 2 contractors
           </motion.div>
         </div>
       ),

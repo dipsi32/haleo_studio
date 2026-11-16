@@ -404,7 +404,7 @@ const Shortlist = () => {
       Math.min(neighborRead(r.candidate).positive, 9);
     return [...shown].sort((a, b) => key(b) - key(a));
   }, [shown, running, fitData]);
-  // "Best fit" is only ever said of someone with a record we could read.
+  // "Strongest match" is only ever said of someone with a record we could read.
   const onRecord = (r: CheckedCandidate) => r.status === "done" && !redFlag(r) && (!!r.contractor || licenseState(r.license) !== "not_checked");
   const top = ranked.find(onRecord);
   const bestCount = ranked.length > 3 ? 2 : ranked.length;
@@ -658,7 +658,7 @@ const Shortlist = () => {
                       : shown.length === 1
                         ? <>Here's what <span className="italic">{shown[0].candidate.name}</span>'s record shows.</>
                         : top
-                          ? <>Your best fit: <span className="italic">{top.candidate.name}</span>{second ? <> and <span className="italic">{second.candidate.name}</span></> : null}.</>
+                          ? <>Your strongest match{second ? "es" : ""}: <span className="italic">{top.candidate.name}</span>{second ? <> and <span className="italic">{second.candidate.name}</span></> : null}.</>
                           : "Here's what the records show."}
                   </h1>
                   <p className="mt-4 max-w-xl text-muted-foreground">

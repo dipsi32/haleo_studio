@@ -128,6 +128,11 @@ export type AnalyticsEvent =
   | "share_received"
   // Homepage: the one box, and which door it found (project, names, quote)
   | "home_entry_started"
+  // Match page: asked contractors if they're interested (before or after the brief)
+  | "match_interest_requested"
+  // Bigger jobs: floor plans shared or declined
+  | "plans_added"
+  | "plans_skipped"
   | "invite_brief_sent"
   // Contractor front door (/c/:slug): their website, Google and text replies
   | "front_door_viewed"

@@ -68,6 +68,28 @@ Next, in order of leverage:
 4. **Text Haleo.** A number to text a name or a screenshot to. Needs real SMS (the contractor SMS path is still a stub).
 5. **Home-purchase moment.** Upload the inspection report from a home you just bought; get the fixes as briefs. Realtors become the channel.
 
+## From a ranked list to the right first conversation
+
+Lesson from LawnStarter: cut the research burden without taking away the choice. A homeowner should see value before they do any work, and every later step should have a reason they can feel.
+
+**Value first.** "I'm just getting started" asks for a sentence and a ZIP, nothing else, and goes straight to the match page (`/contractors`, now public: these are public records). Before any brief:
+- **What similar jobs declared nearby**: the middle half of what was declared on recent permits for this kind of work in their ZIP (`declaredCost` in `src/lib/contractorGroups.ts`). Labelled as a floor, not a quote, and hidden below 5 permits.
+- **Two groups, two kinds of evidence**, never one leaderboard:
+  - *Most permits for jobs like yours* (up to 3): associated with the most permit records for this kind of work.
+  - *Others who've worked in your neighborhood* (up to 3): fewer permits, but permitted jobs in their ZIP. Often smaller teams.
+  - For jobs that usually skip permits (a refresh, paint, flooring) the neighborhood group leads, with a plain note that city records can't show who has done that work, and to ask for photos of a similar job.
+- Everyone else is one tap away. Flagged licenses are always last and never in a group.
+
+**Then the reason to share more.** The action is "Ask if they're interested", not "hire". Without a brief, their picks are kept (`src/lib/picks.ts`) and the brief opens with: "You're asking Oak & Stone and Ridgeline if they're interested. Share a little more so they can tell you whether it's a fit." When the brief is done they land back on the match page with those contractors selected; signing in comes only at send.
+
+**Bigger jobs** (an addition, a whole home, moving walls, adding space; `src/lib/bigJob.ts`) get one more step, *Plans and your team*: are they working with an architect, a designer, and their floor plans. Plans are required unless they say they'd rather not share. The brief carries all three to the contractor.
+
+**Language.** Permit counts are "associated with N kitchen-related permit records", never "completed N kitchens". The top of a list is the "strongest match", never "the best contractor".
+
+**Data fix this depends on.** `fetch-sj-permits` was saving contractors but not their permits on ZIP pulls (one duplicate permit number in a batch rejected the whole save, silently). Permits are now de-duplicated before saving and save errors are reported. Needs a Bootstrap run.
+
+**Next to build** (from the same lesson): close the loop with a status per contractor (interested, needs clarification, not taking it, no reply yet) and help the homeowner take the next step when someone declines. North star: weekly mutually accepted introductions.
+
 ## What we measure
 
 - `job_fit_opened` (surface, how many answers lined up): do people read the breakdown?

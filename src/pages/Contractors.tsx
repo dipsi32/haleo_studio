@@ -19,18 +19,22 @@ import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
 import { useContractors, type RankedContractor } from "@/lib/useContractors";
 import { loadParcelFacts } from "@/lib/parcelFacts";
 import { projectTypeLabel, buildBriefSnapshot, getSessionId, type BriefSnapshot } from "@/lib/contractors";
-import CuratedMatchStack from "@/components/contractors/CuratedMatchStack";
+import { declaredCost, groupContractors, money, nearbyCount, nearbyLine, permitLight } from "@/lib/contractorGroups";
+import { workFor } from "@/lib/recordHighlights";
+import { clearPicks, readPicks, savePicks } from "@/lib/picks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 
 const ContractorCard = ({
-  rc, selected, onToggle, data, live,
+  rc, selected, onToggle, data, live, reason,
 }: {
   rc: RankedContractor;
   selected: boolean;
   onToggle: () => void;
   data: IntakeData;
+  /** Why they're in this group, in one plain line. */
+  reason?: string | null;
   /** Fetch the city's inspection sign-offs for this card (the first few on screen). */
   live: boolean;
 }) => {
@@ -56,6 +60,7 @@ const ContractorCard = ({
       <p className="mt-0.5 text-xs text-muted-foreground">
         {contractor.specialty ?? "General"} · {contractor.city ?? "San Jose"}
       </p>
+      {reason && <p className="mt-2 text-[14px] leading-snug text-foreground">{reason}</p>}
 
       <JobFitBreakdown fit={fit} who={name} className="mt-4" surface="discovery" />
 
@@ -68,7 +73,7 @@ const ContractorCard = ({
           See every permit →
         </button>
         <Button size="sm" variant={selected ? "default" : "outline"} onClick={onToggle} className="rounded-full">
-          {selected ? <><Check className="h-3.5 w-3.5" /> Selected</> : "Select"}
+          {selected ? <><Check className="h-3.5 w-3.5" /> Asking them</> : "Ask if they're interested"}
         </Button>
       </div>
     </motion.div>
@@ -95,7 +100,7 @@ const MatchingProgress = ({ note }: { note?: string | null }) => {
     <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-amber-600" />
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">Curating your matches</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">Reading the records</p>
       </div>
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
         <motion.div
@@ -142,7 +147,7 @@ const Contractors = () => {
   const { data } = useIntake();
   const navigate = useNavigate();
   const location = useLocation();
-  const { status, ranked, backfillNote, error } = useContractors(data);
+  const { status, ranked, backfillNote, error, areaPermits, keywords } = useContractors(data);
   const projectLabel = projectTypeLabel(data);
   const neighborhood = data.address?.city || "your area";
   const zip = data.address?.zip || "your zip";
@@ -177,8 +182,17 @@ const Contractors = () => {
   }, [status, ranked.length, projectLabel]);
   const showLoader = status === "loading" || (status === "ready" && !revealReady);
 
-  const curated = useMemo(() => ranked.slice(0, 3), [ranked]);
-  const rest = useMemo(() => ranked.slice(3), [ranked]);
+  // Two kinds of evidence, never one leaderboard (src/lib/contractorGroups.ts).
+  const light = permitLight(data);
+  const homeZip = /^\d{5}$/.test(data.address?.zip ?? "") ? data.address!.zip! : null;
+  const groups = useMemo(
+    () => groupContractors(ranked.map((r) => ({ ...r, id: r.contractor.id })), homeZip, { permitLight: light }),
+    [ranked, homeZip, light],
+  );
+  const work = workFor(data)?.word ?? projectLabel;
+  const cost = useMemo(() => (light ? null : declaredCost(areaPermits, keywords)), [areaPermits, keywords, light]);
+  // The brief is done once they've picked a timeline (its last step).
+  const hasBrief = !!data.timeline;
 
   const selectedList = useMemo(
     () => ranked.filter(r => selected.has(r.contractor.id)),
@@ -214,6 +228,34 @@ const Contractors = () => {
     navigate(location.pathname, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, ranked, navState?.preselectId]);
+
+  // Back from the brief with contractors they'd already picked: ready to send.
+  const picksDone = useRef(false);
+  useEffect(() => {
+    if (picksDone.current || status !== "ready" || !hasBrief) return;
+    const picks = readPicks().filter((p) => ranked.some((r) => r.contractor.id === p.id));
+    if (picks.length === 0) return;
+    picksDone.current = true;
+    clearPicks();
+    setSelected(new Set(picks.map((p) => p.id)));
+    // Signed in: straight to sending. Otherwise their picks wait in the bar, and "Ask them" signs them in first.
+    if (authUser) setOutreachOpen(true);
+  }, [status, hasBrief, ranked, authUser]);
+
+  // "Ask if they're interested": with a brief, send it; without one, a few
+  // details first, framed as what these contractors need to answer.
+  const askInterested = () => {
+    const picks = selectedList.map((r) => ({ id: r.contractor.id, name: r.contractor.company ?? r.contractor.name }));
+    if (hasBrief && !authUser) {
+      // Sending needs an account (so replies reach them). Their picks wait here.
+      savePicks(picks);
+      return navigate(`/login?next=${encodeURIComponent("/contractors")}`);
+    }
+    if (hasBrief) return setOutreachOpen(true);
+    savePicks(picks);
+    track("match_interest_requested", { count: selectedList.length, has_brief: false });
+    navigate("/brief");
+  };
 
   const toggle = (id: string) => {
     setSelected(prev => {
@@ -354,8 +396,8 @@ const Contractors = () => {
             {authUser && (
               <NotificationBell table="homeowner_notifications" filter={{ column: "user_id", value: authUser.id }} />
             )}
-            <Link to="/brief/result" className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to brief
+            <Link to={hasBrief ? "/brief/result" : "/"} className="inline-flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground">
+              <ArrowLeft className="h-3.5 w-3.5" /> {hasBrief ? "Back to brief" : "Home"}
             </Link>
           </div>
         </div>
@@ -364,14 +406,14 @@ const Contractors = () => {
       <main className="container max-w-3xl py-7 md:py-10">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
-            Who's built this near you
+            {homeZip ? `Your ${projectLabel} · ${homeZip}` : `Your ${projectLabel}`}
           </p>
           <h1 className="mt-3 font-display text-2xl font-light leading-tight md:text-3xl text-balance">
-            Three whose record lines up with <span className="italic">your {projectLabel}.</span>
+            Contractors with relevant experience, <span className="italic">and why they're worth a call.</span>
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
-            Read from {ranked.length || "every"} contractor{ranked.length === 1 ? "" : "s"} with San Jose permits: who's done this
-            kind of job, near you, lately, with city sign-offs and an active license. Public records, not ratings.
+            From San Jose's permit records. Pick the ones you'd like to hear from, and we'll ask if they're interested in your
+            project. You stay in charge of who gets your details.
           </p>
         </motion.div>
 
@@ -382,62 +424,118 @@ const Contractors = () => {
             <AlertCircle className="h-4 w-4" /> {error}
           </div>
         )}
-        {status === "ready" && revealReady && curated.length === 0 && (
+        {status === "ready" && revealReady && ranked.length === 0 && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-            No licensed {projectLabel} contractors with permits in {zip} yet. {backfillNote}
+            We couldn't find San Jose permit records for {projectLabel} work{homeZip ? ` near ${homeZip}` : ""} yet. {backfillNote}
           </div>
         )}
 
-        {/* Curated 3-match stack */}
-        {status === "ready" && revealReady && curated.length > 0 && (
-          <div className="mt-8">
-            <CuratedMatchStack
-              matches={curated}
-              data={data}
-              onSend={(rc) => {
-                setSelected(new Set([rc.contractor.id]));
-                setOutreachOpen(true);
-              }}
-              onSendMany={(rcs) => {
-                setSelected(new Set(rcs.map(rc => rc.contractor.id)));
-                setOutreachOpen(true);
-              }}
-              onUnlockMore={() => {
-                track("contractors_compared", { unlocked_more: true, visible_count: curated.length });
-                // Simulated paywall — same "Test mode" pattern as the contractor unlock.
-                toast({
-                  title: "Test mode unlock",
-                  description: "Real Stripe checkout drops in next — for now you're through the wall.",
-                });
-                setShowAll(true);
-              }}
-            />
-          </div>
-        )}
-
-        {/* Expanded grid */}
-        {status === "ready" && showAll && rest.length > 0 && (
-          <div className="mt-10">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">More matches</p>
-                <h2 className="mt-1 font-display text-xl font-light">Other contractors with permits near you</h2>
+        {status === "ready" && revealReady && ranked.length > 0 && (
+          <>
+            {/* The quick read: what similar jobs declared nearby */}
+            {cost && (
+              <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-soft md:p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">What similar jobs declared nearby</p>
+                <p className="mt-2 font-display text-[28px] leading-none tracking-tight">
+                  {money(cost.low)} – {money(cost.high)}
+                </p>
+                <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground">
+                  The middle half of {cost.n} {work}-related permits filed in {homeZip} in the last three years. That's what was
+                  declared to the city, usually below the final price, so treat it as a floor, not a quote.
+                  <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Public record</span>
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">{rest.length} more</p>
-            </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {rest.map((rc, i) => (
-                <ContractorCard
-                  key={rc.contractor.id}
-                  rc={rc}
-                  selected={selected.has(rc.contractor.id)}
-                  onToggle={() => toggle(rc.contractor.id)}
-                  data={data}
-                  live={i < 6}
-                />
+            )}
+
+            {light && (
+              <div className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-4 text-[14px] leading-relaxed">
+                <p className="font-medium">Jobs like this often don't need a permit.</p>
+                <p className="mt-1 text-muted-foreground">
+                  So the city's records can't show who has done them. We've put contractors who've worked in your neighborhood
+                  first. Ask each one for photos of a similar job they finished.
+                </p>
+              </div>
+            )}
+
+            {(light
+              ? [
+                  { id: "neighborhood", items: groups.neighborhood },
+                  { id: "experienced", items: groups.experienced },
+                ]
+              : [
+                  { id: "experienced", items: groups.experienced },
+                  { id: "neighborhood", items: groups.neighborhood },
+                ]
+            )
+              .filter((g) => g.items.length > 0)
+              .map((g) => (
+                <section key={g.id} className="mt-10">
+                  <h2 className="font-display text-xl font-light md:text-2xl">
+                    {g.id === "experienced"
+                      ? light
+                        ? "Most permitted work in San Jose"
+                        : <>Most permits for jobs <span className="italic">like yours</span></>
+                      : <>Others who've worked <span className="italic">in your neighborhood</span></>}
+                  </h2>
+                  <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
+                    {g.id === "experienced"
+                      ? light
+                        ? "Licensed contractors associated with the most permit records in the city. A strong record, not a guarantee."
+                        : `Associated with the most ${work}-related permit records in San Jose. A strong record, not a guarantee: ask to see similar work.`
+                      : `Fewer permits on record, but they've had permitted jobs in ${homeZip}. Often smaller teams, and close by.`}
+                  </p>
+                  <div className="mt-5 grid gap-4">
+                    {g.items.map((rc) => (
+                      <ContractorCard
+                        key={rc.contractor.id}
+                        rc={rc}
+                        selected={selected.has(rc.contractor.id)}
+                        onToggle={() => toggle(rc.contractor.id)}
+                        data={data}
+                        live
+                        reason={
+                          g.id === "experienced"
+                            ? light
+                              ? `Associated with ${rc.permits.length} permit record${rc.permits.length === 1 ? "" : "s"} in San Jose`
+                              : `Associated with ${rc.matchCount} ${work}-related permit record${rc.matchCount === 1 ? "" : "s"}${homeZip && nearbyCount(rc, homeZip) ? `, ${nearbyCount(rc, homeZip)} in ${homeZip}` : ""}`
+                            : homeZip
+                              ? `Permitted work near you: ${nearbyLine(rc, homeZip) ?? homeZip}`
+                              : null
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
               ))}
-            </div>
-          </div>
+
+            {groups.rest.length > 0 && !showAll && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAll(true);
+                  track("contractors_compared", { unlocked_more: true, visible_count: groups.experienced.length + groups.neighborhood.length });
+                }}
+                className="mt-8 w-full rounded-2xl border border-dashed border-border px-5 py-4 text-left text-[15px] transition-smooth hover:bg-secondary/50"
+              >
+                See everyone else we found ({groups.rest.length})
+                <span className="block text-[13px] text-muted-foreground">Same records, same five questions. Fewer matches with your job.</span>
+              </button>
+            )}
+            {showAll && groups.rest.length > 0 && (
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {groups.rest.map((rc, i) => (
+                  <ContractorCard
+                    key={rc.contractor.id}
+                    rc={rc}
+                    selected={selected.has(rc.contractor.id)}
+                    onToggle={() => toggle(rc.contractor.id)}
+                    data={data}
+                    live={i < 6}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
         <div className="mt-12 rounded-3xl border border-border bg-card p-6 md:p-8">
           <div className="flex items-start gap-3">
@@ -474,13 +572,17 @@ const Contractors = () => {
         >
           <div className="container flex max-w-6xl items-center justify-between gap-4 py-4">
             <div>
-              <p className="font-display text-base font-medium">{selected.size} contractor{selected.size === 1 ? "" : "s"} selected</p>
-              <p className="text-xs text-muted-foreground">Send your project brief to all of them in one go.</p>
+              <p className="font-display text-base font-medium">
+                Ask {selected.size} contractor{selected.size === 1 ? "" : "s"} if they're interested
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {hasBrief ? "They'll get your brief and can say whether it's a fit." : "Next: a few details so they can tell you whether it's a fit. About 3 minutes."}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setSelected(new Set())} className="rounded-full">Clear</Button>
-              <Button onClick={() => setOutreachOpen(true)} className="rounded-full">
-                <Send className="h-4 w-4" /> Send project brief
+              <Button onClick={askInterested} className="rounded-full">
+                <Send className="h-4 w-4" /> {hasBrief ? "Ask them" : "Continue"}
               </Button>
             </div>
           </div>

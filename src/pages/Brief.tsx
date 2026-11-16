@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
 import { getActiveInvite, isDemoActive } from "@/lib/invites";
+import { isBigJob } from "@/lib/bigJob";
+import { pickNames, readPicks } from "@/lib/picks";
+import PlansTeamScreen from "@/components/intake/PlansTeamScreen";
 import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -839,6 +842,7 @@ const Brief = () => {
   const [params, setParams] = useSearchParams();
   const { data, update, togglePill, addMedia, removeMedia, reset } = useIntake();
   const [step, setStep] = useState(1);
+  const picks = useMemo(() => readPicks(), []);
   const [submitting, setSubmitting] = useState(false);
   const projectIdRef = useRef<string | null>(
     typeof window !== "undefined" ? sessionStorage.getItem("haleo:active_project_id") : null,
@@ -947,14 +951,21 @@ const Brief = () => {
   const submit = () => {
     setSubmitting(true);
     submittedRef.current = true;
-    track("brief_completed", { room: data.room, has_address: Boolean(data.address) });
-    setTimeout(() => navigate("/brief/result"), 2400);
+    track("brief_completed", { room: data.room, has_address: Boolean(data.address), big_job: isBigJob(data), has_plans: data.media.some((m) => m.kind === "floorplan") });
+    // Picked contractors before the brief: straight back to ask them.
+    setTimeout(() => navigate(readPicks().length ? "/contractors" : "/brief/result"), 2400);
   };
 
   if (submitting) return <LoadingPage />;
 
   return (
     <IntakeShell step={step} total={TOTAL} onBack={back} companion={<RecordCompanion data={companionData} />}>
+      {picks.length > 0 && (
+        <div className="mx-auto mb-6 max-w-md rounded-2xl border border-accent/30 bg-accent/5 px-4 py-3 text-[13.5px] leading-snug">
+          You're asking <span className="font-medium">{pickNames(picks)}</span> if they're interested. Share a little more so they
+          can tell you whether it's a fit.
+        </div>
+      )}
       <AnimatePresence mode="wait">
         {step === 1 && (
           <ProjectScreen
@@ -1067,8 +1078,19 @@ const Brief = () => {
             onFinishLevel={(finishLevel) => update({ finishLevel })}
             onPickTimeline={(t) => {
               update({ timeline: t });
-              setTimeout(submit, 350);
+              // Bigger jobs: one more step for plans and the team.
+              setTimeout(() => (isBigJob(data) ? setStep(6) : submit()), 350);
             }}
+          />
+        )}
+        {step === 6 && (
+          <PlansTeamScreen
+            key="plans-team"
+            data={data}
+            onUpdate={(p) => update(p)}
+            onAddMedia={addMedia}
+            onContinue={submit}
+            stepDots={<StepDots step={6} labels={[...STEP_LABELS, "Plans and team"]} />}
           />
         )}
       </AnimatePresence>
