@@ -1,4 +1,4 @@
-// A contractor's permanent front door: haleo.pages.dev/us-creative-builders
+// A contractor's permanent front door: haleo.studio/us-creative-builders
 // (or /c/:slug, the older form). ?src=website|google tags where it was posted;
 // the bare link is the one people text.
 //
@@ -70,7 +70,7 @@ export default function FrontDoor() {
     );
   }
 
-  // A mistyped page at the root (haleo.pages.dev/brif) is just "not found".
+  // A mistyped page at the root (haleo.studio/brif) is just "not found".
   if (state.kind === "missing" && handle) return <NotFound />;
 
   if (state.kind === "missing") {

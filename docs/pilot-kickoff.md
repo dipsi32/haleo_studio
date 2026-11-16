@@ -11,7 +11,7 @@ it to work.
 
 ## On the call (about 15 minutes)
 
-1. **Claim the profile.** Open `haleo.pages.dev/pro/<slug>/claim`
+1. **Claim the profile.** Open `haleo.studio/pro/<slug>/claim`
    (Matt: `/pro/bakhtiary-mehdi-1d0f/claim`) on the contractor's phone.
    - They enter their license number. It's checked on the server too.
    - They enter their email and tap the sign-in link it sends, which brings
@@ -22,7 +22,7 @@ it to work.
      uses to reach them.
 2. **Get their link.** "Get my link" opens a one-screen setup (company name,
    logo and portfolio are optional), then **Your link** (`/pro/links`):
-   `haleo.pages.dev/<their-business-name>`, with "Text it to a lead" and
+   `haleo.studio/<their-business-name>`, with "Text it to a lead" and
    the reply already written. Have them save the reply as a text shortcut
    while you're on the call.
 3. **Turn on alerts.** In the inbox, allow notifications on their phone.
