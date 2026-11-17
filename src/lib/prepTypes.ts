@@ -12,6 +12,8 @@ export type ParcelPermitLite = {
   status: string | null;
   is_open: boolean;
   is_expired_without_final: boolean;
+  /** Trades the city signed off on this permit ("Building", "Electrical"), when the inspection feed was read. */
+  signoffs?: string[];
 };
 
 export type ParcelFacts = {

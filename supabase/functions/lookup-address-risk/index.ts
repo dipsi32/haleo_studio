@@ -58,6 +58,32 @@ async function geocode(a: Address): Promise<{ lat: number; lng: number } | null>
 const FAILED = { failed: true } as const;
 const failed = (r: unknown): r is typeof FAILED => r === FAILED;
 
+// Why each check failed, so a failure is never a mystery (saved in raw_response.errors).
+const errors: Record<string, string> = {};
+// Public map servers often reject requests with no user agent, and some hang:
+// identify ourselves and give up after 12 seconds.
+const getJson = async (name: string, url: string): Promise<Record<string, unknown> | typeof FAILED> => {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Haleo/1.0 (homeowner address check; https://haleo.studio)", Accept: "application/json" },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) {
+      errors[name] = `HTTP ${res.status}`;
+      return FAILED;
+    }
+    const json = await res.json();
+    if (json?.error) {
+      errors[name] = `service error: ${JSON.stringify(json.error).slice(0, 200)}`;
+      return FAILED;
+    }
+    return json;
+  } catch (e) {
+    errors[name] = e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 200) : String(e).slice(0, 200);
+    return FAILED;
+  }
+};
+
 async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
   const params = new URLSearchParams({
     f: "json",
@@ -74,11 +100,9 @@ async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
   }
   async function hit(url: string) {
     try {
-      const res = await fetch(`${url}?${params}`);
-      if (!res.ok) return FAILED;
-      const json = await res.json();
-      if (json?.error) return FAILED;
-      const feats = json?.features ?? [];
+      const json = await getJson(url.includes("SRA") ? "fire_sra" : "fire_lra", `${url}?${params}`);
+      if (failed(json)) return FAILED;
+      const feats = (json?.features as { attributes: Record<string, unknown> }[] | undefined) ?? [];
       if (!feats.length) return null;
       // Pick the most severe class if multiple polygons matched (buffer query).
       const rank = (a: Record<string, unknown>) => {
@@ -137,11 +161,9 @@ async function queryFlood(lat: number, lng: number) {
       returnGeometry: "false",
     });
   try {
-    const res = await fetch(url);
-    if (!res.ok) return FAILED;
-    const json = await res.json();
-    if (json?.error) return FAILED;
-    const f = json?.features?.[0]?.attributes;
+    const json = await getJson("flood", url);
+    if (failed(json)) return FAILED;
+    const f = (json?.features as { attributes: Record<string, unknown> }[] | undefined)?.[0]?.attributes as Record<string, any> | undefined;
     if (!f) return null;
     const zone = f.FLD_ZONE ?? null;
     const sfha = f.SFHA_TF === "T" || f.SFHA_TF === true;
@@ -171,11 +193,9 @@ async function querySeismic(lat: number, lng: number) {
       returnGeometry: "false",
     });
   try {
-    const res = await fetch(url);
-    if (!res.ok) return FAILED;
-    const json = await res.json();
-    if (json?.error) return FAILED;
-    const f = json?.features?.[0]?.attributes;
+    const json = await getJson("seismic", url);
+    if (failed(json)) return FAILED;
+    const f = (json?.features as { attributes: Record<string, unknown> }[] | undefined)?.[0]?.attributes as Record<string, any> | undefined;
     if (!f) return null;
     const type = f.ZONE ?? f.HAZARD ?? f.Hazard ?? null;
     const typeStr = String(type ?? "").toLowerCase();
@@ -191,6 +211,7 @@ async function querySeismic(lat: number, lng: number) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  for (const k of Object.keys(errors)) delete errors[k];
 
   try {
     const supabase = createClient(
@@ -296,7 +317,7 @@ Deno.serve(async (req) => {
       in_special_flood_hazard_area: !!flood?.sfha,
       seismic_hazard_zone: seismic?.zone ?? null,
       seismic_hazard_type: seismic?.type ?? null,
-      raw_response: { fire, flood, seismic, geocodeLevel, checked },
+      raw_response: { fire, flood, seismic, geocodeLevel, checked, ...(Object.keys(errors).length ? { errors: { ...errors } } : {}) },
       lookup_succeeded: true,
       last_checked_at: new Date().toISOString(),
     };

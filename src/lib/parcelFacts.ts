@@ -72,6 +72,24 @@ export async function loadParcelFacts(addr?: Address | null): Promise<ParcelFact
   })();
 
   await withTimeout(Promise.all([history, enrichment]), LOOKUP_TIMEOUT_MS);
+
+  // The city's inspection sign-offs on the most recent permits, so the
+  // contractor sees what was finished properly, not just what was pulled.
+  const nums = (facts.permits ?? []).map((p) => p.permit_number).filter((n): n is string => !!n).slice(0, 6);
+  if (nums.length) {
+    try {
+      const res = await withTimeout(supabase.functions.invoke("fetch-permit-inspections", { body: { permit_numbers: nums, limit: nums.length } }), LOOKUP_TIMEOUT_MS);
+      const results = (res?.data as { results?: { folder_number: string; found: boolean; approvals?: { label: string; status: string }[] }[] } | null)?.results ?? [];
+      const byFolder = new Map(results.filter((r) => r.found).map((r) => [r.folder_number, r]));
+      facts.permits = (facts.permits ?? []).map((p) => {
+        const r = p.permit_number ? byFolder.get(p.permit_number) : undefined;
+        const signoffs = [...new Set((r?.approvals ?? []).filter((a) => a.status === "complete").map((a) => a.label))];
+        return signoffs.length ? { ...p, signoffs } : p;
+      });
+    } catch (e) {
+      console.warn("inspections for snapshot failed", e);
+    }
+  }
   // Only attach what we actually found.
   const found = Object.values(facts).some((v) => v != null && !(Array.isArray(v) && v.length === 0));
   return found ? { ...facts } : undefined;

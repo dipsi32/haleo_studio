@@ -185,3 +185,13 @@ describe("homeowner context hygiene", () => {
     expect(hasContext(c)).toBe(true);
   });
 });
+
+describe("the home's inspected work", () => {
+  it("tells the contractor what the city signed off on the address", async () => {
+    const prep = computeVisitPrep({
+      rooms: ["Kitchen"],
+      parcel: { permits: [{ permit_number: "1", description: "Kitchen remodel · Single-Family", type: null, valuation: null, issued_date: "2021-04-01", status: "Finaled", is_open: false, is_expired_without_final: false, signoffs: ["Building", "Electrical"] }] },
+    });
+    expect(prep.surprises.map((s) => s.text)).toContain("City signed off Building, Electrical on the 2021 kitchen remodel here.");
+  });
+});
