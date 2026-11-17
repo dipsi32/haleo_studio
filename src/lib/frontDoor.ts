@@ -1,4 +1,4 @@
-// A contractor's front door: one permanent link, haleo.pages.dev/us-creative-builders,
+// A contractor's front door: one permanent link, haleo.studio/us-creative-builders,
 // for their text replies, website and Google Business Profile, in their
 // colors. Pure helpers; see docs/contractor-front-door.md.
 

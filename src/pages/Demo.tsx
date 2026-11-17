@@ -152,9 +152,12 @@ const NoDemo = () => (
 
 // ───── 1. The homeowner's side starts with a text ─────
 
-/** The friendly link a contractor texts back: haleo.pages.dev/us-creative-builders. */
+/** The site's own address, as people read it: "haleo.studio". */
+const siteHost = () => (typeof window !== "undefined" ? window.location.host : "haleo.studio");
+
+/** The friendly link a contractor texts back: haleo.studio/us-creative-builders. */
 const friendlyLink = (demo: DemoConfig, slug?: string | null) =>
-  `haleo.pages.dev${frontDoorPath(frontDoorKey(demo.brand) || slug || demo.slug)}`;
+  `${siteHost()}${frontDoorPath(frontDoorKey(demo.brand) || slug || demo.slug)}`;
 
 const TextDoor = ({ demo }: { demo: DemoConfig }) => {
   const navigate = useNavigate();
@@ -479,7 +482,7 @@ const MattView = ({ demo }: { demo: DemoConfig }) => {
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft font-display text-lg text-accent-soft-foreground">{name[0]}</span>
                       <span className="min-w-0">
                         <span className="block font-display text-[16px] leading-snug">{name}'s project brief</span>
-                        <span className="block truncate text-[11px] text-muted-foreground">haleo.pages.dev/b/{name.toLowerCase()}-{(project.split(" ")[0] ?? "project").toLowerCase()}</span>
+                        <span className="block truncate text-[11px] text-muted-foreground">{siteHost()}/b/{name.toLowerCase()}-{(project.split(" ")[0] ?? "project").toLowerCase()}</span>
                       </span>
                     </span>
                   </motion.button>

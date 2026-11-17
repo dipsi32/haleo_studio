@@ -4,7 +4,7 @@ Contractors already have a website: portfolio photos and a "Contact us" form. Ha
 
 ## What it is
 
-- **One permanent link, in their name:** `haleo.pages.dev/us-creative-builders`.
+- **One permanent link, in their name:** `haleo.studio/us-creative-builders`.
   - It comes from the name on their account, so it works as soon as they claim their record.
   - They can choose a shorter name in `/pro/links` (`contractor_accounts.front_door_handle`): 3–40 letters, digits and hyphens, unique. Names that match one of the app's pages are reserved; a unit test keeps that list in sync with the router.
   - The link they text is bare. The website and Google versions carry `?src=website` or `?src=google`, so each brief says where it came from.

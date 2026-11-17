@@ -78,6 +78,32 @@ jobs:
           accountId: ${{ env.CF_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ env.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
 
+      # Production only: attach the custom domains (CUSTOM_DOMAINS in deploy/production.env)
+      # to the Pages project, and say whether each one is live. Never fails the deploy:
+      # a domain waiting on DNS is normal while it propagates. See docs/hosting-cloudflare.md.
+      - name: Custom domains
+        if: steps.check.outputs.publish == 'true' && env.IS_STAGING != 'true' && env.CUSTOM_DOMAINS != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$CF_PAGES_PROJECT/domains"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          have=$(curl -sS "${auth[@]}" "$api" | jq -r '.result[]?.name' 2>/dev/null || true)
+          for d in $(echo "$CUSTOM_DOMAINS" | tr ',' ' '); do
+            if ! echo "$have" | grep -qx "$d"; then
+              out=$(curl -sS -X POST "${auth[@]}" "$api" -d "$(jq -n --arg n "$d" '{name: $n}')")
+              if [ "$(echo "$out" | jq -r '.success')" != "true" ]; then
+                echo "::warning::Couldn't attach $d: $(echo "$out" | jq -c '.errors')"
+                echo "::warning::Add it by hand: Cloudflare, Workers & Pages, $CF_PAGES_PROJECT, Custom domains. If the error is about permissions, the API token needs Cloudflare Pages: Edit."
+                continue
+              fi
+              echo "Attached $d."
+            fi
+            status=$(curl -sS "${auth[@]}" "$api/$d" | jq -r '.result.status // "unknown"')
+            if [ "$status" = "active" ]; then echo "::notice::$d is live."
+            else echo "::warning::$d is $status. It goes live once its DNS points at Cloudflare (docs/hosting-cloudflare.md, Custom domain)."; fi
+          done
+
       - uses: actions/upload-artifact@v4
         if: steps.check.outputs.build == 'true'
         with:

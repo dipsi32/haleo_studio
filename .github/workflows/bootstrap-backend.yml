@@ -127,7 +127,10 @@ jobs:
       - name: Sign-in settings
         run: |
           app="${APP_URL%/}"
-          body=$(jq -n --arg site "$app" --arg allow "$app,$app/**" \
+          # The main address, plus any others that still serve the site (www, the old pages.dev links).
+          allow="$app,$app/**"
+          for u in $(echo "${APP_ALSO_URLS:-}" | tr ',' ' '); do u="${u%/}"; allow="$allow,$u,$u/**"; done
+          body=$(jq -n --arg site "$app" --arg allow "$allow" \
             --arg gid "$GOOGLE_OAUTH_CLIENT_ID" --arg gsec "$GOOGLE_OAUTH_CLIENT_SECRET" '
             {site_url: $site, uri_allow_list: $allow, external_email_enabled: true, external_anonymous_users_enabled: true}
             + (if $gid != "" and $gsec != "" then {external_google_enabled: true, external_google_client_id: $gid, external_google_secret: $gsec} else {} end)')
