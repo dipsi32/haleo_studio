@@ -48,6 +48,7 @@ import ContractorRoute from "./components/auth/ContractorRoute.tsx";
 import HomeownerNotificationToaster from "./components/HomeownerNotificationToaster.tsx";
 import ContractorNotificationToaster from "./components/ContractorNotificationToaster.tsx";
 import AnalyticsTracker from "./components/AnalyticsTracker.tsx";
+import ErrorBoundary from "./components/ErrorBoundary.tsx";
 import BrandTheme from "./components/BrandTheme.tsx";
 import DemoBanner from "./components/DemoBanner.tsx";
 import InviteSendRoute from "./components/auth/InviteSendRoute.tsx";
@@ -75,6 +76,7 @@ const App = () => (
           <DemoBanner />
           <HomeownerNotificationToaster />
           <ContractorNotificationToaster />
+          <ErrorBoundary>
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
@@ -217,6 +219,7 @@ const App = () => (
             <Route path="/:handle" element={<FrontDoor />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
