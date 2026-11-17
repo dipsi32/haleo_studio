@@ -465,16 +465,15 @@ const BriefResult = () => {
   // The same summary the contractor will get, so the homeowner sees what they're sending.
   const summarySnapshot = useMemo(() => ({ ...buildBriefSnapshot(data), projectType: projectLabel(data) }), [data]);
   const cobrand = useMemo(() => inviteCobrand(invite), [invite]);
-  const compareDestination = brUser
-    ? "/contractors"
-    : "/login?next=%2Fcontractors&intent=match";
+  // The matches are public records: no sign-in in front of them. Asking
+  // contractors uses a guest session on the match page itself.
+  const compareDestination = "/contractors";
   // Came here from a shortlist of their own names? Send them back to it:
   // the brief now goes into every bid request they send from there.
   const shortlist = useMemo(() => loadShortlist(), []);
   const matchDestination = invite
-    ? brUser || invite.demo
-      ? inviteSendPath(invite.token)
-      : `/login?next=${encodeURIComponent(inviteSendPath(invite.token))}&intent=invite`
+    ? // The send page starts a guest session itself (InviteSendRoute): no sign-in wall.
+      inviteSendPath(invite.token)
     : shortlist
       ? "/shortlist"
       : compareDestination;

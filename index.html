@@ -2,6 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // After a deploy, a tab holding the old page can ask for code files that no longer exist.
+      // If a script or stylesheet fails to load, reload once to pick up the new version.
+      window.addEventListener("error", function (e) {
+        var t = e.target;
+        if (!t || (t.tagName !== "SCRIPT" && t.tagName !== "LINK")) return;
+        try {
+          if (sessionStorage.getItem("haleo:reloaded")) return;
+          sessionStorage.setItem("haleo:reloaded", "1");
+        } catch (_) { return; }
+        location.reload();
+      }, true);
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Haleo | Audit your proposal before you hire</title>
     <meta name="description" content="Upload the quote. See how pricing, scope, and permit history stack up before you commit.">
