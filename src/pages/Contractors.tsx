@@ -13,6 +13,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useIntake, type IntakeData } from "@/lib/intake";
 import { useJobFit } from "@/lib/useJobFit";
 import JobFitBreakdown from "@/components/contractors/JobFitBreakdown";
@@ -158,6 +159,11 @@ const Contractors = () => {
   const [sending, setSending] = useState(false);
   const [sentInfo, setSentInfo] = useState<{ count: number; names: string[] } | null>(null);
   const [showAll, setShowAll] = useState(false);
+  // For someone not signed in: how contractors can reach them.
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [contactNudge, setContactNudge] = useState(false);
 
   // Auto-scroll to top on landing — homeowners shouldn't see brief footer first.
   useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, []);
@@ -238,19 +244,14 @@ const Contractors = () => {
     picksDone.current = true;
     clearPicks();
     setSelected(new Set(picks.map((p) => p.id)));
-    // Signed in: straight to sending. Otherwise their picks wait in the bar, and "Ask them" signs them in first.
-    if (authUser) setOutreachOpen(true);
-  }, [status, hasBrief, ranked, authUser]);
+    setOutreachOpen(true);
+  }, [status, hasBrief, ranked]);
 
   // "Ask if they're interested": with a brief, send it; without one, a few
   // details first, framed as what these contractors need to answer.
   const askInterested = () => {
     const picks = selectedList.map((r) => ({ id: r.contractor.id, name: r.contractor.company ?? r.contractor.name }));
-    if (hasBrief && !authUser) {
-      // Sending needs an account (so replies reach them). Their picks wait here.
-      savePicks(picks);
-      return navigate(`/login?next=${encodeURIComponent("/contractors")}`);
-    }
+    // No sign-in wall: sending starts a guest session if they don't have one.
     if (hasBrief) return setOutreachOpen(true);
     savePicks(picks);
     track("match_interest_requested", { count: selectedList.length, has_brief: false });
@@ -268,9 +269,23 @@ const Contractors = () => {
 
   const sendBrief = async () => {
     if (selectedList.length === 0) return;
+    // Contractors need a way to reply: a phone or an email, from whoever isn't signed in with one.
+    const phone = guestPhone.trim();
+    const email = guestEmail.trim();
+    if (!authUser?.email && !phone && !/^\S+@\S+\.\S+$/.test(email)) {
+      setContactNudge(true);
+      return;
+    }
     setSending(true);
     try {
       const sessionId = getSessionId();
+      // No account needed: a guest session (anonymous sign-in) owns this request.
+      let ownerId = authUser?.id ?? null;
+      if (!ownerId) {
+        const { data: anon, error: anonErr } = await supabase.auth.signInAnonymously();
+        if (anonErr || !anon.user) throw anonErr ?? new Error("Couldn't start a guest session");
+        ownerId = anon.user.id;
+      }
 
       // Pull cached address risk so contractors see the same hazard signals
       // the homeowner saw on their brief. Best-effort — never block the send.
@@ -295,7 +310,12 @@ const Contractors = () => {
       }
 
       const parcel = await loadParcelFacts(data.address);
-      const snapshot = { ...briefSummary, ...(addressRisk ? { address_risk: addressRisk } : {}), ...(parcel ? { parcel } : {}) };
+      const snapshot = {
+        ...briefSummary,
+        ...(addressRisk ? { address_risk: addressRisk } : {}),
+        ...(parcel ? { parcel } : {}),
+        ...(phone ? { homeowner_phone: phone } : {}),
+      };
       const { data: batch, error: bErr } = await supabase
         .from("outreach_batches")
         .insert({
@@ -303,9 +323,9 @@ const Contractors = () => {
           neighborhood,
           brief_snapshot: snapshot,
           recipient_count: selectedList.length,
-          homeowner_user_id: authUser?.id ?? null,
-          homeowner_name: homeownerName ?? null,
-          homeowner_email: authUser?.email ?? null,
+          homeowner_user_id: ownerId,
+          homeowner_name: guestName.trim() || homeownerName || null,
+          homeowner_email: authUser?.email ?? (email || null),
         })
         .select("id")
         .single();
@@ -661,8 +681,8 @@ const Contractors = () => {
                   <div className="space-y-4 px-5 py-5 text-sm text-foreground/85">
                     <p>Hi —</p>
                     <p>
-                      I found you through Haleo because you've completed permitted {projectLabel} work in {neighborhood}.
-                      I'm a serious homeowner with a fully scoped project and would love your quote.
+                      I found you through Haleo: your permit records include {projectLabel} work in San Jose. I'm planning
+                      the project below and would love to know if it's a fit for you.
                     </p>
 
                     {/* High-level project summary chips */}
@@ -851,10 +871,39 @@ const Contractors = () => {
 
                 </div>
 
-                <div className="mt-6 flex items-center gap-2 rounded-2xl bg-secondary/60 p-3 text-xs text-muted-foreground">
-                  <FileText className="h-3.5 w-3.5 shrink-0" />
-                  <span>Sends are tracked in your dashboard. Real email delivery turns on the moment your domain is connected — no further action needed.</span>
-                </div>
+                {/* Not signed in: how contractors can reach them. No account, no confirmation email. */}
+                {!authUser?.email && (
+                  <div className="mt-6 rounded-2xl border border-border bg-background p-4">
+                    <p className="text-sm font-medium">How should they reach you?</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">A phone or an email. No account needed; it only goes to the contractors you picked.</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <Input aria-label="Your first name" placeholder="First name" autoComplete="given-name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+                      <Input
+                        aria-label="Your phone"
+                        placeholder="Phone"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        value={guestPhone}
+                        onChange={(e) => {
+                          setGuestPhone(e.target.value);
+                          setContactNudge(false);
+                        }}
+                      />
+                      <Input
+                        aria-label="Your email"
+                        placeholder="Email"
+                        type="email"
+                        autoComplete="email"
+                        value={guestEmail}
+                        onChange={(e) => {
+                          setGuestEmail(e.target.value);
+                          setContactNudge(false);
+                        }}
+                      />
+                    </div>
+                    {contactNudge && <p className="mt-2 text-xs text-accent">Add a phone or an email so they can get back to you.</p>}
+                  </div>
+                )}
 
                 <div className="mt-6 flex justify-end gap-2">
                   <Button variant="ghost" onClick={closeOutreach} disabled={sending} className="rounded-full">Cancel</Button>
