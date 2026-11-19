@@ -4,7 +4,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu } from "lucide-react";
+import { ArrowRight, Home as HomeIcon, Menu } from "lucide-react";
+import { track } from "@/lib/analytics";
 import Logo from "@/components/Logo";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Gateway from "@/components/home/Gateway";
@@ -84,7 +85,21 @@ const Index = () => {
             Everyone has a guy. What you can't tell is who has built a job like yours, nearby, and passed the city's
             inspections. We read the record, so you hire on facts, not hope.
           </p>
-          <div className="mt-9">
+          <Link
+            to="/house"
+            onClick={() => track("home_door_clicked", { door: "house", where: "hero" })}
+            className="group mt-7 flex items-center gap-4 rounded-3xl border border-accent/30 bg-accent-soft/60 p-4 transition-smooth hover:-translate-y-0.5 hover:shadow-soft"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-card text-accent shadow-soft">
+              <HomeIcon className="h-5 w-5" strokeWidth={1.8} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[17px] leading-snug">What's on file for your house?</span>
+              <span className="block text-[13.5px] leading-snug text-muted-foreground">Its permits, and whether the city signed them off. Free, one minute.</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 transition-smooth group-hover:translate-x-0.5" />
+          </Link>
+          <div className="mt-6">
             <Gateway selected={path} onSelect={setPath} where="hero" />
           </div>
         </motion.div>

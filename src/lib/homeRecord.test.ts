@@ -17,13 +17,20 @@ describe("the home's record", () => {
     expect(r.headline).toBe("2 permits on file since 2018, none left unfinished.");
   });
 
-  it("calls out unfinished work plainly", () => {
+  it("calls out unfinished work plainly, and doesn't alarm about work in progress", () => {
+    const now = new Date("2026-11-19");
     const r = homeRecord([
       p({ permit_number: "X", final_date: null, status: "Expired", is_expired_without_final: true }),
       p({ permit_number: "Y", final_date: null, status: "Active", is_open: true }),
-    ]);
-    expect(r.rows.map((x) => x.stateLabel)).toEqual(["Expired, never signed off", "Still open with the city"]);
-    expect(r.headline).toBe("2 permits on file since 2021. 1 expired without a sign-off, 1 still open.");
+      p({ permit_number: "Z", final_date: null, status: "Active", is_open: true, issued_date: "2026-10-01" }),
+    ], [], now);
+    expect(r.rows.map((x) => x.stateLabel)).toEqual(["Work in progress", "Expired, never signed off", "Open for over two years"]);
+    expect(r.headline).toBe("3 permits on file since 2021. 1 expired without a sign-off, 1 open for over two years.");
+    expect(homeRecord([p({ final_date: null, status: "Active", is_open: true, issued_date: "2026-10-01" })], [], now).headline).toBe("1 permit on file since 2026, all in progress with the city.");
+  });
+
+  it("says city jargon in plain words", () => {
+    expect(homeRecord([p({ description: "Single-Family — Sub-Trades Only" })]).rows[0].what).toBe("Plumbing, electrical or mechanical work");
   });
 
   it("says so when there's nothing on file", () => {

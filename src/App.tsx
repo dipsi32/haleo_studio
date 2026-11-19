@@ -19,6 +19,7 @@ import Contractors from "./pages/Contractors.tsx";
 import ContractorProfile from "./pages/ContractorProfile.tsx";
 import Login from "./pages/Login.tsx";
 import Shortlist from "./pages/Shortlist.tsx";
+import House from "./pages/House";
 import ShareIn from "./pages/ShareIn";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Waitlist from "./pages/Waitlist.tsx";
@@ -125,6 +126,8 @@ const App = () => (
 
             {/* Brief is open to everyone — sign-up is offered at the match step */}
             <Route path="/shortlist" element={<Shortlist />} />
+            {/* Free lookup: every permit on file for a San Jose home */}
+            <Route path="/house" element={<House />} />
             {/* The phone's share sheet lands here (public/manifest.webmanifest share_target) */}
             <Route path="/share" element={<ShareIn />} />
             <Route path="/brief" element={<Brief />} />

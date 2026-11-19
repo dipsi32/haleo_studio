@@ -9,7 +9,7 @@ import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
-import { HAZARD_MAPS, homeRecord, type InspectionIn } from "@/lib/homeRecord";
+import { HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
 
 type Signal = {
   address_key: string;
@@ -63,9 +63,16 @@ function normalizeKey(a: Address): string {
     .join("|");
 }
 
-type Props = { address?: Address };
+type Props = {
+  address?: Address;
+  /** Shown while the lookups run (the standalone /house page). Default: nothing. */
+  loadingFallback?: React.ReactNode;
+  /** Shown when both lookups finished with nothing to say. Default: nothing. */
+  emptyFallback?: React.ReactNode;
+};
 
-export default function AddressIntelligenceCard({ address }: Props) {
+export default function AddressIntelligenceCard({ address, loadingFallback = null, emptyFallback = null }: Props) {
+  const [done, setDone] = useState({ risk: false, parcel: false });
   const [signal, setSignal] = useState<Signal | null>(null);
   const [parcel, setParcel] = useState<ParcelHistory | null>(null);
   const [showAllPermits, setShowAllPermits] = useState(false);
@@ -99,6 +106,9 @@ export default function AddressIntelligenceCard({ address }: Props) {
       setParcel(null);
       return;
     }
+    setSignal(null);
+    setParcel(null);
+    setDone({ risk: false, parcel: false });
     const key = normalizeKey(address);
     let active = true;
 
@@ -111,6 +121,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
         .maybeSingle();
       if (cached && active) {
         setSignal(cached as Signal);
+        setDone((d) => ({ ...d, risk: true }));
         return;
       }
       try {
@@ -121,6 +132,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
       } catch (e) {
         console.warn("address risk lookup failed", e);
       }
+      if (active) setDone((d) => ({ ...d, risk: true }));
     })();
 
     // Parcel permit history
@@ -130,8 +142,12 @@ export default function AddressIntelligenceCard({ address }: Props) {
         .select("*")
         .eq("address_key", key)
         .maybeSingle();
-      if (cached && active) {
+      // Saved before all three city feeds were read (no permit has a "source")? Look again.
+      const cachedPermits = Array.isArray((cached as { permits?: unknown } | null)?.permits) ? ((cached as { permits: { source?: unknown }[] }).permits) : [];
+      const fresh = !!cached && (cachedPermits.length === 0 || cachedPermits.some((p) => p && p.source));
+      if (cached && fresh && active) {
         setParcel(cached as unknown as ParcelHistory);
+        setDone((d) => ({ ...d, parcel: true }));
         return;
       }
       try {
@@ -142,6 +158,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
       } catch (e) {
         console.warn("parcel history lookup failed", e);
       }
+      if (active) setDone((d) => ({ ...d, parcel: true }));
     })();
 
     return () => {
@@ -206,16 +223,14 @@ export default function AddressIntelligenceCard({ address }: Props) {
 
   // Parcel-derived items
   if (parcel?.lookup_succeeded) {
-    if (parcel.open_permit_count > 0) {
-      const oldest = parcel.permits
-        .filter((p) => p.is_open && p.issued_date)
-        .sort((a, b) => (a.issued_date! < b.issued_date! ? -1 : 1))[0];
+    // Open for years is a warning; open for months is just work in progress.
+    const longOpen = parcel.permits.filter((p) => p.is_open && p.issued_date && isLongOpen(p.issued_date));
+    if (longOpen.length > 0) {
+      const oldest = longOpen.sort((a, b) => (a.issued_date! < b.issued_date! ? -1 : 1))[0];
       items.push({
         icon: AlertCircle,
-        title: `${parcel.open_permit_count} open permit${parcel.open_permit_count > 1 ? "s" : ""} on this parcel`,
-        body: oldest
-          ? `The oldest is ${oldest.permit_number ?? "an unnumbered permit"} (${oldest.type ?? "building"}) from ${oldest.issued_date}, still not finaled with the city. Your next contractor will run into this — raise it before they bid.`
-          : "These were pulled but never finaled. Get them on the table before signing anything new — open permits block resale and stack up against new scope.",
+        title: `${longOpen.length} permit${longOpen.length > 1 ? "s" : ""} open for over two years`,
+        body: `The oldest is from ${oldest.issued_date!.slice(0, 4)} and the city still hasn't signed it off. Long-open permits pass to the next job and show up at sale: raise it before anyone bids.`,
         chip: "San José permits",
         tone: "warn",
       });
@@ -235,8 +250,9 @@ export default function AddressIntelligenceCard({ address }: Props) {
   const hasRiskSignal = !!signal;
   const hasParcel = !!parcel?.lookup_succeeded && parcel.permit_count > 0;
 
-  if (!signal && !parcel) return null;
-  if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return null;
+  const settled = done.risk && done.parcel;
+  if (!signal && !parcel) return <>{settled ? emptyFallback : loadingFallback}</>;
+  if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return <>{settled ? emptyFallback : loadingFallback}</>;
 
   const warnCount = items.filter((i) => i.tone === "warn").length;
   // We only call a hazard "clear" when its check ran on this exact address.
@@ -287,7 +303,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
       : anyHazardRan
         ? `Hazard zones are where change orders hide: different materials, extra reports, higher insurance.${clearChecks.length ? " Here's what we checked." : ""}`
         : hasParcel
-          ? "Every permit pulled on your home, and what the city signed off. Your contractor gets this too, so nobody is surprised by old work."
+          ? "The permits the city has on file for your home, and what it signed off. Your contractor gets this too, so nobody is surprised by old work."
           : "What the public record says about your home, so nothing surprises you or your contractor.";
   const recentPermits = parcel?.permits
     ?.slice()
@@ -472,7 +488,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
               <ul className="mt-4 divide-y divide-border/60">
                 {visiblePermits.map((p, i) => {
                   const row = record.rows.find((r) => r.permit && r.permit === p.permit_number);
-                  const state = row?.state ?? (p.is_expired_without_final ? "expired" : p.is_open ? "open" : "unknown");
+                  const state = row?.state ?? (p.is_expired_without_final ? "expired" : p.is_open ? "in_progress" : "unknown");
                   return (
                     <li key={(p.permit_number ?? "") + i} className="flex items-start gap-3 py-3">
                       <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -482,10 +498,14 @@ export default function AddressIntelligenceCard({ address }: Props) {
                           <span className="text-xs text-muted-foreground">{p.issued_date ? p.issued_date.slice(0, 4) : "date unknown"}</span>
                           <span
                             className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                              state === "finaled" ? "bg-sage/15 text-sage" : state === "unknown" ? "bg-secondary text-muted-foreground" : "bg-amber-500/10 text-amber-700"
+                              state === "finaled"
+                                ? "bg-sage/15 text-sage"
+                                : state === "unknown" || state === "in_progress"
+                                  ? "bg-secondary text-muted-foreground"
+                                  : "bg-amber-500/10 text-amber-700"
                             }`}
                           >
-                            {row?.stateLabel ?? (state === "open" ? "Still open with the city" : state === "expired" ? "Expired, never signed off" : "Status not on record")}
+                            {row?.stateLabel ?? (state === "in_progress" ? "Work in progress" : state === "expired" ? "Expired, never signed off" : "Status not on record")}
                           </span>
                         </div>
                         {row && row.signoffs.length > 0 && (

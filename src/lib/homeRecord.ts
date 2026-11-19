@@ -24,7 +24,10 @@ export type InspectionIn = {
   approvals?: { label: string; status: "complete" | "in_progress" | "pending" | "unknown" }[];
 };
 
-export type RecordState = "finaled" | "open" | "expired" | "unknown";
+export type RecordState = "finaled" | "in_progress" | "open" | "expired" | "unknown";
+
+/** Open for over two years: likely abandoned, worth raising. Younger is work in progress. */
+export const isLongOpen = (issued: string, now: Date = new Date()) => now.getTime() - new Date(issued).getTime() > 2 * 365 * 864e5;
 
 export type RecordRow = {
   permit: string | null;
@@ -39,7 +42,8 @@ export type RecordRow = {
 
 const STATE_LABEL: Record<RecordState, string> = {
   finaled: "Finished and signed off",
-  open: "Still open with the city",
+  in_progress: "Work in progress",
+  open: "Open for over two years",
   expired: "Expired, never signed off",
   unknown: "Status not on record",
 };
@@ -47,18 +51,28 @@ const STATE_LABEL: Record<RecordState, string> = {
 /** "Kitchen remodel · Single-Family — Additions/Alterations" → "Kitchen remodel". */
 const whatOf = (p: RecordPermitIn): string => {
   const d = (p.description ?? "").split(" · ")[0].replace(/^\([A-Z]+\)\s*/, "").trim();
+  // The city's own jargon, in plain words.
+  if (/sub-?trades? only/i.test(d) || (!d && /sub-?trades? only/i.test(p.subtype ?? ""))) return "Plumbing, electrical or mechanical work";
   const base = d || [p.subtype, p.type].filter(Boolean).join(", ") || "Permitted work";
   return base.charAt(0).toUpperCase() + base.slice(1);
 };
 
-export const homeRecord = (permits: RecordPermitIn[], inspections: InspectionIn[] = []): { rows: RecordRow[]; open: number; expired: number; since: number | null; headline: string } => {
+export const homeRecord = (permits: RecordPermitIn[], inspections: InspectionIn[] = [], now: Date = new Date()): { rows: RecordRow[]; open: number; expired: number; since: number | null; headline: string } => {
   const byFolder = new Map(inspections.filter((i) => i.found).map((i) => [i.folder_number, i]));
   const rows = [...permits]
     .sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))
     .map((p): RecordRow => {
       const insp = p.permit_number ? byFolder.get(p.permit_number) : undefined;
       const finaled = !!p.final_date || /final|closed|complete/i.test(p.status ?? "") || insp?.lifecycle === "closed";
-      const state: RecordState = p.is_expired_without_final ? "expired" : p.is_open && !finaled ? "open" : finaled ? "finaled" : "unknown";
+      const state: RecordState = p.is_expired_without_final
+        ? "expired"
+        : p.is_open && !finaled
+          ? p.issued_date && isLongOpen(p.issued_date, now)
+            ? "open"
+            : "in_progress"
+          : finaled
+            ? "finaled"
+            : "unknown";
       return {
         permit: p.permit_number,
         year: p.issued_date && /^\d{4}/.test(p.issued_date) ? Number(p.issued_date.slice(0, 4)) : null,
@@ -74,12 +88,15 @@ export const homeRecord = (permits: RecordPermitIn[], inspections: InspectionIn[
   const years = rows.map((r) => r.year).filter((y): y is number => y !== null);
   const since = years.length ? Math.min(...years) : null;
   const n = rows.length;
+  const inProgress = rows.filter((r) => r.state === "in_progress").length;
   const headline =
     n === 0
       ? "No permits on file for this address."
       : expired || open
-        ? `${n} permit${n === 1 ? "" : "s"} on file${since ? ` since ${since}` : ""}. ${[expired && `${expired} expired without a sign-off`, open && `${open} still open`].filter(Boolean).join(", ")}.`
-        : `${n} permit${n === 1 ? "" : "s"} on file${since ? ` since ${since}` : ""}, none left unfinished.`;
+        ? `${n} permit${n === 1 ? "" : "s"} on file${since ? ` since ${since}` : ""}. ${[expired && `${expired} expired without a sign-off`, open && `${open} open for over two years`].filter(Boolean).join(", ")}.`
+        : inProgress
+          ? `${n} permit${n === 1 ? "" : "s"} on file${since ? ` since ${since}` : ""}, ${inProgress === n ? "all" : inProgress} in progress with the city.`
+          : `${n} permit${n === 1 ? "" : "s"} on file${since ? ` since ${since}` : ""}, none left unfinished.`;
   return { rows, open, expired, since, headline };
 };
 
@@ -89,3 +106,6 @@ export const HAZARD_MAPS = [
   { id: "flood", label: "Flood zones (FEMA)", href: "https://msc.fema.gov/portal/search" },
   { id: "seismic", label: "Earthquake hazard zones (California Geological Survey)", href: "https://maps.conservation.ca.gov/cgs/EQZApp/app/" },
 ] as const;
+
+/** The city's own permit portal, for history older than its open-data feeds. */
+export const CITY_PERMIT_ARCHIVE = "https://www.sjpermits.org/";

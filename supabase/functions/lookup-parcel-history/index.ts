@@ -16,7 +16,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SJ_RESOURCE = "761b7ae8-3be1-4ad6-923d-c7af6404a904";
+const SJ_RESOURCE = "761b7ae8-3be1-4ad6-923d-c7af6404a904"; // active permits
+// The city publishes permits in three feeds. Reading only the active one
+// missed exactly what homeowners need to know: work that expired unsigned.
+const SJ_FEEDS = [
+  { id: SJ_RESOURCE, source: "active" },
+  { id: "89ccdad9-7309-4826-a5f3-2fcf1fcb20fa", source: "under_inspection" },
+  { id: "df4b8461-0c7a-4d16-b85d-ff7f71c5fed5", source: "expired" },
+] as const;
 const SJ_API = "https://data.sanjoseca.gov/api/3/action/datastore_search";
 const SJ_SQL = "https://data.sanjoseca.gov/api/3/action/datastore_search_sql";
 
@@ -88,39 +95,53 @@ function streetMatches(parsed: ReturnType<typeof parseStreet>, candidate: string
   return c.includes(firstWord);
 }
 
-async function searchByAddressText(q: string, limit = 100): Promise<SJRecord[]> {
-  const url = `${SJ_API}?resource_id=${SJ_RESOURCE}&q=${encodeURIComponent(q)}&limit=${limit}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) return [];
-  const json = await res.json();
-  if (!json.success) return [];
-  return (json.result?.records ?? []) as SJRecord[];
-}
+type Sourced = SJRecord & { _source?: string };
 
-async function searchByApn(apn: string, limit = 200): Promise<SJRecord[]> {
-  // Use SQL endpoint for an exact-APN query.
-  const sql = `SELECT * FROM "${SJ_RESOURCE}" WHERE "ASSESSORS_PARCEL_NUMBER" = '${apn.replace(/'/g, "''")}' LIMIT ${limit}`;
-  const url = `${SJ_SQL}?sql=${encodeURIComponent(sql)}`;
+async function searchOneByText(feed: (typeof SJ_FEEDS)[number], q: string, limit: number): Promise<Sourced[]> {
   try {
+    const url = `${SJ_API}?resource_id=${feed.id}&q=${encodeURIComponent(q)}&limit=${limit}`;
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) return [];
     const json = await res.json();
     if (!json.success) return [];
-    return (json.result?.records ?? []) as SJRecord[];
+    return ((json.result?.records ?? []) as SJRecord[]).map((r) => ({ ...r, _source: feed.source }));
   } catch {
     return [];
   }
 }
 
-function isOpen(r: SJRecord): boolean {
+async function searchByAddressText(q: string, limit = 100): Promise<Sourced[]> {
+  return (await Promise.all(SJ_FEEDS.map((f) => searchOneByText(f, q, limit)))).flat();
+}
+
+async function searchByApn(apn: string, limit = 200): Promise<Sourced[]> {
+  // Exact-APN query in each feed.
+  const one = async (feed: (typeof SJ_FEEDS)[number]): Promise<Sourced[]> => {
+    const sql = `SELECT * FROM "${feed.id}" WHERE "ASSESSORS_PARCEL_NUMBER" = '${apn.replace(/'/g, "''")}' LIMIT ${limit}`;
+    try {
+      const res = await fetch(`${SJ_SQL}?sql=${encodeURIComponent(sql)}`, { headers: { Accept: "application/json" } });
+      if (!res.ok) return [];
+      const json = await res.json();
+      if (!json.success) return [];
+      return ((json.result?.records ?? []) as SJRecord[]).map((r) => ({ ...r, _source: feed.source }));
+    } catch {
+      return [];
+    }
+  };
+  return (await Promise.all(SJ_FEEDS.map(one))).flat();
+}
+
+function isOpen(r: Sourced): boolean {
+  if (r._source === "expired") return false;
   if (parseDate(r.FINALDATE)) return false;
   const s = (r.Status ?? "").toLowerCase();
   if (/final|closed|complete|withdrawn|expired|cancel/.test(s)) return false;
   return true;
 }
 
-function isExpiredWithoutFinal(r: SJRecord): boolean {
+function isExpiredWithoutFinal(r: Sourced): boolean {
   if (parseDate(r.FINALDATE)) return false;
+  if (r._source === "expired") return true;
   const s = (r.Status ?? "").toLowerCase();
   if (/expired/.test(s)) return true;
   // Heuristic: issued >2 years ago, no final, status not active
@@ -158,7 +179,11 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("address_key", key)
         .maybeSingle();
-      if (cached) {
+      // Rows saved before all three feeds were read (no permit carries a
+      // "source") only saw active permits: look them up again.
+      const permits = Array.isArray(cached?.permits) ? (cached.permits as { source?: unknown }[]) : [];
+      const fresh = cached && (permits.length === 0 || permits.some((p) => p && p.source));
+      if (cached && fresh) {
         return new Response(JSON.stringify({ cached: true, history: cached }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -211,13 +236,13 @@ Deno.serve(async (req) => {
     }
 
     // 2. If we got an APN, pull the full parcel history.
-    let allRecords: SJRecord[] = addressHits;
+    let allRecords: Sourced[] = addressHits;
     if (apn) {
       const parcelRecords = await searchByApn(apn, 200);
       if (parcelRecords.length) {
         // Merge & dedupe by FOLDERNUMBER
         const seen = new Set<string>();
-        const merged: SJRecord[] = [];
+        const merged: Sourced[] = [];
         for (const r of [...parcelRecords, ...addressHits]) {
           const k = r.FOLDERNUMBER ?? JSON.stringify(r);
           if (seen.has(k)) continue;
@@ -239,6 +264,8 @@ Deno.serve(async (req) => {
       issued_date: parseDate(r.ISSUEDATE),
       final_date: parseDate(r.FINALDATE),
       status: r.Status ?? null,
+      // Which city feed it came from: active, under_inspection or expired.
+      source: r._source ?? null,
       is_open: isOpen(r),
       is_expired_without_final: isExpiredWithoutFinal(r),
     }));
