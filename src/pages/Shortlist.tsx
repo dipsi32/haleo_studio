@@ -794,7 +794,15 @@ const ResultCard = ({
   onReject: () => void;
 }) => {
   const c = r.candidate;
-  const fit = useJobFit(r.contractor?.id, r.permits, data, r.license, r.status === "done" && !!r.contractor, r.status === "done" && !r.contractor);
+  const fit = useJobFit(
+    r.contractor?.id,
+    r.permits,
+    data,
+    r.license,
+    r.status === "done" && !!r.contractor,
+    r.status === "done" && !r.contractor,
+    r.license?.license_number ?? r.candidate.license_number ?? null,
+  );
   if (r.status === "checking") {
     return (
       <li className="rounded-2xl border border-border bg-card p-5 shadow-soft">

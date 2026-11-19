@@ -288,7 +288,10 @@ export const fitLine = (c: CheckedCandidate, projectWord: string): string => {
   else if (c.permits.length > 0) parts.push(`${c.permits.length} San Jose permit${c.permits.length === 1 ? "" : "s"}, none like yours`);
   const pos = neighborRead(c.candidate).positive;
   if (pos > 0) parts.push(`${pos} neighbor${pos === 1 ? "" : "s"} vouched`);
-  if (parts.length === 0) return "Not much on public record yet. Ask for their license number.";
+  if (parts.length === 0)
+    return c.candidate.license_number
+      ? `License #${c.candidate.license_number}: the state license board didn't answer just now. Open it on CSLB to see its status.`
+      : "Not much on public record yet. Ask for their license number.";
   const s = parts.join(" · ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
