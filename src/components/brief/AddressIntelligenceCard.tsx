@@ -9,6 +9,7 @@ import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
+import { HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
 
 type Signal = {
   address_key: string;
@@ -62,12 +63,42 @@ function normalizeKey(a: Address): string {
     .join("|");
 }
 
-type Props = { address?: Address };
+type Props = {
+  address?: Address;
+  /** Shown while the lookups run (the standalone /house page). Default: nothing. */
+  loadingFallback?: React.ReactNode;
+  /** Shown when both lookups finished with nothing to say. Default: nothing. */
+  emptyFallback?: React.ReactNode;
+};
 
-export default function AddressIntelligenceCard({ address }: Props) {
+export default function AddressIntelligenceCard({ address, loadingFallback = null, emptyFallback = null }: Props) {
+  const [done, setDone] = useState({ risk: false, parcel: false });
   const [signal, setSignal] = useState<Signal | null>(null);
   const [parcel, setParcel] = useState<ParcelHistory | null>(null);
   const [showAllPermits, setShowAllPermits] = useState(false);
+  const [inspections, setInspections] = useState<InspectionIn[]>([]);
+
+  // The city's inspection sign-offs on this home's most recent permits.
+  useEffect(() => {
+    const nums = (parcel?.permits ?? [])
+      .slice()
+      .sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))
+      .map((p) => p.permit_number)
+      .filter((n): n is string => !!n)
+      .slice(0, 6);
+    if (!nums.length) return;
+    let active = true;
+    supabase.functions
+      .invoke("fetch-permit-inspections", { body: { permit_numbers: nums, limit: nums.length } })
+      .then(({ data }) => {
+        const results = (data as { results?: InspectionIn[] } | null)?.results;
+        if (active && Array.isArray(results)) setInspections(results);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [parcel]);
 
   useEffect(() => {
     if (!address?.street || !address?.city || address?.skipped) {
@@ -75,6 +106,9 @@ export default function AddressIntelligenceCard({ address }: Props) {
       setParcel(null);
       return;
     }
+    setSignal(null);
+    setParcel(null);
+    setDone({ risk: false, parcel: false });
     const key = normalizeKey(address);
     let active = true;
 
@@ -87,6 +121,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
         .maybeSingle();
       if (cached && active) {
         setSignal(cached as Signal);
+        setDone((d) => ({ ...d, risk: true }));
         return;
       }
       try {
@@ -97,6 +132,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
       } catch (e) {
         console.warn("address risk lookup failed", e);
       }
+      if (active) setDone((d) => ({ ...d, risk: true }));
     })();
 
     // Parcel permit history
@@ -106,8 +142,12 @@ export default function AddressIntelligenceCard({ address }: Props) {
         .select("*")
         .eq("address_key", key)
         .maybeSingle();
-      if (cached && active) {
+      // Saved before all three city feeds were read (no permit has a "source")? Look again.
+      const cachedPermits = Array.isArray((cached as { permits?: unknown } | null)?.permits) ? ((cached as { permits: { source?: unknown }[] }).permits) : [];
+      const fresh = !!cached && (cachedPermits.length === 0 || cachedPermits.some((p) => p && p.source));
+      if (cached && fresh && active) {
         setParcel(cached as unknown as ParcelHistory);
+        setDone((d) => ({ ...d, parcel: true }));
         return;
       }
       try {
@@ -118,6 +158,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
       } catch (e) {
         console.warn("parcel history lookup failed", e);
       }
+      if (active) setDone((d) => ({ ...d, parcel: true }));
     })();
 
     return () => {
@@ -182,16 +223,14 @@ export default function AddressIntelligenceCard({ address }: Props) {
 
   // Parcel-derived items
   if (parcel?.lookup_succeeded) {
-    if (parcel.open_permit_count > 0) {
-      const oldest = parcel.permits
-        .filter((p) => p.is_open && p.issued_date)
-        .sort((a, b) => (a.issued_date! < b.issued_date! ? -1 : 1))[0];
+    // Open for years is a warning; open for months is just work in progress.
+    const longOpen = parcel.permits.filter((p) => p.is_open && p.issued_date && isLongOpen(p.issued_date));
+    if (longOpen.length > 0) {
+      const oldest = longOpen.sort((a, b) => (a.issued_date! < b.issued_date! ? -1 : 1))[0];
       items.push({
         icon: AlertCircle,
-        title: `${parcel.open_permit_count} open permit${parcel.open_permit_count > 1 ? "s" : ""} on this parcel`,
-        body: oldest
-          ? `The oldest is ${oldest.permit_number ?? "an unnumbered permit"} (${oldest.type ?? "building"}) from ${oldest.issued_date}, still not finaled with the city. Your next contractor will run into this — raise it before they bid.`
-          : "These were pulled but never finaled. Get them on the table before signing anything new — open permits block resale and stack up against new scope.",
+        title: `${longOpen.length} permit${longOpen.length > 1 ? "s" : ""} open for over two years`,
+        body: `The oldest is from ${oldest.issued_date!.slice(0, 4)} and the city still hasn't signed it off. Long-open permits pass to the next job and show up at sale: raise it before anyone bids.`,
         chip: "San José permits",
         tone: "warn",
       });
@@ -211,8 +250,9 @@ export default function AddressIntelligenceCard({ address }: Props) {
   const hasRiskSignal = !!signal;
   const hasParcel = !!parcel?.lookup_succeeded && parcel.permit_count > 0;
 
-  if (!signal && !parcel) return null;
-  if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return null;
+  const settled = done.risk && done.parcel;
+  if (!signal && !parcel) return <>{settled ? emptyFallback : loadingFallback}</>;
+  if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return <>{settled ? emptyFallback : loadingFallback}</>;
 
   const warnCount = items.filter((i) => i.tone === "warn").length;
   // We only call a hazard "clear" when its check ran on this exact address.
@@ -245,6 +285,8 @@ export default function AddressIntelligenceCard({ address }: Props) {
         },
       ].filter(Boolean) as { icon: typeof Flame; label: string; means: string }[]
     : [];
+  const record = homeRecord(parcel?.permits ?? [], inspections);
+  const anyHazardRan = !!ran && (ran.fire || ran.flood || ran.seismic);
   const headline =
     warnCount > 0
       ? `${warnCount} thing${warnCount === 1 ? "" : "s"} on your lot that can change every bid.`
@@ -252,11 +294,17 @@ export default function AddressIntelligenceCard({ address }: Props) {
         ? "No hazard zones, and the permit record is clean."
         : clearChecks.length === 3
           ? "No hazard zones on your lot. Fewer surprises in your bids."
-          : "Worth knowing before you talk to anyone.";
+          : hasParcel
+            ? record.headline
+            : "Worth knowing before you talk to anyone.";
   const subline =
     warnCount > 0
       ? "Hazard zones and unfinished permits change materials, insurance and cost. Raise them before anyone prices the job, not after."
-      : `Hazard zones are where change orders hide: different materials, extra reports, higher insurance.${clearChecks.length ? " Here's what we checked." : ""}`;
+      : anyHazardRan
+        ? `Hazard zones are where change orders hide: different materials, extra reports, higher insurance.${clearChecks.length ? " Here's what we checked." : ""}`
+        : hasParcel
+          ? "The permits the city has on file for your home, and what it signed off. Your contractor gets this too, so nobody is surprised by old work."
+          : "What the public record says about your home, so nothing surprises you or your contractor.";
   const recentPermits = parcel?.permits
     ?.slice()
     .sort((a, b) => (a.issued_date && b.issued_date ? (a.issued_date < b.issued_date ? 1 : -1) : 0))
@@ -281,7 +329,7 @@ export default function AddressIntelligenceCard({ address }: Props) {
             </span>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                What your address tells us
+                Your home's record
               </p>
               <p className="mt-0.5 font-display text-xl font-light leading-tight text-foreground md:text-2xl">{headline}</p>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{subline}</p>
@@ -322,7 +370,20 @@ export default function AddressIntelligenceCard({ address }: Props) {
               ) : (
                 <>
                   <span className="font-medium text-foreground">We couldn't check {notChecked.join(" or ")} just now.</span>{" "}
-                  That's not a clean result. Ask your contractor, or open this brief again later.
+                  That's not a clean result. You can look your address up on the official maps in a minute:
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    {HAZARD_MAPS.filter((m) => !ran || !ran[m.id]).map((m) => (
+                      <a
+                        key={m.id}
+                        href={m.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-border bg-card px-3 py-1 text-[12px] font-medium text-foreground transition-smooth hover:bg-secondary"
+                      >
+                        {m.label} ↗
+                      </a>
+                    ))}
+                  </span>
                 </>
               )}
             </p>
@@ -425,35 +486,42 @@ export default function AddressIntelligenceCard({ address }: Props) {
 
             {visiblePermits.length > 0 && (
               <ul className="mt-4 divide-y divide-border/60">
-                {visiblePermits.map((p, i) => (
-                  <li key={(p.permit_number ?? "") + i} className="flex items-start gap-3 py-3">
-                    <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="text-sm font-medium text-foreground">
-                          {p.type ?? p.subtype ?? "Building permit"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {p.issued_date ?? "date unknown"}
-                        </span>
-                        {p.is_open && (
-                          <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-                            Open
+                {visiblePermits.map((p, i) => {
+                  const row = record.rows.find((r) => r.permit && r.permit === p.permit_number);
+                  const state = row?.state ?? (p.is_expired_without_final ? "expired" : p.is_open ? "in_progress" : "unknown");
+                  return (
+                    <li key={(p.permit_number ?? "") + i} className="flex items-start gap-3 py-3">
+                      <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="text-sm font-medium text-foreground">{row?.what ?? p.type ?? "Building permit"}</span>
+                          <span className="text-xs text-muted-foreground">{p.issued_date ? p.issued_date.slice(0, 4) : "date unknown"}</span>
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                              state === "finaled"
+                                ? "bg-sage/15 text-sage"
+                                : state === "unknown" || state === "in_progress"
+                                  ? "bg-secondary text-muted-foreground"
+                                  : "bg-amber-500/10 text-amber-700"
+                            }`}
+                          >
+                            {row?.stateLabel ?? (state === "in_progress" ? "Work in progress" : state === "expired" ? "Expired, never signed off" : "Status not on record")}
                           </span>
+                        </div>
+                        {row && row.signoffs.length > 0 && (
+                          <p className="mt-1 text-xs text-foreground/80">
+                            <Check className="mr-1 inline h-3 w-3 text-sage" />
+                            City signed off: {row.signoffs.join(", ")}
+                          </p>
                         )}
-                        {p.is_expired_without_final && !p.is_open && (
-                          <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-                            Expired, no final
-                          </span>
-                        )}
+                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                          {p.contractor ? `By ${p.contractor}` : "Contractor not on the permit"}
+                          {p.permit_number ? ` · Permit ${p.permit_number}` : ""}
+                        </p>
                       </div>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                        {p.description ?? p.subtype ?? "—"}
-                        {p.contractor ? ` · ${p.contractor}` : ""}
-                      </p>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
 

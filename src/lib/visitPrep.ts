@@ -131,6 +131,20 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
         weight: 9,
       });
     }
+    // What the city signed off on the home's most recent permit with sign-offs.
+    const signed = (parcel.permits ?? []).find((p) => (p.signoffs ?? []).length > 0);
+    if (signed) {
+      const what = (signed.description ?? signed.type ?? "Permitted work").split(" · ")[0];
+      const year = signed.issued_date?.slice(0, 4);
+      surprises.push({
+        text: `City signed off ${signed.signoffs!.join(", ")} on the ${year ? `${year} ` : ""}${what.toLowerCase()} here.`,
+        source: "record",
+        note: "Inspected, finished work you can build on, and a sign of what's behind the walls.",
+        tone: "info",
+        opener: `I saw the ${what.toLowerCase()} here was inspected and signed off. Who did that work?`,
+        weight: 6,
+      });
+    }
     const conv = (parcel.permits ?? []).find((p) => looksLikeConversion(p.description) && !p.is_expired_without_final);
     if (conv) {
       const y = year(conv.issued_date);

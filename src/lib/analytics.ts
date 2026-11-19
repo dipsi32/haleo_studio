@@ -130,6 +130,10 @@ export type AnalyticsEvent =
   | "home_entry_started"
   // A screen threw while rendering (src/components/ErrorBoundary.tsx): message, path, component
   | "app_crashed"
+  // /house: the free home-record lookup, its share, and the step to a project
+  | "house_lookup"
+  | "house_shared"
+  | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)
   | "match_interest_requested"
   // Bigger jobs: floor plans shared or declined
