@@ -84,8 +84,34 @@ const getJson = async (name: string, url: string): Promise<Record<string, unknow
   }
 };
 
-async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
-  const params = new URLSearchParams({
+// Map services move. Each check lists the current home of its layer first and
+// known mirrors after; the first that answers is used. Only when every one
+// fails is the check "not checked", with each failure saved in errors.
+const firstAnswer = async (name: string, urls: string[]): Promise<Record<string, unknown> | typeof FAILED> => {
+  const why: string[] = [];
+  for (const [i, url] of urls.entries()) {
+    const json = await getJson(`${name}_${i}`, url);
+    const e = errors[`${name}_${i}`];
+    delete errors[`${name}_${i}`];
+    if (!failed(json)) return json;
+    why.push(`${new URL(url).host}: ${e ?? "failed"}`);
+  }
+  errors[name] = why.join(" | ").slice(0, 600);
+  return FAILED;
+};
+
+// Layer field names differ in case and spelling between hosts.
+const pick = (a: Record<string, unknown>, ...names: string[]) => {
+  const keys = Object.keys(a);
+  for (const n of names) {
+    const k = keys.find((x) => x.toLowerCase() === n.toLowerCase());
+    if (k && a[k] != null && a[k] !== "") return a[k];
+  }
+  return undefined;
+};
+
+const pointQuery = (lat: number, lng: number, bufferMeters = 0) => {
+  const p = new URLSearchParams({
     f: "json",
     geometry: `${lng},${lat}`,
     geometryType: "esriGeometryPoint",
@@ -95,118 +121,108 @@ async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
     returnGeometry: "false",
   });
   if (bufferMeters > 0) {
-    params.set("distance", String(bufferMeters));
-    params.set("units", "esriSRUnit_Meter");
+    p.set("distance", String(bufferMeters));
+    p.set("units", "esriSRUnit_Meter");
   }
-  async function hit(url: string) {
-    try {
-      const json = await getJson(url.includes("SRA") ? "fire_sra" : "fire_lra", `${url}?${params}`);
-      if (failed(json)) return FAILED;
-      const feats = (json?.features as { attributes: Record<string, unknown> }[] | undefined) ?? [];
-      if (!feats.length) return null;
-      // Pick the most severe class if multiple polygons matched (buffer query).
-      const rank = (a: Record<string, unknown>) => {
-        const d = String(
-          a.FHSZ_Description ?? a.HAZ_CLASS ?? a.FHSZ ?? a.HAZ_CODE ?? "",
-        ).toUpperCase();
-        if (/VERY HIGH|^3$/.test(d)) return 3;
-        if (/^HIGH$|^2$/.test(d)) return 2;
-        if (/MODERATE|^1$|MOD/.test(d)) return 1;
-        return 0;
-      };
-      return feats
-        .map((f: { attributes: Record<string, unknown> }) => f.attributes)
-        .sort((a: Record<string, unknown>, b: Record<string, unknown>) => rank(b) - rank(a))[0];
-    } catch (e) {
-      console.error("fhsz query failed", url, e);
-      return FAILED;
-    }
-  }
-  const SRA =
-    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZSRA_23_3/FeatureServer/0/query";
-  const LRA =
-    "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZLRA0711_ByPhase/FeatureServer/0/query";
-  const [sraR, lraR] = await Promise.all([hit(SRA), hit(LRA)]);
-  const sra = failed(sraR) ? null : sraR;
-  const lra = failed(lraR) ? null : lraR;
-  const f = sra ?? lra;
+  return p.toString();
+};
+
+const featuresOf = (json: Record<string, unknown>) =>
+  ((json?.features as { attributes: Record<string, unknown> }[] | undefined) ?? []).map((f) => f.attributes ?? {});
+
+// CAL FIRE severity class, wherever the layer keeps it.
+const fireClass = (a: Record<string, unknown>): 0 | 1 | 2 | 3 => {
+  const d = String(pick(a, "FHSZ_Description", "HAZ_CLASS", "FHSZ_Desc", "FHSZ", "HAZ_CODE", "Haz_Class") ?? "")
+    .trim()
+    .toUpperCase();
+  if (/VERY HIGH|^3$/.test(d)) return 3;
+  if (/^HIGH$|^2$/.test(d)) return 2;
+  if (/MODERATE|^1$|^MOD/.test(d)) return 1;
+  return 0;
+};
+const CLASS_NAME = { 3: "Very High", 2: "High", 1: "Moderate" } as const;
+
+// State Responsibility Area (CAL FIRE's own layer) and the 2025 local maps.
+const FIRE_SRA = [
+  "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZSRA_23_3/FeatureServer/0/query",
+];
+const FIRE_LRA = [
+  "https://services3.arcgis.com/i2dkYWmb4wHvYPda/ArcGIS/rest/services/FHSZ_2025/FeatureServer/0/query",
+  "https://socogis.sonomacounty.ca.gov/map/rest/services/CALFIREPublic/Local_Responsibility_Area_Fire_Hazard_Severity_Zones/FeatureServer/0/query",
+  "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZLRA0711_ByPhase/FeatureServer/0/query",
+];
+
+async function queryFireHazard(lat: number, lng: number, bufferMeters = 0) {
+  const q = pointQuery(lat, lng, bufferMeters);
+  const read = async (name: string, urls: string[]) => {
+    const json = await firstAnswer(name, urls.map((u) => `${u}?${q}`));
+    if (failed(json)) return FAILED;
+    // Pick the most severe class if several polygons matched (buffer query).
+    const feats = featuresOf(json).sort((a, b) => fireClass(b) - fireClass(a));
+    return feats[0] ?? null;
+  };
+  const [sra, lra] = await Promise.all([read("fire_sra", FIRE_SRA), read("fire_lra", FIRE_LRA)]);
+  const f = (!failed(sra) && sra) || (!failed(lra) && lra) || null;
   // Either map failing means we can't say "not in a fire zone".
-  if (!f) return failed(sraR) || failed(lraR) ? FAILED : null;
-  const desc = String(
-    f.FHSZ_Description ?? f.HAZ_CLASS ?? f.FHSZ ?? f.HAZ_CODE ?? "",
-  ).toUpperCase();
-  let hazardClass: string | null = null;
-  if (/VERY HIGH|^3$/.test(desc)) hazardClass = "Very High";
-  else if (/^HIGH$|^2$/.test(desc)) hazardClass = "High";
-  else if (/MODERATE|^1$|MOD/.test(desc)) hazardClass = "Moderate";
+  if (!f) return failed(sra) || failed(lra) ? FAILED : null;
+  const c = fireClass(f);
   return {
-    zone: sra ? "State Responsibility Area" : "Local Responsibility Area",
-    hazardClass,
+    zone: !failed(sra) && sra ? "State Responsibility Area" : "Local Responsibility Area",
+    hazardClass: c ? CLASS_NAME[c] : null,
     raw: f,
     approximate: bufferMeters > 0,
   };
 }
 
-// FEMA NFHL — flood hazard zones layer 28.
+// FEMA National Flood Hazard Layer, flood hazard zones.
+const FLOOD = [
+  "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query",
+  "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query",
+  "https://maps.nccs.nasa.gov/mapping/rest/services/hifld_open/national_flood_hazard/MapServer/5/query",
+];
+
 async function queryFlood(lat: number, lng: number) {
-  const url =
-    "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?" +
-    new URLSearchParams({
-      f: "json",
-      geometry: `${lng},${lat}`,
-      geometryType: "esriGeometryPoint",
-      inSR: "4326",
-      spatialRel: "esriSpatialRelIntersects",
-      outFields: "FLD_ZONE,ZONE_SUBTY,SFHA_TF",
-      returnGeometry: "false",
-    });
-  try {
-    const json = await getJson("flood", url);
-    if (failed(json)) return FAILED;
-    const f = (json?.features as { attributes: Record<string, unknown> }[] | undefined)?.[0]?.attributes as Record<string, any> | undefined;
-    if (!f) return null;
-    const zone = f.FLD_ZONE ?? null;
-    const sfha = f.SFHA_TF === "T" || f.SFHA_TF === true;
-    let description: string | null = null;
-    if (zone === "X") description = "Minimal flood hazard area.";
-    else if (zone && /^A/.test(zone)) description = "1% annual chance flood (100-year floodplain).";
-    else if (zone && /^V/.test(zone)) description = "Coastal high-hazard area with wave action.";
-    else if (zone) description = `FEMA flood zone ${zone}.`;
-    return { zone, description, sfha, raw: f };
-  } catch (e) {
-    console.error("flood query failed", e);
-    return FAILED;
-  }
+  const q = pointQuery(lat, lng);
+  const json = await firstAnswer("flood", FLOOD.map((u) => `${u}?${q}`));
+  if (failed(json)) return FAILED;
+  const f = featuresOf(json)[0];
+  if (!f) return null;
+  const zone = (pick(f, "FLD_ZONE") as string | undefined) ?? null;
+  const sf = pick(f, "SFHA_TF");
+  const sfha = sf === "T" || sf === true;
+  let description: string | null = null;
+  if (zone === "X") description = "Minimal flood hazard area.";
+  else if (zone && /^A/.test(zone)) description = "1% annual chance flood (100-year floodplain).";
+  else if (zone && /^V/.test(zone)) description = "Coastal high-hazard area with wave action.";
+  else if (zone) description = `FEMA flood zone ${zone}.`;
+  return { zone, description, sfha, raw: f };
 }
 
-// CGS Seismic Hazard Zones — liquefaction & landslide overlays.
+// California Geological Survey seismic hazard zones: liquefaction and
+// earthquake-induced landslide are separate layers, so both are asked.
+const LIQUEFACTION = [
+  "https://services2.arcgis.com/zr3KAIbsRSUyARHG/ArcGIS/rest/services/CGS_Liquefaction_Zones/FeatureServer/0/query",
+  "https://services.gis.ca.gov/arcgis/rest/services/GeoscientificInformation/Liquefaction/MapServer/0/query",
+];
+const LANDSLIDE = [
+  "https://services2.arcgis.com/zr3KAIbsRSUyARHG/ArcGIS/rest/services/CGS_Landslide_Zones/FeatureServer/0/query",
+];
+
 async function querySeismic(lat: number, lng: number) {
-  const url =
-    "https://gis.conservation.ca.gov/server/rest/services/CGS/MS48_SeismicHazardZones/MapServer/0/query?" +
-    new URLSearchParams({
-      f: "json",
-      geometry: `${lng},${lat}`,
-      geometryType: "esriGeometryPoint",
-      inSR: "4326",
-      spatialRel: "esriSpatialRelIntersects",
-      outFields: "*",
-      returnGeometry: "false",
-    });
-  try {
-    const json = await getJson("seismic", url);
-    if (failed(json)) return FAILED;
-    const f = (json?.features as { attributes: Record<string, unknown> }[] | undefined)?.[0]?.attributes as Record<string, any> | undefined;
-    if (!f) return null;
-    const type = f.ZONE ?? f.HAZARD ?? f.Hazard ?? null;
-    const typeStr = String(type ?? "").toLowerCase();
-    let kind: string | null = null;
-    if (typeStr.includes("liquefaction")) kind = "Liquefaction";
-    else if (typeStr.includes("landslide")) kind = "Landslide";
-    return { zone: type ? String(type) : "Mapped seismic hazard zone", type: kind, raw: f };
-  } catch (e) {
-    console.error("seismic query failed", e);
-    return FAILED;
+  const q = pointQuery(lat, lng);
+  const [liq, slide] = await Promise.all([
+    firstAnswer("seismic_liquefaction", LIQUEFACTION.map((u) => `${u}?${q}`)),
+    firstAnswer("seismic_landslide", LANDSLIDE.map((u) => `${u}?${q}`)),
+  ]);
+  const liqHit = failed(liq) ? undefined : featuresOf(liq)[0];
+  const slideHit = failed(slide) ? undefined : featuresOf(slide)[0];
+  if (liqHit || slideHit) {
+    const kinds = [liqHit && "Liquefaction", slideHit && "Landslide"].filter(Boolean) as string[];
+    return { zone: `${kinds.join(" and ")} zone of required investigation`, type: kinds.join(" and "), raw: liqHit ?? slideHit };
   }
+  // Nothing found counts only if both layers answered.
+  if (failed(liq) || failed(slide)) return FAILED;
+  return null;
 }
 
 Deno.serve(async (req) => {

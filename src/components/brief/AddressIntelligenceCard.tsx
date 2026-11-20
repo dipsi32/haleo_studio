@@ -212,10 +212,14 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
     items.push({
       icon: Mountain,
       title: `Mapped seismic hazard: ${signal.seismic_hazard_type}`,
-      body:
-        signal.seismic_hazard_type === "Liquefaction"
-          ? "Your parcel sits in a state-mapped liquefaction zone. Structural additions and foundation work usually need a soils report — get this on the table early."
-          : "Your parcel sits in a state-mapped landslide hazard zone. Structural and grading work usually need a geotechnical review. Worth raising up front.",
+      body: [
+        /liquefaction/i.test(signal.seismic_hazard_type) &&
+          "Your parcel sits in a state-mapped liquefaction zone. Structural additions and foundation work usually need a soils report — get this on the table early.",
+        /landslide/i.test(signal.seismic_hazard_type) &&
+          "Your parcel sits in a state-mapped landslide hazard zone. Structural and grading work usually need a geotechnical review. Worth raising up front.",
+      ]
+        .filter(Boolean)
+        .join(" ") || "Your parcel sits in a state-mapped seismic hazard zone. Ask about a soils or geotechnical review early.",
       chip: "CA Geological Survey",
       tone: "warn",
     });
