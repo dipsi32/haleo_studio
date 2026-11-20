@@ -89,6 +89,7 @@ export type AnalyticsEvent =
   | "password_reset_opened"
   | "password_reset_completed"
   | "shortlist_started"
+  | "shortlist_project_after"
   | "shortlist_extracted"
   | "shortlist_checked"
   | "shortlist_match_rejected"

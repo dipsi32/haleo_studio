@@ -9,7 +9,7 @@ import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
-import { HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
+import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
 
 type Signal = {
   address_key: string;
@@ -70,6 +70,9 @@ type Props = {
   /** Shown when both lookups finished with nothing to say. Default: nothing. */
   emptyFallback?: React.ReactNode;
 };
+
+/** FEMA zones that mean minimal or moderate flood risk (X, B, C). Anything else is never shown as clear. */
+const floodMinimal = (zone: string | null | undefined) => !!zone && /^(X|B|C)\b/i.test(zone.trim());
 
 export default function AddressIntelligenceCard({ address, loadingFallback = null, emptyFallback = null }: Props) {
   const [done, setDone] = useState({ risk: false, parcel: false });
@@ -205,6 +208,18 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
       chip: "FEMA NFHL",
       tone: "warn",
     });
+  } else if (signal?.raw_response?.checked?.flood && signal.flood_zone && !floodMinimal(signal.flood_zone)) {
+    // Zone D and friends: FEMA hasn't rated it. Not a hazard, and not "clear" either.
+    items.push({
+      icon: Waves,
+      title: signal.flood_zone === "D" ? "FEMA hasn't rated flood risk here" : `FEMA flood zone ${signal.flood_zone}`,
+      body:
+        signal.flood_zone === "D"
+          ? "Your lot is in FEMA zone D: possible flood risk that FEMA hasn't studied. It isn't a flood zone, but it isn't cleared either. Worth asking about drainage for any grading or foundation work."
+          : signal.flood_zone_description ?? "Ask your contractor how this flood zone affects the work.",
+      chip: "FEMA NFHL",
+      tone: "neutral",
+    });
   }
 
   // Seismic
@@ -277,7 +292,7 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
           label: "Not in a CAL FIRE hazard zone",
           means: "The state's fire-rated rules for siding, roofing and vents shouldn't apply to your exterior work.",
         },
-        ran.flood && !signal?.in_special_flood_hazard_area && {
+        ran.flood && !signal?.in_special_flood_hazard_area && floodMinimal(signal?.flood_zone) && {
           icon: Waves,
           label: "Outside FEMA flood zones",
           means: "No flood elevation or venting rules, and federally backed lenders don't require flood insurance here.",
@@ -397,11 +412,28 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
         {/* Say what we couldn't check, so "clear" never implies more than it means. */}
         {!hasParcel && (
           <div className="mt-3 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-            <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <p className="text-[13px] leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">Permit history not found for this address.</span> We
-              can't tell whether past work was signed off by the city. Ask any contractor you meet to check for open or
-              expired permits: unfinished ones get passed to the next job and show up at resale.
+              {parcel?.lookup_succeeded ? (
+                <>
+                  <span className="font-medium text-foreground">No current permits on file for this address.</span> San
+                  Jose's open records show no active, in-progress or expired permits here, so nothing unfinished turns
+                  up there. Permits the city finished in past years sit in its archive:{" "}
+                  <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
+                    see the full history on sjpermits.org
+                  </a>
+                  .
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">The city's permit records didn't answer just now.</span>{" "}
+                  Try again in a minute, or{" "}
+                  <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
+                    look the address up on sjpermits.org
+                  </a>
+                  .
+                </>
+              )}
             </p>
           </div>
         )}
