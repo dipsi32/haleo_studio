@@ -15,6 +15,7 @@ import {
   isLicenseOnlyName,
   isRealLicense,
   licensePeople,
+  likeYoursCount,
   normalizeName,
   personSearches,
   tidyBusinessName,
@@ -105,10 +106,6 @@ export const findByLicense = async (license: string): Promise<{ contractor: Cont
   }
 };
 
-const matchesProject = (p: Permit, keywords: string[]) => {
-  const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
-  return keywords.some((k) => hay.includes(k.toLowerCase()));
-};
 
 export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<CheckedCandidate> => {
   const read = c.license_number ? await readLicenseRecord(c.license_number) : null;
@@ -163,7 +160,7 @@ export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<
     permits,
     license,
     score: hasAnything ? computeTrustScore(subject, permits, license, keywords) : null,
-    likeYours: permits.filter((p) => matchesProject(p, keywords)).length,
+    likeYours: likeYoursCount(permits, keywords),
   };
 };
 

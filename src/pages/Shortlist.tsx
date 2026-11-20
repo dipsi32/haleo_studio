@@ -56,6 +56,7 @@ import {
   saveShortlist,
   type ShortlistProject,
   smsHref,
+  likeYoursCount,
 } from "@/lib/shortlist";
 import { useShortlistCheck } from "@/lib/useShortlistCheck";
 import { jobFit } from "@/lib/jobFit";
@@ -201,9 +202,12 @@ const Shortlist = () => {
   const shown: CheckedCandidate[] = useMemo(
     () =>
       results.map((r) =>
-        rejected.has(r.candidate.id) ? { ...r, contractor: null, permits: [], likeYours: 0, score: null } : r,
+        rejected.has(r.candidate.id)
+          ? { ...r, contractor: null, permits: [], likeYours: 0, score: null }
+          : // Read against the job as it is now: picking a project after the check re-reads every card.
+            { ...r, likeYours: likeYoursCount(r.permits, opt.keywords) },
       ),
-    [results, rejected],
+    [results, rejected, opt],
   );
 
   // ───── Step 1 → 2: find the contractors ─────
@@ -667,9 +671,30 @@ const Shortlist = () => {
                       : shown.length === 1
                         ? "Read against your job, from public records. Open each answer to see the facts behind it."
                         : top
-                          ? `Out of ${shown.length} names, ${second ? "these line up" : "this one lines up"} best with your job. ${fitLine(top, opt?.word ?? "similar")}.`
+                          ? `Out of ${shown.length} names, ${second ? "these line up" : "this one lines up"} best with your job. ${fitLine(top, project ? opt.word : null)}.`
                           : "Not much on public record for these names yet. A license number is the fastest way to know more."}
                   </p>
+
+                  {!running && !project && (
+                    <div className="mt-6 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+                      <span className="text-muted-foreground">What's the job? We'll read each record against it.</span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {PROJECT_OPTIONS.filter((p) => p.id !== "other").map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setProject(p.id);
+                              track("shortlist_project_after", { project: p.id });
+                            }}
+                            className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[13.5px] transition-smooth hover:bg-secondary"
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {!running && !/^\d{5}$/.test(zip) && (
                     <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm">
@@ -694,7 +719,7 @@ const Shortlist = () => {
                         key={r.candidate.id}
                         rank={i + 1}
                         r={r}
-                        projectWord={opt?.word ?? "similar"}
+                        projectWord={project ? opt.word : null}
                         data={fitData}
                         selected={selected.has(r.candidate.id)}
                         onToggle={() => toggle(r.candidate.id)}
@@ -787,7 +812,7 @@ const ResultCard = ({
 }: {
   rank: number;
   r: CheckedCandidate;
-  projectWord: string;
+  projectWord: string | null;
   data: IntakeData;
   selected: boolean;
   onToggle: () => void;
