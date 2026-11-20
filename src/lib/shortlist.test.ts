@@ -6,16 +6,20 @@ import {
   type CheckedCandidate,
   fitLine,
   fromExtraction,
+  isLicenseOnlyName,
   isRealLicense,
+  licensePeople,
   licenseState,
   manualCandidate,
   mergeCandidates,
   normalizeName,
   phoneDigits,
+  personSearches,
   pickPermitMatch,
   rankShortlist,
   redFlag,
   smsHref,
+  tidyBusinessName,
 } from "./shortlist";
 
 const contractor = (over: Partial<Contractor>): Contractor => ({
@@ -210,5 +214,29 @@ describe("name orders", () => {
     const { nameOrders } = await import("@/lib/shortlist");
     expect(nameOrders("Mehdi Bakhtiary")).toEqual(["mehdi bakhtiary", "bakhtiary mehdi"]);
     expect(nameOrders("Pacific Remodeling Inc")).toEqual(["pacific remodeling"]);
+  });
+});
+
+describe("who holds the license", () => {
+  const page =
+    "| Bond of Qualifying Individual | The qualifying individual MEHDI BAKHTIARY KHANEGHAH certified that he/she owns 10 percent or more | ## Miscellaneous Information | - 02/02/2026 - LICENSE REISSUED TO ANOTHER ENTITY |";
+  it("reads the qualifying individual off the license page", () => {
+    expect(licensePeople(page)).toEqual(["MEHDI BAKHTIARY KHANEGHAH"]);
+    expect(licensePeople("This license is current and active.")).toEqual([]);
+    expect(licensePeople(null)).toEqual([]);
+  });
+  it("searches a full name as first name plus each family name", () => {
+    expect(personSearches("MEHDI BAKHTIARY KHANEGHAH")).toEqual(["mehdi bakhtiary", "mehdi khaneghah"]);
+    expect(personSearches("Prince")).toEqual([]);
+  });
+  it("finds the person's permit record under the flipped name", () => {
+    const row = { id: "m", company: "BAKHTIARY, MEHDI", name: "BAKHTIARY, MEHDI", permit_count: 6 } as Contractor;
+    expect(pickPermitMatch(personSearches("MEHDI BAKHTIARY KHANEGHAH")[0], [row])?.id).toBe("m");
+  });
+  it("tidies a business name without shouting", () => {
+    expect(tidyBusinessName("US CREATIVE BUILDER CORPORATION")).toBe("US Creative Builder Corporation");
+    expect(tidyBusinessName("BAY BUILDERS & REMODELING")).toBe("Bay Builders & Remodeling");
+    expect(isLicenseOnlyName("License #1025687")).toBe(true);
+    expect(isLicenseOnlyName("Acme")).toBe(false);
   });
 });

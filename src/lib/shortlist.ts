@@ -415,3 +415,45 @@ export const clearShortlist = () => {
     /* ignore */
   }
 };
+
+// ───── Who holds the license ─────
+
+/**
+ * The person the license board names as the license's qualifying
+ * individual. A license reissued to a
+ * corporation keeps the person's older San Jose permits under the person's
+ * name ("BAKHTIARY, MEHDI"), so these are searched too.
+ */
+export const licensePeople = (rendered: string | null | undefined): string[] => {
+  if (!rendered) return [];
+  const text = rendered.replace(/<br\s*\/?>/gi, " ").replace(/[*_|#]/g, " ").replace(/\s+/g, " ");
+  const found = new Set<string>();
+  const NAME = "([A-Z][A-Z'.-]+(?: [A-Z][A-Z'.-]+){1,3})";
+  for (const m of text.matchAll(new RegExp(`qualifying individual ${NAME} certified`, "gi"))) {
+    if (m[1] === m[1].toUpperCase()) found.add(m[1].trim());
+  }
+  return [...found].slice(0, 3);
+};
+
+/**
+ * Two-word searches for a person's full name, first name first:
+ * "MEHDI BAKHTIARY KHANEGHAH" → ["mehdi bakhtiary", "mehdi khaneghah"].
+ */
+export const personSearches = (full: string): string[] => {
+  const w = normalizeName(full).split(" ").filter(Boolean);
+  if (w.length < 2) return [];
+  return [...new Set(w.slice(1).map((last) => `${w[0]} ${last}`))].slice(0, 2);
+};
+
+const KEEP_CAPS = /^(US|USA|LLC|LLP|LP|DBA|HVAC|II|III|IV)$/;
+
+/** "US CREATIVE BUILDER CORPORATION" → "US Creative Builder Corporation". */
+export const tidyBusinessName = (s: string): string =>
+  s
+    .trim()
+    .split(/\s+/)
+    .map((w) => (KEEP_CAPS.test(w.replace(/[^A-Z]/gi, "").toUpperCase()) && w === w.toUpperCase() ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .join(" ");
+
+/** A candidate we only know by license number ("License #1025687"). */
+export const isLicenseOnlyName = (name: string) => /^License #\d+$/.test(name.trim());
