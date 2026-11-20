@@ -12,8 +12,12 @@ import { toLicenseStatus } from "@/lib/useContractors";
 import {
   type Candidate,
   type CheckedCandidate,
+  isLicenseOnlyName,
   isRealLicense,
+  licensePeople,
   normalizeName,
+  personSearches,
+  tidyBusinessName,
   nameOrders,
   pickPermitMatch,
   rankShortlist,
@@ -23,16 +27,22 @@ import {
 const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
   Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 
-export const verifyLicense = async (num: string): Promise<LicenseStatus | null> => {
+/** The license, plus the people the board names on it (the qualifying individual). */
+export const readLicenseRecord = async (num: string): Promise<{ license: LicenseStatus; people: string[] } | null> => {
   try {
     const res = await withTimeout(supabase.functions.invoke("verify-cslb-license", { body: { license: num } }), 25_000);
     const d = res?.data;
     if (!d?.ok) return null;
-    return toLicenseStatus({ ...d, license_number: d.license_number ?? num });
+    const people = [d.licensee_name, ...licensePeople(d.raw_data?.rendered_excerpt)].filter(
+      (n): n is string => typeof n === "string" && n.trim().length > 0,
+    );
+    return { license: toLicenseStatus({ ...d, license_number: d.license_number ?? num }), people: [...new Set(people)] };
   } catch {
     return null;
   }
 };
+
+export const verifyLicense = async (num: string): Promise<LicenseStatus | null> => (await readLicenseRecord(num))?.license ?? null;
 
 /** Find this business in San Jose permit records, pulling fresh records for the name first. */
 export const findPermitRecord = async (name: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
@@ -101,7 +111,8 @@ const matchesProject = (p: Permit, keywords: string[]) => {
 };
 
 export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<CheckedCandidate> => {
-  let license = c.license_number ? await verifyLicense(c.license_number) : null;
+  const read = c.license_number ? await readLicenseRecord(c.license_number) : null;
+  let license = read?.license ?? null;
 
   // A license number: Haleo's own records first (a contractor imported with
   // it, or who claimed their profile with it), then the name.
@@ -110,6 +121,14 @@ export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<
   // Search permits under the licensed business name too, when CSLB gave us one.
   if (!record && license?.business_name && normalizeName(license.business_name) !== normalizeName(c.name)) {
     record = await findPermitRecord(license.business_name);
+  }
+  // A license reissued to a company keeps the person's older permits under
+  // the person's own name: search the qualifying individual the board names.
+  for (const person of read?.people ?? []) {
+    for (const term of personSearches(person)) {
+      if (record) break;
+      record = await findPermitRecord(term);
+    }
   }
 
   if (!license && record && isRealLicense(record.contractor.license_number)) {
@@ -135,8 +154,10 @@ export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<
     last_permit_date: null,
   };
   const hasAnything = !!record || !!license?.scrape_succeeded;
+  // Known only by number until now: call them what the license board does.
+  const named = isLicenseOnlyName(c.name) && license?.business_name ? { ...c, name: tidyBusinessName(license.business_name) } : c;
   return {
-    candidate: c,
+    candidate: named,
     status: "done",
     contractor: record?.contractor ?? null,
     permits,
