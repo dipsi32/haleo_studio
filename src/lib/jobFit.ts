@@ -67,7 +67,7 @@ export const jobFit = (
   permits: TrackPermit[],
   data: IntakeData,
   /** noRecord: we couldn't tie this name to any city record, so the permit answers are unknown, not "no". */
-  opts: { inspections?: Inspection[] | null; license?: LicenseStatus | null; now?: Date; noRecord?: boolean } = {},
+  opts: { inspections?: Inspection[] | null; license?: LicenseStatus | null; now?: Date; noRecord?: boolean; licenseNumber?: string | null } = {},
 ): JobFit => {
   const now = opts.now ?? new Date();
   const t = trackRecord(permits, data, opts.inspections ?? null, null);
@@ -141,7 +141,9 @@ export const jobFit = (
     expiring: "Active, but it expires within 90 days",
     inactive: "Not active on the state license board",
     discipline: "The state license board has a disciplinary record. Read it before you call.",
-    not_checked: "Not checked yet. Ask for their license number; it takes them seconds.",
+    not_checked: opts.licenseNumber
+      ? `License #${opts.licenseNumber}: the state license board didn't answer just now. Open it on CSLB to see its status.`
+      : "Not checked yet. Ask for their license number; it takes them seconds.",
   };
   rows.push({
     id: "license",
@@ -157,7 +159,12 @@ export const jobFit = (
       if (r.id === "license") continue;
       r.level = "not_checked";
       r.source = "Not checked";
-      r.fact = r.id === "done_it" ? "We couldn't tie this name to a San Jose permit record. A license number helps." : "Needs their permit record.";
+      r.fact =
+        r.id === "done_it"
+          ? opts.licenseNumber
+            ? "We couldn't find San Jose permits under this license yet."
+            : "We couldn't tie this name to a San Jose permit record. A license number helps."
+          : "Needs their permit record.";
     }
   }
 

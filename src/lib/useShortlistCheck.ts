@@ -70,6 +70,31 @@ export const findPermitRecord = async (name: string): Promise<{ contractor: Cont
   return { contractor: match, permits: (permits ?? []) as Permit[] };
 };
 
+/** A contractor already in Haleo's records under this license number, with their permits. */
+export const findByLicense = async (license: string): Promise<{ contractor: Contractor; permits: Permit[] } | null> => {
+  const num = license.replace(/\D/g, "");
+  if (!/^\d{5,8}$/.test(num)) return null;
+  try {
+    const { data: rows } = await supabase
+      .from("contractors")
+      .select("*")
+      .or(`license_number.eq.${num},claimed_license_number.eq.${num}`)
+      .order("permit_count", { ascending: false })
+      .limit(1);
+    const match = (rows ?? [])[0] as Contractor | undefined;
+    if (!match) return null;
+    const { data: permits } = await supabase
+      .from("contractor_permits")
+      .select("*")
+      .eq("contractor_id", match.id)
+      .order("issued_date", { ascending: false })
+      .limit(200);
+    return { contractor: match, permits: (permits ?? []) as Permit[] };
+  } catch {
+    return null;
+  }
+};
+
 const matchesProject = (p: Permit, keywords: string[]) => {
   const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
   return keywords.some((k) => hay.includes(k.toLowerCase()));
@@ -78,8 +103,11 @@ const matchesProject = (p: Permit, keywords: string[]) => {
 export const checkCandidate = async (c: Candidate, keywords: string[]): Promise<CheckedCandidate> => {
   let license = c.license_number ? await verifyLicense(c.license_number) : null;
 
+  // A license number: Haleo's own records first (a contractor imported with
+  // it, or who claimed their profile with it), then the name.
+  let record = c.license_number ? await findByLicense(c.license_number) : null;
+  if (!record) record = await findPermitRecord(c.name);
   // Search permits under the licensed business name too, when CSLB gave us one.
-  let record = await findPermitRecord(c.name);
   if (!record && license?.business_name && normalizeName(license.business_name) !== normalizeName(c.name)) {
     record = await findPermitRecord(license.business_name);
   }

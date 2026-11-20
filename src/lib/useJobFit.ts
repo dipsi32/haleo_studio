@@ -15,7 +15,11 @@ export const useJobFit = (
   license: LicenseStatus | null,
   withInspections = true,
   noRecord = false,
+  licenseNumber: string | null = null,
 ): JobFit => {
   const inspections = useInspections(contractorId, withInspections && permits.length > 0);
-  return useMemo(() => jobFit(permits, data, { inspections, license, noRecord }), [permits, data, inspections, license, noRecord]);
+  return useMemo(
+    () => jobFit(permits, data, { inspections, license, noRecord, licenseNumber }),
+    [permits, data, inspections, license, noRecord, licenseNumber],
+  );
 };
