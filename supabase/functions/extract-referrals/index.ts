@@ -6,7 +6,10 @@
 //
 // Input:  { text?: string, images?: { media_type: string, data: string }[] }
 //         (images are base64, already downscaled by the client)
-// Output: { ok: true, candidates: Candidate[] } | { ok: false, error }
+// Output: { ok: true, candidates: Candidate[], ask: Ask | null } | { ok: false, error }
+//   Each quote says who said it (a neighbor, or the contractor promoting
+//   themselves), and `ask` is the homeowner's own question: its project,
+//   ZIP and neighborhood, so they don't have to type them again.
 //
 // Nothing here is stored. The model only reads what the homeowner pasted.
 import { aiFetch } from "../_shared/ai.ts";
@@ -27,7 +30,14 @@ Rules:
 - Only contractors, tradespeople, designers or builders. Skip the person asking, skip platforms (Yelp, Angi, Nextdoor), skip big-box stores.
 - Copy phone numbers, emails, websites and CSLB license numbers exactly as written. Never invent or complete one.
 - For each contractor, quote what people said, verbatim and short (under 160 characters each), at most 4 quotes. Mark each quote positive, negative or mixed.
-- mention_count is how many separate people mentioned them.
+- mention_count is how many separate people mentioned them, the contractor included.
+- WHO SAID IT matters most. For every quote set speaker:
+  - "self": the contractor, their staff or their business account talking about their own business. Signs: first person about the work ("we do kitchens", "I can help", "DM me", "call us"), a business signature or phone in their own reply, the poster's name or profile matching the business, a promo-style reply to the question.
+  - "neighbor": someone else naming or recommending them ("we used Mike", "my neighbor had Oak & Stone").
+  - "unclear": you can't tell from what's shown. Prefer "unclear" over guessing "neighbor".
+- neighbor_count is how many distinct people OTHER than the contractor named them. A contractor replying with their own ad is neighbor_count 0 and self_promoted true.
+- self_promoted is true if the contractor posted their own details in the thread.
+- ask: the homeowner's original question, usually the first post in a Nextdoor, Reddit or Facebook thread. Copy its key sentence verbatim (under 200 characters). project is one of kitchen, bathroom, addition (ADU, addition, garage conversion), full-home, other, or null if the question doesn't say. zip only if a 5-digit ZIP is written. neighborhood as written (Nextdoor shows it under the poster's name, e.g. "Willow Glen"), or null. If no question is visible, ask is null.
 - trade is your short read of what they do ("general contractor", "plumber", "kitchen remodel"), or null if unclear.
 - If nothing in the input names a contractor, return an empty list.`;
 
@@ -52,6 +62,8 @@ const EXTRACT_TOOL = {
               website: { type: ["string", "null"] },
               license_number: { type: ["string", "null"], description: "CSLB license number, digits only, only if written" },
               mention_count: { type: "integer", minimum: 1 },
+              neighbor_count: { type: "integer", minimum: 0, description: "Distinct people other than the contractor who named them" },
+              self_promoted: { type: "boolean", description: "The contractor posted their own details in the thread" },
               quotes: {
                 type: "array",
                 items: {
@@ -59,16 +71,27 @@ const EXTRACT_TOOL = {
                   properties: {
                     text: { type: "string" },
                     sentiment: { type: "string", enum: ["positive", "negative", "mixed"] },
+                    speaker: { type: "string", enum: ["neighbor", "self", "unclear"] },
                   },
-                  required: ["text", "sentiment"],
+                  required: ["text", "sentiment", "speaker"],
                 },
               },
             },
-            required: ["name", "mention_count", "quotes"],
+            required: ["name", "mention_count", "neighbor_count", "self_promoted", "quotes"],
+          },
+        },
+        ask: {
+          type: ["object", "null"],
+          description: "The homeowner's original question, if visible",
+          properties: {
+            text: { type: ["string", "null"] },
+            project: { type: ["string", "null"], enum: ["kitchen", "bathroom", "addition", "full-home", "other", null] },
+            zip: { type: ["string", "null"] },
+            neighborhood: { type: ["string", "null"] },
           },
         },
       },
-      required: ["candidates"],
+      required: ["candidates", "ask"],
     },
   },
 };
@@ -129,7 +152,7 @@ Deno.serve(async (req) => {
     const args = out?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     const parsed = typeof args === "string" ? JSON.parse(args) : null;
     const candidates = Array.isArray(parsed?.candidates) ? parsed.candidates : [];
-    return json({ ok: true, candidates });
+    return json({ ok: true, candidates, ask: parsed?.ask ?? null });
   } catch (e) {
     console.error("extract-referrals failed", e);
     return json({ ok: false, error: "Couldn't read that. Try again." }, 500);

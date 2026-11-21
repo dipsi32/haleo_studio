@@ -86,17 +86,17 @@ const FRAMES: Record<GatewayPath, Frame[]> = {
       ),
     },
     {
-      caption: "We pull out every name your neighbors mentioned",
+      caption: "We pull out every name, and who shared it",
       body: (
         <div className="space-y-2.5">
           <Label>6 contractors found</Label>
           {[
-            ["Oak & Stone Builders", "2 neighbors vouched"],
-            ["Brightline Remodeling", "1 mention, with a phone"],
-            ["Casa Verde Construction", "1 mention"],
-            ["Summit Home Co", "1 mention"],
-            ["Ridgeline Builders", "1 mention"],
-            ["Bay Craft Homes", "1 mention"],
+            ["Oak & Stone Builders", "Named by 2 neighbors"],
+            ["Brightline Remodeling", "Named by 1 neighbor"],
+            ["Casa Verde Construction", "Posted their own ad"],
+            ["Summit Home Co", "Named by 1 neighbor"],
+            ["Ridgeline Builders", "Posted their own ad"],
+            ["Bay Craft Homes", "Named by 1 neighbor"],
           ].map(([n, m], i) => (
             <motion.div key={n} {...fade(i)} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
               <span className="text-[13px] font-medium">{n}</span>

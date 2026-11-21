@@ -48,7 +48,11 @@ import {
   mailtoHref,
   manualCandidate,
   mergeCandidates,
+  neighborCount,
   neighborRead,
+  fromAsk,
+  sharedBy,
+  type ThreadAsk,
   PROJECT_OPTIONS,
   projectFromRoom,
   projectOption,
@@ -166,6 +170,10 @@ const Shortlist = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const [needInput, setNeedInput] = useState(false);
+  const [needZip, setNeedZip] = useState(false);
+  const zipRef = useRef<HTMLInputElement>(null);
+  // Their own question from the top of the thread: the project and ZIP come from it.
+  const [ask, setAsk] = useState<ThreadAsk | null>(null);
 
   const { results: liveResults, running, run, reset } = useShortlistCheck();
   const [restored, setRestored] = useState<CheckedCandidate[]>(saved?.results ?? []);
@@ -242,6 +250,13 @@ const Shortlist = () => {
       body: { text: t.trim() || undefined, images: imgs.map(({ media_type, data }) => ({ media_type, data })) },
     });
     if (error || !data?.ok) throw new Error(data?.error ?? "We couldn't read that.");
+    const a = fromAsk(data.ask);
+    if (a) {
+      setAsk(a);
+      if (a.project) setProject((p) => p ?? a.project);
+      if (a.zip) setZip((z) => (/^\d{5}$/.test(z) ? z : (a.zip as string)));
+      track("shortlist_ask_read", { project: a.project ?? "none", zip: !!a.zip, neighborhood: !!a.neighborhood });
+    }
     return fromExtraction(data.candidates, imgs.length && !t.trim() ? "screenshot" : "pasted");
   };
 
@@ -292,6 +307,12 @@ const Shortlist = () => {
     if (!hasInput) {
       setNeedInput(true);
       textRef.current?.focus();
+      return;
+    }
+    // "Near you" needs a ZIP: never skipped.
+    if (!/^\d{5}$/.test(zip)) {
+      setNeedZip(true);
+      zipRef.current?.focus();
       return;
     }
     const typed = manualName.trim() ? [manualCandidate({ name: manualName, phone: manualPhone, license_number: manualLicense })] : [];
@@ -398,14 +419,15 @@ const Shortlist = () => {
   };
 
   // Best fit first: red flags last, then how their record lines up with this
-  // job (the same five answers on each card), then neighbors who vouched.
+  // job (the same five answers on each card), then how many neighbors named
+  // them. A contractor's own post never counts as a neighbor's.
   // Order holds still while records are still coming in.
   const ranked: CheckedCandidate[] = useMemo(() => {
     if (running) return shown;
     const key = (r: CheckedCandidate) =>
       (redFlag(r) ? -1e6 : 0) +
       jobFit(r.permits, fitData, { license: r.license, noRecord: r.status === "done" && !r.contractor }).rank * 10 +
-      Math.min(neighborRead(r.candidate).positive, 9);
+      Math.min(neighborCount(r.candidate), 9);
     return [...shown].sort((a, b) => key(b) - key(a));
   }, [shown, running, fitData]);
   // "Strongest match" is only ever said of someone with a record we could read.
@@ -540,19 +562,25 @@ const Shortlist = () => {
                   ))}
                 </div>
                 <label className="mt-5 block text-sm font-medium" htmlFor="shortlist-zip">
-                  Your ZIP <span className="font-normal text-muted-foreground">Optional</span>
+                  Your ZIP
                 </label>
                 <p className="mt-1 text-[13px] text-muted-foreground">So we can show who has worked near you.</p>
                 <Input
+                  ref={zipRef}
                   id="shortlist-zip"
                   inputMode="numeric"
                   autoComplete="postal-code"
                   maxLength={5}
                   value={zip}
-                  onChange={(e) => setZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  onChange={(e) => {
+                    setZip(e.target.value.replace(/\D/g, "").slice(0, 5));
+                    setNeedZip(false);
+                  }}
                   placeholder="95125"
-                  className="mt-2 w-32 text-[15px]"
+                  aria-invalid={needZip}
+                  className={`mt-2 w-32 text-[15px] ${needZip ? "border-accent" : ""}`}
                 />
+                {needZip && <p className="mt-2 text-[13px] text-accent">Add your 5-digit ZIP so we can see who works near you.</p>}
               </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -628,9 +656,9 @@ const Shortlist = () => {
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                    {c.mention_count > 0 && (c.mention_count > 1 || c.quotes.length > 0) && (
+                    {sharedBy(c) && (
                       <p className="mt-2 text-[13px] text-muted-foreground">
-                        Mentioned by {c.mention_count} {c.mention_count === 1 ? "person" : "people"}
+                        {sharedBy(c)}
                         {c.trade ? ` · ${c.trade}` : ""}
                       </p>
                     )}
@@ -674,6 +702,22 @@ const Shortlist = () => {
                           ? `Out of ${shown.length} names, ${second ? "these line up" : "this one lines up"} best with your job. ${fitLine(top, project ? opt.word : null)}.`
                           : "Not much on public record for these names yet. A license number is the fastest way to know more."}
                   </p>
+
+                  {ask?.text && (
+                    <div className="mt-6 rounded-2xl border border-border bg-card px-4 py-3 text-[14px] shadow-soft">
+                      <p className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
+                        From your post
+                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Your words</span>
+                        {ask.neighborhood && <span>· {ask.neighborhood}</span>}
+                      </p>
+                      <p className="mt-1 italic">“{ask.text}”</p>
+                      {ask.project && project === ask.project && (
+                        <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                          We read each record against a {opt.word} job, from your post.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {!running && !project && (
                     <div className="mt-6 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm">
@@ -888,37 +932,54 @@ const ResultCard = ({
           </a>
         </p>
 
-        {/* Neighbors */}
-        {c.quotes.length > 0 && (
-          <div className="flex gap-3">
-            <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0">
-              <dt className="font-medium">
-                What neighbors said
-                <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Their words</span>
-              </dt>
-              <dd className="mt-1 space-y-1.5">
-                {c.quotes.slice(0, 3).map((q) => (
-                  <p key={q.text} className="flex gap-2 text-muted-foreground">
-                    <span
-                      aria-label={q.sentiment}
-                      className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${
-                        q.sentiment === "positive" ? "bg-sage" : q.sentiment === "negative" ? "bg-destructive" : "bg-amber-400"
-                      }`}
-                    />
-                    <span className="italic">“{q.text}”</span>
-                  </p>
-                ))}
-                {c.mention_count > 1 && (
-                  <p className="text-[13px] text-muted-foreground">
-                    {c.mention_count} people mentioned them
-                    {neighbors.negative > 0 ? `, ${neighbors.negative} with a concern` : ""}.
-                  </p>
-                )}
-              </dd>
+        {/* Who said what: a neighbor's word and a contractor's own post are never mixed */}
+        {[
+          { key: "neighbor", title: "What neighbors said", badge: "Their words", quotes: c.quotes.filter((q) => q.speaker === "neighbor") },
+          { key: "unclear", title: "Said in the thread", badge: "Their words", quotes: c.quotes.filter((q) => !q.speaker || q.speaker === "unclear") },
+          { key: "self", title: "What they posted about themselves", badge: "Their own post", quotes: c.quotes.filter((q) => q.speaker === "self") },
+        ]
+          .filter((g) => g.quotes.length > 0)
+          .map((g) => (
+            <div key={g.key} className="flex gap-3">
+              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <dt className="font-medium">
+                  {g.title}
+                  <span
+                    className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      g.key === "self" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {g.badge}
+                  </span>
+                </dt>
+                <dd className="mt-1 space-y-1.5">
+                  {g.quotes.slice(0, 3).map((q) => (
+                    <p key={q.text} className="flex gap-2 text-muted-foreground">
+                      {g.key !== "self" && (
+                        <span
+                          aria-label={q.sentiment}
+                          className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${
+                            q.sentiment === "positive" ? "bg-sage" : q.sentiment === "negative" ? "bg-destructive" : "bg-amber-400"
+                          }`}
+                        />
+                      )}
+                      <span className="italic">“{q.text}”</span>
+                    </p>
+                  ))}
+                  {g.key === "neighbor" && neighborCount(c) > 1 && (
+                    <p className="text-[13px] text-muted-foreground">
+                      {neighborCount(c)} neighbors named them
+                      {neighbors.negative > 0 ? `, ${neighbors.negative} with a concern` : ""}.
+                    </p>
+                  )}
+                  {g.key === "self" && (
+                    <p className="text-[13px] text-muted-foreground">Their own ad, not a recommendation. The record above is what to weigh.</p>
+                  )}
+                </dd>
+              </div>
             </div>
-          </div>
-        )}
+          ))}
 
         {(c.phone || c.email) && (
           <p className="pl-7 text-[13px] text-muted-foreground">

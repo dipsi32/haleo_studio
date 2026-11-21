@@ -5,12 +5,15 @@ import {
   cleanLicense,
   type CheckedCandidate,
   fitLine,
+  fromAsk,
   fromExtraction,
   isLicenseOnlyName,
   isRealLicense,
   licensePeople,
   licenseState,
   manualCandidate,
+  neighborCount,
+  neighborRead,
   mergeCandidates,
   normalizeName,
   phoneDigits,
@@ -18,6 +21,7 @@ import {
   pickPermitMatch,
   rankShortlist,
   redFlag,
+  sharedBy,
   smsHref,
   tidyBusinessName,
 } from "./shortlist";
@@ -160,10 +164,44 @@ describe("ranking", () => {
     expect(redFlag(c)).toMatch(/negative/);
   });
 
+  it("never counts a contractor's own post as a neighbor's word", () => {
+    const [ad] = fromExtraction(
+      [{ name: "Ace Remodel", mention_count: 1, self_promoted: true, neighbor_count: 0, quotes: [{ text: "We do kitchens, DM me!", sentiment: "positive", speaker: "self" }] }],
+      "screenshot",
+    );
+    expect(sharedBy(ad)).toBe("Posted their own details in the thread");
+    expect(neighborRead(ad).positive).toBe(0);
+    expect(neighborCount(ad)).toBe(0);
+    const [both] = fromExtraction(
+      [{ name: "Oak & Stone", mention_count: 3, neighbor_count: 2, quotes: [{ text: "great crew", sentiment: "positive", speaker: "neighbor" }, { text: "Happy to help, call us", sentiment: "positive", speaker: "self" }] }],
+      "screenshot",
+    );
+    expect(sharedBy(both)).toBe("Named by 2 neighbors · also posted their own details");
+    expect(sharedBy(manualCandidate({ name: "Typed" }))).toBeNull();
+    // A self-posted ad doesn't outrank a neighbor's recommendation.
+    const a = checked({ name: "Ad" });
+    a.candidate = ad;
+    const b = checked({ name: "Named" });
+    b.candidate = { ...both, self_promoted: false };
+    expect(rankShortlist([a, b]).map((x) => x.candidate.name)).toEqual(["Oak & Stone", "Ace Remodel"]);
+  });
+
+  it("reads the homeowner's own question from the thread", () => {
+    expect(fromAsk({ text: "Anyone redo a kitchen recently?", project: "kitchen", zip: "95125", neighborhood: "Willow Glen" })).toEqual({
+      text: "Anyone redo a kitchen recently?",
+      project: "kitchen",
+      zip: "95125",
+      neighborhood: "Willow Glen",
+    });
+    expect(fromAsk({ text: null, project: "patio", zip: "9512" })).toBeNull();
+    expect(fromAsk(null)).toBeNull();
+  });
+
   it("explains the position in plain facts", () => {
     const c = checked({ license: license({}), likeYours: 2, permits: [] });
-    c.candidate.quotes = [{ text: "great", sentiment: "positive" }];
-    expect(fitLine(c, "kitchen")).toBe("License active · 2 kitchen permits in San Jose · 1 neighbor vouched");
+    c.candidate.quotes = [{ text: "great", sentiment: "positive", speaker: "neighbor" }];
+    c.candidate.source = "pasted";
+    expect(fitLine(c, "kitchen")).toBe("License active · 2 kitchen permits in San Jose · named by 1 neighbor");
     expect(fitLine(checked({}), "kitchen")).toMatch(/Ask for their license number/);
   });
 });
