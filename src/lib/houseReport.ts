@@ -10,8 +10,8 @@
 // Nothing here is a code rule, a price, or a judgement of a person: every
 // line is a public-record fact, or our read of one, labelled as such.
 // Pure; tested in houseReport.test.ts.
-import { floodMinimal, type ParcelHistory, type RiskSignal } from "@/lib/homeData";
-import { homeRecord, type InspectionIn, type RecordRow, CITY_PERMIT_ARCHIVE, HAZARD_MAPS } from "@/lib/homeRecord";
+import { floodMinimal, type ParcelHistory, type RiskSignal } from "./homeData";
+import { homeRecord, type InspectionIn, type RecordRow, CITY_PERMIT_ARCHIVE, HAZARD_MAPS } from "./homeRecord";
 
 export type Reader = "owner" | "project" | "deal";
 
@@ -415,3 +415,18 @@ export const houseReport = (input: {
 
   return { tone, badge, verdict, sub, vitals, steps: steps.slice(0, 3), findings, rows, summary, unchecked: ground.unchecked };
 };
+
+/**
+ * The text that goes out when they share the report: the answer itself, so
+ * whoever gets it sees the results in the message, not just a link.
+ */
+export const shareMessage = (r: Pick<HouseReport, "verdict" | "vitals">, street: string, url: string): string =>
+  [
+    `${street}: ${r.verdict.join(" ")}`,
+    ...r.vitals.filter((v) => v.tone !== "unknown").map((v) => `• ${v.label}: ${v.value}`),
+    "",
+    `The full record, from the city's permits and public hazard maps: ${url}`,
+  ].join("\n");
+
+/** A link that opens Messages with the text filled in (iOS and Android both read "sms:?&body="). */
+export const smsLink = (text: string) => `sms:?&body=${encodeURIComponent(text)}`;

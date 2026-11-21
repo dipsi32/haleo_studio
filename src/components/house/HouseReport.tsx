@@ -14,12 +14,13 @@ import {
   Home,
   Layers,
   Loader2,
+  MessageCircle,
   Search,
   Share2,
   Users,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
-import { houseReport, READERS, tidyName, type Reader, type Source, type Step, type Tone, type Vital } from "@/lib/houseReport";
+import { houseReport, READERS, shareMessage, smsLink, tidyName, type Reader, type Source, type Step, type Tone, type Vital } from "@/lib/houseReport";
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, type RecordState } from "@/lib/homeRecord";
@@ -185,19 +186,20 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
     else if (a.kind === "check") onCheck(a.name);
   };
 
-  // The report itself, for a spouse, a client, a buyer's agent: it carries the address, and says so.
-  const sendReport = async () => {
-    const url = `${window.location.origin}/house?${new URLSearchParams({ street, zip, for: reader }).toString()}`;
-    track("house_report_shared", { reader, tone: r.tone });
+  // The report itself, for a spouse, a client, a buyer's agent. The message
+  // carries the results (not just a link), and the link opens this report.
+  const reportUrl = `${window.location.origin}/house?${new URLSearchParams({ street, zip, for: reader }).toString()}`;
+  const message = shareMessage(r, street, reportUrl);
+  const onPhone = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
+  const moreWays = async () => {
+    track("house_report_shared", { reader, tone: r.tone, via: "share_sheet" });
     try {
-      if (navigator.share) {
-        await navigator.share({ title: `${street}: what's on file`, text: `${r.verdict.join(" ")} The public record for ${street}, read in plain words:`, url });
-        return;
-      }
-      await copy("send", `${r.verdict.join(" ")} The public record for ${street}: ${url}`);
-    } catch {
-      /* closed the share sheet */
+      // Text only: some apps drop the text when a separate url is passed, and the link is in the text.
+      if (navigator.share) return await navigator.share({ text: message });
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
     }
+    await copy("send", message);
   };
 
   // The neighbor gets the tool, never this address.
@@ -206,7 +208,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
     track("house_shared", { reader });
     try {
       if (navigator.share) {
-        await navigator.share({ title: "What's on file for your house?", text: SHARE_TEXT, url });
+        await navigator.share({ text: `${SHARE_TEXT} ${url}` });
         return;
       }
       await copy("tool", `${SHARE_TEXT} ${url}`);
@@ -390,25 +392,45 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
 
       {/* Pass it on */}
       <section className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={sendReport}
-          className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
-        >
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
           <p className="font-display text-[18px] leading-snug">Send this report</p>
-          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">To your partner, your agent, or a client. The link includes this address.</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-            {copied === "send" ? (
-              <>
-                <Check className="h-4 w-4 text-sage" /> Link copied
-              </>
-            ) : (
-              <>
-                <Share2 className="h-4 w-4" /> Send it
-              </>
+          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">
+            The verdict and the facts go in the message, with a link to the full record. It includes this address.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {onPhone && (
+              <a
+                href={smsLink(message)}
+                onClick={() => track("house_report_shared", { reader, tone: r.tone, via: "sms" })}
+                className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[14px] font-medium text-background transition-smooth hover:opacity-90"
+              >
+                <MessageCircle className="h-4 w-4" /> Text it
+              </a>
             )}
-          </span>
-        </button>
+            <button
+              type="button"
+              onClick={onPhone ? moreWays : () => {
+                track("house_report_shared", { reader, tone: r.tone, via: "copy" });
+                void copy("send", message);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[14px] font-medium transition-smooth hover:bg-secondary"
+            >
+              {copied === "send" ? (
+                <>
+                  <Check className="h-4 w-4 text-sage" /> Copied
+                </>
+              ) : onPhone ? (
+                <>
+                  <Share2 className="h-4 w-4" /> More ways
+                </>
+              ) : (
+                <>
+                  <ClipboardCopy className="h-4 w-4" /> Copy message and link
+                </>
+              )}
+            </button>
+          </div>
+        </div>
         <button
           type="button"
           onClick={() => {

@@ -90,6 +90,7 @@ export type AnalyticsEvent =
   | "password_reset_completed"
   | "shortlist_started"
   | "shortlist_project_after"
+  | "nav_clicked"
   | "shortlist_ask_read"
   | "shortlist_extracted"
   | "shortlist_checked"

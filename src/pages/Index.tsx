@@ -4,10 +4,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Home as HomeIcon, Menu } from "lucide-react";
+import { ArrowRight, Home as HomeIcon } from "lucide-react";
 import { track } from "@/lib/analytics";
 import Logo from "@/components/Logo";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import SiteHeader from "@/components/SiteHeader";
+import { NAV } from "@/lib/nav";
 import Gateway from "@/components/home/Gateway";
 import PathDemo from "@/components/home/PathDemo";
 import type { GatewayPath } from "@/lib/homeGateway";
@@ -40,8 +41,6 @@ const doubts = [
   },
 ];
 
-const navLink = "text-[15px] text-muted-foreground transition-smooth hover:text-foreground";
-
 const Index = () => {
   const [path, setPath] = useState<GatewayPath | null>(null);
   // The closing question has its own state: opening one must not open (and focus) the other.
@@ -49,30 +48,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* NAV */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:py-8">
-        <Logo />
-        <nav className="hidden items-center gap-9 md:flex">
-          <a href="#how-it-works" className={navLink}>How it works</a>
-          <Link to="/pro" className={navLink}>For contractors</Link>
-          <Link to="/login" className={navLink}>Sign in</Link>
-        </nav>
-        <Sheet>
-          <SheetTrigger className="flex h-10 w-10 items-center justify-center md:hidden" aria-label="Menu">
-            <Menu className="h-5 w-5" strokeWidth={1.8} />
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[280px]">
-            <SheetHeader>
-              <SheetTitle className="text-left font-display text-xl font-medium">Haleo</SheetTitle>
-            </SheetHeader>
-            <div className="mt-8 flex flex-col gap-1 text-[15px]">
-              <a href="#how-it-works" className="rounded-xl px-3 py-3 hover:bg-secondary">How it works</a>
-              <Link to="/pro" className="rounded-xl px-3 py-3 hover:bg-secondary">For contractors</Link>
-              <Link to="/login" className="rounded-xl px-3 py-3 hover:bg-secondary">Sign in</Link>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </header>
+      <SiteHeader floating={false} />
 
       {/* HERO: the question, and what happens next */}
       <section className="mx-auto grid max-w-6xl gap-14 px-6 pb-20 pt-6 md:pb-28 md:pt-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
@@ -94,8 +70,9 @@ const Index = () => {
               <HomeIcon className="h-5 w-5" strokeWidth={1.8} />
             </span>
             <span className="min-w-0 flex-1">
+              <span className="block text-[10.5px] font-semibold uppercase tracking-[0.14em] text-accent">{NAV.house.label}</span>
               <span className="block font-display text-[17px] leading-snug">What's on file for your house?</span>
-              <span className="block text-[13.5px] leading-snug text-muted-foreground">Its permits, and whether the city signed them off. Free, one minute.</span>
+              <span className="block text-[13.5px] leading-snug text-muted-foreground">Permits, sign-offs and hazard zones, read for you. Free, one minute.</span>
             </span>
             <ArrowRight className="h-4 w-4 shrink-0 transition-smooth group-hover:translate-x-0.5" />
           </Link>
@@ -192,7 +169,8 @@ const Index = () => {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8">
           <Logo />
           <div className="flex items-center gap-6 text-[13.5px] text-muted-foreground">
-            <Link to="/pro" className="transition-smooth hover:text-foreground">For contractors</Link>
+            <Link to="/house" className="transition-smooth hover:text-foreground">{NAV.house.label}</Link>
+            <Link to="/pro" className="transition-smooth hover:text-foreground">{NAV.pro.label}</Link>
             <span>© {new Date().getFullYear()} Haleo</span>
           </div>
         </div>

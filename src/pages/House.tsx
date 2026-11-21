@@ -3,6 +3,7 @@
 // (or never did). The hook is curiosity about your own home; the next step
 // is "planning a project? here's who has done this near you".
 // Shareable: /house?street=…&zip=… reopens a lookup; sharing sends the tool.
+import { NAV } from "@/lib/nav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -86,7 +87,7 @@ export default function House() {
       <SiteHeader />
       <div className="container mx-auto max-w-3xl px-5 pb-28 pt-28 sm:px-6 md:pt-32">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Free · San Jose homes</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{NAV.house.label} · Free</p>
           <h1 className="mt-4 font-display text-[2.2rem] font-light leading-[1.06] tracking-tight md:text-[3.2rem]">
             What's on file <span className="italic">for your house?</span>
           </h1>

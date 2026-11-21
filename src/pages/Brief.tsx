@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NAV } from "@/lib/nav";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { saveDraft } from "@/lib/userProjects";
 import { getActiveInvite, isDemoActive } from "@/lib/invites";
@@ -242,6 +243,7 @@ const ProjectScreen = ({
     <div className="space-y-8 pb-28">
       <StepDots step={1} />
       <ScreenTitle
+        eyebrow={NAV.start.label}
         title={name ? `What do you need done, ${name}?` : "What do you need done?"}
         sub="One sentence is enough. We'll figure out the rest."
       />

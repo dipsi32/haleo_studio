@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { houseReport, tidyName } from "./houseReport";
+import { houseReport, shareMessage, smsLink, tidyName } from "./houseReport";
 import { parcelIsFresh, riskIsFresh, type ParcelHistory, type ParcelPermit, type RiskSignal } from "./homeData";
 
 const now = new Date("2026-11-21T12:00:00Z");
@@ -147,5 +147,21 @@ describe("freshness", () => {
     expect(riskIsFresh(signal(), now)).toBe(true);
     expect(riskIsFresh(signal({ raw_response: { checked: { fire: true, flood: false, seismic: true } } }), now)).toBe(false);
     expect(riskIsFresh(signal({ raw_response: null }), now)).toBe(false);
+  });
+});
+
+describe("sharing the report", () => {
+  it("the message carries the results, not just a link", () => {
+    const r = houseReport({ ...base, signal: signal(), parcel: parcel([permit({})]), reader: "owner" });
+    const msg = shareMessage(r, "1488 Luning Dr", "https://haleo.pages.dev/house?street=1488+Luning+Dr&zip=95118");
+    expect(msg).toContain("1488 Luning Dr: In good order, with one thing to know.");
+    expect(msg).toContain("• Permits: 1 permit in progress");
+    expect(msg).toContain("• Ground: No hazard zones");
+    expect(msg).toContain("https://haleo.pages.dev/house?street=1488+Luning+Dr&zip=95118");
+    expect(smsLink(msg)).toMatch(/^sms:\?&body=1488%20Luning%20Dr/);
+  });
+  it("leaves out anything we couldn't check", () => {
+    const r = houseReport({ ...base, signal: null, parcel: parcel([]), reader: "owner" });
+    expect(shareMessage(r, "x", "u")).not.toContain("Ground");
   });
 });

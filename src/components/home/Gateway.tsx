@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { track } from "@/lib/analytics";
 import { GATEWAY, GATEWAY_PROJECTS, shortlistUrl, type GatewayPath } from "@/lib/homeGateway";
+import { navForGateway } from "@/lib/nav";
 import { canMatchFrom, setPendingShots, startOwnSearch } from "@/lib/homeStart";
 import { setPendingQuoteFile, setPendingQuoteText } from "@/lib/quoteHandoff";
 import { classifyHomeEntry } from "@/lib/homeEntry";
@@ -230,7 +231,8 @@ export default function Gateway({ selected, onSelect, where }: Props) {
                 </span>
               )}
               <span className="min-w-0 pr-6 sm:pr-0">
-                <span className="block font-display text-[17px] leading-snug sm:mt-4 sm:text-[18px]">{g.title}</span>
+                <span className="block text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:mt-4">{navForGateway(g.id)?.label}</span>
+                <span className="mt-0.5 block font-display text-[17px] leading-snug sm:text-[18px]">{g.title}</span>
                 <span className="mt-1 block text-[13.5px] leading-snug text-muted-foreground sm:mt-1.5">{look.promise}</span>
               </span>
             </button>
