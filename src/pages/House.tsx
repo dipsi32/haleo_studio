@@ -6,29 +6,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Home, Loader2, Share2 } from "lucide-react";
+import { ArrowRight, Check, Home } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
-import AddressIntelligenceCard from "@/components/brief/AddressIntelligenceCard";
+import HouseReport from "@/components/house/HouseReport";
+import { useHomeData } from "@/lib/useHomeData";
+import type { Reader } from "@/lib/houseReport";
+import { shortlistUrl } from "@/lib/homeGateway";
 import { track } from "@/lib/analytics";
-import { SHARE_TEXT, houseAddress, houseUrl, isSanJoseZip, looksLikeStreet } from "@/lib/houseLookup";
-import { CITY_PERMIT_ARCHIVE } from "@/lib/homeRecord";
+import { houseAddress, houseUrl, isSanJoseZip, looksLikeStreet } from "@/lib/houseLookup";
 import { startOwnSearch } from "@/lib/homeStart";
 import { saveIntakeStart } from "@/lib/intake";
 
 export default function House() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const qStreet = params.get("street") ?? "";
   const qZip = params.get("zip") ?? "";
   const [street, setStreet] = useState(qStreet);
   const [zip, setZip] = useState(qZip);
   const [nudge, setNudge] = useState<string | null>(null);
-  const [shared, setShared] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const ready = looksLikeStreet(qStreet) && isSanJoseZip(qZip);
   const address = useMemo(() => (ready ? houseAddress(qStreet, qZip) : undefined), [ready, qStreet, qZip]);
+  const home = useHomeData(address);
+  const qFor = params.get("for");
+  const [reader, setReaderState] = useState<Reader>(qFor === "project" || qFor === "deal" ? qFor : "owner");
+  const streetRef = useRef<HTMLInputElement>(null);
+
+  // Keep "who's reading" in the link, so a shared report opens the same way.
+  const setReader = (r: Reader) => {
+    setReaderState(r);
+    const next = new URLSearchParams(params);
+    next.set("for", r);
+    setParams(next, { replace: true });
+  };
 
   useEffect(() => {
     if (!address) return;
@@ -41,24 +54,7 @@ export default function House() {
     if (!/^\d{5}$/.test(zip.trim())) return setNudge("Add your 5-digit ZIP.");
     if (!isSanJoseZip(zip)) return setNudge("For now we read San Jose's records only. Other cities are coming.");
     setNudge(null);
-    navigate(houseUrl(street, zip));
-  };
-
-  // Share the tool, never their address.
-  const share = async () => {
-    const url = `${window.location.origin}/house`;
-    track("house_shared", {});
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "What's on file for your house?", text: SHARE_TEXT, url });
-        return;
-      }
-      await navigator.clipboard.writeText(`${SHARE_TEXT} ${url}`);
-      setShared(true);
-      setTimeout(() => setShared(false), 2500);
-    } catch {
-      /* they closed the share sheet */
-    }
+    navigate(`${houseUrl(street, zip)}&for=${reader}`);
   };
 
   // Their address is already known: the brief starts with it filled in.
@@ -68,6 +64,21 @@ export default function House() {
     startOwnSearch(undefined, address.zip);
     saveIntakeStart({ address });
     navigate("/brief");
+  };
+
+  // A contractor who worked on this house: their own record, read the same way.
+  const checkContractor = (name: string) => {
+    track("house_next", { to: "contractor" });
+    startOwnSearch(undefined, address?.zip);
+    navigate(shortlistUrl({ name, project: null, zip: address?.zip ?? "" }));
+  };
+
+  // The house they're touring, or the one next door.
+  const another = () => {
+    track("house_next", { to: "another" });
+    setStreet("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => streetRef.current?.focus(), 450);
   };
 
   return (
@@ -87,6 +98,7 @@ export default function House() {
           <div className="mt-8 rounded-3xl border border-border bg-card p-4 shadow-soft md:p-5">
             <div className="flex flex-col gap-2.5 sm:flex-row">
               <Input
+                ref={streetRef}
                 aria-label="Street address"
                 autoComplete="address-line1"
                 placeholder="Street address, like 1553 Ilikai Ave"
@@ -127,80 +139,20 @@ export default function House() {
 
         {address && (
           <div ref={resultRef} className="mt-10 scroll-mt-24">
-            <p className="mb-3 flex items-center gap-2 text-[14px] text-muted-foreground">
+            <p className="mb-4 flex items-center gap-2 text-[14px] text-muted-foreground">
               <Home className="h-4 w-4" /> {address.street}, San Jose {address.zip}
             </p>
-            <AddressIntelligenceCard
+            <HouseReport
               key={`${address.street}|${address.zip}`}
-              address={address}
-              loadingFallback={
-                <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-                  <p className="flex items-center gap-2 font-display text-xl font-light">
-                    <Loader2 className="h-5 w-5 animate-spin text-accent" /> Reading the city's records…
-                  </p>
-                  <p className="mt-2 text-[14px] text-muted-foreground">
-                    Permits, who pulled them, and what inspectors signed off. The first look at an address can take up to
-                    20 seconds.
-                  </p>
-                </div>
-              }
-              emptyFallback={
-                <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-                  <p className="font-display text-xl font-light">We couldn't find this address in the city's permit records.</p>
-                  <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                    Check the street spelling and ZIP. Some homes simply have no permits on file, which is worth knowing too:
-                    work done without permits shows up at inspection and at sale.
-                  </p>
-                </div>
-              }
+              street={address.street}
+              zip={address.zip}
+              data={home}
+              reader={reader}
+              onReader={setReader}
+              onProject={planProject}
+              onCheck={checkContractor}
+              onAnother={another}
             />
-
-            <p className="mt-3 px-1 text-[12.5px] leading-relaxed text-muted-foreground">
-              From San Jose's open permit records: active, under inspection and expired permits. Older, finished permits live in
-              the city's own archive,{" "}
-              <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="text-foreground underline-offset-4 hover:underline">
-                sjpermits.org
-              </a>
-              .
-            </p>
-
-            {/* What next: the neighbor, and the project */}
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={planProject}
-                className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
-              >
-                <p className="font-display text-[18px] leading-snug">Planning a project?</p>
-                <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">
-                  See who has done this kind of work near you, and what it tends to cost.
-                </p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-                  Start here <ArrowRight className="h-4 w-4 transition-smooth group-hover:translate-x-0.5" />
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={share}
-                className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
-              >
-                <p className="font-display text-[18px] leading-snug">Know a neighbor who'd want this?</p>
-                <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">
-                  Send them the lookup. We share the tool, never your address.
-                </p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-                  {shared ? (
-                    <>
-                      <Check className="h-4 w-4 text-sage" /> Link copied
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="h-4 w-4" /> Share it
-                    </>
-                  )}
-                </span>
-              </button>
-            </div>
           </div>
         )}
       </div>

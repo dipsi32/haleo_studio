@@ -4,64 +4,15 @@
 //   - Parcel permit history (every permit on this APN, open/expired flags,
 //     contractors who worked it) from parcel_permit_history
 // Only renders when there's real signal. One fact + one consequence per item.
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { useHomeData } from "@/lib/useHomeData";
+import { floodMinimal, type RiskSignal } from "@/lib/homeData";
 import type { Address } from "@/lib/intake";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
 
-type Signal = {
-  address_key: string;
-  fire_hazard_class: string | null;
-  fire_hazard_zone: string | null;
-  flood_zone: string | null;
-  flood_zone_description: string | null;
-  in_special_flood_hazard_area: boolean | null;
-  seismic_hazard_zone: string | null;
-  seismic_hazard_type: string | null;
-  lookup_succeeded: boolean | null;
-  last_checked_at: string | null;
-  raw_response?: {
-    geocodeLevel?: string;
-    fire?: { approximate?: boolean };
-    /** Which hazard checks actually ran. Missing on rows saved before this was tracked. */
-    checked?: { fire?: boolean; flood?: boolean; seismic?: boolean };
-  } | null;
-};
-
-type ParcelPermit = {
-  permit_number: string | null;
-  type: string | null;
-  subtype: string | null;
-  description: string | null;
-  contractor: string | null;
-  valuation: number | null;
-  issued_date: string | null;
-  final_date: string | null;
-  status: string | null;
-  is_open: boolean;
-  is_expired_without_final: boolean;
-};
-
-type ParcelHistory = {
-  address_key: string;
-  apn: string | null;
-  permits: ParcelPermit[];
-  contractors: string[];
-  permit_count: number;
-  open_permit_count: number;
-  expired_without_final_count: number;
-  most_recent_permit_date: string | null;
-  oldest_permit_date: string | null;
-  lookup_succeeded: boolean;
-};
-
-function normalizeKey(a: Address): string {
-  return [a.street, a.city, a.state, a.zip]
-    .map((s) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " "))
-    .join("|");
-}
+type Signal = RiskSignal;
 
 type Props = {
   address?: Address;
@@ -71,103 +22,9 @@ type Props = {
   emptyFallback?: React.ReactNode;
 };
 
-/** FEMA zones that mean minimal or moderate flood risk (X, B, C). Anything else is never shown as clear. */
-const floodMinimal = (zone: string | null | undefined) => !!zone && /^(X|B|C)\b/i.test(zone.trim());
-
 export default function AddressIntelligenceCard({ address, loadingFallback = null, emptyFallback = null }: Props) {
-  const [done, setDone] = useState({ risk: false, parcel: false });
-  const [signal, setSignal] = useState<Signal | null>(null);
-  const [parcel, setParcel] = useState<ParcelHistory | null>(null);
+  const { signal, parcel, inspections, settled: homeSettled } = useHomeData(address);
   const [showAllPermits, setShowAllPermits] = useState(false);
-  const [inspections, setInspections] = useState<InspectionIn[]>([]);
-
-  // The city's inspection sign-offs on this home's most recent permits.
-  useEffect(() => {
-    const nums = (parcel?.permits ?? [])
-      .slice()
-      .sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))
-      .map((p) => p.permit_number)
-      .filter((n): n is string => !!n)
-      .slice(0, 6);
-    if (!nums.length) return;
-    let active = true;
-    supabase.functions
-      .invoke("fetch-permit-inspections", { body: { permit_numbers: nums, limit: nums.length } })
-      .then(({ data }) => {
-        const results = (data as { results?: InspectionIn[] } | null)?.results;
-        if (active && Array.isArray(results)) setInspections(results);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [parcel]);
-
-  useEffect(() => {
-    if (!address?.street || !address?.city || address?.skipped) {
-      setSignal(null);
-      setParcel(null);
-      return;
-    }
-    setSignal(null);
-    setParcel(null);
-    setDone({ risk: false, parcel: false });
-    const key = normalizeKey(address);
-    let active = true;
-
-    // Risk signals
-    (async () => {
-      const { data: cached } = await supabase
-        .from("address_risk_signals")
-        .select("*")
-        .eq("address_key", key)
-        .maybeSingle();
-      if (cached && active) {
-        setSignal(cached as Signal);
-        setDone((d) => ({ ...d, risk: true }));
-        return;
-      }
-      try {
-        const { data } = await supabase.functions.invoke("lookup-address-risk", {
-          body: { address },
-        });
-        if (active && data?.signals) setSignal(data.signals as Signal);
-      } catch (e) {
-        console.warn("address risk lookup failed", e);
-      }
-      if (active) setDone((d) => ({ ...d, risk: true }));
-    })();
-
-    // Parcel permit history
-    (async () => {
-      const { data: cached } = await supabase
-        .from("parcel_permit_history")
-        .select("*")
-        .eq("address_key", key)
-        .maybeSingle();
-      // Saved before all three city feeds were read (no permit has a "source")? Look again.
-      const cachedPermits = Array.isArray((cached as { permits?: unknown } | null)?.permits) ? ((cached as { permits: { source?: unknown }[] }).permits) : [];
-      const fresh = !!cached && (cachedPermits.length === 0 || cachedPermits.some((p) => p && p.source));
-      if (cached && fresh && active) {
-        setParcel(cached as unknown as ParcelHistory);
-        setDone((d) => ({ ...d, parcel: true }));
-        return;
-      }
-      try {
-        const { data } = await supabase.functions.invoke("lookup-parcel-history", {
-          body: { address },
-        });
-        if (active && data?.history) setParcel(data.history as ParcelHistory);
-      } catch (e) {
-        console.warn("parcel history lookup failed", e);
-      }
-      if (active) setDone((d) => ({ ...d, parcel: true }));
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [address?.street, address?.city, address?.state, address?.zip, address?.skipped]);
 
   const items: Array<{
     icon: typeof Flame;
@@ -269,7 +126,7 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
   const hasRiskSignal = !!signal;
   const hasParcel = !!parcel?.lookup_succeeded && parcel.permit_count > 0;
 
-  const settled = done.risk && done.parcel;
+  const settled = homeSettled;
   if (!signal && !parcel) return <>{settled ? emptyFallback : loadingFallback}</>;
   if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return <>{settled ? emptyFallback : loadingFallback}</>;
 

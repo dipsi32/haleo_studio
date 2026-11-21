@@ -133,6 +133,10 @@ export type AnalyticsEvent =
   | "app_crashed"
   // /house: the free home-record lookup, its share, and the step to a project
   | "house_lookup"
+  | "house_reader"
+  | "house_action"
+  | "house_report_shared"
+  | "house_summary_copied"
   | "house_shared"
   | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)
