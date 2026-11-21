@@ -4,64 +4,15 @@
 //   - Parcel permit history (every permit on this APN, open/expired flags,
 //     contractors who worked it) from parcel_permit_history
 // Only renders when there's real signal. One fact + one consequence per item.
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Flame, Waves, Mountain, Sparkles, FileText, AlertCircle, History, Check, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { useHomeData } from "@/lib/useHomeData";
+import { floodMinimal, type RiskSignal } from "@/lib/homeData";
 import type { Address } from "@/lib/intake";
-import { HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
+import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, homeRecord, isLongOpen, type InspectionIn } from "@/lib/homeRecord";
 
-type Signal = {
-  address_key: string;
-  fire_hazard_class: string | null;
-  fire_hazard_zone: string | null;
-  flood_zone: string | null;
-  flood_zone_description: string | null;
-  in_special_flood_hazard_area: boolean | null;
-  seismic_hazard_zone: string | null;
-  seismic_hazard_type: string | null;
-  lookup_succeeded: boolean | null;
-  last_checked_at: string | null;
-  raw_response?: {
-    geocodeLevel?: string;
-    fire?: { approximate?: boolean };
-    /** Which hazard checks actually ran. Missing on rows saved before this was tracked. */
-    checked?: { fire?: boolean; flood?: boolean; seismic?: boolean };
-  } | null;
-};
-
-type ParcelPermit = {
-  permit_number: string | null;
-  type: string | null;
-  subtype: string | null;
-  description: string | null;
-  contractor: string | null;
-  valuation: number | null;
-  issued_date: string | null;
-  final_date: string | null;
-  status: string | null;
-  is_open: boolean;
-  is_expired_without_final: boolean;
-};
-
-type ParcelHistory = {
-  address_key: string;
-  apn: string | null;
-  permits: ParcelPermit[];
-  contractors: string[];
-  permit_count: number;
-  open_permit_count: number;
-  expired_without_final_count: number;
-  most_recent_permit_date: string | null;
-  oldest_permit_date: string | null;
-  lookup_succeeded: boolean;
-};
-
-function normalizeKey(a: Address): string {
-  return [a.street, a.city, a.state, a.zip]
-    .map((s) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " "))
-    .join("|");
-}
+type Signal = RiskSignal;
 
 type Props = {
   address?: Address;
@@ -72,99 +23,8 @@ type Props = {
 };
 
 export default function AddressIntelligenceCard({ address, loadingFallback = null, emptyFallback = null }: Props) {
-  const [done, setDone] = useState({ risk: false, parcel: false });
-  const [signal, setSignal] = useState<Signal | null>(null);
-  const [parcel, setParcel] = useState<ParcelHistory | null>(null);
+  const { signal, parcel, inspections, settled: homeSettled } = useHomeData(address);
   const [showAllPermits, setShowAllPermits] = useState(false);
-  const [inspections, setInspections] = useState<InspectionIn[]>([]);
-
-  // The city's inspection sign-offs on this home's most recent permits.
-  useEffect(() => {
-    const nums = (parcel?.permits ?? [])
-      .slice()
-      .sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))
-      .map((p) => p.permit_number)
-      .filter((n): n is string => !!n)
-      .slice(0, 6);
-    if (!nums.length) return;
-    let active = true;
-    supabase.functions
-      .invoke("fetch-permit-inspections", { body: { permit_numbers: nums, limit: nums.length } })
-      .then(({ data }) => {
-        const results = (data as { results?: InspectionIn[] } | null)?.results;
-        if (active && Array.isArray(results)) setInspections(results);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [parcel]);
-
-  useEffect(() => {
-    if (!address?.street || !address?.city || address?.skipped) {
-      setSignal(null);
-      setParcel(null);
-      return;
-    }
-    setSignal(null);
-    setParcel(null);
-    setDone({ risk: false, parcel: false });
-    const key = normalizeKey(address);
-    let active = true;
-
-    // Risk signals
-    (async () => {
-      const { data: cached } = await supabase
-        .from("address_risk_signals")
-        .select("*")
-        .eq("address_key", key)
-        .maybeSingle();
-      if (cached && active) {
-        setSignal(cached as Signal);
-        setDone((d) => ({ ...d, risk: true }));
-        return;
-      }
-      try {
-        const { data } = await supabase.functions.invoke("lookup-address-risk", {
-          body: { address },
-        });
-        if (active && data?.signals) setSignal(data.signals as Signal);
-      } catch (e) {
-        console.warn("address risk lookup failed", e);
-      }
-      if (active) setDone((d) => ({ ...d, risk: true }));
-    })();
-
-    // Parcel permit history
-    (async () => {
-      const { data: cached } = await supabase
-        .from("parcel_permit_history")
-        .select("*")
-        .eq("address_key", key)
-        .maybeSingle();
-      // Saved before all three city feeds were read (no permit has a "source")? Look again.
-      const cachedPermits = Array.isArray((cached as { permits?: unknown } | null)?.permits) ? ((cached as { permits: { source?: unknown }[] }).permits) : [];
-      const fresh = !!cached && (cachedPermits.length === 0 || cachedPermits.some((p) => p && p.source));
-      if (cached && fresh && active) {
-        setParcel(cached as unknown as ParcelHistory);
-        setDone((d) => ({ ...d, parcel: true }));
-        return;
-      }
-      try {
-        const { data } = await supabase.functions.invoke("lookup-parcel-history", {
-          body: { address },
-        });
-        if (active && data?.history) setParcel(data.history as ParcelHistory);
-      } catch (e) {
-        console.warn("parcel history lookup failed", e);
-      }
-      if (active) setDone((d) => ({ ...d, parcel: true }));
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [address?.street, address?.city, address?.state, address?.zip, address?.skipped]);
 
   const items: Array<{
     icon: typeof Flame;
@@ -204,6 +64,18 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
         "You're in a Special Flood Hazard Area. Certain scopes trigger elevation, venting, or materials requirements. Mention it to any contractor before they bid.",
       chip: "FEMA NFHL",
       tone: "warn",
+    });
+  } else if (signal?.raw_response?.checked?.flood && signal.flood_zone && !floodMinimal(signal.flood_zone)) {
+    // Zone D and friends: FEMA hasn't rated it. Not a hazard, and not "clear" either.
+    items.push({
+      icon: Waves,
+      title: signal.flood_zone === "D" ? "FEMA hasn't rated flood risk here" : `FEMA flood zone ${signal.flood_zone}`,
+      body:
+        signal.flood_zone === "D"
+          ? "Your lot is in FEMA zone D: possible flood risk that FEMA hasn't studied. It isn't a flood zone, but it isn't cleared either. Worth asking about drainage for any grading or foundation work."
+          : signal.flood_zone_description ?? "Ask your contractor how this flood zone affects the work.",
+      chip: "FEMA NFHL",
+      tone: "neutral",
     });
   }
 
@@ -254,7 +126,7 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
   const hasRiskSignal = !!signal;
   const hasParcel = !!parcel?.lookup_succeeded && parcel.permit_count > 0;
 
-  const settled = done.risk && done.parcel;
+  const settled = homeSettled;
   if (!signal && !parcel) return <>{settled ? emptyFallback : loadingFallback}</>;
   if (signal && !signal.lookup_succeeded && items.length === 0 && !hasParcel) return <>{settled ? emptyFallback : loadingFallback}</>;
 
@@ -277,7 +149,7 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
           label: "Not in a CAL FIRE hazard zone",
           means: "The state's fire-rated rules for siding, roofing and vents shouldn't apply to your exterior work.",
         },
-        ran.flood && !signal?.in_special_flood_hazard_area && {
+        ran.flood && !signal?.in_special_flood_hazard_area && floodMinimal(signal?.flood_zone) && {
           icon: Waves,
           label: "Outside FEMA flood zones",
           means: "No flood elevation or venting rules, and federally backed lenders don't require flood insurance here.",
@@ -397,11 +269,28 @@ export default function AddressIntelligenceCard({ address, loadingFallback = nul
         {/* Say what we couldn't check, so "clear" never implies more than it means. */}
         {!hasParcel && (
           <div className="mt-3 flex items-start gap-3 rounded-2xl border border-border bg-background/60 p-4">
-            <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <p className="text-[13px] leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">Permit history not found for this address.</span> We
-              can't tell whether past work was signed off by the city. Ask any contractor you meet to check for open or
-              expired permits: unfinished ones get passed to the next job and show up at resale.
+              {parcel?.lookup_succeeded ? (
+                <>
+                  <span className="font-medium text-foreground">No current permits on file for this address.</span> San
+                  Jose's open records show no active, in-progress or expired permits here, so nothing unfinished turns
+                  up there. Permits the city finished in past years sit in its archive:{" "}
+                  <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
+                    see the full history on sjpermits.org
+                  </a>
+                  .
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">The city's permit records didn't answer just now.</span>{" "}
+                  Try again in a minute, or{" "}
+                  <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
+                    look the address up on sjpermits.org
+                  </a>
+                  .
+                </>
+              )}
             </p>
           </div>
         )}

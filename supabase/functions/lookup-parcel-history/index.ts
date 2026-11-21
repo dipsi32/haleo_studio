@@ -97,15 +97,26 @@ function streetMatches(parsed: ReturnType<typeof parseStreet>, candidate: string
 
 type Sourced = SJRecord & { _source?: string };
 
+// Feeds that failed to answer this request: "none found" is only said when they all answered.
+const feedFailures = new Set<string>();
+
 async function searchOneByText(feed: (typeof SJ_FEEDS)[number], q: string, limit: number): Promise<Sourced[]> {
   try {
     const url = `${SJ_API}?resource_id=${feed.id}&q=${encodeURIComponent(q)}&limit=${limit}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) return [];
+    let res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15000) }).catch(() => null);
+    if (!res || !res.ok) res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15000) }).catch(() => null);
+    if (!res || !res.ok) {
+      feedFailures.add(feed.source);
+      return [];
+    }
     const json = await res.json();
-    if (!json.success) return [];
+    if (!json.success) {
+      feedFailures.add(feed.source);
+      return [];
+    }
     return ((json.result?.records ?? []) as SJRecord[]).map((r) => ({ ...r, _source: feed.source }));
   } catch {
+    feedFailures.add(feed.source);
     return [];
   }
 }
@@ -152,6 +163,7 @@ function isExpiredWithoutFinal(r: Sourced): boolean {
 }
 
 Deno.serve(async (req) => {
+  feedFailures.clear();
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -182,7 +194,14 @@ Deno.serve(async (req) => {
       // Rows saved before all three feeds were read (no permit carries a
       // "source") only saw active permits: look them up again.
       const permits = Array.isArray(cached?.permits) ? (cached.permits as { source?: unknown }[]) : [];
-      const fresh = cached && (permits.length === 0 || permits.some((p) => p && p.source));
+      // An empty answer is only trusted if it came from all three feeds and
+      // is under a day old: a permit pulled this week should show up.
+      const raw = (cached?.raw_response ?? {}) as { feeds?: number };
+      const ageMs = cached?.last_checked_at ? Date.now() - new Date(cached.last_checked_at as string).getTime() : Infinity;
+      const fresh =
+        cached &&
+        cached.lookup_succeeded &&
+        (permits.length > 0 ? permits.some((p) => p && p.source) : raw.feeds === 3 && ageMs < 864e5);
       if (cached && fresh) {
         return new Response(JSON.stringify({ cached: true, history: cached }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -308,8 +327,9 @@ Deno.serve(async (req) => {
       expired_without_final_count: expiredCount,
       most_recent_permit_date: newest,
       oldest_permit_date: oldest,
-      lookup_succeeded: true,
-      raw_response: { resolved_apn: apn, address_hit_count: addressHits.length },
+      // Nothing found while a feed was down is "couldn't check", never "none".
+      lookup_succeeded: addressHits.length > 0 || feedFailures.size === 0,
+      raw_response: { resolved_apn: apn, address_hit_count: addressHits.length, feeds: 3, feed_failures: [...feedFailures] },
       last_checked_at: new Date().toISOString(),
     };
 

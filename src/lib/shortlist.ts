@@ -277,14 +277,24 @@ export const rankShortlist = (list: CheckedCandidate[]): CheckedCandidate[] =>
   });
 
 /** One line on why this contractor sits where it does. Facts only. */
-export const fitLine = (c: CheckedCandidate, projectWord: string): string => {
+/** Permits whose type or description reads like this job. */
+export const likeYoursCount = (permits: { work_type?: string | null; description?: string | null }[], keywords: string[]) =>
+  permits.filter((p) => {
+    const hay = `${p.work_type ?? ""} ${p.description ?? ""}`.toLowerCase();
+    return keywords.some((k) => hay.includes(k.toLowerCase()));
+  }).length;
+
+/** projectWord null: no job picked yet, so permits are counted, never called "similar". */
+export const fitLine = (c: CheckedCandidate, projectWord: string | null): string => {
   const flag = redFlag(c);
   if (flag) return flag;
   const parts: string[] = [];
   const state = licenseState(c.license);
   if (state === "active") parts.push("license active");
   else if (state === "expiring") parts.push("license active, renewing soon");
-  if (c.likeYours > 0) parts.push(`${c.likeYours} ${projectWord} permit${c.likeYours === 1 ? "" : "s"} in San Jose`);
+  if (!projectWord) {
+    if (c.permits.length > 0) parts.push(`${c.permits.length} San Jose permit${c.permits.length === 1 ? "" : "s"}`);
+  } else if (c.likeYours > 0) parts.push(`${c.likeYours} ${projectWord} permit${c.likeYours === 1 ? "" : "s"} in San Jose`);
   else if (c.permits.length > 0) parts.push(`${c.permits.length} San Jose permit${c.permits.length === 1 ? "" : "s"}, none like yours`);
   const pos = neighborRead(c.candidate).positive;
   if (pos > 0) parts.push(`${pos} neighbor${pos === 1 ? "" : "s"} vouched`);

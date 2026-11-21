@@ -90,7 +90,9 @@ const getJson = async (name: string, url: string): Promise<Record<string, unknow
 const firstAnswer = async (name: string, urls: string[]): Promise<Record<string, unknown> | typeof FAILED> => {
   const why: string[] = [];
   for (const [i, url] of urls.entries()) {
-    const json = await getJson(`${name}_${i}`, url);
+    let json = await getJson(`${name}_${i}`, url);
+    // A dropped connection or a timeout gets one more try before the next mirror.
+    if (failed(json) && !/HTTP 4|service error/.test(errors[`${name}_${i}`] ?? "")) json = await getJson(`${name}_${i}`, url);
     const e = errors[`${name}_${i}`];
     delete errors[`${name}_${i}`];
     if (!failed(json)) return json;
@@ -132,7 +134,7 @@ const featuresOf = (json: Record<string, unknown>) =>
 
 // CAL FIRE severity class, wherever the layer keeps it.
 const fireClass = (a: Record<string, unknown>): 0 | 1 | 2 | 3 => {
-  const d = String(pick(a, "FHSZ_Description", "HAZ_CLASS", "FHSZ_Desc", "FHSZ", "HAZ_CODE", "Haz_Class") ?? "")
+  const d = String(pick(a, "FHSZ_Description", "Hazard_Class", "HAZ_CLASS", "FHSZ_Desc", "FHSZ", "HAZ_CODE", "Haz_Class") ?? "")
     .trim()
     .toUpperCase();
   if (/VERY HIGH|^3$/.test(d)) return 3;
