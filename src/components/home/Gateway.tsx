@@ -70,10 +70,26 @@ const LOOK: Record<GatewayPath, { icon: typeof Compass; tint: string; promise: s
 };
 
 /** Optional: the project and ZIP, so "like yours" and "near you" can be answered. */
-const AboutJob = ({ project, setProject, zip, setZip }: { project: ShortlistProject | null; setProject: (p: ShortlistProject | null) => void; zip: string; setZip: (z: string) => void }) => (
+const AboutJob = ({
+  project,
+  setProject,
+  zip,
+  setZip,
+  zipMissing,
+  fromPost,
+}: {
+  project: ShortlistProject | null;
+  setProject: (p: ShortlistProject | null) => void;
+  zip: string;
+  setZip: (z: string) => void;
+  zipMissing?: boolean;
+  /** The thread path reads the project from their own post. */
+  fromPost?: boolean;
+}) => (
   <div className="mt-4">
     <p className="text-[12.5px] text-muted-foreground">
-      About your job <span className="opacity-70">· optional, it sharpens the match</span>
+      Your ZIP, and the job{" "}
+      <span className="opacity-70">· {fromPost ? "we'll read the job from your post if it's there" : "the job is optional, it sharpens the match"}</span>
     </p>
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
       {GATEWAY_PROJECTS.map((p) => (
@@ -97,10 +113,12 @@ const AboutJob = ({ project, setProject, zip, setZip }: { project: ShortlistProj
         maxLength={5}
         value={zip}
         onChange={(e) => setZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+        aria-invalid={zipMissing}
         placeholder="ZIP"
-        className="h-[34px] w-20 rounded-full text-[13px]"
+        className={cn("h-[34px] w-20 rounded-full text-[13px]", zipMissing && "border-accent ring-1 ring-accent")}
       />
     </div>
+    {zipMissing && <p className="mt-2 text-[13px] text-accent">Add your ZIP so we can see who works near you.</p>}
   </div>
 );
 
@@ -115,6 +133,12 @@ export default function Gateway({ selected, onSelect, where }: Props) {
   const [project, setProject] = useState<ShortlistProject | null>(null);
   const [zip, setZip] = useState("");
   const [nudge, setNudge] = useState(false);
+  const [zipMissing, setZipMissing] = useState(false);
+  const zipOk = /^\d{5}$/.test(zip);
+  const setZipAndClear = (z: string) => {
+    setZip(z);
+    setZipMissing(false);
+  };
   const shotRef = useRef<HTMLInputElement>(null);
   const quoteRef = useRef<HTMLInputElement>(null);
 
@@ -133,6 +157,8 @@ export default function Gateway({ selected, onSelect, where }: Props) {
 
   const startThread = () => {
     if (!thread.trim() && shots.length === 0) return setNudge(true);
+    // "Near you" is half the answer: the ZIP is never skipped.
+    if (!zipOk) return setZipMissing(true);
     startOwnSearch();
     if (shots.length) setPendingShots(shots.map((s) => s.file));
     go("thread", shortlistUrl({ text: thread, project, zip, shots: shots.length > 0 }), { screenshots: shots.length });
@@ -146,6 +172,7 @@ export default function Gateway({ selected, onSelect, where }: Props) {
       setPendingQuoteText(who.trim());
       return go("quote", "/roast", { via: "one" });
     }
+    if (!zipOk) return setZipMissing(true);
     go("one", shortlistUrl({ name: who, project, zip }));
   };
 
@@ -257,6 +284,13 @@ export default function Gateway({ selected, onSelect, where }: Props) {
 
                       {g.id === "thread" && (
                         <>
+                          <p className="mb-2.5 flex items-start gap-2 rounded-2xl bg-secondary/60 px-3.5 py-2.5 text-[13px] leading-snug text-muted-foreground">
+                            <ImagePlus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <span>
+                              <span className="font-medium text-foreground">Screenshot the whole thread, your question at the top included.</span> We'll
+                              read your project from it, and tell neighbors' picks apart from contractors posting their own ads.
+                            </span>
+                          </p>
                           <Textarea
                             autoFocus
                             value={thread}
@@ -303,7 +337,7 @@ export default function Gateway({ selected, onSelect, where }: Props) {
                               }}
                             />
                           </div>
-                          <AboutJob project={project} setProject={setProject} zip={zip} setZip={setZip} />
+                          <AboutJob project={project} setProject={setProject} zip={zip} setZip={setZipAndClear} zipMissing={zipMissing} fromPost />
                           <Next steps={g.next} />
                           {nudge && <p className="mt-3 text-[13px] text-accent">Paste the replies or add a screenshot, and we'll take it from there.</p>}
                           <Go onClick={startThread}>Find my best fit</Go>
@@ -323,7 +357,7 @@ export default function Gateway({ selected, onSelect, where }: Props) {
                             placeholder="Their name or license number, or paste their quote"
                             className="resize-none rounded-2xl bg-card text-[15px]"
                           />
-                          <AboutJob project={project} setProject={setProject} zip={zip} setZip={setZip} />
+                          <AboutJob project={project} setProject={setProject} zip={zip} setZip={setZipAndClear} zipMissing={zipMissing} />
                           <Next steps={g.next} />
                           {nudge && <p className="mt-3 text-[13px] text-accent">Type their name or license number first.</p>}
                           <Go onClick={startOne}>{classifyHomeEntry(who) === "quote" ? "Check their quote" : "Look them up"}</Go>

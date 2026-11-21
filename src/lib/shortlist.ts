@@ -15,7 +15,9 @@ import type { Contractor, LicenseStatus, Permit, TrustScoreBreakdown, BriefSnaps
 import type { Room } from "@/lib/intake";
 
 export type Sentiment = "positive" | "negative" | "mixed";
-export type Quote = { text: string; sentiment: Sentiment };
+/** Who said it: a neighbor, the contractor about their own business, or we can't tell. */
+export type Speaker = "neighbor" | "self" | "unclear";
+export type Quote = { text: string; sentiment: Sentiment; speaker?: Speaker };
 export type CandidateSource = "pasted" | "screenshot" | "manual";
 
 export type Candidate = {
@@ -30,7 +32,14 @@ export type Candidate = {
   mention_count: number;
   quotes: Quote[];
   source: CandidateSource;
+  /** Distinct people other than the contractor who named them. */
+  neighbors?: number;
+  /** The contractor posted their own details in the thread. */
+  self_promoted?: boolean;
 };
+
+/** The homeowner's own question at the top of the thread, when it was in the screenshot or paste. */
+export type ThreadAsk = { text: string | null; project: ShortlistProject | null; zip: string | null; neighborhood: string | null };
 
 export type LicenseState = "active" | "expiring" | "expired" | "suspended" | "not_checked";
 
@@ -96,6 +105,7 @@ export const fromExtraction = (raw: unknown, source: CandidateSource): Candidate
           .map((q) => ({
             text: str(q?.text) ?? "",
             sentiment: (["positive", "negative", "mixed"].includes(q?.sentiment as string) ? q.sentiment : "mixed") as Sentiment,
+            speaker: (["neighbor", "self", "unclear"].includes(q?.speaker as string) ? q.speaker : "unclear") as Speaker,
           }))
           .filter((q) => q.text)
           .slice(0, 4)
@@ -112,9 +122,27 @@ export const fromExtraction = (raw: unknown, source: CandidateSource): Candidate
       mention_count: Math.max(1, Number(r.mention_count) || quotes.length || 1),
       quotes,
       source,
+      neighbors: Math.max(0, Math.floor(Number(r.neighbor_count) || 0)),
+      self_promoted: r.self_promoted === true || quotes.some((q) => q.speaker === "self"),
     });
   }
   return out;
+};
+
+const PROJECTS: ShortlistProject[] = ["kitchen", "bathroom", "addition", "full-home", "other"];
+
+/** The question the homeowner posted, read from the thread. Anything unclear stays null. */
+export const fromAsk = (raw: unknown): ThreadAsk | null => {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const zip = str(r.zip)?.replace(/\D/g, "") ?? "";
+  const ask: ThreadAsk = {
+    text: str(r.text)?.slice(0, 240) ?? null,
+    project: PROJECTS.includes(r.project as ShortlistProject) ? (r.project as ShortlistProject) : null,
+    zip: /^\d{5}$/.test(zip) ? zip : null,
+    neighborhood: str(r.neighborhood),
+  };
+  return ask.text || ask.project || ask.zip || ask.neighborhood ? ask : null;
 };
 
 export const manualCandidate = (input: { name: string; phone?: string; license_number?: string }): Candidate => ({
@@ -156,6 +184,8 @@ export const mergeCandidates = (list: Candidate[]): Candidate[] => {
     hit.website ??= c.website;
     hit.license_number ??= c.license_number;
     hit.mention_count += c.mention_count;
+    hit.neighbors = (hit.neighbors ?? 0) + (c.neighbors ?? 0);
+    hit.self_promoted = !!hit.self_promoted || !!c.self_promoted;
     for (const q of c.quotes) {
       if (!hit.quotes.some((h) => h.text === q.text)) hit.quotes.push(q);
     }
@@ -239,10 +269,29 @@ export const licenseState = (license: LicenseStatus | null, now = new Date()): L
   return "active";
 };
 
+/** What neighbors said. A contractor's words about their own business never count as a neighbor's. */
 export const neighborRead = (c: Candidate) => {
   const counts = { positive: 0, negative: 0, mixed: 0 };
-  for (const q of c.quotes) counts[q.sentiment]++;
+  for (const q of c.quotes) if (q.speaker !== "self") counts[q.sentiment]++;
   return counts;
+};
+
+/** Neighbors who named them: the extracted count, else distinct neighbor quotes. */
+export const neighborCount = (c: Candidate): number =>
+  c.neighbors && c.neighbors > 0 ? c.neighbors : c.quotes.filter((q) => q.speaker === "neighbor").length;
+
+/**
+ * Where the name came from, said plainly: a neighbor naming them is not the
+ * same as a contractor posting their own ad, and the page never blurs the two.
+ */
+export const sharedBy = (c: Candidate): string | null => {
+  if (c.source === "manual") return null;
+  const n = neighborCount(c);
+  const named = n > 0 ? `Named by ${n} neighbor${n === 1 ? "" : "s"}` : null;
+  if (named && c.self_promoted) return `${named} · also posted their own details`;
+  if (named) return named;
+  if (c.self_promoted) return "Posted their own details in the thread";
+  return c.quotes.length ? "Mentioned in the thread" : null;
 };
 
 /** A reason to look twice before calling. Public record first, then what neighbors said. */
@@ -261,7 +310,7 @@ export const redFlag = (c: CheckedCandidate): string | null => {
 /**
  * Order the shortlist. Flags go last. Then a verified active license, then
  * past work like this project, then the public-record score, then how many
- * neighbors vouched for them.
+ * neighbors named them (never the contractor's own posts).
  */
 export const rankShortlist = (list: CheckedCandidate[]): CheckedCandidate[] =>
   [...list].sort((a, b) => {
@@ -273,7 +322,7 @@ export const rankShortlist = (list: CheckedCandidate[]): CheckedCandidate[] =>
     if (a.likeYours !== b.likeYours) return b.likeYours - a.likeYours;
     const sa = a.score?.total ?? 0, sb = b.score?.total ?? 0;
     if (sa !== sb) return sb - sa;
-    return neighborRead(b.candidate).positive - neighborRead(a.candidate).positive;
+    return neighborCount(b.candidate) - neighborCount(a.candidate) || neighborRead(b.candidate).positive - neighborRead(a.candidate).positive;
   });
 
 /** One line on why this contractor sits where it does. Facts only. */
@@ -296,8 +345,8 @@ export const fitLine = (c: CheckedCandidate, projectWord: string | null): string
     if (c.permits.length > 0) parts.push(`${c.permits.length} San Jose permit${c.permits.length === 1 ? "" : "s"}`);
   } else if (c.likeYours > 0) parts.push(`${c.likeYours} ${projectWord} permit${c.likeYours === 1 ? "" : "s"} in San Jose`);
   else if (c.permits.length > 0) parts.push(`${c.permits.length} San Jose permit${c.permits.length === 1 ? "" : "s"}, none like yours`);
-  const pos = neighborRead(c.candidate).positive;
-  if (pos > 0) parts.push(`${pos} neighbor${pos === 1 ? "" : "s"} vouched`);
+  const by = sharedBy(c.candidate);
+  if (by) parts.push(by.charAt(0).toLowerCase() + by.slice(1));
   if (parts.length === 0)
     return c.candidate.license_number
       ? `License #${c.candidate.license_number}: the state license board didn't answer just now. Open it on CSLB to see its status.`
