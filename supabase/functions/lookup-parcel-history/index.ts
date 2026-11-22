@@ -300,6 +300,56 @@ Deno.serve(async (req) => {
     const oldest = dates[0] ?? null;
     const newest = dates[dates.length - 1] ?? null;
 
+    // Whether every feed answered for the house itself, before the street search below.
+    const houseFeedFailures = [...feedFailures];
+
+    // 4. The street. Most houses have nothing current in the city's open feeds
+    // (finished permits drop out), so show what's being permitted around them:
+    // other permits on the same street and ZIP. By block, not by house number:
+    // the report gets shared, and the neighbors didn't ask to be in it.
+    const DIRECTIONS = new Set(["n", "s", "e", "w", "north", "south", "east", "west"]);
+    const streetWords = parsed.rest.split(" ").filter((w) => w && !DIRECTIONS.has(w));
+    const streetWord = streetWords[0] ?? "";
+    let streetPermits: Array<Record<string, unknown>> = [];
+    if (streetWord.length >= 3) {
+      try {
+        const near = await searchByAddressText(streetWord, 300);
+        const mine = new Set(allRecords.map((r) => r.FOLDERNUMBER));
+        const seen = new Set<string>();
+        streetPermits = near
+          .map((r) => ({ r, loc: parseLocation(r.gx_location) }))
+          .filter(({ r, loc }) => {
+            const m = (loc.address ?? "").toLowerCase().match(/^(\d+)\w?\s+(.+)$/);
+            if (!m || !m[2].split(" ").includes(streetWord)) return false;
+            if (m[1] === parsed.num) return false;
+            if (address.zip && loc.zip && loc.zip !== address.zip) return false;
+            const k = r.FOLDERNUMBER ?? "";
+            if (!k || mine.has(k) || seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          })
+          .map(({ r, loc }) => {
+            const num = Number((loc.address ?? "").match(/^(\d+)/)?.[1] ?? 0);
+            return {
+              block: num ? Math.floor(num / 100) * 100 : null,
+              type: r.FOLDERDESC ?? null,
+              subtype: r.SUBTYPEDESCRIPTION ?? null,
+              description: r.WORKDESCRIPTION ?? null,
+              contractor: parseContractor(r.CONTRACTOR),
+              valuation: r.PERMITVALUATION ? Number(r.PERMITVALUATION) : null,
+              issued_date: parseDate(r.ISSUEDATE),
+              final_date: parseDate(r.FINALDATE),
+              source: r._source ?? null,
+              is_expired_without_final: isExpiredWithoutFinal(r),
+            };
+          })
+          .sort((a, b) => String(b.issued_date ?? "").localeCompare(String(a.issued_date ?? "")))
+          .slice(0, 40);
+      } catch (e) {
+        console.warn("street search failed", e);
+      }
+    }
+
     // Also pull cached code violations for this address (best-effort).
     let violations: Array<Record<string, unknown>> = [];
     if (address.street) {
@@ -328,8 +378,15 @@ Deno.serve(async (req) => {
       most_recent_permit_date: newest,
       oldest_permit_date: oldest,
       // Nothing found while a feed was down is "couldn't check", never "none".
-      lookup_succeeded: addressHits.length > 0 || feedFailures.size === 0,
-      raw_response: { resolved_apn: apn, address_hit_count: addressHits.length, feeds: 3, feed_failures: [...feedFailures] },
+      lookup_succeeded: addressHits.length > 0 || houseFeedFailures.length === 0,
+      raw_response: {
+        resolved_apn: apn,
+        address_hit_count: addressHits.length,
+        feeds: 3,
+        feed_failures: houseFeedFailures,
+        street_name: streetWords.join(" ") || null,
+        street: streetPermits,
+      },
       last_checked_at: new Date().toISOString(),
     };
 

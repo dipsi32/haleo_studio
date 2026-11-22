@@ -48,7 +48,21 @@ export type ParcelHistory = {
   oldest_permit_date: string | null;
   lookup_succeeded: boolean;
   last_checked_at?: string | null;
-  raw_response?: { feeds?: number } | null;
+  raw_response?: { feeds?: number; street_name?: string | null; street?: StreetPermit[] } | null;
+};
+
+/** A permit on the same street, by block (never the neighbor's house number). */
+export type StreetPermit = {
+  block: number | null;
+  type: string | null;
+  subtype: string | null;
+  description: string | null;
+  contractor: string | null;
+  valuation: number | null;
+  issued_date: string | null;
+  final_date: string | null;
+  source: string | null;
+  is_expired_without_final: boolean;
 };
 
 const DAY = 864e5;
@@ -62,6 +76,8 @@ const age = (iso: string | null | undefined, now: Date) => (iso ? now.getTime() 
 export const parcelIsFresh = (row: ParcelHistory | null | undefined, now = new Date()): boolean => {
   if (!row || !row.lookup_succeeded) return false;
   const permits = Array.isArray(row.permits) ? row.permits : [];
+  // Saved before the street was read: look again so the street shows up.
+  if (!Array.isArray(row.raw_response?.street)) return false;
   if (permits.length > 0) return permits.some((p) => p && p.source) && age(row.last_checked_at, now) < 30 * DAY;
   return row.raw_response?.feeds === 3 && age(row.last_checked_at, now) < DAY;
 };

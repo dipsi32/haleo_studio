@@ -32,7 +32,7 @@ const parcel = (permits: ParcelPermit[], extra: Partial<ParcelHistory> = {}): Pa
   oldest_permit_date: null,
   lookup_succeeded: true,
   last_checked_at: "2026-11-21T10:00:00Z",
-  raw_response: { feeds: 3 },
+  raw_response: { feeds: 3, street_name: "luning dr", street: [] },
   ...extra,
 });
 
@@ -114,7 +114,8 @@ describe("houseReport", () => {
     expect(failed.verdict).toEqual(["Clean so far", "on paper."]);
     const zoneD = houseReport({ ...base, signal: signal({ flood_zone: "D" }), parcel: parcel([]), reader: "owner" });
     expect(zoneD.vitals[1].value).toBe("No hazard zones · flood unrated");
-    expect(zoneD.findings.some((f) => /hasn't studied/.test(f.text))).toBe(true);
+    expect(zoneD.ground.find((g) => g.id === "flood")).toMatchObject({ status: "unrated" });
+    expect(zoneD.ground.find((g) => g.id === "flood")?.meaning).toMatch(/hasn't studied/);
     const none = houseReport({ ...base, signal: null, parcel: null, reader: "owner" });
     expect(none.verdict[0]).toBe("We couldn't read");
   });
@@ -139,6 +140,8 @@ describe("freshness", () => {
   it("an empty permit answer lasts a day, and only from all three feeds", () => {
     expect(parcelIsFresh(parcel([]), now)).toBe(true);
     expect(parcelIsFresh(parcel([], { raw_response: {} }), now)).toBe(false);
+    // Saved before the street was read: looked up again so the street appears.
+    expect(parcelIsFresh(parcel([permit({})], { raw_response: { feeds: 3 } }), now)).toBe(false);
     expect(parcelIsFresh(parcel([], { last_checked_at: "2026-11-13T00:00:00Z" }), now)).toBe(false);
     expect(parcelIsFresh(parcel([permit({ source: undefined })]), now)).toBe(false);
     expect(parcelIsFresh(parcel([permit({})]), now)).toBe(true);
@@ -163,5 +166,54 @@ describe("sharing the report", () => {
   it("leaves out anything we couldn't check", () => {
     const r = houseReport({ ...base, signal: null, parcel: parcel([]), reader: "owner" });
     expect(shareMessage(r, "x", "u")).not.toContain("Ground");
+  });
+});
+
+describe("the street and the ground", () => {
+  const sp = (o: Partial<import("./homeData").StreetPermit>): import("./homeData").StreetPermit => ({
+    block: 2800,
+    type: "1 & 2 Family Detached Dwellings",
+    subtype: "Single-Family",
+    description: "Reroof",
+    contractor: "ACME ROOFING INC",
+    valuation: 18000,
+    issued_date: "2026-08-01",
+    final_date: null,
+    source: "active",
+    is_expired_without_final: false,
+    ...o,
+  });
+  const street = [
+    sp({}),
+    sp({ description: "Install roof mounted PV solar", contractor: "SUNRUN INSTALLATION SERVICES INC", block: 2900 }),
+    sp({ description: "Kitchen remodel", contractor: "ROSE REMODELING", issued_date: "2024-02-01", final_date: "2024-06-01" }),
+    sp({ description: "Reroof", contractor: "ACME ROOFING INC", issued_date: "2025-01-10" }),
+  ];
+  const withStreet = parcel([], { raw_response: { feeds: 3, street_name: "lexford ave", street } });
+
+  it("a house with nothing current still shows what's happening on its street", () => {
+    const r = houseReport({ ...base, street: "2844 Lexford Ave", zip: "95124", signal: signal(), parcel: withStreet, reader: "owner" });
+    expect(r.street?.name).toBe("Lexford Ave");
+    expect(r.street?.total).toBe(4);
+    expect(r.street?.kinds[0]).toEqual({ kind: "Roof", count: 2 });
+    expect(r.street?.crew[0]).toMatchObject({ name: "Acme Roofing Inc", count: 2 });
+    expect(r.street?.recent[0]).toMatchObject({ block: "2800 block", what: "Roof", when: "Aug 2026" });
+    expect(r.vitals[2]).toMatchObject({ label: "On Lexford Ave", value: "4 permits on the street" });
+    expect(r.sub).toContain("Around you: 4 permits on Lexford Ave");
+  });
+
+  it("the project reader gets the crew already working on their street", () => {
+    const r = houseReport({ ...base, signal: signal(), parcel: withStreet, reader: "project" });
+    expect(r.steps.find((s) => s.id === "street-crew")?.title).toBe("See who's working on Lexford Ave");
+  });
+
+  it("reads each hazard map in plain words, never calling an unchecked one clear", () => {
+    const r = houseReport({ ...base, signal: signal({ flood_zone: "D", seismic_hazard_type: "Liquefaction" }), parcel: withStreet, reader: "owner" });
+    expect(r.ground.map((g) => [g.id, g.status])).toEqual([["fire", "clear"], ["flood", "unrated"], ["seismic", "zone"]]);
+    expect(r.ground[1].title).toBe("Not rated by FEMA (zone D)");
+    const x = houseReport({ ...base, signal: signal(), parcel: withStreet, reader: "owner" });
+    expect(x.ground[1].title).toBe("Minimal flood risk (zone X)");
+    const none = houseReport({ ...base, signal: null, parcel: withStreet, reader: "owner" });
+    expect(none.ground.every((g) => g.status === "unchecked")).toBe(true);
   });
 });

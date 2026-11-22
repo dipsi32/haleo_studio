@@ -292,7 +292,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
       {/* The record itself */}
       <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
         <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-display text-[20px]">What the city has on file</h3>
+          <h3 className="font-display text-[20px]">This house, <span className="italic">on file with the city</span></h3>
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground">San José permits</span>
         </div>
         {r.rows.length === 0 ? (
@@ -347,6 +347,97 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
         )}
       </section>
 
+      {/* The street: context even when the house has nothing current */}
+      {r.street && r.street.total > 0 && (
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="font-display text-[20px]">
+              On <span className="italic">{r.street.name}</span>
+            </h3>
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">San José permits</span>
+          </div>
+          <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
+            {r.street.total} permit{r.street.total === 1 ? "" : "s"} on your street in the city's open records
+            {r.street.lastYear ? `, ${r.street.lastYear} in the past year` : ""}. What your neighbors are fixing, and who they hire.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {r.street.kinds.slice(0, 6).map((k) => (
+              <span key={k.kind} className="rounded-full border border-border bg-background px-3 py-1 text-[13px]">
+                {k.kind} <span className="text-muted-foreground">· {k.count}</span>
+              </span>
+            ))}
+          </div>
+          {r.street.crew.length > 0 && (
+            <div className="mt-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Who's working on your street</p>
+              <ul className="mt-2 space-y-1.5">
+                {r.street.crew.slice(0, 4).map((c) => (
+                  <li key={c.raw} className="flex items-center justify-between gap-3 text-[14.5px]">
+                    <button type="button" onClick={() => onCheck(c.raw)} className="text-left underline-offset-4 hover:underline">
+                      {c.name}
+                    </button>
+                    <span className="shrink-0 text-[13px] text-muted-foreground">
+                      {c.count} permit{c.count === 1 ? "" : "s"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="mt-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latest on the street</p>
+            <ul className="mt-2 divide-y divide-border">
+              {r.street.recent.map((x, i) => (
+                <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-[14px]">
+                  <span>
+                    {x.what}
+                    {x.block && <span className="text-muted-foreground"> · {x.block}</span>}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">
+                    {[x.when, x.contractor].filter(Boolean).join(" · ")}
+                    {x.done ? " · signed off" : x.expired ? " · expired" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[12px] text-muted-foreground">Shown by block, never by house number.</p>
+          </div>
+        </section>
+      )}
+
+      {/* The ground: each hazard map, read in full */}
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
+        <h3 className="font-display text-[20px]">
+          The ground <span className="italic">under your house</span>
+        </h3>
+        <ul className="mt-4 space-y-4">
+          {r.ground.map((g) => (
+            <li key={g.id} className="flex gap-3">
+              <span
+                className={`mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
+                  g.status === "clear" ? "bg-sage/15 text-sage" : g.status === "zone" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                {g.status === "clear" ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : g.status === "zone" ? "!" : "?"}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[15px]">
+                  <span className="text-muted-foreground">{g.map}:</span> {g.title}
+                </p>
+                <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">{g.meaning}</p>
+                <a href={g.href} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[12px] text-muted-foreground underline-offset-4 hover:underline">
+                  {g.source} map <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-[12px] leading-relaxed text-muted-foreground">
+          From the City of San José's permit and inspection records, CAL FIRE, FEMA and the California Geological Survey. Haleo reads public
+          records; it doesn't inspect homes. Worth confirming with the city before you sign anything.
+        </p>
+      </section>
+
       {/* Where every fact came from */}
       {r.findings.length > 0 && (
         <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
@@ -362,32 +453,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-[12px] leading-relaxed text-muted-foreground">
-            From the City of San José's permit and inspection records, CAL FIRE, FEMA and the California Geological Survey. Haleo reads public
-            records; it doesn't inspect homes. Worth confirming with the city before you sign anything.
-          </p>
         </section>
-      )}
-
-      {r.unchecked.length > 0 && (
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-[13px] leading-relaxed text-muted-foreground">
-          <HelpCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            <span className="font-medium text-foreground">
-              We couldn't check the {r.unchecked.join(" or ")} map{r.unchecked.length > 1 ? "s" : ""} just now,
-            </span>{" "}
-            so we don't call {r.unchecked.length > 1 ? "them" : "it"} clear. Check it yourself:{" "}
-            {HAZARD_MAPS.filter((m) => r.unchecked.includes(m.id === "seismic" ? "earthquake" : m.id)).map((m, i) => (
-              <span key={m.id}>
-                {i > 0 && ", "}
-                <a href={m.href} target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-4">
-                  {m.label}
-                </a>
-              </span>
-            ))}
-            .
-          </p>
-        </div>
       )}
 
       {/* Pass it on */}
