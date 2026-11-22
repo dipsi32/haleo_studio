@@ -265,7 +265,7 @@ const readGround = (s: RiskSignal | null): Ground => {
     });
   } else clear.push("seismic");
 
-  const tone: Ground["tone"] = hazards.length ? "watch" : unchecked.length ? "unknown" : "clear";
+  const tone: Ground["tone"] = hazards.length ? "watch" : unchecked.length || floodUnrated ? "unknown" : "clear";
   const label = hazards.length
     ? hazards.map((h) => h.name).join(" · ")
     : unchecked.length === 3
