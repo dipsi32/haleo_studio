@@ -49,7 +49,7 @@ const STATE_LABEL: Record<RecordState, string> = {
 };
 
 /** "Kitchen remodel · Single-Family — Additions/Alterations" → "Kitchen remodel". */
-const whatOf = (p: RecordPermitIn): string => {
+export const whatOf = (p: RecordPermitIn): string => {
   const d = (p.description ?? "").split(" · ")[0].replace(/^\([A-Z]+\)\s*/, "").trim();
   // The city's own jargon, in plain words.
   if (/sub-?trades? only/i.test(d) || (!d && /sub-?trades? only/i.test(p.subtype ?? ""))) return "Plumbing, electrical or mechanical work";

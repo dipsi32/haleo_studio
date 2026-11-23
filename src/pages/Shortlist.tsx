@@ -6,6 +6,7 @@
 // check each one against CSLB and San Jose permit records, put them in order
 // for their project, and help them ask the best few for a bid, explaining the
 // project once.
+import { NAV } from "@/lib/nav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -445,7 +446,7 @@ const Shortlist = () => {
           {/* ───── 1. Bring your names ───── */}
           {step === "bring" && (
             <motion.section key="bring" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <Eyebrow>Already have names?</Eyebrow>
+              <Eyebrow>{new URLSearchParams(window.location.search).has("one") ? NAV.one.label : NAV.names.label}</Eyebrow>
               <h1 className="mt-4 font-display text-[2rem] font-light leading-[1.08] tracking-tight md:text-[2.8rem]">
                 Forty replies, three good ones. <span className="italic">Let's find them.</span>
               </h1>

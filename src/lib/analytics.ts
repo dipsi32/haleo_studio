@@ -90,6 +90,7 @@ export type AnalyticsEvent =
   | "password_reset_completed"
   | "shortlist_started"
   | "shortlist_project_after"
+  | "nav_clicked"
   | "shortlist_ask_read"
   | "shortlist_extracted"
   | "shortlist_checked"
@@ -138,6 +139,8 @@ export type AnalyticsEvent =
   | "house_action"
   | "house_report_shared"
   | "house_summary_copied"
+  | "house_card_shared"
+  | "house_card_downloaded"
   | "house_shared"
   | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)

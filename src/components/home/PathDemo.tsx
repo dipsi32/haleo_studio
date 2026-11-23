@@ -2,6 +2,7 @@
 // strongest match, so a homeowner sees exactly what will happen before they start.
 // Example data, labelled as such. It follows the path they pick in the
 // gateway; with nothing picked it plays them in turn.
+import { navForGateway } from "@/lib/nav";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, FileText, Loader2, Send } from "lucide-react";
@@ -380,10 +381,10 @@ const ORDER: GatewayPath[] = ["thread", "one", "scratch", "quote"];
 const STEP_MS = 3200;
 
 const TAB: Record<GatewayPath, string> = {
-  scratch: "Just starting",
-  thread: "Names from neighbors",
-  one: "One contractor",
-  quote: "A quote",
+  scratch: navForGateway("scratch")!.short,
+  thread: navForGateway("thread")!.short,
+  one: navForGateway("one")!.short,
+  quote: navForGateway("quote")!.short,
 };
 
 export default function PathDemo({ path, onPath, className }: { path: GatewayPath | null; onPath?: (p: GatewayPath) => void; className?: string }) {

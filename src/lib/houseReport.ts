@@ -10,8 +10,8 @@
 // Nothing here is a code rule, a price, or a judgement of a person: every
 // line is a public-record fact, or our read of one, labelled as such.
 // Pure; tested in houseReport.test.ts.
-import { floodMinimal, type ParcelHistory, type RiskSignal } from "@/lib/homeData";
-import { homeRecord, type InspectionIn, type RecordRow, CITY_PERMIT_ARCHIVE, HAZARD_MAPS } from "@/lib/homeRecord";
+import { floodMinimal, type ParcelHistory, type RiskSignal, type StreetPermit } from "./homeData";
+import { homeRecord, whatOf, type InspectionIn, type RecordRow, CITY_PERMIT_ARCHIVE, HAZARD_MAPS } from "./homeRecord";
 
 export type Reader = "owner" | "project" | "deal";
 
@@ -40,6 +40,27 @@ export type Step = {
 
 export type Finding = { text: string; source: Source };
 
+/** One hazard map, read: what it says about this lot and what that means. */
+export type GroundRow = {
+  id: "fire" | "flood" | "seismic";
+  map: string;
+  status: "clear" | "zone" | "unrated" | "unchecked";
+  title: string;
+  meaning: string;
+  source: string;
+  href: string;
+};
+
+/** What's being permitted on their street: the house has a context even when it has no current permits. */
+export type StreetSummary = {
+  name: string;
+  total: number;
+  lastYear: number;
+  kinds: { kind: string; count: number }[];
+  crew: { name: string; raw: string; count: number }[];
+  recent: { block: string | null; what: string; when: string | null; contractor: string | null; done: boolean; expired: boolean }[];
+};
+
 export type HouseReport = {
   tone: Tone;
   /** The stamp on the verdict: never says more than was checked. */
@@ -55,6 +76,114 @@ export type HouseReport = {
   summary: string;
   /** Hazard checks that didn't run, so the page never calls them clear. */
   unchecked: string[];
+  ground: GroundRow[];
+  street: StreetSummary | null;
+};
+
+// What kind of work a permit is, in the words a homeowner uses. Our read of the city's description.
+const KINDS: [string, RegExp][] = [
+  ["Solar", /solar|photovolt|\bpv\b/i],
+  ["Roof", /re-?roof|roof/i],
+  ["Kitchen", /kitchen/i],
+  ["Bathroom", /bath/i],
+  ["ADU or addition", /\badu\b|accessory dwelling|addition|garage conv/i],
+  ["EV charger or panel", /ev charg|electric vehicle|panel upgrade|service upgrade|main panel/i],
+  ["Heating and cooling", /hvac|furnace|heat pump|a\/c|air cond|mechanical/i],
+  ["Water heater", /water heater/i],
+  ["Windows and doors", /window|door/i],
+  ["Pool or spa", /pool|spa\b/i],
+  ["Plumbing", /plumb|sewer|repipe/i],
+  ["Electrical", /electric/i],
+  ["Remodel", /remodel|alteration|tenant improvement|\bti\b/i],
+];
+export const workKind = (p: { description?: string | null; subtype?: string | null; type?: string | null }): string => {
+  const hay = `${p.description ?? ""} ${p.subtype ?? ""} ${p.type ?? ""}`;
+  return KINDS.find(([, re]) => re.test(hay))?.[0] ?? "Other work";
+};
+
+const titleStreet = (s: string) => s.replace(/\b([a-z])/g, (m) => m.toUpperCase());
+
+const readStreet = (permits: StreetPermit[] | undefined, name: string | null | undefined, now: Date): StreetSummary | null => {
+  if (!Array.isArray(permits) || !name) return null;
+  const yearAgo = now.getTime() - 365 * 864e5;
+  const kinds = new Map<string, number>();
+  const crew = new Map<string, number>();
+  for (const p of permits) {
+    const k = workKind(p);
+    kinds.set(k, (kinds.get(k) ?? 0) + 1);
+    if (p.contractor) crew.set(p.contractor, (crew.get(p.contractor) ?? 0) + 1);
+  }
+  return {
+    name: titleStreet(name),
+    total: permits.length,
+    lastYear: permits.filter((p) => p.issued_date && new Date(p.issued_date).getTime() >= yearAgo).length,
+    kinds: [...kinds.entries()].map(([kind, count]) => ({ kind, count })).sort((a, b) => b.count - a.count),
+    crew: [...crew.entries()].map(([raw, count]) => ({ raw, name: tidyName(raw), count })).sort((a, b) => b.count - a.count).slice(0, 5),
+    recent: permits.slice(0, 6).map((p) => ({
+      block: p.block ? `${p.block} block` : null,
+      what: workKind(p) === "Other work" ? whatOf({ ...p, permit_number: null, status: null, is_open: false }) : workKind(p),
+      when: monthYear(p.issued_date),
+      contractor: p.contractor ? tidyName(p.contractor) : null,
+      done: !!p.final_date,
+      expired: p.is_expired_without_final,
+    })),
+  };
+};
+
+const FLOOD_WORDS: Record<string, string> = {
+  X: "Minimal flood risk",
+  B: "Moderate flood risk",
+  C: "Minimal flood risk",
+};
+
+const readGroundRows = (s: RiskSignal | null): GroundRow[] => {
+  const ran = s?.raw_response?.checked;
+  const exact = !!s?.lookup_succeeded && s?.raw_response?.geocodeLevel !== "zip";
+  const map = (id: GroundRow["id"]) => HAZARD_MAPS.find((m) => m.id === id)!.href;
+  const unchecked = (id: GroundRow["id"], mapName: string, source: string): GroundRow => ({
+    id,
+    map: mapName,
+    status: "unchecked",
+    title: "Not checked",
+    meaning: exact ? "The map didn't answer just now. Check it yourself on the official map." : "We couldn't place the exact lot, so we don't call it either way.",
+    source,
+    href: map(id),
+  });
+  const fire: GroundRow =
+    !exact || !ran?.fire
+      ? unchecked("fire", "Wildfire", "CAL FIRE")
+      : s?.fire_hazard_class
+        ? { id: "fire", map: "Wildfire", status: "zone", title: `${s.fire_hazard_class} fire hazard zone`, meaning: "Exterior work usually calls for fire-rated roofing, siding and vents, and insurance can cost more. Ask contractors to price it in.", source: "CAL FIRE", href: map("fire") }
+        : { id: "fire", map: "Wildfire", status: "clear", title: "Not in a fire hazard zone", meaning: "Standard roofing, siding and vents are fine for exterior work. No wildfire building rules to plan around.", source: "CAL FIRE", href: map("fire") };
+  const zone = s?.flood_zone?.trim() ?? "";
+  const flood: GroundRow =
+    !exact || !ran?.flood
+      ? unchecked("flood", "Flood", "FEMA")
+      : s?.in_special_flood_hazard_area && zone
+        ? { id: "flood", map: "Flood", status: "zone", title: `In a FEMA flood zone (${zone})`, meaning: "Lenders backed by the federal government require flood insurance, and some work triggers elevation and venting rules.", source: "FEMA", href: map("flood") }
+        : floodMinimal(zone)
+          ? { id: "flood", map: "Flood", status: "clear", title: `${FLOOD_WORDS[zone.charAt(0).toUpperCase()] ?? "Minimal flood risk"} (zone ${zone})`, meaning: "Outside FEMA's flood zones: no flood-insurance requirement from lenders, no elevation rules for your work.", source: "FEMA", href: map("flood") }
+          : zone
+            ? { id: "flood", map: "Flood", status: "unrated", title: `Not rated by FEMA (zone ${zone})`, meaning: "FEMA hasn't studied flood risk here. Not a flood zone, not cleared either. Worth asking about drainage before grading or foundation work.", source: "FEMA", href: map("flood") }
+            : unchecked("flood", "Flood", "FEMA");
+  const quake = s?.seismic_hazard_type ?? "";
+  const seismic: GroundRow =
+    !exact || !ran?.seismic
+      ? unchecked("seismic", "Earthquake", "California Geological Survey")
+      : quake
+        ? {
+            id: "seismic",
+            map: "Earthquake",
+            status: "zone",
+            title: `${quake} zone`,
+            meaning: /liquefaction/i.test(quake)
+              ? "The ground can behave like liquid in a strong quake. Additions and foundation work usually need a soils report first, and it goes on a seller's disclosure."
+              : "Mapped landslide risk in a strong quake. Grading and foundation work usually need a geotechnical review first.",
+            source: "California Geological Survey",
+            href: map("seismic"),
+          }
+        : { id: "seismic", map: "Earthquake", status: "clear", title: "No liquefaction or landslide zone", meaning: "Additions and foundation work usually don't need a state-required soils report: one less study before you build.", source: "California Geological Survey", href: map("seismic") };
+  return [fire, flood, seismic];
 };
 
 type Ground = {
@@ -136,7 +265,7 @@ const readGround = (s: RiskSignal | null): Ground => {
     });
   } else clear.push("seismic");
 
-  const tone: Ground["tone"] = hazards.length ? "watch" : unchecked.length ? "unknown" : "clear";
+  const tone: Ground["tone"] = hazards.length ? "watch" : unchecked.length || floodUnrated ? "unknown" : "clear";
   const label = hazards.length
     ? hazards.map((h) => h.name).join(" · ")
     : unchecked.length === 3
@@ -194,7 +323,12 @@ export const houseReport = (input: {
         tone: "clear",
       }
     : { id: "latest", label: "Latest work", value: permitsRead ? "Nothing current" : "Not checked yet", tone: permitsRead ? "clear" : "unknown" };
-  const vitals: Vital[] = [permitVital, { id: "ground", label: "Ground", value: ground.label, tone: ground.tone }, latestVital];
+  const onStreet = readStreet(parcel?.raw_response?.street, parcel?.raw_response?.street_name, now);
+  const streetVital: Vital | null =
+    !newest && onStreet && onStreet.total > 0
+      ? { id: "latest", label: `On ${onStreet.name}`, value: `${plural(onStreet.total, "permit")} on the street`, tone: "clear" }
+      : null;
+  const vitals: Vital[] = [permitVital, { id: "ground", label: "Ground", value: ground.label, tone: ground.tone }, streetVital ?? latestVital];
 
   // ── Verdict
   const tone: Tone = unfinished.length ? "act" : ground.hazards.length || underway.length || ground.floodUnrated ? "watch" : "clear";
@@ -236,6 +370,10 @@ export const houseReport = (input: {
     const missing = ground.unchecked.length ? ` We couldn't check the ${ground.unchecked.join(ground.unchecked.length === 2 ? " or " : ", ").replace(/, ([^,]*)$/, " or $1")} map${ground.unchecked.length > 1 ? "s" : ""} for this address yet.` : "";
     subParts.push(`${[permitsPart, mapsPart].filter(Boolean).join(", and ")}.${missing}`.replace(/^\./, "").trim());
   }
+  if (rows.length === 0 && onStreet && onStreet.total > 0)
+    subParts.push(
+      `Around you: ${plural(onStreet.total, "permit")} on ${onStreet.name}${onStreet.lastYear ? `, ${onStreet.lastYear} in the past year` : ""}, most often ${list(onStreet.kinds.slice(0, 2).map((k) => k.kind.toLowerCase()))} work.`,
+    );
   if (nothingRead) subParts.push("The city's and the state's servers didn't answer. Try again in a minute.");
   const sub = subParts.join(" ");
 
@@ -327,6 +465,15 @@ export const houseReport = (input: {
     });
   }
 
+  const streetCrew = onStreet?.crew.find((c) => !crew.some(([name]) => name === c.raw));
+  if (reader !== "deal" && streetCrew && steps.length < 2) {
+    steps.push({
+      id: "street-crew",
+      title: `See who's working on ${onStreet!.name}`,
+      why: `${streetCrew.name} has ${plural(streetCrew.count, "permit")} on your street. Their record, read against your job.`,
+      action: { kind: "check", label: "Check their record", name: streetCrew.raw },
+    });
+  }
   if (reader === "project" && steps.length < 3) {
     steps.push({
       id: "project",
@@ -390,15 +537,7 @@ export const houseReport = (input: {
   }
   const noCrew = rows.filter((r) => !r.contractor).length;
   if (noCrew && rows.length) findings.push({ text: `${plural(noCrew, "permit")} with no contractor named, usually pulled by the owner or a sub-trade.`, source: "Our read" });
-  for (const h of ground.hazards) findings.push({ text: h.plain, source: "Public record" });
-  if (ground.clear.length) {
-    const names = { fire: "fire", flood: "flood", seismic: "earthquake" } as const;
-    findings.push({
-      text: `Not in a mapped ${list(ground.clear.map((c) => names[c as keyof typeof names]))} hazard zone.`,
-      source: "Public record",
-    });
-  }
-  if (ground.floodUnrated) findings.push({ text: `FEMA flood zone ${signal?.flood_zone}: risk FEMA hasn't studied, so we don't call it clear.`, source: "Public record" });
+  // The hazard maps have their own section (ground), each read in full.
   if (parcel?.apn) findings.push({ text: `Assessor's parcel ${parcel.apn}, if a title company or the city asks.`, source: "Public record" });
 
   // ── The plain-text summary
@@ -413,5 +552,20 @@ export const houseReport = (input: {
   ].join("\n");
   for (const s of steps) if (s.action.kind === "copy" && !s.action.text) s.action = { ...s.action, text: summary };
 
-  return { tone, badge, verdict, sub, vitals, steps: steps.slice(0, 3), findings, rows, summary, unchecked: ground.unchecked };
+  return { tone, badge, verdict, sub, vitals, steps: steps.slice(0, 3), findings, rows, summary, unchecked: ground.unchecked, ground: readGroundRows(signal), street: onStreet };
 };
+
+/**
+ * The text that goes out when they share the report: the answer itself, so
+ * whoever gets it sees the results in the message, not just a link.
+ */
+export const shareMessage = (r: Pick<HouseReport, "verdict" | "vitals">, street: string, url: string): string =>
+  [
+    `${street}: ${r.verdict.join(" ")}`,
+    ...r.vitals.filter((v) => v.tone !== "unknown").map((v) => `• ${v.label}: ${v.value}`),
+    "",
+    `The full record, from the city's permits and public hazard maps: ${url}`,
+  ].join("\n");
+
+/** A link that opens Messages with the text filled in (iOS and Android both read "sms:?&body="). */
+export const smsLink = (text: string) => `sms:?&body=${encodeURIComponent(text)}`;

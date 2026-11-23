@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { NAV } from "@/lib/nav";
 import { Link, useNavigate } from "react-router-dom";
 import { takePendingQuote } from "@/lib/quoteHandoff";
 import { motion, AnimatePresence } from "framer-motion";
@@ -319,10 +320,10 @@ export default function Roast() {
                     transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3.5 py-1.5 text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700 mb-6 whitespace-nowrap">
-                      <Flame className="w-3.5 h-3.5 shrink-0" /> Free · No signup · 30 seconds
+                      <Flame className="w-3.5 h-3.5 shrink-0" /> {NAV.quote.label} · Free · No signup
                     </div>
                     <h1 className="font-serif text-[2.1rem] md:text-[3.4rem] font-medium leading-[1.02] tracking-tight text-foreground">
-                      Got a quote? <span className="italic">Get it roasted.</span>
+                      Got a quote? <span className="italic">Check it before you sign.</span>
                     </h1>
                     <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
                       Drop in your contractor's estimate. We line it up against real local costs and prior proposals, then tell you straight where you stand.

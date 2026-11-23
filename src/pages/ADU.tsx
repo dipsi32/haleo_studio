@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NAV } from "@/lib/nav";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Building2, Loader2, FileText } from "lucide-react";
@@ -310,7 +311,7 @@ export default function ADU() {
       <main className="container max-w-xl px-4 pb-24 pt-28">
         <header className="mb-6">
           <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            <Building2 className="h-3.5 w-3.5" /> ADU feasibility
+            <Building2 className="h-3.5 w-3.5" /> {NAV.adu.label}
           </p>
           <h1 className="mt-2 font-display text-3xl leading-tight tracking-tight">
             Can you build an ADU on your lot?
