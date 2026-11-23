@@ -124,11 +124,11 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + n * 0.07 }}
-      className="flex gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft"
+      className="flex gap-3 rounded-3xl border border-border bg-card p-4 shadow-soft sm:gap-4 sm:p-5"
     >
-      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground font-display text-[14px] text-background">{n + 1}</span>
+      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-foreground font-display text-[13px] text-background sm:h-8 sm:w-8">{n + 1}</span>
       <div className="min-w-0 flex-1">
-        <p className="font-display text-[18px] leading-snug">{step.title}</p>
+        <p className="font-display text-[17px] leading-snug sm:text-[18px]">{step.title}</p>
         <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{step.why}</p>
         {a.kind === "link" ? (
           <a
@@ -136,7 +136,7 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
             target="_blank"
             rel="noreferrer"
             onClick={onRun}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[14px] font-medium transition-smooth hover:bg-secondary"
+            className="mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full border border-border px-4 text-[14px] font-medium transition-smooth hover:bg-secondary"
           >
             {a.label} <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -144,7 +144,7 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
           <button
             type="button"
             onClick={onRun}
-            className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium transition-smooth ${
+            className={`mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-smooth ${
               a.kind === "project" ? "bg-foreground text-background hover:opacity-90" : "border border-border hover:bg-secondary"
             }`}
           >
@@ -191,18 +191,6 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
   // carries the results (not just a link), and the link opens this report.
   const reportUrl = `${window.location.origin}/house?${new URLSearchParams({ street, zip, for: reader }).toString()}`;
   const message = shareMessage(r, street, reportUrl);
-  const onPhone = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
-  const moreWays = async () => {
-    track("house_report_shared", { reader, tone: r.tone, via: "share_sheet" });
-    try {
-      // Text only: some apps drop the text when a separate url is passed, and the link is in the text.
-      if (navigator.share) return await navigator.share({ text: message });
-    } catch (e) {
-      if ((e as Error)?.name === "AbortError") return;
-    }
-    await copy("send", message);
-  };
-
   // The neighbor gets the tool, never this address.
   const shareTool = async () => {
     const url = `${window.location.origin}/house`;
@@ -218,342 +206,222 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
     }
   };
 
-  const tone = TONE[r.tone];
-  const badge = TONE[r.badge.tone];
   const rows = showAll ? r.rows : r.rows.slice(0, 4);
+  const hasStreet = !!r.street && r.street.total > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Who's reading: the same facts, a different "so what" */}
-      <div>
-        <p className="px-1 text-[13px] text-muted-foreground">Reading it as</p>
-        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Who's reading">
-          {READERS.map((x) => (
-            <button
-              key={x.id}
-              type="button"
-              role="radio"
-              aria-checked={reader === x.id}
-              onClick={() => {
-                onReader(x.id);
-                track("house_reader", { reader: x.id });
-              }}
-              className={`rounded-full border px-4 py-2 text-[14px] transition-smooth ${
-                reader === x.id ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary"
-              }`}
-            >
-              {x.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-10">
+      {/* 1. The answer, on the card they'll share. Pinned while they read the rest. */}
+      <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+        <HouseCard report={r} street={street} zip={zip} message={message} />
+      </aside>
 
-      {/* The verdict */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${tone.ring} via-card to-card p-6 shadow-soft md:p-8`}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Your home's record</p>
-          <motion.span
-            initial={{ scale: 0.6, rotate: -12, opacity: 0 }}
-            animate={{ scale: 1, rotate: -4, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.25 }}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badge.chip}`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} /> {r.badge.word}
-          </motion.span>
-        </div>
-        <h2 className="mt-4 font-display text-[34px] font-light leading-[1.05] tracking-tight md:text-[44px]">
-          {r.verdict[0]} <span className="italic">{r.verdict[1]}</span>
-        </h2>
-        <p className="mt-3 max-w-xl text-[15.5px] leading-relaxed text-muted-foreground">{r.sub}</p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {r.vitals.map((v, i) => (
-            <VitalTile key={v.id} v={v} i={i} />
-          ))}
-        </div>
-      </motion.section>
-
-      {/* What to do */}
-      {r.steps.length > 0 && (
+      <div className="min-w-0 space-y-6">
+        {/* 2. What to do. Who's reading only changes this, so it lives here. */}
         <section>
-          <h3 className="px-1 font-display text-[22px]">
-            What to do <span className="italic">next</span>
-          </h3>
+          <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+            <h3 className="font-display text-[24px] leading-tight">
+              What to do <span className="italic">next</span>
+            </h3>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Who's reading">
+              {READERS.map((x) => (
+                <button
+                  key={x.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={reader === x.id}
+                  onClick={() => {
+                    onReader(x.id);
+                    track("house_reader", { reader: x.id });
+                  }}
+                  className={`min-h-[40px] rounded-full border px-3.5 text-[13.5px] transition-smooth ${
+                    reader === x.id ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary"
+                  }`}
+                >
+                  {x.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <ol className="mt-3 space-y-3">
             {r.steps.map((s, i) => (
               <StepCard key={s.id} step={s} n={i} onRun={() => run(s)} done={copied === s.id} />
             ))}
           </ol>
         </section>
-      )}
 
-      {/* The card: everything above, on one shareable image */}
-      <HouseCard report={r} street={street} zip={zip} />
-
-      {/* The record itself */}
-      <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-display text-[20px]">This house, <span className="italic">on file with the city</span></h3>
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">San José permits</span>
-        </div>
-        {r.rows.length === 0 ? (
-          <p className="mt-3 text-[14.5px] leading-relaxed text-muted-foreground">
-            {data.parcel?.lookup_succeeded ? (
-              <>
-                No active, in-progress or expired permits. The city's open records drop permits once they're finished; its archive has
-                the full history.{" "}
-              </>
-            ) : (
-              <>The city's permit records didn't answer just now. </>
-            )}
-            <a href={CITY_PERMIT_ARCHIVE} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
-              sjpermits.org
-            </a>
-          </p>
-        ) : (
-          <ol className="relative mt-5 space-y-5 border-l border-border pl-6">
-            {rows.map((row, i) => (
-              <li key={`${row.permit}-${i}`} className="relative">
-                <span className={`absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-card ${TONE[row.state === "finaled" ? "clear" : row.state === "in_progress" ? "watch" : row.state === "unknown" ? "unknown" : "act"].dot}`} />
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-display text-[13px] text-muted-foreground">{row.year ?? "—"}</span>
-                  <span className="text-[15.5px]">{row.what}</span>
-                  <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide ${STATE_CHIP[row.state]}`}>{row.stateLabel}</span>
-                </div>
-                <p className="mt-1 text-[13.5px] text-muted-foreground">
-                  {row.contractor ? (
-                    <button type="button" onClick={() => onCheck(row.contractor!)} className="text-foreground underline-offset-4 hover:underline">
-                      {tidyName(row.contractor)}
-                    </button>
-                  ) : (
-                    "No contractor named"
-                  )}
-                  {row.signoffs.length > 0 && (
-                    <span className="text-sage">
-                      {" "}
-                      · <Check className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {row.state === "finaled" ? "Signed off" : "Passed so far"}: {row.signoffs.join(", ")}
-                      {(row.state === "expired" || row.state === "open") && <span className="text-destructive">, but no final</span>}
-                    </span>
-                  )}
-                </p>
-                {row.permit && <p className="mt-0.5 text-[12px] text-muted-foreground/80">Permit {row.permit}</p>}
-              </li>
-            ))}
-          </ol>
-        )}
-        {r.rows.length > 4 && (
-          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-4 text-[13.5px] font-medium underline-offset-4 hover:underline">
-            {showAll ? "Show fewer" : `Show all ${r.rows.length}`}
-          </button>
-        )}
-      </section>
-
-      {/* The street: context even when the house has nothing current */}
-      {r.street && r.street.total > 0 && (
-        <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-display text-[20px]">
-              On <span className="italic">{r.street.name}</span>
-            </h3>
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">San José permits</span>
-          </div>
-          <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
-            {r.street.total} permit{r.street.total === 1 ? "" : "s"} on your street in the city's open records
-            {r.street.lastYear ? `, ${r.street.lastYear} in the past year` : ""}. What your neighbors are fixing, and who they hire.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {r.street.kinds.slice(0, 6).map((k) => (
-              <span key={k.kind} className="rounded-full border border-border bg-background px-3 py-1 text-[13px]">
-                {k.kind} <span className="text-muted-foreground">· {k.count}</span>
+        {/* 3. The details: only what the card can't hold. */}
+        <section className="rounded-3xl border border-border bg-card shadow-soft">
+          {/* This house */}
+          <div className="p-5 md:p-7">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="font-display text-[19px]">This house</h3>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                {r.rows.length ? `${r.rows.length} permit${r.rows.length === 1 ? "" : "s"} on file` : "City permits"}
               </span>
-            ))}
+            </div>
+            {r.rows.length === 0 ? (
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                {data.parcel?.lookup_succeeded
+                  ? "No active, in-progress or expired permits. Finished ones drop out of the city's open records."
+                  : "The city's permit records didn't answer just now. Try again in a minute."}
+              </p>
+            ) : (
+              <>
+                <ol className="relative mt-4 space-y-4 border-l border-border pl-6">
+                  {rows.map((row, i) => (
+                    <li key={`${row.permit}-${i}`} className="relative">
+                      <span
+                        className={`absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-card ${
+                          TONE[row.state === "finaled" ? "clear" : row.state === "in_progress" ? "watch" : row.state === "unknown" ? "unknown" : "act"].dot
+                        }`}
+                      />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="font-display text-[13px] text-muted-foreground">{row.year ?? "—"}</span>
+                        <span className="text-[15px]">{row.what}</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide ${STATE_CHIP[row.state]}`}>{row.stateLabel}</span>
+                      </div>
+                      <p className="mt-1 text-[13.5px] text-muted-foreground">
+                        {row.contractor ? (
+                          <button type="button" onClick={() => onCheck(row.contractor!)} className="-my-2 inline-block py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
+                            {tidyName(row.contractor)}
+                          </button>
+                        ) : (
+                          "No contractor named"
+                        )}
+                        {row.signoffs.length > 0 && (
+                          <span className="text-sage">
+                            {" "}
+                            · <Check className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {row.state === "finaled" ? "Signed off" : "Passed so far"}: {row.signoffs.join(", ")}
+                            {(row.state === "expired" || row.state === "open") && <span className="text-destructive">, but no final</span>}
+                          </span>
+                        )}
+                        {row.permit && <span className="text-muted-foreground/80"> · {row.permit}</span>}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+                {r.rows.length > 4 && (
+                  <button type="button" onClick={() => setShowAll((x) => !x)} className="mt-3 text-[13.5px] font-medium underline-offset-4 hover:underline">
+                    {showAll ? "Show fewer" : `Show all ${r.rows.length}`}
+                  </button>
+                )}
+              </>
+            )}
           </div>
-          {r.street.crew.length > 0 && (
-            <div className="mt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Who's working on your street</p>
-              <ul className="mt-2 space-y-1.5">
-                {r.street.crew.slice(0, 4).map((c) => (
-                  <li key={c.raw} className="flex items-center justify-between gap-3 text-[14.5px]">
-                    <button type="button" onClick={() => onCheck(c.raw)} className="text-left underline-offset-4 hover:underline">
-                      {c.name}
-                    </button>
-                    <span className="shrink-0 text-[13px] text-muted-foreground">
-                      {c.count} permit{c.count === 1 ? "" : "s"}
-                    </span>
-                  </li>
+
+          {/* The street */}
+          {hasStreet && (
+            <div className="border-t border-border p-5 md:p-7">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-display text-[19px]">
+                  On <span className="italic">{r.street!.name}</span>
+                </h3>
+                <span className="text-[11px] uppercase tracking-wide text-muted-foreground" title="Neighbors are shown by block, never by house number">By block</span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {r.street!.kinds.slice(0, 6).map((k) => (
+                  <span key={k.kind} className="rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px]">
+                    {k.kind} <span className="text-muted-foreground">· {k.count}</span>
+                  </span>
                 ))}
-              </ul>
+              </div>
+              <div className="mt-4 grid gap-5 md:grid-cols-2">
+                {r.street!.crew.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Who your neighbors hire</p>
+                    <ul className="mt-1">
+                      {r.street!.crew.slice(0, 4).map((c) => (
+                        <li key={c.raw} className="flex items-center justify-between gap-3 text-[14px]">
+                          <button type="button" onClick={() => onCheck(c.raw)} className="min-h-[40px] truncate text-left underline underline-offset-4 decoration-border hover:decoration-foreground">
+                            {c.name}
+                          </button>
+                          <span className="shrink-0 text-[12.5px] text-muted-foreground">{c.count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latest</p>
+                  <ul className="mt-2 space-y-1.5">
+                    {r.street!.recent.slice(0, 4).map((x, i) => (
+                      <li key={i} className="text-[13.5px]">
+                        {x.what}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {[x.block, x.when].filter(Boolean).join(", ")}
+                          {x.done ? " · signed off" : x.expired ? " · expired" : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
-          <div className="mt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latest on the street</p>
-            <ul className="mt-2 divide-y divide-border">
-              {r.street.recent.map((x, i) => (
-                <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-[14px]">
-                  <span>
-                    {x.what}
-                    {x.block && <span className="text-muted-foreground"> · {x.block}</span>}
+
+          {/* The ground */}
+          <div className="border-t border-border p-5 md:p-7">
+            <h3 className="font-display text-[19px]">The ground</h3>
+            <ul className="mt-3 space-y-3.5">
+              {r.ground.map((g) => (
+                <li key={g.id} className="flex gap-3">
+                  <span
+                    className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
+                      g.status === "clear" ? "bg-sage/15 text-sage" : g.status === "zone" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {g.status === "clear" ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : g.status === "zone" ? "!" : "?"}
                   </span>
-                  <span className="text-[13px] text-muted-foreground">
-                    {[x.when, x.contractor].filter(Boolean).join(" · ")}
-                    {x.done ? " · signed off" : x.expired ? " · expired" : ""}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[14.5px]">
+                      <span className="text-muted-foreground">{g.map}:</span> {g.title}
+                    </p>
+                    <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">
+                      {g.meaning}{" "}
+                      <a href={g.href} target="_blank" rel="noreferrer" className="-my-2 inline-block whitespace-nowrap py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
+                        {g.source} map <ExternalLink className="inline h-3 w-3" />
+                      </a>
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-[12px] text-muted-foreground">Shown by block, never by house number.</p>
           </div>
-        </section>
-      )}
 
-      {/* The ground: each hazard map, read in full */}
-      <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
-        <h3 className="font-display text-[20px]">
-          The ground <span className="italic">under your house</span>
-        </h3>
-        <ul className="mt-4 space-y-4">
-          {r.ground.map((g) => (
-            <li key={g.id} className="flex gap-3">
-              <span
-                className={`mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
-                  g.status === "clear" ? "bg-sage/15 text-sage" : g.status === "zone" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                {g.status === "clear" ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : g.status === "zone" ? "!" : "?"}
-              </span>
-              <div className="min-w-0">
-                <p className="text-[15px]">
-                  <span className="text-muted-foreground">{g.map}:</span> {g.title}
-                </p>
-                <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">{g.meaning}</p>
-                <a href={g.href} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[12px] text-muted-foreground underline-offset-4 hover:underline">
-                  {g.source} map <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-5 text-[12px] leading-relaxed text-muted-foreground">
-          From the City of San José's permit and inspection records, CAL FIRE, FEMA and the California Geological Survey. Haleo reads public
-          records; it doesn't inspect homes. Worth confirming with the city before you sign anything.
-        </p>
-      </section>
-
-      {/* Where every fact came from */}
-      {r.findings.length > 0 && (
-        <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">
-          <h3 className="font-display text-[20px]">Worth knowing</h3>
-          <ul className="mt-4 space-y-3">
-            {r.findings.map((f) => (
-              <li key={f.text} className="flex gap-3 text-[14.5px] leading-relaxed">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-sage" strokeWidth={2.2} />
-                <span>
-                  {f.text}
-                  <SourceBadge source={f.source} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Pass it on */}
-      <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-          <p className="font-display text-[18px] leading-snug">Send this report</p>
-          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">
-            The verdict and the facts go in the message, with a link to the full record. It includes this address.
+          <p className="border-t border-border px-6 py-4 text-[12px] leading-relaxed text-muted-foreground md:px-7">
+            {data.parcel?.apn ? `Assessor's parcel ${data.parcel.apn}. ` : ""}From the City of San José's permit and inspection records, CAL FIRE, FEMA and the
+            California Geological Survey. Haleo reads public records; it doesn't inspect homes.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {onPhone && (
-              <a
-                href={smsLink(message)}
-                onClick={() => track("house_report_shared", { reader, tone: r.tone, via: "sms" })}
-                className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[14px] font-medium text-background transition-smooth hover:opacity-90"
-              >
-                <MessageCircle className="h-4 w-4" /> Text it
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={onPhone ? moreWays : () => {
-                track("house_report_shared", { reader, tone: r.tone, via: "copy" });
-                void copy("send", message);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[14px] font-medium transition-smooth hover:bg-secondary"
-            >
-              {copied === "send" ? (
-                <>
-                  <Check className="h-4 w-4 text-sage" /> Copied
-                </>
-              ) : onPhone ? (
-                <>
-                  <Share2 className="h-4 w-4" /> More ways
-                </>
-              ) : (
-                <>
-                  <ClipboardCopy className="h-4 w-4" /> Copy message and link
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            track("house_summary_copied", { reader, tone: r.tone });
-            void copy("summary", r.summary);
-          }}
-          className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
-        >
-          <p className="font-display text-[18px] leading-snug">Copy it in plain words</p>
-          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">For a listing packet, an email to the seller, or your records.</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-            {copied === "summary" ? (
-              <>
-                <Check className="h-4 w-4 text-sage" /> Copied
-              </>
-            ) : (
-              <>
-                <ClipboardCopy className="h-4 w-4" /> Copy the summary
-              </>
-            )}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={onAnother}
-          className="group rounded-3xl border border-accent/30 bg-accent-soft/60 p-5 text-left transition-smooth hover:-translate-y-0.5 hover:shadow-soft"
-        >
-          <p className="font-display text-[18px] leading-snug">Touring a house this weekend?</p>
-          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">Look it up before you fall for it. Or the one next door.</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-            <Home className="h-4 w-4" /> Check another address
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={shareTool}
-          className="group rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
-        >
-          <p className="font-display text-[18px] leading-snug">Know a neighbor who'd want this?</p>
-          <p className="mt-1.5 text-[13.5px] leading-snug text-muted-foreground">Send them the lookup. We share the tool, never your address.</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium">
-            {copied === "tool" ? (
-              <>
-                <Check className="h-4 w-4 text-sage" /> Link copied
-              </>
-            ) : (
-              <>
-                <Share2 className="h-4 w-4" /> Share the tool
-              </>
-            )}
-          </span>
-        </button>
-      </section>
+        </section>
+
+        {/* 4. The loops: the next house, and the neighbor. */}
+        <section className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onAnother}
+            className="flex items-center gap-3 rounded-3xl border border-accent/30 bg-accent-soft/60 p-4 text-left transition-smooth hover:-translate-y-0.5 hover:shadow-soft"
+          >
+            <Home className="h-5 w-5 shrink-0 text-accent" />
+            <span>
+              <span className="block text-[15px] font-medium">Touring a house this weekend?</span>
+              <span className="block text-[13px] text-muted-foreground">Look it up before you fall for it.</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={shareTool}
+            className="flex items-center gap-3 rounded-3xl border border-border bg-card p-4 text-left shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-lift"
+          >
+            {copied === "tool" ? <Check className="h-5 w-5 shrink-0 text-sage" /> : <Share2 className="h-5 w-5 shrink-0" />}
+            <span>
+              <span className="block text-[15px] font-medium">{copied === "tool" ? "Link copied" : "Know a neighbor who'd want this?"}</span>
+              <span className="block text-[13px] text-muted-foreground">Send them the lookup, never your address.</span>
+            </span>
+          </button>
+        </section>
+      </div>
     </div>
   );
 }

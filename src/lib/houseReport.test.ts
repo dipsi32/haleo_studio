@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { houseReport, shareMessage, smsLink, tidyName } from "./houseReport";
+import { houseReport, shareMessage, smsLink, tidyName, topKinds } from "./houseReport";
 import { parcelIsFresh, riskIsFresh, type ParcelHistory, type ParcelPermit, type RiskSignal } from "./homeData";
 
 const now = new Date("2026-11-21T12:00:00Z");
@@ -122,7 +122,7 @@ describe("houseReport", () => {
 
   it("the summary fills every copy action", () => {
     const r = houseReport({ ...base, signal: signal(), parcel: parcel([]), reader: "deal" });
-    const copy = r.steps.find((s) => s.id === "summary")!;
+    const copy = r.steps.find((s) => s.id === "history")!;
     expect(copy.action.kind === "copy" && copy.action.text).toContain("1488 Luning Dr, San Jose 95118");
   });
 });
@@ -215,5 +215,12 @@ describe("the street and the ground", () => {
     expect(x.ground[1].title).toBe("Minimal flood risk (zone X)");
     const none = houseReport({ ...base, signal: null, parcel: withStreet, reader: "owner" });
     expect(none.ground.every((g) => g.status === "unchecked")).toBe(true);
+  });
+});
+
+describe("topKinds", () => {
+  it("names real kinds of work, never 'other work', and keeps acronyms", () => {
+    expect(topKinds([{ kind: "Other work", count: 9 }, { kind: "ADU or addition", count: 3 }, { kind: "Roof", count: 2 }])).toBe("ADU or addition and roof");
+    expect(topKinds([{ kind: "Other work", count: 9 }])).toBeNull();
   });
 });

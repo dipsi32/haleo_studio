@@ -74,7 +74,9 @@ describe("houseCard", () => {
     expect(c.place).toBe("2844 Lexford Ave");
     expect(c.city).toBe("San José 95124");
     expect(c.verdict).toEqual(["2 things to", "close out."]);
-    expect(c.highlight).toEqual({ text: expect.stringContaining("2 permits never got a final inspection"), tone: "act" });
+    expect(c.house).toEqual({ value: "2 unfinished", detail: "Never got a final", tone: "act" });
+    expect(c.highlight).toEqual({ text: expect.stringContaining("Get them finaled before your next project or a sale"), tone: "act" });
+    expect(c.ground.map((g) => `${g.label}:${g.status}`)).toEqual(["Fire:clear", "Flood:clear", "Quake:clear"]);
     expect(c.rows.map((r) => r.label)).toEqual(["Permits", "Ground", "Latest work"]);
     expect(c.checkedOn).toBe("Nov 23, 2026");
   });
@@ -84,10 +86,17 @@ describe("houseCard", () => {
     expect(c.highlight?.text).toMatch(/^Liquefaction zone\. The ground can behave like liquid in a strong quake\.$/);
   });
 
-  it("a quiet house shows its street", () => {
+  it("a quiet house shows its street, and the line under it says something new", () => {
     const c = card(signal(), parcel([], [sp({}), sp({ description: "PV solar" }), sp({ issued_date: "2024-01-01" })]));
-    expect(c.highlight?.text).toBe("3 permits on Lexford Ave, 2 this past year. Most often: roof and solar.");
-    expect(c.rows[2]).toMatchObject({ label: "On Lexford Ave", value: "3 permits on the street" });
+    expect(c.house).toMatchObject({ value: "None open", detail: "Nothing unfinished", tone: "clear" });
+    expect(c.around).toEqual({ label: "Lexford Ave", value: "3 permits", detail: "Mostly roof" });
+    expect(c.highlight?.text).toBe("Acme Roofing Inc has 3 permits on Lexford Ave: the crew your neighbors hire.");
+  });
+
+  it("an unrated flood map is explained, never left as a bare question mark", () => {
+    const c = card(signal({ flood_zone: "D" }), parcel([], [sp({})]));
+    expect(c.ground.find((g) => g.label === "Flood")?.status).toBe("unrated");
+    expect(c.highlight?.text).toMatch(/^FEMA hasn't rated flood risk here/);
   });
 
   it("hides the house number for posting where neighbors can see", () => {
