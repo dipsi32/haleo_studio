@@ -28,7 +28,14 @@ const SUFFIX: Record<string, string> = { av: "Ave", ave: "Ave", st: "St", dr: "D
 /** "5343 LENORA AV" → "Lenora Ave". The house number never leaves this function. */
 export const streetOf = (address: string | null | undefined): string | null => {
   if (!address) return null;
-  const rest = address.trim().replace(/^\d+[a-z]?(-\d+)?\s+/i, "").split(/[,#]/)[0].trim();
+  const rest = address
+    .trim()
+    .replace(/^\d+[a-z]?(-\d+)?\s+/i, "")
+    .split(/[,#]/)[0]
+    // Unit numbers are as good as an address: drop them ("KIMBER CT 66", "MAIN ST APT 4B", "ELM ST UNIT 2").
+    .replace(/\s+(apt|unit|ste|suite|bldg|spc|space|no)\.?\s*\S+$/i, "")
+    .replace(/(\s+[a-z]?\d+[a-z]?)+$/i, "")
+    .trim();
   if (!rest || /^\d/.test(rest)) return null;
   return rest
     .toLowerCase()

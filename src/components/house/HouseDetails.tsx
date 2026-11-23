@@ -258,7 +258,9 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
   const [asked, setAsked] = useState(false);
   const [all, setAll] = useState(false);
   const area = useAreaContractors(zip, asked);
-  const crews = all ? area.crews : area.crews.slice(0, 8);
+  // Whoever has worked on their own street comes first: the most relevant to them.
+  const ranked = [...area.crews].sort((a, b) => Number(onStreet(b, street)) - Number(onStreet(a, street)));
+  const crews = all ? ranked : ranked.slice(0, 8);
 
   return (
     <div className="border-t border-border p-5 md:p-7">
@@ -284,8 +286,9 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
           <ArrowRight className="h-4 w-4 shrink-0" />
         </button>
       ) : area.status === "loading" || area.status === "idle" ? (
-        <p className="mt-3 flex items-center gap-2 text-[14px] text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" /> Reading {zip}'s permits…
+        <p className="mt-3 flex items-start gap-2 text-[14px] text-muted-foreground">
+          <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-accent" />
+          <span>Reading every permit in {zip} from the city. The first look at a ZIP can take a couple of minutes; after that it's instant.</span>
         </p>
       ) : area.status === "failed" || !area.crews.length ? (
         <p className="mt-3 text-[14px] text-muted-foreground">We couldn't read {zip}'s permits just now. Try again in a minute.</p>
@@ -294,6 +297,11 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
           <p className="mt-2 text-[13.5px] text-muted-foreground">
             {area.crews.length} contractors across {area.permits} permits in {zip}, most active first.
           </p>
+          {area.status === "growing" && (
+            <p className="mt-1.5 flex items-center gap-2 text-[12.5px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" /> Reading the rest of {zip} from the city. This list fills in when it lands.
+            </p>
+          )}
           <ul className="mt-3 space-y-2">
             {crews.map((c) => {
               const mine = onStreet(c, street);

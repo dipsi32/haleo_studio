@@ -9,6 +9,9 @@ describe("areaContractors", () => {
     expect(streetOf("12B N 1ST ST, SAN JOSE")).toBe("N 1st St");
     expect(streetOf("100-104 ALMADEN BL #3")).toBe("Almaden Blvd");
     expect(streetOf("")).toBeNull();
+    expect(streetOf("1450 KIMBER CT 66")).toBe("Kimber Ct");
+    expect(streetOf("22 MAIN ST APT 4B")).toBe("Main St");
+    expect(streetOf("300 N 1ST ST UNIT 2")).toBe("N 1st St");
   });
 
   it("groups each contractor's work: how much, what kind, which streets", () => {

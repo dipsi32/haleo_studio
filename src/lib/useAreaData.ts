@@ -50,41 +50,54 @@ export const useCrewRecords = (names: string[]): Record<string, CrewRecord> => {
   return out;
 };
 
-export type AreaState = { status: "idle" | "loading" | "done" | "failed"; crews: AreaCrew[]; permits: number };
+export type AreaState = {
+  /** "growing": showing what we have while the city's full read of the ZIP is still coming in. */
+  status: "idle" | "loading" | "growing" | "done" | "failed";
+  crews: AreaCrew[];
+  permits: number;
+};
 
-/** Everyone with permitted work in the ZIP. Pulls the ZIP from the city first if we hold too little of it. */
+/**
+ * Everyone with permitted work in the ZIP. Shows what's on hand at once; if
+ * that's thin, reads the ZIP from the city in the background (the first read
+ * of a ZIP can take a couple of minutes) and fills in when it lands.
+ */
 export const useAreaContractors = (zip: string, enabled: boolean): AreaState => {
   const [state, setState] = useState<AreaState>({ status: "idle", crews: [], permits: 0 });
   useEffect(() => {
     if (!enabled || !/^\d{5}$/.test(zip)) return;
     let alive = true;
     setState((s) => ({ ...s, status: "loading" }));
-    (async () => {
-      const read = async () => {
-        const { data } = await supabase
-          .from("contractor_permits")
-          .select("contractor_id, address, work_type, description, issued_date")
-          .eq("zip", zip)
-          .order("issued_date", { ascending: false })
-          .limit(1000);
-        return (data ?? []) as AreaPermit[];
-      };
-      let permits = await read();
-      if (permits.length < 40) {
-        // Too little of this ZIP on hand: read it from the city, then look again.
-        await supabase.functions.invoke("fetch-sj-permits", { body: { zip, area: true } }).catch(() => undefined);
-        permits = await read();
-      }
+    const read = async (): Promise<{ crews: AreaCrew[]; permits: number }> => {
+      const { data } = await supabase
+        .from("contractor_permits")
+        .select("contractor_id, address, work_type, description, issued_date")
+        .eq("zip", zip)
+        .order("issued_date", { ascending: false })
+        .limit(1000);
+      const permits = (data ?? []) as AreaPermit[];
       const ids = [...new Set(permits.map((p) => p.contractor_id).filter((id): id is string => !!id))];
       const names = new Map<string, string>();
       for (let i = 0; i < ids.length; i += 150) {
-        const { data } = await supabase.from("contractors").select("id, company, name").in("id", ids.slice(i, i + 150));
-        for (const c of (data ?? []) as { id: string; company: string | null; name: string | null }[]) {
+        const { data: cs } = await supabase.from("contractors").select("id, company, name").in("id", ids.slice(i, i + 150));
+        for (const c of (cs ?? []) as { id: string; company: string | null; name: string | null }[]) {
           const n = c.company?.trim() || c.name?.trim();
           if (n) names.set(c.id, n);
         }
       }
-      if (alive) setState({ status: "done", crews: areaContractors(permits, names), permits: permits.length });
+      return { crews: areaContractors(permits, names), permits: permits.length };
+    };
+    (async () => {
+      const first = await read();
+      // Plenty on hand: done. Otherwise show it now and read the ZIP from the city meanwhile.
+      if (first.permits >= 100) {
+        if (alive) setState({ status: "done", ...first });
+        return;
+      }
+      if (alive) setState({ status: first.permits ? "growing" : "loading", ...first });
+      await supabase.functions.invoke("fetch-sj-permits", { body: { zip, area: true } }).catch(() => undefined);
+      const full = await read();
+      if (alive) setState({ status: full.permits ? "done" : "failed", ...full });
     })().catch(() => alive && setState({ status: "failed", crews: [], permits: 0 }));
     return () => {
       alive = false;
