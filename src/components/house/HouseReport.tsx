@@ -24,6 +24,8 @@ import { houseReport, READERS, shareMessage, smsLink, tidyName, type Reader, typ
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import HouseCard from "@/components/house/HouseCard";
+import { AreaDrilldown, CrewOnHouse, PermitList } from "@/components/house/HouseDetails";
+import { streetOf } from "@/lib/areaContractors";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, type RecordState } from "@/lib/homeRecord";
 
 const TONE: Record<Tone | "unknown", { dot: string; chip: string; ring: string }> = {
@@ -250,69 +252,55 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
           </ol>
         </section>
 
-        {/* 3. The details: only what the card can't hold. */}
+        {/* 3. This house, in full: its permits, who worked on it, the ground it sits on. */}
         <section className="rounded-3xl border border-border bg-card shadow-soft">
-          {/* This house */}
-          <div className="p-5 md:p-7">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-display text-[19px]">This house</h3>
-              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                {r.rows.length ? `${r.rows.length} permit${r.rows.length === 1 ? "" : "s"} on file` : "City permits"}
-              </span>
-            </div>
-            {r.rows.length === 0 ? (
-              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                {data.parcel?.lookup_succeeded
-                  ? "No active, in-progress or expired permits. Finished ones drop out of the city's open records."
-                  : "The city's permit records didn't answer just now. Try again in a minute."}
-              </p>
-            ) : (
-              <>
-                <ol className="relative mt-4 space-y-4 border-l border-border pl-6">
-                  {rows.map((row, i) => (
-                    <li key={`${row.permit}-${i}`} className="relative">
-                      <span
-                        className={`absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-card ${
-                          TONE[row.state === "finaled" ? "clear" : row.state === "in_progress" ? "watch" : row.state === "unknown" ? "unknown" : "act"].dot
-                        }`}
-                      />
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-display text-[13px] text-muted-foreground">{row.year ?? "—"}</span>
-                        <span className="text-[15px]">{row.what}</span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide ${STATE_CHIP[row.state]}`}>{row.stateLabel}</span>
-                      </div>
-                      <p className="mt-1 text-[13.5px] text-muted-foreground">
-                        {row.contractor ? (
-                          <button type="button" onClick={() => onCheck(row.contractor!)} className="-my-2 inline-block py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
-                            {tidyName(row.contractor)}
-                          </button>
-                        ) : (
-                          "No contractor named"
-                        )}
-                        {row.signoffs.length > 0 && (
-                          <span className="text-sage">
-                            {" "}
-                            · <Check className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {row.state === "finaled" ? "Signed off" : "Passed so far"}: {row.signoffs.join(", ")}
-                            {(row.state === "expired" || row.state === "open") && <span className="text-destructive">, but no final</span>}
-                          </span>
-                        )}
-                        {row.permit && <span className="text-muted-foreground/80"> · {row.permit}</span>}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-                {r.rows.length > 4 && (
-                  <button type="button" onClick={() => setShowAll((x) => !x)} className="mt-3 text-[13.5px] font-medium underline-offset-4 hover:underline">
-                    {showAll ? "Show fewer" : `Show all ${r.rows.length}`}
-                  </button>
-                )}
-              </>
-            )}
+          {/* The house itself: every permit, then everyone who worked on it */}
+          <PermitList rows={r.rows} read={!!data.parcel?.lookup_succeeded} onCheck={onCheck} />
+          <CrewOnHouse rows={r.rows} onCheck={onCheck} />
+
+          {/* The ground */}
+          <div className="border-t border-border p-5 md:p-7">
+            <h3 className="font-display text-[19px]">The ground</h3>
+            <ul className="mt-3 space-y-3.5">
+              {r.ground.map((g) => (
+                <li key={g.id} className="flex gap-3">
+                  <span
+                    className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
+                      g.status === "clear" ? "bg-sage/15 text-sage" : g.status === "zone" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {g.status === "clear" ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : g.status === "zone" ? "!" : "?"}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[14.5px]">
+                      <span className="text-muted-foreground">{g.map}:</span> {g.title}
+                    </p>
+                    <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">
+                      {g.meaning}{" "}
+                      <a href={g.href} target="_blank" rel="noreferrer" className="-my-2 inline-block whitespace-nowrap py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
+                        {g.source} map <ExternalLink className="inline h-3 w-3" />
+                      </a>
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
+          <p className="border-t border-border px-6 py-4 text-[12px] leading-relaxed text-muted-foreground md:px-7">
+            {data.parcel?.apn ? `Assessor's parcel ${data.parcel.apn}. ` : ""}From the City of San José's permit and inspection records, CAL FIRE, FEMA and the
+            California Geological Survey. Haleo reads public records; it doesn't inspect homes.
+          </p>
+        </section>
+
+        {/* 4. Around you: the street, then the whole ZIP */}
+        <section className="rounded-3xl border border-border bg-card shadow-soft">
+          <div className="px-5 pt-5 md:px-7 md:pt-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Around you</p>
+          </div>
           {/* The street */}
           {hasStreet && (
-            <div className="border-t border-border p-5 md:p-7">
+            <div className="p-5 pt-3 md:p-7 md:pt-3">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="font-display text-[19px]">
                   On <span className="italic">{r.street!.name}</span>
@@ -361,42 +349,10 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
             </div>
           )}
 
-          {/* The ground */}
-          <div className="border-t border-border p-5 md:p-7">
-            <h3 className="font-display text-[19px]">The ground</h3>
-            <ul className="mt-3 space-y-3.5">
-              {r.ground.map((g) => (
-                <li key={g.id} className="flex gap-3">
-                  <span
-                    className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
-                      g.status === "clear" ? "bg-sage/15 text-sage" : g.status === "zone" ? "bg-amber-50 text-amber-700" : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {g.status === "clear" ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : g.status === "zone" ? "!" : "?"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[14.5px]">
-                      <span className="text-muted-foreground">{g.map}:</span> {g.title}
-                    </p>
-                    <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">
-                      {g.meaning}{" "}
-                      <a href={g.href} target="_blank" rel="noreferrer" className="-my-2 inline-block whitespace-nowrap py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
-                        {g.source} map <ExternalLink className="inline h-3 w-3" />
-                      </a>
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <p className="border-t border-border px-6 py-4 text-[12px] leading-relaxed text-muted-foreground md:px-7">
-            {data.parcel?.apn ? `Assessor's parcel ${data.parcel.apn}. ` : ""}From the City of San José's permit and inspection records, CAL FIRE, FEMA and the
-            California Geological Survey. Haleo reads public records; it doesn't inspect homes.
-          </p>
+          <AreaDrilldown zip={zip} street={r.street?.name ?? streetOf(street)} />
         </section>
 
-        {/* 4. The loops: the next house, and the neighbor. */}
+        {/* 5. The loops: the next house, and the neighbor. */}
         <section className="grid gap-3 sm:grid-cols-2">
           <button
             type="button"

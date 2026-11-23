@@ -16,6 +16,12 @@ export type HouseCardModel = {
   house: { value: string; detail: string | null; tone: Tone | "unknown" };
   /** The ground: each hazard map at a glance. */
   ground: { label: string; status: "clear" | "zone" | "unrated" | "unchecked" }[];
+  /** The home's own permit history, newest first: the heart of the card. */
+  history: { year: number | null; what: string; mark: "done" | "open" | "unfinished" | "unknown" }[];
+  /** Permits on file beyond the ones shown. */
+  historyMore: number;
+  /** Who pulled permits on this house. */
+  crew: string[];
   /** The street, or (with no street data) the latest work on the house. */
   around: { label: string; value: string; detail: string | null } | null;
   /** The one thing worth knowing, in a sentence. */
@@ -32,6 +38,13 @@ export const streetOnly = (street: string) =>
     .trim()
     .replace(/^\d+[a-z]?\s+/i, "")
     .replace(/\b([a-z])/g, (m) => m.toUpperCase());
+
+// "BAY BUILDERS & REMODELING" → "Bay Builders & Remodeling"; "BAKHTIARY, MEHDI" → "Mehdi Bakhtiary".
+const tidyCrew = (s: string) => {
+  const t = s.trim();
+  const flipped = /^[A-Z'-]+, [A-Z'-]+$/.test(t) ? t.split(", ").reverse().join(" ") : t;
+  return flipped === flipped.toUpperCase() ? flipped.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\b(Llc|Lp|Dba)\b/g, (m) => m.toUpperCase()) : flipped;
+};
 
 const tidyStreet = (street: string) => street.trim().replace(/\s+/g, " ").replace(/\b([a-z])/g, (m) => m.toUpperCase());
 
@@ -50,11 +63,11 @@ export const houseCard = (
   const unrated = r.ground.find((g) => g.status === "unrated");
   const crewOnStreet = r.street?.crew[0];
   const highlight: HouseCardModel["highlight"] = unfinished.length
-    ? { text: `Get ${unfinished.length === 1 ? "it" : "them"} finaled before your next project or a sale. Unfinished permits follow the house.`, tone: "act" }
+    ? { text: `Before you buy or remodel: get ${unfinished.length === 1 ? "the unfinished permit" : `the ${unfinished.length} unfinished permits`} finaled. They follow the house.`, tone: "act" }
     : zone
       ? { text: `${zone.title}. ${zone.meaning.split(". ")[0]}.`, tone: "watch" }
       : underway.length
-        ? { text: "Work is open with the city. Make sure the final inspection gets booked, or it follows the house.", tone: "watch" }
+        ? { text: "Before you buy or remodel: make sure the open work gets its final inspection.", tone: "watch" }
         : unrated
           ? { text: "FEMA hasn't rated flood risk here, so it isn't cleared. Ask about drainage before grading work.", tone: "unknown" }
           : crewOnStreet && r.street
@@ -102,7 +115,20 @@ export const houseCard = (
         ? { label: "Latest work", value: latest.value.split(" · ")[0], detail: latest.value.split(" · ")[1] ?? null }
         : null;
 
+  const MARKS = { finaled: "done", in_progress: "open", open: "unfinished", expired: "unfinished", unknown: "unknown" } as const;
+  const HISTORY_ROWS = 4;
+  const history = r.rows.slice(0, HISTORY_ROWS).map((x) => ({
+    year: x.year,
+    // The card is small: the first clause of the city's description is enough.
+    what: x.what.split(/[,;(]/)[0].trim().slice(0, 34),
+    mark: MARKS[x.state],
+  }));
+  const crewNames = [...new Set(r.rows.map((x) => x.contractor).filter((c): c is string => !!c))].map(tidyCrew);
+
   return {
+    history,
+    historyMore: Math.max(0, r.rows.length - HISTORY_ROWS),
+    crew: crewNames.slice(0, 3),
     house,
     ground,
     around,

@@ -11,7 +11,8 @@ import type { HouseReport, Tone } from "@/lib/houseReport";
 import { cardFileName, cardLink, cardLinkLabel, houseCard } from "@/lib/houseCard";
 import { smsLink } from "@/lib/houseReport";
 
-const WIDTH = 340;
+const WIDTH = 360; // drawn at 360px, saved at 1080×1620 (2:3): a full phone screen, clean in Messages
+const RATIO = 1.5;
 
 // The card's fonts, inlined, so the saved image looks the same on every phone
 // (html-to-image can't read the Google Fonts stylesheet across origins).
@@ -59,6 +60,13 @@ type Props = {
 };
 
 const MARK = { clear: "✓", zone: "!", unrated: "?", unchecked: "?" } as const;
+const ZONE_WORD = { clear: "Clear", zone: "Zone", unrated: "Unrated", unchecked: "—" } as const;
+const HISTORY_MARK = {
+  done: { glyph: "✓", word: "Signed off", color: "#5f8a6b" },
+  open: { glyph: "•", word: "Open", color: "#d08a1c" },
+  unfinished: { glyph: "!", word: "No final", color: "#c2412d" },
+  unknown: { glyph: "?", word: "Unclear", color: "#a3a29c" },
+} as const;
 const MARK_COLOR = { clear: "#5f8a6b", zone: "#d08a1c", unrated: "#a3a29c", unchecked: "#a3a29c" } as const;
 
 const tile: React.CSSProperties = {
@@ -191,7 +199,7 @@ export default function HouseCard({ report, street, zip, message }: Props) {
 
   return (
     <div>
-      <div ref={boxRef} className="mx-auto w-full" style={{ maxWidth: WIDTH, height: WIDTH * 1.25 * scale }}>
+      <div ref={boxRef} className="mx-auto w-full" style={{ maxWidth: WIDTH, height: WIDTH * RATIO * scale }}>
         <div style={{ width: WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           {/* The card. Inline styles, so the saved image matches the screen exactly. */}
           <div
@@ -199,7 +207,7 @@ export default function HouseCard({ report, street, zip, message }: Props) {
             data-testid="house-card"
             style={{
               width: WIDTH,
-              height: WIDTH * 1.25,
+              height: WIDTH * RATIO,
               background: tint.bg,
               borderRadius: 32,
               border: "1px solid #e7e4dc",
@@ -227,35 +235,58 @@ export default function HouseCard({ report, street, zip, message }: Props) {
               {card.verdict[0]} <span style={{ fontStyle: "italic" }}>{card.verdict[1]}</span>
             </div>
 
-            {/* Three tiles: the house, the ground, the street. Each says something the others don't. */}
-            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
-              <div style={tile}>
-                <span style={tileLabel}>This house</span>
-                <span style={{ ...tileValue, color: card.house.tone === "act" ? "#9a2f1f" : "#1c1b19" }}>{card.house.value}</span>
-                {card.house.detail && <span style={tileDetail}>{card.house.detail}</span>}
+            {/* The home's own record: its permit history, newest first. */}
+            <div style={{ marginTop: 14, background: "#ffffff", border: "1px solid #ece9e1", borderRadius: 20, padding: "12px 14px 10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={tileLabel}>Permit history</span>
+                <span style={{ fontSize: 9.5, color: card.house.tone === "act" ? "#9a2f1f" : "#8a877f", fontWeight: 600 }}>{card.house.value}</span>
               </div>
-              <div style={tile}>
-                <span style={tileLabel}>The ground</span>
-                <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
-                  {card.ground.map((g) => (
-                    <div key={g.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11.5 }}>
-                      <span>{g.label}</span>
-                      <span style={{ width: 15, height: 15, borderRadius: 999, background: MARK_COLOR[g.status], color: "#fff", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>
-                        {MARK[g.status]}
+              {card.history.length ? (
+                <div style={{ marginTop: 6 }}>
+                  {card.history.map((h, i) => (
+                    <div
+                      key={i}
+                      style={{ display: "flex", alignItems: "center", gap: 9, padding: "5px 0", borderTop: i ? "1px solid #f2efe8" : "none", fontSize: 12 }}
+                    >
+                      <span style={{ width: 30, color: "#8a877f", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{h.year ?? "—"}</span>
+                      <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.what}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9.5, fontWeight: 600, color: HISTORY_MARK[h.mark].color, flexShrink: 0 }}>
+                        <span style={{ width: 14, height: 14, borderRadius: 999, background: HISTORY_MARK[h.mark].color, color: "#fff", fontSize: 8.5, display: "grid", placeItems: "center" }}>
+                          {HISTORY_MARK[h.mark].glyph}
+                        </span>
+                        {HISTORY_MARK[h.mark].word}
                       </span>
                     </div>
                   ))}
+                  {card.historyMore > 0 && <div style={{ fontSize: 10, color: "#8a877f", marginTop: 3 }}>+ {card.historyMore} more on file</div>}
                 </div>
-              </div>
-              <div style={tile}>
-                <span style={tileLabel}>{card.around?.label ?? "Around you"}</span>
-                <span style={tileValue}>{card.around?.value ?? "—"}</span>
-                {card.around?.detail && <span style={tileDetail}>{card.around.detail}</span>}
-              </div>
+              ) : (
+                <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4 }}>{card.house.detail ?? "No open or expired permits on file."}</div>
+              )}
+              {card.crew.length > 0 && (
+                <div style={{ marginTop: 7, paddingTop: 7, borderTop: "1px solid #f2efe8", fontSize: 10.5, color: "#6f6c64", lineHeight: 1.35 }}>
+                  Work by <span style={{ color: "#1c1b19", fontWeight: 500 }}>{card.crew.join(", ")}</span>
+                </div>
+              )}
+            </div>
+
+            {/* The zones the house sits in. */}
+            <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+              {card.ground.map((g) => (
+                <div key={g.label} style={{ background: "#ffffff", border: "1px solid #ece9e1", borderRadius: 14, padding: "7px 9px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11.5 }}>{g.label}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 600, color: MARK_COLOR[g.status] }}>
+                    {ZONE_WORD[g.status]}
+                    <span style={{ width: 15, height: 15, borderRadius: 999, background: MARK_COLOR[g.status], color: "#fff", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>
+                      {MARK[g.status]}
+                    </span>
+                  </span>
+                </div>
+              ))}
             </div>
 
             {card.highlight && (
-              <div style={{ marginTop: 10, display: "flex", gap: 8, fontSize: 11.5, lineHeight: 1.4, padding: "0 2px" }}>
+              <div style={{ marginTop: 11, display: "flex", gap: 8, fontSize: 12, lineHeight: 1.4, padding: "0 2px", fontWeight: 500 }}>
                 <span style={{ width: 16, height: 16, borderRadius: 999, background: TINT[card.highlight.tone].dot, color: "#fff", fontSize: 10, fontWeight: 700, display: "grid", placeItems: "center", flexShrink: 0, marginTop: 1 }}>
                   {TINT[card.highlight.tone].mark}
                 </span>

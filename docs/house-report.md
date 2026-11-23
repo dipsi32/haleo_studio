@@ -53,3 +53,11 @@ Events: `house_card_shared` (via share_sheet / download), `house_card_downloaded
 - Share, Text, Save sit in one quiet row under the card; once the card scrolls away, a slim bar keeps "Share card" one tap away.
 - Nothing scrolls sideways; every tap target is at least 40px.
 - The scroll follows the reader: the answer, what to do, the proof, then the next house and the neighbor.
+
+## Home first, then outward (v3)
+
+- **The card is the home's record**: its permit history (year, what, ✓ signed off / • open / ! no final), who worked on it, the three zones, and the one thing to do before buying or remodeling. 1080×1620 (2:3): a full phone screen.
+- **Permit history**: every permit; tap one for its description, issued and final dates, declared value, type, contractor and every inspection. **Open the city's file** copies the permit number and opens the city's public permit search (permits.sanjoseca.gov), where the imaged permit, plans and inspection records live. The city opens records from a search, not a direct link, so the number is handed over.
+- **Who worked on this house**: each contractor with their permits here and their wider San José record; tap through to their profile.
+- **Around you**: the street (by block), then **Working in {ZIP}**, loaded on request: every contractor with permits in the ZIP, their kinds of work, the streets they've worked on (never house numbers), "Your street" when they've worked on it. `fetch-sj-permits` with `area: true` reads the city by the ZIP itself across all three feeds.
+- Events: `house_permit_opened`, `house_permit_file`, `house_crew_opened`, `house_area_opened`, `house_area_crew_opened`.

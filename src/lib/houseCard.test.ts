@@ -75,7 +75,12 @@ describe("houseCard", () => {
     expect(c.city).toBe("San José 95124");
     expect(c.verdict).toEqual(["2 things to", "close out."]);
     expect(c.house).toEqual({ value: "2 unfinished", detail: "Never got a final", tone: "act" });
-    expect(c.highlight).toEqual({ text: expect.stringContaining("Get them finaled before your next project or a sale"), tone: "act" });
+    expect(c.history).toEqual([
+      { year: 2021, what: "Water heater", mark: "unfinished" },
+      { year: 2021, what: "Water heater", mark: "unfinished" },
+    ]);
+    expect(c.historyMore).toBe(0);
+    expect(c.highlight).toEqual({ text: expect.stringContaining("Before you buy or remodel: get the 2 unfinished permits finaled"), tone: "act" });
     expect(c.ground.map((g) => `${g.label}:${g.status}`)).toEqual(["Fire:clear", "Flood:clear", "Quake:clear"]);
     expect(c.rows.map((r) => r.label)).toEqual(["Permits", "Ground", "Latest work"]);
     expect(c.checkedOn).toBe("Nov 23, 2026");
@@ -97,6 +102,17 @@ describe("houseCard", () => {
     const c = card(signal({ flood_zone: "D" }), parcel([], [sp({})]));
     expect(c.ground.find((g) => g.label === "Flood")?.status).toBe("unrated");
     expect(c.highlight?.text).toMatch(/^FEMA hasn't rated flood risk here/);
+  });
+
+  it("names who worked on the house, and keeps the history to four rows", () => {
+    const many = [2024, 2022, 2019, 2015, 2009].map((y, i) =>
+      permit({ permit_number: `p${i}`, issued_date: `${y}-03-01`, is_expired_without_final: false, final_date: `${y}-09-01`, status: "Final", contractor: i === 0 ? "BAKHTIARY, MEHDI" : "BAY BUILDERS & REMODELING", description: "Reroof, tear off and replace" }),
+    );
+    const c = card(signal(), parcel(many));
+    expect(c.history).toHaveLength(4);
+    expect(c.history[0]).toEqual({ year: 2024, what: "Reroof", mark: "done" });
+    expect(c.historyMore).toBe(1);
+    expect(c.crew).toEqual(["Mehdi Bakhtiary", "Bay Builders & Remodeling"]);
   });
 
   it("hides the house number for posting where neighbors can see", () => {

@@ -20,6 +20,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const SJ_RESOURCE = '761b7ae8-3be1-4ad6-923d-c7af6404a904'
+// All three of the city's permit feeds, for an area read (active, under inspection, expired).
+const SJ_FEEDS = [SJ_RESOURCE, '89ccdad9-7309-4826-a5f3-2fcf1fcb20fa', 'df4b8461-0c7a-4d16-b85d-ff7f71c5fed5']
 const SJ_API = 'https://data.sanjoseca.gov/api/3/action/datastore_search'
 
 // Broadened keyword set so we don't drop legit residential work like
@@ -117,6 +119,10 @@ Deno.serve(async (req) => {
     const room = body.room || url.searchParams.get('room') || undefined
     const contractor = body.contractor || url.searchParams.get('contractor') || undefined
     const limit = Number(body.limit || url.searchParams.get('limit') || 500)
+    // area: everyone working in this ZIP. Searches the city by the ZIP itself,
+    // across all three feeds, and keeps only that ZIP. (The default mode
+    // searches by kind of work city-wide, which leaves a ZIP thin.)
+    const area = body.area === true && /^\d{5}$/.test(String(zip)) && !contractor
 
     // If a contractor name is provided, search by name only — this catches
     // every permit they pulled regardless of work-type keyword.
@@ -127,8 +133,11 @@ Deno.serve(async (req) => {
     const perQuery = Math.ceil(limit / queries.length)
     let fetchError: string | null = null
 
-    const results = await Promise.allSettled(queries.map(async (q) => {
-      const apiUrl = `${SJ_API}?resource_id=${SJ_RESOURCE}&q=${encodeURIComponent(q)}&limit=${perQuery}`
+    const jobs = area
+      ? SJ_FEEDS.map((id) => ({ id, q: String(zip), n: Math.min(Math.max(limit, 500), 1500) }))
+      : queries.map((q) => ({ id: SJ_RESOURCE, q, n: perQuery }))
+    const results = await Promise.allSettled(jobs.map(async ({ id, q, n }) => {
+      const apiUrl = `${SJ_API}?resource_id=${id}&q=${encodeURIComponent(q)}&limit=${n}`
       const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
       if (!resp.ok) throw new Error(`San Jose API ${resp.status} for "${q}"`)
       const data = await resp.json()
@@ -163,7 +172,9 @@ Deno.serve(async (req) => {
     // searching by `zip` (no contractor name) AND only loosely (full SJ area =
     // any 95xxx zip). This way contractors who pulled permits across multiple
     // SJ neighborhoods still all show up.
-    const zipFiltered = (zip && !contractor)
+    const zipFiltered = area
+      ? withContractor.filter(r => parseLocation(r.gx_location).zip === String(zip))
+      : (zip && !contractor)
       ? withContractor.filter(r => {
           const { zip: rz } = parseLocation(r.gx_location)
           return !rz || rz.startsWith('95')
