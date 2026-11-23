@@ -101,6 +101,12 @@ export const workKind = (p: { description?: string | null; subtype?: string | nu
   return KINDS.find(([, re]) => re.test(hay))?.[0] ?? "Other work";
 };
 
+/** The street's most common named kinds of work, in a sentence ("roof and ADU or addition"). "Other work" never counts. */
+export const topKinds = (kinds: { kind: string; count: number }[], n = 2): string | null => {
+  const named = kinds.filter((k) => k.kind !== "Other work").slice(0, n).map((k) => k.kind.toLowerCase().replace(/\badu\b/g, "ADU").replace(/\bev\b/g, "EV"));
+  return named.length ? list(named) : null;
+};
+
 const titleStreet = (s: string) => s.replace(/\b([a-z])/g, (m) => m.toUpperCase());
 
 const readStreet = (permits: StreetPermit[] | undefined, name: string | null | undefined, now: Date): StreetSummary | null => {
@@ -372,7 +378,7 @@ export const houseReport = (input: {
   }
   if (rows.length === 0 && onStreet && onStreet.total > 0)
     subParts.push(
-      `Around you: ${plural(onStreet.total, "permit")} on ${onStreet.name}${onStreet.lastYear ? `, ${onStreet.lastYear} in the past year` : ""}, most often ${list(onStreet.kinds.slice(0, 2).map((k) => k.kind.toLowerCase()))} work.`,
+      `Around you: ${plural(onStreet.total, "permit")} on ${onStreet.name}${onStreet.lastYear ? `, ${onStreet.lastYear} in the past year` : ""}${topKinds(onStreet.kinds) ? `, most often ${topKinds(onStreet.kinds)} work` : ""}.`,
     );
   if (nothingRead) subParts.push("The city's and the state's servers didn't answer. Try again in a minute.");
   const sub = subParts.join(" ");

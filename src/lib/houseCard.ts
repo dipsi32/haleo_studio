@@ -3,7 +3,7 @@
 // back to Haleo ("What's on file for your house?"). Built from the same
 // report as the page, so the card never says more than the page does.
 // Pure; tested in houseCard.test.ts. Drawn by components/house/HouseCard.tsx.
-import type { HouseReport, Tone } from "./houseReport";
+import { topKinds, type HouseReport, type Tone } from "./houseReport";
 
 export type HouseCardModel = {
   /** "2844 Lexford Ave", or "Lexford Ave" when they hide the house number. */
@@ -51,10 +51,7 @@ export const houseCard = (
         ? { text: `Work underway. City inspectors have signed off ${signed.slice(0, 3).join(", ").toLowerCase()} so far.`, tone: "watch" }
         : r.street && r.street.total > 0
           ? {
-              text: `${r.street.total} permit${r.street.total === 1 ? "" : "s"} on ${r.street.name}${r.street.lastYear ? `, ${r.street.lastYear} this past year` : ""}. Most often: ${r.street.kinds
-                .slice(0, 2)
-                .map((k) => k.kind.toLowerCase())
-                .join(" and ")}.`,
+              text: `${r.street.total} permit${r.street.total === 1 ? "" : "s"} on ${r.street.name}${r.street.lastYear ? `, ${r.street.lastYear} this past year` : ""}.${topKinds(r.street.kinds) ? ` Most often: ${topKinds(r.street.kinds)}.` : ""}`,
               tone: "clear",
             }
           : r.tone === "clear"
