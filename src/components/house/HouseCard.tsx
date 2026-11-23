@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { toBlob } from "html-to-image";
-import { Check, ClipboardCopy, Download, EyeOff, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { Check, ClipboardCopy, Download, Loader2, MessageCircle, Share2 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import type { HouseReport, Tone } from "@/lib/houseReport";
 import { cardFileName, cardLink, cardLinkLabel, houseCard } from "@/lib/houseCard";
@@ -89,6 +89,15 @@ export default function HouseCard({ report, street, zip, message }: Props) {
     const ro = new ResizeObserver(([e]) => setScale(Math.min(1, e.contentRect.width / WIDTH)));
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+  // Phones: once the card scrolls away, a slim bar keeps "Share your house card" one tap away.
+  const [cardGone, setCardGone] = useState(false);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setCardGone(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
   const origin = typeof window !== "undefined" ? window.location.origin : "https://haleo.studio";
   const onPhone = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -178,7 +187,7 @@ export default function HouseCard({ report, street, zip, message }: Props) {
     }
   };
 
-  const pill = "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-smooth disabled:opacity-60";
+  const pill = "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-smooth disabled:opacity-60";
 
   return (
     <div>
@@ -272,36 +281,52 @@ export default function HouseCard({ report, street, zip, message }: Props) {
         </div>
       </div>
 
-      {/* Share it: the card is the thing people pass on. */}
-      <div className="mx-auto mt-4 grid gap-2" style={{ maxWidth: WIDTH }}>
-        <button type="button" onClick={share} disabled={!!busy} className={`${pill} bg-foreground text-background hover:opacity-90`}>
+      {/* Share it: one quiet row, so the next steps stay the main event. */}
+      <div className="mx-auto mt-3 flex flex-wrap items-center justify-center gap-2" style={{ maxWidth: WIDTH }}>
+        <button type="button" onClick={share} disabled={!!busy} className={`${pill} flex-1 bg-foreground text-background hover:opacity-90`}>
           {busy === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "shared" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-          {done === "shared" ? "Shared" : "Share the card"}
+          {done === "shared" ? "Shared" : "Share"}
         </button>
-        <div className="grid grid-cols-2 gap-2">
-          {onPhone ? (
-            <a
-              href={smsLink(message)}
-              onClick={() => track("house_report_shared", { tone: report.tone, via: "sms" })}
-              className={`${pill} border border-border hover:bg-secondary`}
-            >
-              <MessageCircle className="h-4 w-4" /> Text it
-            </a>
-          ) : (
-            <button type="button" onClick={copyText} className={`${pill} border border-border hover:bg-secondary`}>
-              {done === "copied" ? <Check className="h-4 w-4 text-sage" /> : <ClipboardCopy className="h-4 w-4" />}
-              {done === "copied" ? "Copied" : "Copy as text"}
-            </button>
-          )}
-          <button type="button" onClick={download} disabled={!!busy} className={`${pill} border border-border hover:bg-secondary`}>
-            {busy === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "saved" ? <Check className="h-4 w-4 text-sage" /> : <Download className="h-4 w-4" />}
-            {done === "saved" ? "Saved" : "Download"}
+        {onPhone ? (
+          <a
+            href={smsLink(message)}
+            onClick={() => track("house_report_shared", { tone: report.tone, via: "sms" })}
+            className={`${pill} flex-1 border border-border hover:bg-secondary`}
+          >
+            <MessageCircle className="h-4 w-4" /> Text
+          </a>
+        ) : (
+          <button type="button" onClick={copyText} className={`${pill} flex-1 border border-border hover:bg-secondary`}>
+            {done === "copied" ? <Check className="h-4 w-4 text-sage" /> : <ClipboardCopy className="h-4 w-4" />}
+            {done === "copied" ? "Copied" : "Copy text"}
+          </button>
+        )}
+        <button type="button" onClick={download} disabled={!!busy} aria-label="Download the card" className={`${pill} border border-border px-3.5 hover:bg-secondary`}>
+          {busy === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "saved" ? <Check className="h-4 w-4 text-sage" /> : <Download className="h-4 w-4" />}
+          <span className="hidden sm:inline">{done === "saved" ? "Saved" : "Save"}</span>
+        </button>
+      </div>
+      <label className="mx-auto flex min-h-[40px] cursor-pointer items-center justify-center gap-2 text-[13px] text-muted-foreground" style={{ maxWidth: WIDTH }}>
+        <input type="checkbox" checked={hideNumber} onChange={(e) => setHideNumber(e.target.checked)} className="h-4 w-4 accent-foreground" />
+        Hide my house number, to post on Nextdoor
+      </label>
+
+      {/* The sticky bar, phones only, once the card is out of view. */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur transition-transform duration-300 lg:hidden ${
+          cardGone ? "translate-y-0" : "translate-y-full"
+        }`}
+        aria-hidden={!cardGone}
+      >
+        <div className="mx-auto flex max-w-md items-center gap-3">
+          <p className="min-w-0 flex-1 truncate text-[13.5px]">
+            <span className="font-medium">{card.place}</span>
+            <span className="text-muted-foreground"> · {card.verdict.join(" ")}</span>
+          </p>
+          <button type="button" onClick={share} disabled={!!busy} tabIndex={cardGone ? 0 : -1} className={`${pill} shrink-0 bg-foreground px-4 text-background`}>
+            {busy === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />} Share card
           </button>
         </div>
-        <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 text-[13px] text-muted-foreground">
-          <input type="checkbox" checked={hideNumber} onChange={(e) => setHideNumber(e.target.checked)} className="h-3.5 w-3.5 accent-foreground" />
-          <EyeOff className="h-3.5 w-3.5" /> Hide my house number, to post on Nextdoor
-        </label>
       </div>
     </div>
   );

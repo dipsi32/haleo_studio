@@ -35,6 +35,9 @@ export default function House() {
   const qFor = params.get("for");
   const [reader, setReaderState] = useState<Reader>(qFor === "project" || qFor === "deal" ? qFor : "owner");
   const streetRef = useRef<HTMLInputElement>(null);
+  // With a result on screen, the lookup folds into one line so the answer leads.
+  const [formOpen, setFormOpen] = useState(false);
+  const showForm = !address || formOpen;
 
   // Keep "who's reading" in the link, so a shared report opens the same way.
   const setReader = (r: Reader) => {
@@ -55,6 +58,7 @@ export default function House() {
     if (!/^\d{5}$/.test(zip.trim())) return setNudge("Add your 5-digit ZIP.");
     if (!isSanJoseZip(zip)) return setNudge("For now we read San Jose's records only. Other cities are coming.");
     setNudge(null);
+    setFormOpen(false);
     navigate(`${houseUrl(street, zip)}&for=${reader}`);
   };
 
@@ -78,6 +82,7 @@ export default function House() {
   const another = () => {
     track("house_next", { to: "another" });
     setStreet("");
+    setFormOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => streetRef.current?.focus(), 450);
   };
@@ -85,12 +90,30 @@ export default function House() {
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
-      <div className={`container mx-auto px-5 pb-28 pt-28 sm:px-6 md:pt-32 ${address ? "max-w-6xl" : "max-w-3xl"}`}>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-3xl">
+      <div className={`container mx-auto px-4 pb-28 sm:px-6 ${address ? "max-w-6xl pt-24 md:pt-28" : "max-w-3xl pt-28 md:pt-32"}`}>
+        {address && !formOpen && (
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{NAV.house.label} · Free</p>
+            <button
+              type="button"
+              onClick={() => {
+                setFormOpen(true);
+                setTimeout(() => streetRef.current?.focus(), 50);
+              }}
+              className="shrink-0 rounded-full border border-border px-3.5 py-2 text-[13px] font-medium transition-smooth hover:bg-secondary"
+            >
+              Look up another
+            </button>
+          </div>
+        )}
+        {showForm && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className={`max-w-3xl ${address ? "mb-8" : ""}`}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{NAV.house.label} · Free</p>
-          <h1 className="mt-4 font-display text-[2.2rem] font-light leading-[1.06] tracking-tight md:text-[3.2rem]">
-            What's on file <span className="italic">for your house?</span>
-          </h1>
+          {!address && (
+            <h1 className="mt-4 font-display text-[2.2rem] font-light leading-[1.06] tracking-tight md:text-[3.2rem]">
+              What's on file <span className="italic">for your house?</span>
+            </h1>
+          )}
           <p className={`mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground ${address ? "hidden" : ""}`}>
             The permits the city has on file for your home, who did the work, and whether the city signed it off. Unfinished
             permits follow a house to the next job and to the sale. Better to know now.
@@ -137,9 +160,10 @@ export default function House() {
             </ul>
           </div>
         </motion.div>
+        )}
 
         {address && (
-          <div ref={resultRef} className="mt-10 scroll-mt-24">
+          <div ref={resultRef} className="mt-4 scroll-mt-20 md:mt-6">
             <HouseReport
               key={`${address.street}|${address.zip}`}
               street={address.street}

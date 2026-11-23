@@ -46,3 +46,10 @@ Events: `house_card_shared` (via share_sheet / download), `house_card_downloaded
 2. **What to do next**, with the reader switch (I live here / Planning a project / Buying or selling) beside it, because it only changes the steps. Steps never repeat sharing.
 3. **The details**, only what the card can't hold: the permit timeline with sign-offs and permit numbers, who your neighbors hire and the latest street jobs, and what each hazard map means with a link to it.
 4. **The loops**: a house you're touring, a neighbor who'd want the lookup.
+
+## On a phone (checked on iPhone SE 320px, iPhone 13, Pixel 5)
+
+- The answer is on the first screen: with a result showing, the lookup folds to one line ("Look up another") and the card starts right under the header.
+- Share, Text, Save sit in one quiet row under the card; once the card scrolls away, a slim bar keeps "Share card" one tap away.
+- Nothing scrolls sideways; every tap target is at least 40px.
+- The scroll follows the reader: the answer, what to do, the proof, then the next house and the neighbor.

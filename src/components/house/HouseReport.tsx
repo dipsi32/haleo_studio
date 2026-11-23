@@ -124,11 +124,11 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + n * 0.07 }}
-      className="flex gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft"
+      className="flex gap-3 rounded-3xl border border-border bg-card p-4 shadow-soft sm:gap-4 sm:p-5"
     >
-      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground font-display text-[14px] text-background">{n + 1}</span>
+      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-foreground font-display text-[13px] text-background sm:h-8 sm:w-8">{n + 1}</span>
       <div className="min-w-0 flex-1">
-        <p className="font-display text-[18px] leading-snug">{step.title}</p>
+        <p className="font-display text-[17px] leading-snug sm:text-[18px]">{step.title}</p>
         <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{step.why}</p>
         {a.kind === "link" ? (
           <a
@@ -136,7 +136,7 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
             target="_blank"
             rel="noreferrer"
             onClick={onRun}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[14px] font-medium transition-smooth hover:bg-secondary"
+            className="mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full border border-border px-4 text-[14px] font-medium transition-smooth hover:bg-secondary"
           >
             {a.label} <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -144,7 +144,7 @@ function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () =
           <button
             type="button"
             onClick={onRun}
-            className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium transition-smooth ${
+            className={`mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-smooth ${
               a.kind === "project" ? "bg-foreground text-background hover:opacity-90" : "border border-border hover:bg-secondary"
             }`}
           >
@@ -210,9 +210,9 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
   const hasStreet = !!r.street && r.street.total > 0;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-10">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-10">
       {/* 1. The answer, on the card they'll share. Pinned while they read the rest. */}
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <HouseCard report={r} street={street} zip={zip} message={message} />
       </aside>
 
@@ -234,7 +234,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                     onReader(x.id);
                     track("house_reader", { reader: x.id });
                   }}
-                  className={`rounded-full border px-3 py-1.5 text-[13px] transition-smooth ${
+                  className={`min-h-[40px] rounded-full border px-3.5 text-[13.5px] transition-smooth ${
                     reader === x.id ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary"
                   }`}
                 >
@@ -253,7 +253,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
         {/* 3. The details: only what the card can't hold. */}
         <section className="rounded-3xl border border-border bg-card shadow-soft">
           {/* This house */}
-          <div className="p-6 md:p-7">
+          <div className="p-5 md:p-7">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="font-display text-[19px]">This house</h3>
               <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -283,7 +283,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                       </div>
                       <p className="mt-1 text-[13.5px] text-muted-foreground">
                         {row.contractor ? (
-                          <button type="button" onClick={() => onCheck(row.contractor!)} className="text-foreground underline-offset-4 hover:underline">
+                          <button type="button" onClick={() => onCheck(row.contractor!)} className="-my-2 inline-block py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
                             {tidyName(row.contractor)}
                           </button>
                         ) : (
@@ -312,12 +312,12 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
 
           {/* The street */}
           {hasStreet && (
-            <div className="border-t border-border p-6 md:p-7">
+            <div className="border-t border-border p-5 md:p-7">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="font-display text-[19px]">
                   On <span className="italic">{r.street!.name}</span>
                 </h3>
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">By block, never house number</span>
+                <span className="text-[11px] uppercase tracking-wide text-muted-foreground" title="Neighbors are shown by block, never by house number">By block</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {r.street!.kinds.slice(0, 6).map((k) => (
@@ -330,10 +330,10 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                 {r.street!.crew.length > 0 && (
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Who your neighbors hire</p>
-                    <ul className="mt-2 space-y-1.5">
+                    <ul className="mt-1">
                       {r.street!.crew.slice(0, 4).map((c) => (
                         <li key={c.raw} className="flex items-center justify-between gap-3 text-[14px]">
-                          <button type="button" onClick={() => onCheck(c.raw)} className="truncate text-left underline-offset-4 hover:underline">
+                          <button type="button" onClick={() => onCheck(c.raw)} className="min-h-[40px] truncate text-left underline underline-offset-4 decoration-border hover:decoration-foreground">
                             {c.name}
                           </button>
                           <span className="shrink-0 text-[12.5px] text-muted-foreground">{c.count}</span>
@@ -362,7 +362,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
           )}
 
           {/* The ground */}
-          <div className="border-t border-border p-6 md:p-7">
+          <div className="border-t border-border p-5 md:p-7">
             <h3 className="font-display text-[19px]">The ground</h3>
             <ul className="mt-3 space-y-3.5">
               {r.ground.map((g) => (
@@ -380,7 +380,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                     </p>
                     <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted-foreground">
                       {g.meaning}{" "}
-                      <a href={g.href} target="_blank" rel="noreferrer" className="whitespace-nowrap text-foreground underline-offset-4 hover:underline">
+                      <a href={g.href} target="_blank" rel="noreferrer" className="-my-2 inline-block whitespace-nowrap py-2 text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground">
                         {g.source} map <ExternalLink className="inline h-3 w-3" />
                       </a>
                     </p>

@@ -397,7 +397,7 @@ export const houseReport = (input: {
     steps.push({
       id: "close-out",
       title: reader === "deal" ? `Get ${them} closed before closing` : `Close out ${them}`,
-      why: `${more ? "The latest: " : ""}${r.what.toLowerCase()}${r.year ? `, ${r.year}` : ""}${permitRef}, ${r.state === "expired" ? "expired without a final inspection" : "open for over two years"}${more ? `, and ${more} more` : ""}. A buyer's inspector or the next permit will find ${unfinished.length === 1 ? "it" : "them"}. Often it only takes a final inspection.`,
+      why: `${more ? "The latest: " : ""}${r.what.toLowerCase()}${r.year ? `, ${r.year}` : ""}, ${r.state === "expired" ? "expired without a final" : "open over two years"}${more ? `, and ${more} more` : ""}. Often it only takes a final inspection.`,
       action:
         reader === "deal"
           ? {
