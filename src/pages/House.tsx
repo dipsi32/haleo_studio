@@ -7,7 +7,7 @@ import { NAV } from "@/lib/nav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Home } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
 import HouseReport from "@/components/house/HouseReport";
@@ -85,13 +85,13 @@ export default function House() {
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="container mx-auto max-w-3xl px-5 pb-28 pt-28 sm:px-6 md:pt-32">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+      <div className={`container mx-auto px-5 pb-28 pt-28 sm:px-6 md:pt-32 ${address ? "max-w-6xl" : "max-w-3xl"}`}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-3xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{NAV.house.label} · Free</p>
           <h1 className="mt-4 font-display text-[2.2rem] font-light leading-[1.06] tracking-tight md:text-[3.2rem]">
             What's on file <span className="italic">for your house?</span>
           </h1>
-          <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
+          <p className={`mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground ${address ? "hidden" : ""}`}>
             The permits the city has on file for your home, who did the work, and whether the city signed it off. Unfinished
             permits follow a house to the next job and to the sale. Better to know now.
           </p>
@@ -140,9 +140,6 @@ export default function House() {
 
         {address && (
           <div ref={resultRef} className="mt-10 scroll-mt-24">
-            <p className="mb-4 flex items-center gap-2 text-[14px] text-muted-foreground">
-              <Home className="h-4 w-4" /> {address.street}, San Jose {address.zip}
-            </p>
             <HouseReport
               key={`${address.street}|${address.zip}`}
               street={address.street}

@@ -123,7 +123,10 @@ const readStreet = (permits: StreetPermit[] | undefined, name: string | null | u
     name: titleStreet(name),
     total: permits.length,
     lastYear: permits.filter((p) => p.issued_date && new Date(p.issued_date).getTime() >= yearAgo).length,
-    kinds: [...kinds.entries()].map(([kind, count]) => ({ kind, count })).sort((a, b) => b.count - a.count),
+    // "Other work" always last: it's the least telling.
+    kinds: [...kinds.entries()]
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => (a.kind === "Other work" ? 1 : 0) - (b.kind === "Other work" ? 1 : 0) || b.count - a.count),
     crew: [...crew.entries()].map(([raw, count]) => ({ raw, name: tidyName(raw), count })).sort((a, b) => b.count - a.count).slice(0, 5),
     recent: permits.slice(0, 6).map((p) => ({
       block: p.block ? `${p.block} block` : null,
@@ -471,7 +474,8 @@ export const houseReport = (input: {
     });
   }
 
-  const streetCrew = onStreet?.crew.find((c) => !crew.some(([name]) => name === c.raw));
+  // Only a crew with a real track record on the street (2+ permits) earns a step.
+  const streetCrew = onStreet?.crew.find((c) => c.count >= 2 && !crew.some(([name]) => name === c.raw));
   if (reader !== "deal" && streetCrew && steps.length < 2) {
     steps.push({
       id: "street-crew",
@@ -488,12 +492,17 @@ export const houseReport = (input: {
       action: { kind: "project", label: "Start here" },
     });
   }
+  // A buyer's best next move: the seller's own records fill what the city's open feed drops.
   if (reader === "deal" && steps.length < 3) {
     steps.push({
-      id: "summary",
-      title: tone === "clear" ? "Put this in the listing packet" : "Share the record with your agent",
-      why: tone === "clear" ? "A clean permit record is easy to show, and it answers the first question a careful buyer asks." : "Everything above, in plain words, ready to paste into an email.",
-      action: { kind: "copy", label: "Copy the summary", text: "" },
+      id: "history",
+      title: "Ask for the full permit history",
+      why: "The city's open records show current work only. The seller (or their agent) can pull every permit, and any work done without one is worth asking about too.",
+      action: {
+        kind: "copy",
+        label: "Copy the request",
+        text: `Could you share the full permit history for ${addressLine}, including finished permits? And was any work done without a permit (a converted garage, an added bathroom, new electrical)?`,
+      },
     });
   }
   if (crew[0] && steps.length < 3 && reader !== "deal") {
@@ -513,15 +522,6 @@ export const houseReport = (input: {
       action: { kind: "link", label: "Open sjpermits.org", href: CITY_PERMIT_ARCHIVE },
     });
   }
-  if (reader === "owner" && steps.length < 3) {
-    steps.push({
-      id: "keep",
-      title: "Keep this record",
-      why: "It's the first thing a buyer's agent, a lender or your next contractor asks about. Now you have it in plain words.",
-      action: { kind: "copy", label: "Copy the summary", text: "" },
-    });
-  }
-
   // ── Findings: what the record says, each with its source
   const findings: Finding[] = [];
   if (signedTrades.length)

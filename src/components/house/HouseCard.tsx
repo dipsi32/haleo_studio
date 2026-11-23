@@ -5,10 +5,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { toBlob } from "html-to-image";
-import { Check, Download, EyeOff, Loader2, Share2 } from "lucide-react";
+import { Check, ClipboardCopy, Download, EyeOff, Loader2, MessageCircle, Share2 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import type { HouseReport, Tone } from "@/lib/houseReport";
 import { cardFileName, cardLink, cardLinkLabel, houseCard } from "@/lib/houseCard";
+import { smsLink } from "@/lib/houseReport";
 
 const WIDTH = 340;
 
@@ -49,12 +50,34 @@ const TINT: Record<Tone | "unknown", { bg: string; dot: string; chip: string; ma
   unknown: { bg: "linear-gradient(160deg,#efeeea 0%,#fbfaf6 55%)", dot: "#a3a29c", chip: "#ecebe6;#5d5c57", mark: "?" },
 };
 
-type Props = { report: HouseReport; street: string; zip: string };
+type Props = {
+  report: HouseReport;
+  street: string;
+  zip: string;
+  /** The same record as text, with a link, for "Text it" and "Copy text". */
+  message: string;
+};
 
-export default function HouseCard({ report, street, zip }: Props) {
+const MARK = { clear: "✓", zone: "!", unrated: "?", unchecked: "?" } as const;
+const MARK_COLOR = { clear: "#5f8a6b", zone: "#d08a1c", unrated: "#a3a29c", unchecked: "#a3a29c" } as const;
+
+const tile: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #ece9e1",
+  borderRadius: 18,
+  padding: "10px 10px 11px",
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
+};
+const tileLabel: React.CSSProperties = { fontSize: 8.5, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8a877f", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const tileValue: React.CSSProperties = { fontFamily: '"Outfit", sans-serif', fontSize: 14.5, fontWeight: 500, lineHeight: 1.15, marginTop: 6, letterSpacing: "-0.01em", whiteSpace: "nowrap" };
+const tileDetail: React.CSSProperties = { fontSize: 10, lineHeight: 1.3, color: "#6f6c64", marginTop: 4 };
+
+export default function HouseCard({ report, street, zip, message }: Props) {
   const [hideNumber, setHideNumber] = useState(false);
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
-  const [done, setDone] = useState<"shared" | "saved" | null>(null);
+  const [done, setDone] = useState<"shared" | "saved" | "copied" | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -68,6 +91,7 @@ export default function HouseCard({ report, street, zip }: Props) {
     return () => ro.disconnect();
   }, []);
   const origin = typeof window !== "undefined" ? window.location.origin : "https://haleo.studio";
+  const onPhone = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
   const card = useMemo(() => houseCard(report, { street, zip, hideNumber }), [report, street, zip, hideNumber]);
   const tint = TINT[card.badge.tone];
 
@@ -102,7 +126,7 @@ export default function HouseCard({ report, street, zip }: Props) {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
-  const flash = (d: "shared" | "saved") => {
+  const flash = (d: "shared" | "saved" | "copied") => {
     setDone(d);
     setTimeout(() => setDone(null), 2400);
   };
@@ -144,13 +168,23 @@ export default function HouseCard({ report, street, zip }: Props) {
     }
   };
 
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(message);
+      track("house_report_shared", { tone: report.tone, via: "copy" });
+      flash("copied");
+    } catch {
+      /* clipboard blocked */
+    }
+  };
+
+  const pill = "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-smooth disabled:opacity-60";
 
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 shadow-soft md:p-7">
-      <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        {/* The card. Inline styles, so the saved image matches the screen exactly. */}
-        <div ref={boxRef} className="mx-auto w-full shrink-0" style={{ maxWidth: WIDTH, height: WIDTH * 1.25 * scale }}>
-          <div style={{ width: WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+    <div>
+      <div ref={boxRef} className="mx-auto w-full" style={{ maxWidth: WIDTH, height: WIDTH * 1.25 * scale }}>
+        <div style={{ width: WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+          {/* The card. Inline styles, so the saved image matches the screen exactly. */}
           <div
             ref={cardRef}
             data-testid="house-card"
@@ -158,7 +192,7 @@ export default function HouseCard({ report, street, zip }: Props) {
               width: WIDTH,
               height: WIDTH * 1.25,
               background: tint.bg,
-              borderRadius: 26,
+              borderRadius: 32,
               border: "1px solid #e7e4dc",
               padding: 20,
               display: "flex",
@@ -171,34 +205,48 @@ export default function HouseCard({ report, street, zip }: Props) {
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ width: 22, height: 22, borderRadius: 999, background: "#f59e0b", color: "#1c1b19", display: "grid", placeItems: "center", fontFamily: '"Outfit", sans-serif', fontWeight: 600, fontSize: 13 }}>h</span>
+                <span style={{ width: 22, height: 22, borderRadius: 999, background: "#f59e0b", display: "grid", placeItems: "center", fontFamily: '"Outfit", sans-serif', fontWeight: 600, fontSize: 13 }}>h</span>
                 <span style={{ fontFamily: '"Outfit", sans-serif', fontWeight: 500, fontSize: 15, letterSpacing: "-0.01em" }}>Haleo</span>
               </div>
-              <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8a877f" }}>Home record</span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8a877f" }}>Home record · {card.checkedOn}</span>
             </div>
 
-            <div style={{ marginTop: 13 }}>
-              <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 19, fontWeight: 500, letterSpacing: "-0.01em", lineHeight: 1.15 }}>{card.place}</div>
-              <div style={{ fontSize: 12, color: "#6f6c64", marginTop: 2 }}>{card.city}</div>
+            <div style={{ marginTop: 14, fontFamily: '"Outfit", sans-serif', fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
+              {card.place} <span style={{ color: "#8a877f", fontWeight: 400, fontSize: 13 }}>{card.city}</span>
+            </div>
+            <div style={{ marginTop: 6, fontFamily: '"Outfit", sans-serif', fontSize: 25, fontWeight: 300, lineHeight: 1.06, letterSpacing: "-0.02em" }}>
+              {card.verdict[0]} <span style={{ fontStyle: "italic" }}>{card.verdict[1]}</span>
             </div>
 
-            <div style={{ marginTop: 10, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 23, fontWeight: 300, lineHeight: 1.08, letterSpacing: "-0.02em" }}>
-                {card.verdict[0]} <span style={{ fontStyle: "italic" }}>{card.verdict[1]}</span>
+            {/* Three tiles: the house, the ground, the street. Each says something the others don't. */}
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
+              <div style={tile}>
+                <span style={tileLabel}>This house</span>
+                <span style={{ ...tileValue, color: card.house.tone === "act" ? "#9a2f1f" : "#1c1b19" }}>{card.house.value}</span>
+                {card.house.detail && <span style={tileDetail}>{card.house.detail}</span>}
               </div>
-            </div>
-            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
-              {card.rows.map((r) => (
-                <div key={r.label} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, lineHeight: 1.3 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 999, background: TINT[r.tone].dot, flexShrink: 0, transform: "translateY(-1px)" }} />
-                  <span style={{ color: "#8a877f", width: 86, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
-                  <span style={{ fontWeight: 500 }}>{r.value}</span>
+              <div style={tile}>
+                <span style={tileLabel}>The ground</span>
+                <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
+                  {card.ground.map((g) => (
+                    <div key={g.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11.5 }}>
+                      <span>{g.label}</span>
+                      <span style={{ width: 15, height: 15, borderRadius: 999, background: MARK_COLOR[g.status], color: "#fff", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>
+                        {MARK[g.status]}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div style={tile}>
+                <span style={tileLabel}>{card.around?.label ?? "Around you"}</span>
+                <span style={tileValue}>{card.around?.value ?? "—"}</span>
+                {card.around?.detail && <span style={tileDetail}>{card.around.detail}</span>}
+              </div>
             </div>
 
             {card.highlight && (
-              <div style={{ marginTop: 11, background: "#ffffff", border: "1px solid #ece9e1", borderRadius: 14, padding: "8px 10px", fontSize: 11.5, lineHeight: 1.38, display: "flex", gap: 8 }}>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, fontSize: 11.5, lineHeight: 1.4, padding: "0 2px" }}>
                 <span style={{ width: 16, height: 16, borderRadius: 999, background: TINT[card.highlight.tone].dot, color: "#fff", fontSize: 10, fontWeight: 700, display: "grid", placeItems: "center", flexShrink: 0, marginTop: 1 }}>
                   {TINT[card.highlight.tone].mark}
                 </span>
@@ -208,60 +256,53 @@ export default function HouseCard({ report, street, zip }: Props) {
 
             <div style={{ flex: 1 }} />
 
-            <div style={{ marginTop: 10, fontSize: 8.5, color: "#8a877f", lineHeight: 1.35 }}>
-              Public records, read {card.checkedOn}: {card.sources}.
-            </div>
-
-            <div style={{ marginTop: 8, background: "#1c1b19", color: "#fbfaf6", borderRadius: 16, padding: "10px 10px 10px 13px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ marginTop: 8, fontSize: 8, color: "#8a877f", lineHeight: 1.35, padding: "0 2px" }}>From public records: {card.sources}.</div>
+            <div style={{ marginTop: 7, background: "#1c1b19", color: "#fbfaf6", borderRadius: 22, padding: "10px 10px 10px 15px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div>
-                <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 14, lineHeight: 1.15 }}>
+                <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 14.5, lineHeight: 1.15 }}>
                   What's on file for <span style={{ fontStyle: "italic" }}>your</span> house?
                 </div>
                 <div style={{ fontSize: 10.5, color: "#f5c46b", marginTop: 3 }}>Look yours up free · {cardLinkLabel(origin)}</div>
               </div>
-              <div style={{ width: 46, height: 46, background: "#ffffff", borderRadius: 8, padding: 4, flexShrink: 0, boxSizing: "border-box" }}>
+              <div style={{ width: 48, height: 48, background: "#ffffff", borderRadius: 12, padding: 5, flexShrink: 0, boxSizing: "border-box" }}>
                 {qr && <img src={qr} alt="" style={{ width: "100%", height: "100%", display: "block" }} />}
               </div>
             </div>
           </div>
-          </div>
-        </div>
-
-        {/* What to do with it */}
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-[22px] leading-snug">
-            Your house, <span className="italic">on one card</span>
-          </h3>
-          <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
-            The verdict and the facts, ready to text your partner, send your agent or keep with your records. Whoever gets it can look up
-            their own house.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={share}
-              disabled={!!busy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-5 py-2.5 text-[14.5px] font-medium text-background transition-smooth hover:opacity-90 disabled:opacity-60"
-            >
-              {busy === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "shared" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-              {done === "shared" ? "Shared" : "Share the card"}
-            </button>
-            <button
-              type="button"
-              onClick={download}
-              disabled={!!busy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-5 py-2.5 text-[14.5px] font-medium transition-smooth hover:bg-secondary disabled:opacity-60"
-            >
-              {busy === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "saved" ? <Check className="h-4 w-4 text-sage" /> : <Download className="h-4 w-4" />}
-              {done === "saved" ? "Saved" : "Download"}
-            </button>
-          </div>
-          <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-[14px] text-muted-foreground">
-            <input type="checkbox" checked={hideNumber} onChange={(e) => setHideNumber(e.target.checked)} className="h-4 w-4 accent-foreground" />
-            <EyeOff className="h-4 w-4" /> Hide my house number, for posting on Nextdoor
-          </label>
         </div>
       </div>
-    </section>
+
+      {/* Share it: the card is the thing people pass on. */}
+      <div className="mx-auto mt-4 grid gap-2" style={{ maxWidth: WIDTH }}>
+        <button type="button" onClick={share} disabled={!!busy} className={`${pill} bg-foreground text-background hover:opacity-90`}>
+          {busy === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "shared" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          {done === "shared" ? "Shared" : "Share the card"}
+        </button>
+        <div className="grid grid-cols-2 gap-2">
+          {onPhone ? (
+            <a
+              href={smsLink(message)}
+              onClick={() => track("house_report_shared", { tone: report.tone, via: "sms" })}
+              className={`${pill} border border-border hover:bg-secondary`}
+            >
+              <MessageCircle className="h-4 w-4" /> Text it
+            </a>
+          ) : (
+            <button type="button" onClick={copyText} className={`${pill} border border-border hover:bg-secondary`}>
+              {done === "copied" ? <Check className="h-4 w-4 text-sage" /> : <ClipboardCopy className="h-4 w-4" />}
+              {done === "copied" ? "Copied" : "Copy as text"}
+            </button>
+          )}
+          <button type="button" onClick={download} disabled={!!busy} className={`${pill} border border-border hover:bg-secondary`}>
+            {busy === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : done === "saved" ? <Check className="h-4 w-4 text-sage" /> : <Download className="h-4 w-4" />}
+            {done === "saved" ? "Saved" : "Download"}
+          </button>
+        </div>
+        <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 text-[13px] text-muted-foreground">
+          <input type="checkbox" checked={hideNumber} onChange={(e) => setHideNumber(e.target.checked)} className="h-3.5 w-3.5 accent-foreground" />
+          <EyeOff className="h-3.5 w-3.5" /> Hide my house number, to post on Nextdoor
+        </label>
+      </div>
+    </div>
   );
 }

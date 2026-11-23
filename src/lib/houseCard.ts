@@ -12,6 +12,12 @@ export type HouseCardModel = {
   verdict: [string, string];
   badge: { word: string; tone: Tone | "unknown" };
   rows: { label: string; value: string; tone: Tone | "unknown" }[];
+  /** This house: the permits, in two words and a line. */
+  house: { value: string; detail: string | null; tone: Tone | "unknown" };
+  /** The ground: each hazard map at a glance. */
+  ground: { label: string; status: "clear" | "zone" | "unrated" | "unchecked" }[];
+  /** The street, or (with no street data) the latest work on the house. */
+  around: { label: string; value: string; detail: string | null } | null;
   /** The one thing worth knowing, in a sentence. */
   highlight: { text: string; tone: Tone | "unknown" } | null;
   checkedOn: string;
@@ -39,26 +45,67 @@ export const houseCard = (
   const signed = [...new Set(r.rows.flatMap((x) => x.signoffs))];
   const zone = r.ground.find((g) => g.status === "zone");
 
-  // The one fact worth knowing, most important first.
+  // The one line the tiles can't say: what to do about the most important one,
+  // or the fact behind it. Never a repeat of a tile.
+  const unrated = r.ground.find((g) => g.status === "unrated");
+  const crewOnStreet = r.street?.crew[0];
   const highlight: HouseCardModel["highlight"] = unfinished.length
-    ? {
-        text: `${unfinished.length === 1 ? "1 permit" : `${unfinished.length} permits`} never got a final inspection. Unfinished permits follow a house to the next job and the sale.`,
-        tone: "act",
-      }
+    ? { text: `Get ${unfinished.length === 1 ? "it" : "them"} finaled before your next project or a sale. Unfinished permits follow the house.`, tone: "act" }
     : zone
       ? { text: `${zone.title}. ${zone.meaning.split(". ")[0]}.`, tone: "watch" }
-      : underway.length && signed.length
-        ? { text: `Work underway. City inspectors have signed off ${signed.slice(0, 3).join(", ").toLowerCase()} so far.`, tone: "watch" }
-        : r.street && r.street.total > 0
-          ? {
-              text: `${r.street.total} permit${r.street.total === 1 ? "" : "s"} on ${r.street.name}${r.street.lastYear ? `, ${r.street.lastYear} this past year` : ""}.${topKinds(r.street.kinds) ? ` Most often: ${topKinds(r.street.kinds)}.` : ""}`,
-              tone: "clear",
-            }
-          : r.tone === "clear"
-            ? { text: "No open or expired permits with the city, and no mapped fire, flood or earthquake zone.", tone: "clear" }
-            : null;
+      : underway.length
+        ? { text: "Work is open with the city. Make sure the final inspection gets booked, or it follows the house.", tone: "watch" }
+        : unrated
+          ? { text: "FEMA hasn't rated flood risk here, so it isn't cleared. Ask about drainage before grading work.", tone: "unknown" }
+          : crewOnStreet && r.street
+            ? { text: `${crewOnStreet.name} has ${crewOnStreet.count} permit${crewOnStreet.count === 1 ? "" : "s"} on ${r.street.name}: the crew your neighbors hire.`, tone: "clear" }
+            : r.tone === "clear"
+              ? { text: "Nothing to close out and no mapped hazards. Worth keeping for when you sell.", tone: "clear" }
+              : null;
+
+  const permitsVital = r.vitals.find((v) => v.id === "permits");
+  const finished = r.rows.filter((x) => x.state === "finaled").length;
+  const house: HouseCardModel["house"] = {
+    value: unfinished.length
+      ? `${unfinished.length} unfinished`
+      : underway.length
+        ? `${underway.length} open`
+        : r.rows.length
+          ? `${r.rows.length} closed`
+          : permitsVital?.tone === "unknown"
+            ? "Not checked"
+            : "None open",
+    detail: unfinished.length
+      ? "Never got a final"
+      : underway.length
+        ? signed.length
+          ? `Passed: ${signed.slice(0, 2).join(", ").toLowerCase()}`
+          : "Work underway"
+        : r.rows.length
+          ? `${finished || r.rows.length} signed off`
+          : permitsVital?.tone === "unknown"
+            ? null
+            : "Nothing unfinished",
+    tone: unfinished.length ? "act" : underway.length ? "watch" : permitsVital?.tone === "unknown" ? "unknown" : "clear",
+  };
+  const NAMES = { fire: "Fire", flood: "Flood", seismic: "Quake" } as const;
+  const ground = r.ground.map((g) => ({ label: NAMES[g.id], status: g.status }));
+  const latest = r.vitals.find((v) => v.id === "latest");
+  const around: HouseCardModel["around"] =
+    r.street && r.street.total > 0
+      ? {
+          label: r.street.name.length <= 11 ? r.street.name : "Your street",
+          value: `${r.street.total} permit${r.street.total === 1 ? "" : "s"}`,
+          detail: topKinds(r.street.kinds, 1) ? `Mostly ${topKinds(r.street.kinds, 1)}` : r.street.lastYear ? `${r.street.lastYear} this past year` : null,
+        }
+      : latest && latest.tone !== "unknown"
+        ? { label: "Latest work", value: latest.value.split(" · ")[0], detail: latest.value.split(" · ")[1] ?? null }
+        : null;
 
   return {
+    house,
+    ground,
+    around,
     place: o.hideNumber ? streetOnly(o.street) : tidyStreet(o.street),
     city: o.hideNumber ? "San José" : `San José ${o.zip}`,
     verdict: r.verdict,

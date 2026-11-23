@@ -122,7 +122,7 @@ describe("houseReport", () => {
 
   it("the summary fills every copy action", () => {
     const r = houseReport({ ...base, signal: signal(), parcel: parcel([]), reader: "deal" });
-    const copy = r.steps.find((s) => s.id === "summary")!;
+    const copy = r.steps.find((s) => s.id === "history")!;
     expect(copy.action.kind === "copy" && copy.action.text).toContain("1488 Luning Dr, San Jose 95118");
   });
 });

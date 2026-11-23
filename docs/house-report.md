@@ -39,3 +39,10 @@ The loops to watch: reports sent (homeowner → partner/agent), "another address
 What's on screen is what's saved: the image is taken from the card itself, with its fonts inlined so it looks the same on every phone. **Share the card** sends the image with a link through the phone's share sheet (or downloads it where sharing files isn't supported); **Download** saves it.
 
 Events: `house_card_shared` (via share_sheet / download), `house_card_downloaded`, both with `hidden_number`. Arrivals from cards land with `ref=card`.
+
+## Hierarchy (no repeats)
+
+1. **The card is the verdict.** Pinned on the left on desktop, first on phones: address, verdict, three tiles (this house, the ground, the street), and one line saying what to do about the most important tile. The share actions sit right under it: Share the card, Text it (phones) or Copy as text, Download, Hide my house number.
+2. **What to do next**, with the reader switch (I live here / Planning a project / Buying or selling) beside it, because it only changes the steps. Steps never repeat sharing.
+3. **The details**, only what the card can't hold: the permit timeline with sign-offs and permit numbers, who your neighbors hire and the latest street jobs, and what each hazard map means with a link to it.
+4. **The loops**: a house you're touring, a neighbor who'd want the lookup.
