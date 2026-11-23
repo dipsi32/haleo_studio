@@ -12,6 +12,7 @@ export type RecordPermitIn = {
   contractor?: string | null;
   issued_date: string | null;
   final_date?: string | null;
+  valuation?: number | null;
   status: string | null;
   is_open: boolean;
   is_expired_without_final: boolean;
@@ -38,6 +39,16 @@ export type RecordRow = {
   contractor: string | null;
   /** Trades the city signed off ("Building", "Electrical"), when we read the inspection feed. */
   signoffs: string[];
+  /** The permit's own words and dates, for its detail view. */
+  detail: {
+    type: string | null;
+    description: string | null;
+    issued: string | null;
+    finaled: string | null;
+    valuation: number | null;
+    /** Every inspection the city has on this permit, passed or not. */
+    inspections: { label: string; status: string }[];
+  };
 };
 
 const STATE_LABEL: Record<RecordState, string> = {
@@ -81,6 +92,17 @@ export const homeRecord = (permits: RecordPermitIn[], inspections: InspectionIn[
         stateLabel: STATE_LABEL[state],
         contractor: p.contractor?.trim() || null,
         signoffs: [...new Set((insp?.approvals ?? []).filter((a) => a.status === "complete").map((a) => a.label))],
+        detail: {
+          type: [p.type, p.subtype].filter(Boolean).join(" · ") || null,
+          // The city's jargon, in plain words.
+          description: /^sub-?trades? only$/i.test(p.description?.trim() ?? "")
+            ? "Plumbing, electrical or mechanical work only (no structural changes)."
+            : p.description?.trim() || null,
+          issued: p.issued_date ?? null,
+          finaled: p.final_date ?? null,
+          valuation: typeof p.valuation === "number" && p.valuation > 0 ? p.valuation : null,
+          inspections: (insp?.approvals ?? []).map((a) => ({ label: a.label, status: a.status })),
+        },
       };
     });
   const open = rows.filter((r) => r.state === "open").length;
@@ -109,3 +131,10 @@ export const HAZARD_MAPS = [
 
 /** The city's own permit portal, for history older than its open-data feeds. */
 export const CITY_PERMIT_ARCHIVE = "https://www.sjpermits.org/";
+
+/**
+ * The city's public permit search, where each permit's imaged documents
+ * (the permit, plans, inspection records) live. It opens records from a
+ * search, not a direct link, so we hand over the permit number with it.
+ */
+export const CITY_PERMIT_SEARCH = "https://permits.sanjoseca.gov/search/permit";
