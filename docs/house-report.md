@@ -26,3 +26,16 @@ A free lookup: an address in, the home's public record out, read for the person 
 
 `house_lookup`, `house_reader`, `house_action` (step id), `house_report_shared`, `house_summary_copied`, `house_shared` (tool to a neighbor), `house_next` (project / contractor / another).
 The loops to watch: reports sent (homeowner → partner/agent), "another address" (curiosity), contractor checks from a house (homeowner → contractor), project starts with the address known.
+
+## The house card
+
+`components/house/HouseCard.tsx`, built by `lib/houseCard.ts` (tested). One 1080×1350 image (4:5, right for Messages, Nextdoor and Instagram):
+
+- the address (or just the street, with "Hide my house number"), the verdict, the three vitals,
+- the one fact worth knowing, most important first: an unfinished permit, then a hazard zone, then sign-offs on work underway, then the street,
+- the date and the sources,
+- the way back: "What's on file for *your* house? Look yours up free", with the link and a QR code to `/house?ref=card` (the tool, never this address).
+
+What's on screen is what's saved: the image is taken from the card itself, with its fonts inlined so it looks the same on every phone. **Share the card** sends the image with a link through the phone's share sheet (or downloads it where sharing files isn't supported); **Download** saves it.
+
+Events: `house_card_shared` (via share_sheet / download), `house_card_downloaded`, both with `hidden_number`. Arrivals from cards land with `ref=card`.

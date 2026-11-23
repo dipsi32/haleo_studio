@@ -23,6 +23,7 @@ import { track } from "@/lib/analytics";
 import { houseReport, READERS, shareMessage, smsLink, tidyName, type Reader, type Source, type Step, type Tone, type Vital } from "@/lib/houseReport";
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
+import HouseCard from "@/components/house/HouseCard";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, type RecordState } from "@/lib/homeRecord";
 
 const TONE: Record<Tone | "unknown", { dot: string; chip: string; ring: string }> = {
@@ -288,6 +289,9 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
           </ol>
         </section>
       )}
+
+      {/* The card: everything above, on one shareable image */}
+      <HouseCard report={r} street={street} zip={zip} />
 
       {/* The record itself */}
       <section className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-7">

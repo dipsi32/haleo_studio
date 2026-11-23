@@ -139,6 +139,8 @@ export type AnalyticsEvent =
   | "house_action"
   | "house_report_shared"
   | "house_summary_copied"
+  | "house_card_shared"
+  | "house_card_downloaded"
   | "house_shared"
   | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)
