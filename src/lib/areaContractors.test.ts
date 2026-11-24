@@ -7,6 +7,7 @@ describe("areaContractors", () => {
   it("never keeps a house number", () => {
     expect(streetOf("5343 LENORA AV")).toBe("Lenora Ave");
     expect(streetOf("12B N 1ST ST, SAN JOSE")).toBe("N 1st St");
+    expect(streetOf("123 SUN GLORY LN B")).toBe("Sun Glory Ln");
     expect(streetOf("100-104 ALMADEN BL #3")).toBe("Almaden Blvd");
     expect(streetOf("")).toBeNull();
     expect(streetOf("1450 KIMBER CT 66")).toBe("Kimber Ct");

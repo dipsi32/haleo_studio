@@ -35,6 +35,8 @@ export const streetOf = (address: string | null | undefined): string | null => {
     // Unit numbers are as good as an address: drop them ("KIMBER CT 66", "MAIN ST APT 4B", "ELM ST UNIT 2").
     .replace(/\s+(apt|unit|ste|suite|bldg|spc|space|no)\.?\s*\S+$/i, "")
     .replace(/(\s+[a-z]?\d+[a-z]?)+$/i, "")
+    // A unit letter after the street type ("SUN GLORY LN B").
+    .replace(/\s+(ave?|st|dr|ln|ct|way|rd|pl|cir|blvd|ter)\s+[a-z]$/i, " $1")
     .trim();
   if (!rest || /^\d/.test(rest)) return null;
   return rest

@@ -34,6 +34,13 @@ export type ParcelPermit = {
   is_open: boolean;
   is_expired_without_final: boolean;
   source?: string | null;
+  /** From the city's portal, when we have its record (see cityRecord.ts). */
+  what?: string | null;
+  scope?: string | null;
+  contractors?: string[];
+  docs?: import("./homeRecord").CityDoc[];
+  applied?: string | null;
+  expires?: string | null;
 };
 
 export type ParcelHistory = {

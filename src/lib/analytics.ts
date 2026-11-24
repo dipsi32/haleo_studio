@@ -66,6 +66,9 @@ export type AnalyticsEvent =
   | "access_gate_hit"
   // Contractor side
   | "contractor_profile_viewed"
+  | "contractor_profile_cslb"
+  | "contractor_profile_question_copied"
+  | "contractor_profile_check"
   | "contractor_claim_started"
   | "contractor_claimed_profile"
   | "contractor_onboarded"
@@ -143,6 +146,8 @@ export type AnalyticsEvent =
   | "house_card_downloaded"
   | "house_permit_opened"
   | "house_permit_file"
+  | "house_permit_copied"
+  | "house_drill_opened"
   | "house_crew_opened"
   | "house_area_opened"
   | "house_area_crew_opened"
