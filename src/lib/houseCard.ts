@@ -115,9 +115,11 @@ export const houseCard = (
         ? { label: "Latest work", value: latest.value.split(" · ")[0], detail: latest.value.split(" · ")[1] ?? null }
         : null;
 
-  const MARKS = { finaled: "done", in_progress: "open", open: "unfinished", expired: "unfinished", unknown: "unknown" } as const;
+  const MARKS = { finaled: "done", in_progress: "open", open: "unfinished", expired: "unfinished", cancelled: "unknown", unknown: "unknown" } as const;
   const HISTORY_ROWS = 4;
-  const history = r.rows.slice(0, HISTORY_ROWS).map((x) => ({
+  // The card shows work that happened (or should have): cancelled applications stay on the page, off the card.
+  const real = r.rows.filter((x) => x.state !== "cancelled");
+  const history = real.slice(0, HISTORY_ROWS).map((x) => ({
     year: x.year,
     // The card is small: the first clause of the city's description is enough.
     what: x.what.split(/[,;(]/)[0].trim().slice(0, 34),
@@ -127,7 +129,7 @@ export const houseCard = (
 
   return {
     history,
-    historyMore: Math.max(0, r.rows.length - HISTORY_ROWS),
+    historyMore: Math.max(0, real.length - HISTORY_ROWS),
     crew: crewNames.slice(0, 3),
     house,
     ground,

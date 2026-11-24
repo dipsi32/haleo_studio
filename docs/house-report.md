@@ -61,3 +61,24 @@ Events: `house_card_shared` (via share_sheet / download), `house_card_downloaded
 - **Who worked on this house**: each contractor with their permits here and their wider San José record; tap through to their profile.
 - **Around you**: the street (by block), then **Working in {ZIP}**, loaded on request: every contractor with permits in the ZIP, their kinds of work, the streets they've worked on (never house numbers), "Your street" when they've worked on it. `fetch-sj-permits` with `area: true` reads the city by the ZIP itself across all three feeds.
 - Events: `house_permit_opened`, `house_permit_file`, `house_crew_opened`, `house_area_opened`, `house_area_crew_opened`.
+
+## The city's own file (city-record)
+
+`supabase/functions/city-record` reads San José's public permit portal
+(permits.sanjoseca.gov) for the address: every permit on the lot (not just the
+three open-data feeds), each permit's contractor, and the scanned documents
+(permit card, plans, inspection notices) as direct PDF links. The portal also
+returns owners' and applicants' names and emails; only people whose type is
+exactly `Contractor` leave the function, and permit titles that carry a name are
+rewritten from the permit's codes (`describe()`).
+
+On the page: the card stays on the left; the right column is the permit list.
+Each permit opens to the action to take, its documents (one tap to the PDF),
+the permit number (tap to copy), and who did it. Everything else (the lot and
+the ground, the street and the area) is a drill-down.
+
+Tapping a contractor opens a short hand-off ("Pulling everything on …") while we
+find their record (strict name match; never a near miss), then their profile:
+the answer in one line, the job they did on this house, license (state board,
+or "Not checked" with a way to check), sign-offs, where they've worked (streets
+only), what they do, their latest permits, and questions to ask, ready to copy.

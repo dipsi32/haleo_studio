@@ -41,3 +41,6 @@ verify_jwt = false
 
 
 
+
+[functions.city-record]
+verify_jwt = false

@@ -3,8 +3,9 @@
 // on), then the record itself and where every fact came from.
 // The reading lives in src/lib/houseReport.ts.
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronDown,
   ArrowRight,
   Check,
   ClipboardCopy,
@@ -20,11 +21,13 @@ import {
   Users,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
-import { houseReport, READERS, shareMessage, smsLink, tidyName, type Reader, type Source, type Step, type Tone, type Vital } from "@/lib/houseReport";
+import { copyText } from "@/lib/copyText";
+import { houseReport, shareMessage, tidyName, type Reader, type Source, type Tone, type Vital } from "@/lib/houseReport";
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import HouseCard from "@/components/house/HouseCard";
-import { AreaDrilldown, CrewOnHouse, PermitList } from "@/components/house/HouseDetails";
+import { AreaDrilldown, PermitList } from "@/components/house/HouseDetails";
+import { useContractorJump } from "@/components/house/ContractorJump";
 import { streetOf } from "@/lib/areaContractors";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, type RecordState } from "@/lib/homeRecord";
 
@@ -40,6 +43,7 @@ const STATE_CHIP: Record<RecordState, string> = {
   in_progress: "border-amber-400/40 bg-amber-50 text-amber-700",
   open: "border-destructive/30 bg-destructive/10 text-destructive",
   expired: "border-destructive/30 bg-destructive/10 text-destructive",
+  cancelled: "border-border bg-secondary text-muted-foreground",
   unknown: "border-border bg-secondary text-muted-foreground",
 };
 
@@ -70,7 +74,7 @@ type Props = {
 /** While the lookups run: each source ticks off as it answers. */
 function Reading({ data }: { data: HomeData }) {
   const lines = [
-    { label: "Permits on file with the city", done: !!data.parcel || data.settled },
+    { label: "Every permit and document on file with the city", done: data.cityDone },
     { label: "Inspector sign-offs", done: data.inspections.length > 0 || data.settled },
     { label: "Fire, flood and earthquake maps", done: !!data.signal || data.settled },
   ];
@@ -118,46 +122,35 @@ function VitalTile({ v, i }: { v: Vital; i: number }) {
   );
 }
 
-function StepCard({ step, n, onRun, done }: { step: Step; n: number; onRun: () => void; done: boolean }) {
-  const a = step.action;
-  const label = done && a.kind === "copy" ? "Copied" : a.label;
+
+/** A drill-down: closed until asked, so the permits stay the main event. */
+function Drill({ title, sub, id, children }: { title: string; sub: string; id: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <motion.li
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + n * 0.07 }}
-      className="flex gap-3 rounded-3xl border border-border bg-card p-4 shadow-soft sm:gap-4 sm:p-5"
-    >
-      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-foreground font-display text-[13px] text-background sm:h-8 sm:w-8">{n + 1}</span>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-[17px] leading-snug sm:text-[18px]">{step.title}</p>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{step.why}</p>
-        {a.kind === "link" ? (
-          <a
-            href={a.href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={onRun}
-            className="mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full border border-border px-4 text-[14px] font-medium transition-smooth hover:bg-secondary"
-          >
-            {a.label} <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        ) : (
-          <button
-            type="button"
-            onClick={onRun}
-            className={`mt-3 inline-flex min-h-[42px] items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-smooth ${
-              a.kind === "project" ? "bg-foreground text-background hover:opacity-90" : "border border-border hover:bg-secondary"
-            }`}
-          >
-            {a.kind === "copy" && (done ? <Check className="h-4 w-4 text-sage" /> : <ClipboardCopy className="h-4 w-4" />)}
-            {a.kind === "check" && <Search className="h-4 w-4" />}
-            {label}
-            {a.kind === "project" && <ArrowRight className="h-4 w-4" />}
-          </button>
+    <section className="rounded-3xl border border-border bg-card shadow-soft">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((o) => !o);
+          if (!open) track("house_drill_opened", { section: id });
+        }}
+        className="flex min-h-[64px] w-full items-center justify-between gap-3 px-5 py-4 text-left md:px-7"
+      >
+        <span className="min-w-0">
+          <span className="block font-display text-[19px] leading-tight">{title}</span>
+          <span className="block text-[13px] text-muted-foreground">{sub}</span>
+        </span>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="border-t border-border px-5 pb-6 pt-5 md:px-7">{children}</div>
+          </motion.div>
         )}
-      </div>
-    </motion.li>
+      </AnimatePresence>
+    </section>
   );
 }
 
@@ -169,25 +162,16 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
     [street, zip, data.signal, data.parcel, data.inspections, reader],
   );
 
-  if (!data.settled && !(data.parcel && data.signal)) return <Reading data={data} />;
+  const jump = useContractorJump({ from: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/house", zip, street: r.street?.name ?? streetOf(street) });
+  if (!data.settled && !(data.parcel && data.signal && data.cityDone)) return <Reading data={data} />;
 
-  const copy = async (id: string, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(id);
-      setTimeout(() => setCopied((c) => (c === id ? null : c)), 2200);
-    } catch {
-      /* clipboard blocked: nothing to do */
-    }
+  const copy = (id: string, text: string) => {
+    if (!copyText(text)) return;
+    setCopied(id);
+    setTimeout(() => setCopied((c) => (c === id ? null : c)), 2200);
   };
 
-  const run = (s: Step) => {
-    track("house_action", { step: s.id, reader, tone: r.tone });
-    const a = s.action;
-    if (a.kind === "copy") void copy(s.id, a.text);
-    else if (a.kind === "project") onProject();
-    else if (a.kind === "check") onCheck(a.name);
-  };
+
 
   // The report itself, for a spouse, a client, a buyer's agent. The message
   // carries the results (not just a link), and the link opens this report.
@@ -202,7 +186,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
         await navigator.share({ text: `${SHARE_TEXT} ${url}` });
         return;
       }
-      await copy("tool", `${SHARE_TEXT} ${url}`);
+      copy("tool", `${SHARE_TEXT} ${url}`);
     } catch {
       /* closed the share sheet */
     }
@@ -213,54 +197,43 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-10">
+      {jump.element}
       {/* 1. The answer, on the card they'll share. Pinned while they read the rest. */}
       <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <HouseCard report={r} street={street} zip={zip} message={message} />
       </aside>
 
-      <div className="min-w-0 space-y-6">
-        {/* 2. What to do. Who's reading only changes this, so it lives here. */}
-        <section>
-          <div className="flex flex-wrap items-end justify-between gap-3 px-1">
-            <h3 className="font-display text-[24px] leading-tight">
-              What to do <span className="italic">next</span>
-            </h3>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Who's reading">
-              {READERS.map((x) => (
-                <button
-                  key={x.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={reader === x.id}
-                  onClick={() => {
-                    onReader(x.id);
-                    track("house_reader", { reader: x.id });
-                  }}
-                  className={`min-h-[40px] rounded-full border px-3.5 text-[13.5px] transition-smooth ${
-                    reader === x.id ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary"
-                  }`}
-                >
-                  {x.label}
-                </button>
+      <div className="min-w-0 space-y-5">
+        {/* 2. The house's whole story: every permit, who did it, what to do, the city's documents. */}
+        <PermitList rows={r.rows} read={!!data.parcel?.lookup_succeeded} onContractor={(name, job) => jump.open(name, undefined, job)} />
+
+        {/* 3. Drill-downs: the lot, then the neighborhood. */}
+        <Drill title="Your lot and the ground" sub="Zoning, soil, groundwater, and the fire, flood and earthquake maps" id="lot">
+          {data.city?.property && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13.5px] sm:grid-cols-3">
+              {data.city.property.zoning && (
+                <div>
+                  <dt className="text-muted-foreground">Zoning</dt>
+                  <dd>{data.city.property.zoning}</dd>
+                </div>
+              )}
+              {data.city.property.facts.map((f) => (
+                <div key={f.label}>
+                  <dt className="text-muted-foreground">{f.label}</dt>
+                  <dd>{f.value}</dd>
+                </div>
               ))}
-            </div>
-          </div>
-          <ol className="mt-3 space-y-3">
-            {r.steps.map((s, i) => (
-              <StepCard key={s.id} step={s} n={i} onRun={() => run(s)} done={copied === s.id} />
-            ))}
-          </ol>
-        </section>
-
-        {/* 3. This house, in full: its permits, who worked on it, the ground it sits on. */}
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
-          {/* The house itself: every permit, then everyone who worked on it */}
-          <PermitList rows={r.rows} read={!!data.parcel?.lookup_succeeded} onCheck={onCheck} />
-          <CrewOnHouse rows={r.rows} onCheck={onCheck} />
-
+              {data.city.property.apn && (
+                <div>
+                  <dt className="text-muted-foreground">Parcel (APN)</dt>
+                  <dd>{data.city.property.apn}</dd>
+                </div>
+              )}
+            </dl>
+          )}
           {/* The ground */}
-          <div className="border-t border-border p-5 md:p-7">
-            <h3 className="font-display text-[19px]">The ground</h3>
+          <div className="border-t border-border pt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">The ground</p>
             <ul className="mt-3 space-y-3.5">
               {r.ground.map((g) => (
                 <li key={g.id} className="flex gap-3">
@@ -287,20 +260,16 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
             </ul>
           </div>
 
-          <p className="border-t border-border px-6 py-4 text-[12px] leading-relaxed text-muted-foreground md:px-7">
+          <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
             {data.parcel?.apn ? `Assessor's parcel ${data.parcel.apn}. ` : ""}From the City of San José's permit and inspection records, CAL FIRE, FEMA and the
             California Geological Survey. Haleo reads public records; it doesn't inspect homes.
           </p>
-        </section>
+        </Drill>
 
-        {/* 4. Around you: the street, then the whole ZIP */}
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
-          <div className="px-5 pt-5 md:px-7 md:pt-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Around you</p>
-          </div>
+        <Drill title="Around you" sub={`Your street, and every contractor working in ${zip}`} id="around">
           {/* The street */}
           {hasStreet && (
-            <div className="p-5 pt-3 md:p-7 md:pt-3">
+            <div className="">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="font-display text-[19px]">
                   On <span className="italic">{r.street!.name}</span>
@@ -321,7 +290,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                     <ul className="mt-1">
                       {r.street!.crew.slice(0, 4).map((c) => (
                         <li key={c.raw} className="flex items-center justify-between gap-3 text-[14px]">
-                          <button type="button" onClick={() => onCheck(c.raw)} className="min-h-[40px] truncate text-left underline underline-offset-4 decoration-border hover:decoration-foreground">
+                          <button type="button" onClick={() => jump.open(c.raw)} className="min-h-[40px] truncate text-left underline underline-offset-4 decoration-border hover:decoration-foreground">
                             {c.name}
                           </button>
                           <span className="shrink-0 text-[12.5px] text-muted-foreground">{c.count}</span>
@@ -349,8 +318,8 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
             </div>
           )}
 
-          <AreaDrilldown zip={zip} street={r.street?.name ?? streetOf(street)} />
-        </section>
+          <AreaDrilldown zip={zip} street={r.street?.name ?? streetOf(street)} onContractor={(name, id) => jump.open(name, id)} />
+        </Drill>
 
         {/* 5. The loops: the next house, and the neighbor. */}
         <section className="grid gap-3 sm:grid-cols-2">

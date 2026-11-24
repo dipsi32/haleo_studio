@@ -1,22 +1,29 @@
 // Loads a home's record: hazard signals, the parcel's permit history and the
 // city's inspection sign-offs on its recent permits. A saved copy is used
 // only when it can be trusted (homeData.ts); otherwise the lookup runs again.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
 import type { InspectionIn } from "@/lib/homeRecord";
 import { addressKey, parcelIsFresh, riskIsFresh, type ParcelHistory, type RiskSignal } from "@/lib/homeData";
+import { withCityPermits, type CityRecord } from "@/lib/cityRecord";
 
 export type HomeData = {
   signal: RiskSignal | null;
+  /** The house's permit history: the city's full record when it answered, else the open-data feeds. */
   parcel: ParcelHistory | null;
+  /** The city's record for the lot (facts, zoning), when it answered. */
+  city: CityRecord | null;
   inspections: InspectionIn[];
   /** Both lookups have finished (with or without an answer). */
   settled: boolean;
+  /** The city's portal has answered, or we stopped waiting. */
+  cityDone: boolean;
 };
 
 export const useHomeData = (address?: Address): HomeData => {
-  const [done, setDone] = useState({ risk: false, parcel: false });
+  const [done, setDone] = useState({ risk: false, parcel: false, city: false });
+  const [city, setCity] = useState<CityRecord | null>(null);
   const [signal, setSignal] = useState<RiskSignal | null>(null);
   const [parcel, setParcel] = useState<ParcelHistory | null>(null);
   const [inspections, setInspections] = useState<InspectionIn[]>([]);
@@ -24,12 +31,13 @@ export const useHomeData = (address?: Address): HomeData => {
   useEffect(() => {
     setSignal(null);
     setParcel(null);
+    setCity(null);
     setInspections([]);
     if (!address?.street || !address?.city || address?.skipped) {
-      setDone({ risk: true, parcel: true });
+      setDone({ risk: true, parcel: true, city: true });
       return;
     }
-    setDone({ risk: false, parcel: false });
+    setDone({ risk: false, parcel: false, city: false });
     const key = addressKey(address);
     let active = true;
 
@@ -71,6 +79,22 @@ export const useHomeData = (address?: Address): HomeData => {
       if (active) setDone((d) => ({ ...d, parcel: true }));
     })();
 
+    // The city's own portal: every permit on the lot, its contractor and documents.
+    // The page doesn't wait past 15 seconds for it; the feeds stand in.
+    (async () => {
+      try {
+        const res = await Promise.race([
+          supabase.functions.invoke("city-record", { body: { street: address.street, zip: address.zip } }),
+          new Promise<null>((r) => setTimeout(() => r(null), 15000)),
+        ]);
+        const data = (res as { data?: { ok?: boolean } & CityRecord } | null)?.data;
+        if (active && data?.ok) setCity({ found: !!data.found, property: data.property ?? null, permits: data.permits ?? [] });
+      } catch (e) {
+        console.warn("city record lookup failed", e);
+      }
+      if (active) setDone((d) => ({ ...d, city: true }));
+    })();
+
     return () => {
       active = false;
     };
@@ -79,7 +103,7 @@ export const useHomeData = (address?: Address): HomeData => {
 
   // The city's inspection sign-offs on the most recent permits.
   useEffect(() => {
-    const nums = (parcel?.permits ?? [])
+    const nums = (withCityPermits(parcel, city)?.permits ?? [])
       .slice()
       .sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))
       .map((p) => p.permit_number)
@@ -97,7 +121,8 @@ export const useHomeData = (address?: Address): HomeData => {
     return () => {
       active = false;
     };
-  }, [parcel]);
+  }, [parcel, city]);
 
-  return { signal, parcel, inspections, settled: done.risk && done.parcel };
+  const merged = useMemo(() => withCityPermits(parcel, city), [parcel, city]);
+  return { signal, parcel: merged, city, inspections, settled: done.risk && done.parcel && done.city, cityDone: done.city };
 };

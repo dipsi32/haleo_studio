@@ -8,12 +8,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Check, ChevronDown, Copy, ExternalLink, Loader2, MapPin, Users } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Copy, ExternalLink, FileText, Loader2, MapPin, Users } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { CITY_PERMIT_SEARCH, type RecordRow, type RecordState } from "@/lib/homeRecord";
 import { tidyName } from "@/lib/houseReport";
 import { onStreet } from "@/lib/areaContractors";
-import { useAreaContractors, useCrewRecords } from "@/lib/useAreaData";
+import { useAreaContractors } from "@/lib/useAreaData";
+import { primaryDoc } from "@/lib/cityRecord";
+import { copyText } from "@/lib/copyText";
+import type { HouseJob } from "./ContractorJump";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const day = (iso: string | null) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}, ${iso.slice(0, 4)}` : null);
@@ -24,6 +27,7 @@ const DOT: Record<RecordState, string> = {
   in_progress: "bg-amber-500",
   open: "bg-destructive",
   expired: "bg-destructive",
+  cancelled: "bg-muted-foreground/30",
   unknown: "bg-muted-foreground/40",
 };
 const CHIP: Record<RecordState, string> = {
@@ -31,52 +35,97 @@ const CHIP: Record<RecordState, string> = {
   in_progress: "border-amber-400/40 bg-amber-50 text-amber-700",
   open: "border-destructive/30 bg-destructive/10 text-destructive",
   expired: "border-destructive/30 bg-destructive/10 text-destructive",
+  cancelled: "border-border bg-secondary text-muted-foreground",
   unknown: "border-border bg-secondary text-muted-foreground",
 };
 
 const sectionTitle = "font-display text-[19px] leading-tight";
 const kicker = "text-[11px] uppercase tracking-wide text-muted-foreground";
 
-/** Every permit on the house. One tap opens its detail; one more opens the city's file. */
-export function PermitList({ rows, read, onCheck }: { rows: RecordRow[]; read: boolean; onCheck: (name: string) => void }) {
-  const [open, setOpen] = useState<number | null>(null);
+/** What to do about this one permit, in a sentence. */
+const actionFor = (row: RecordRow): { text: string; tone: "act" | "watch" | "done" | "quiet" } => {
+  const by = row.contractor ? tidyName(row.contractor) : null;
+  switch (row.state) {
+    case "expired":
+    case "open":
+      return {
+        text: `Before you buy or remodel, get this one finaled: call the city's permit center to reopen it for a final inspection${by ? `, or ask ${by} to` : ""}. Unfinished permits follow the house.`,
+        tone: "act",
+      };
+    case "in_progress":
+      return { text: `Open with the city. Make sure ${by ? `${by} books` : "someone books"} the final inspection when the work is done.`, tone: "watch" };
+    case "finaled":
+      return { text: "Signed off by the city. Keep the final record with your papers: it's what a buyer's inspector asks for.", tone: "done" };
+    case "cancelled":
+      return { text: "No work was authorized under this one.", tone: "quiet" };
+    default:
+      return { text: "The city's record doesn't show a final. Worth asking the city before you buy or build.", tone: "watch" };
+  }
+};
+
+const ACTION_TONE = {
+  act: "border-destructive/25 bg-destructive/5",
+  watch: "border-amber-400/40 bg-amber-50/60",
+  done: "border-sage/30 bg-sage/5",
+  quiet: "border-border bg-secondary/40",
+} as const;
+
+/**
+ * Every permit on the house, newest first. Each one carries who did it, what
+ * to do about it, and the city's own documents, one tap away.
+ */
+export function PermitList({
+  rows,
+  read,
+  onContractor,
+}: {
+  rows: RecordRow[];
+  read: boolean;
+  onContractor: (name: string, job?: HouseJob) => void;
+}) {
+  const [open, setOpen] = useState<number | null>(() => {
+    // Open the one that needs action first, so the answer is already on screen.
+    const i = rows.findIndex((r) => r.state === "expired" || r.state === "open");
+    return i >= 0 ? i : null;
+  });
   const [copied, setCopied] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const shown = showAll ? rows : rows.slice(0, 6);
+  const real = rows.filter((r) => r.state !== "cancelled");
+  const cancelled = rows.length - real.length;
+  const shown = showAll ? rows : real.slice(0, 8);
+  const docs = rows.reduce((n, r) => n + r.docs.length, 0);
 
-  // The city's search opens records from a permit number, not a link: hand it over, then open the search.
-  const openFile = async (permit: string) => {
-    track("house_permit_file", { permit });
-    try {
-      await navigator.clipboard.writeText(permit);
-      setCopied(permit);
-      setTimeout(() => setCopied((c) => (c === permit ? null : c)), 6000);
-    } catch {
-      /* clipboard blocked: the number is on screen to copy */
-    }
-    window.open(CITY_PERMIT_SEARCH, "_blank", "noopener");
+  const copy = (permit: string) => {
+    copyText(permit);
+    setCopied(permit);
+    track("house_permit_copied", {});
+    setTimeout(() => setCopied((c) => (c === permit ? null : c)), 3000);
   };
 
   return (
-    <div className="p-5 md:p-7">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className={sectionTitle}>Permit history</h3>
-        <span className={kicker}>{rows.length ? `${rows.length} on file` : "City records"}</span>
-      </div>
-      {rows.length === 0 ? (
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          {read
-            ? "No active, in-progress or expired permits on file. Permits finished in the last few weeks may not show yet; the city's own search has every one."
-            : "The city's permit records didn't answer just now. Try again in a minute."}{" "}
-          <a href={CITY_PERMIT_SEARCH} target="_blank" rel="noreferrer" className="whitespace-nowrap font-medium text-foreground underline underline-offset-4">
-            Search the city's records <ExternalLink className="inline h-3 w-3" />
-          </a>
-        </p>
-      ) : (
-        <>
+    <section className="rounded-3xl border border-border bg-card shadow-soft">
+      <div className="p-5 md:p-7">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-display text-[22px] leading-tight">
+            Every permit <span className="italic">on file</span>
+          </h3>
+          <span className={kicker}>
+            {rows.length ? `${real.length} permit${real.length === 1 ? "" : "s"}${docs ? ` · ${docs} documents` : ""}` : "City records"}
+          </span>
+        </div>
+        {rows.length === 0 ? (
+          <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+            {read ? "No permits on file with the city for this address." : "The city's permit records didn't answer just now. Try again in a minute."}{" "}
+            <a href={CITY_PERMIT_SEARCH} target="_blank" rel="noreferrer" className="whitespace-nowrap font-medium text-foreground underline underline-offset-4">
+              Search the city's records <ExternalLink className="inline h-3 w-3" />
+            </a>
+          </p>
+        ) : (
           <ol className="mt-3 divide-y divide-border">
             {shown.map((row, i) => {
               const isOpen = open === i;
+              const action = actionFor(row);
+              const first = primaryDoc(row.docs);
               return (
                 <li key={`${row.permit}-${i}`}>
                   <button
@@ -84,44 +133,139 @@ export function PermitList({ rows, read, onCheck }: { rows: RecordRow[]; read: b
                     aria-expanded={isOpen}
                     onClick={() => {
                       setOpen(isOpen ? null : i);
-                      if (!isOpen) track("house_permit_opened", { state: row.state });
+                      if (!isOpen) track("house_permit_opened", { state: row.state, docs: row.docs.length });
                     }}
-                    className="flex min-h-[52px] w-full items-center gap-3 py-3 text-left"
+                    className="flex min-h-[60px] w-full items-center gap-3 py-3 text-left"
                   >
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[row.state]}`} />
                     <span className="w-10 shrink-0 font-display text-[14px] text-muted-foreground">{row.year ?? "—"}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px]">{row.what}</span>
-                      <span className="block truncate text-[12.5px] text-muted-foreground">{row.contractor ? tidyName(row.contractor) : "No contractor named"}</span>
-                    </span>
-                    <span className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide sm:inline ${CHIP[row.state]}`}>
-                      {row.stateLabel}
+                      <span className={`block truncate text-[15px] ${row.state === "cancelled" ? "text-muted-foreground" : ""}`}>{row.what}</span>
+                      <span className="block truncate text-[12.5px] text-muted-foreground">
+                        {row.stateLabel}
+                        {row.contractor ? ` · ${tidyName(row.contractor)}` : ""}
+                        {row.docs.length ? ` · ${row.docs.length} doc${row.docs.length === 1 ? "" : "s"}` : ""}
+                      </span>
                     </span>
                     <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
                   </button>
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="mb-4 rounded-2xl bg-secondary/50 p-4 text-[14px]">
-                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide sm:hidden ${CHIP[row.state]}`}>{row.stateLabel}</span>
-                          {row.detail.description && <p className="mt-2 leading-relaxed sm:mt-0">{row.detail.description}</p>}
-                          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                        <div className="mb-4 space-y-3">
+                          {/* What to do about it */}
+                          <p className={`rounded-2xl border px-4 py-3 text-[14px] leading-relaxed ${ACTION_TONE[action.tone]}`}>{action.text}</p>
+
+                          {/* The documents: the city's own scans, one tap each */}
+                          {row.docs.length > 0 ? (
+                            <div className="rounded-2xl bg-secondary/50 p-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {first && (
+                                  <a
+                                    href={first.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={() => track("house_permit_file", { kind: first.kind })}
+                                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-foreground px-4 text-[14px] font-medium text-background transition-smooth hover:opacity-90"
+                                  >
+                                    <FileText className="h-4 w-4" /> Open the {/plans/i.test(first.kind) ? "plans" : /inspection/i.test(first.kind) ? "inspection notice" : "permit"}
+                                  </a>
+                                )}
+                                {row.permit && (
+                                  <button
+                                    type="button"
+                                    onClick={() => copy(row.permit!)}
+                                    aria-label={`Copy permit number ${row.permit}`}
+                                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-border bg-card px-4 text-[13.5px] transition-smooth hover:bg-secondary"
+                                  >
+                                    {copied === row.permit ? <Check className="h-4 w-4 text-sage" /> : <Copy className="h-4 w-4" />}
+                                    {copied === row.permit ? "Copied" : row.permit}
+                                  </button>
+                                )}
+                              </div>
+                              <ul className="mt-3 divide-y divide-border/70">
+                                {row.docs.slice(0, 8).map((d) => (
+                                  <li key={d.id}>
+                                    <a
+                                      href={d.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={() => track("house_permit_file", { kind: d.kind })}
+                                      className="flex min-h-[44px] items-center justify-between gap-3 text-[13.5px] hover:underline"
+                                    >
+                                      <span className="min-w-0 truncate">{d.kind}</span>
+                                      <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                                        {day(d.date)} <ExternalLink className="h-3.5 w-3.5" />
+                                      </span>
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                              {row.docs.length > 8 && <p className="mt-1 text-[12px] text-muted-foreground">+ {row.docs.length - 8} more in the city's file</p>}
+                            </div>
+                          ) : (
+                            row.permit && (
+                              <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+                                No scanned documents for this one.
+                                <button
+                                  type="button"
+                                  onClick={() => copy(row.permit!)}
+                                  aria-label={`Copy permit number ${row.permit}`}
+                                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-border px-3 text-[13px] text-foreground hover:bg-secondary"
+                                >
+                                  {copied === row.permit ? <Check className="h-3.5 w-3.5 text-sage" /> : <Copy className="h-3.5 w-3.5" />}
+                                  {copied === row.permit ? "Copied" : row.permit}
+                                </button>
+                              </div>
+                            )
+                          )}
+
+                          {/* Who did it */}
+                          {row.contractors.length > 0 && (
+                            <div className="space-y-2">
+                              {row.contractors.map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => onContractor(c, { what: row.what, year: row.year, state: row.stateLabel })}
+                                  className="group flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-3.5 text-left transition-smooth hover:border-foreground/30"
+                                >
+                                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-soft-foreground">
+                                    <Users className="h-4 w-4" />
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block text-[12px] text-muted-foreground">Done by</span>
+                                    <span className="block truncate text-[15px] font-medium">{tidyName(c)}</span>
+                                  </span>
+                                  <span className="shrink-0 text-[13px] font-medium text-accent">
+                                    Their record <ArrowRight className="inline h-3.5 w-3.5 transition-smooth group-hover:translate-x-0.5" />
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* The permit's own words and dates */}
+                          {row.detail.description && <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-muted-foreground">{row.detail.description}</p>}
+                          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] sm:grid-cols-4">
+                            {row.detail.applied && (
+                              <div>
+                                <dt className="text-muted-foreground">Applied</dt>
+                                <dd>{day(row.detail.applied)}</dd>
+                              </div>
+                            )}
                             {row.detail.issued && (
                               <div>
                                 <dt className="text-muted-foreground">Issued</dt>
                                 <dd>{day(row.detail.issued)}</dd>
                               </div>
                             )}
-                            <div>
-                              <dt className="text-muted-foreground">Final inspection</dt>
-                              <dd className={row.detail.finaled ? "" : row.state === "in_progress" ? "text-amber-700" : "text-destructive"}>
-                                {row.detail.finaled ? day(row.detail.finaled) : row.state === "in_progress" ? "Not yet" : "Never"}
-                              </dd>
-                            </div>
-                            {row.detail.valuation && (
+                            {row.state !== "cancelled" && (
                               <div>
-                                <dt className="text-muted-foreground">Declared value</dt>
-                                <dd>${Math.round(row.detail.valuation).toLocaleString()}</dd>
+                                <dt className="text-muted-foreground">Final inspection</dt>
+                                <dd className={row.detail.finaled ? "" : row.state === "in_progress" ? "text-amber-700" : "text-destructive"}>
+                                  {row.detail.finaled ? day(row.detail.finaled) : row.state === "in_progress" ? "Not yet" : "Never"}
+                                </dd>
                               </div>
                             )}
                             {row.detail.type && (
@@ -130,60 +274,21 @@ export function PermitList({ rows, read, onCheck }: { rows: RecordRow[]; read: b
                                 <dd>{row.detail.type}</dd>
                               </div>
                             )}
-                            {row.contractor && (
-                              <div className="col-span-2">
-                                <dt className="text-muted-foreground">Contractor</dt>
-                                <dd>
-                                  <button type="button" onClick={() => onCheck(row.contractor!)} className="-my-2 inline-block py-2 text-left underline underline-offset-4 decoration-border hover:decoration-foreground">
-                                    {tidyName(row.contractor)}
-                                  </button>
-                                </dd>
-                              </div>
-                            )}
                           </dl>
                           {row.detail.inspections.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-[13px] text-muted-foreground">Inspections</p>
-                              <ul className="mt-1 flex flex-wrap gap-1.5">
-                                {row.detail.inspections.map((x) => (
-                                  <li
-                                    key={x.label}
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] ${
-                                      x.status === "complete" ? "border-sage/30 bg-sage/10 text-sage" : "border-border bg-card text-muted-foreground"
-                                    }`}
-                                  >
-                                    {x.status === "complete" && <Check className="h-3 w-3" strokeWidth={2.5} />} {x.label}
-                                    {x.status !== "complete" && <span className="opacity-70"> · {x.status === "in_progress" ? "in progress" : "pending"}</span>}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                            <ul className="flex flex-wrap gap-1.5">
+                              {row.detail.inspections.map((x) => (
+                                <li
+                                  key={x.label}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] ${
+                                    x.status === "complete" ? "border-sage/30 bg-sage/10 text-sage" : "border-border bg-card text-muted-foreground"
+                                  }`}
+                                >
+                                  {x.status === "complete" && <Check className="h-3 w-3" strokeWidth={2.5} />} {x.label}
+                                </li>
+                              ))}
+                            </ul>
                           )}
-                          {row.permit && (
-                            <div className="mt-4 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openFile(row.permit!)}
-                                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-foreground px-4 text-[14px] font-medium text-background transition-smooth hover:opacity-90"
-                              >
-                                Open the city's file <ExternalLink className="h-3.5 w-3.5" />
-                              </button>
-                              <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-                                {copied === row.permit ? (
-                                  <>
-                                    <Check className="h-3.5 w-3.5 text-sage" /> Permit {row.permit} copied. Paste it in the city's search.
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-3.5 w-3.5" /> Permit {row.permit}
-                                  </>
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
-                            The city's file holds the imaged permit, plans and inspection records.
-                          </p>
                         </div>
                       </motion.div>
                     )}
@@ -192,73 +297,25 @@ export function PermitList({ rows, read, onCheck }: { rows: RecordRow[]; read: b
               );
             })}
           </ol>
-          {rows.length > 6 && (
-            <button type="button" onClick={() => setShowAll((x) => !x)} className="mt-2 min-h-[40px] text-[13.5px] font-medium underline-offset-4 hover:underline">
-              {showAll ? "Show fewer" : `Show all ${rows.length}`}
-            </button>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/** Each contractor who worked on this house, with their wider San José record. */
-export function CrewOnHouse({ rows, onCheck }: { rows: RecordRow[]; onCheck: (name: string) => void }) {
-  const navigate = useNavigate();
-  const crew = [...new Set(rows.map((r) => r.contractor).filter((c): c is string => !!c))];
-  const records = useCrewRecords(crew);
-  if (!crew.length) return null;
-  return (
-    <div className="border-t border-border p-5 md:p-7">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className={sectionTitle}>Who worked on this house</h3>
-        <span className={kicker}>{crew.length} on file</span>
+        )}
+        {(real.length > 8 || cancelled > 0) && (
+          <button type="button" onClick={() => setShowAll((x) => !x)} className="mt-2 min-h-[40px] text-[13.5px] font-medium underline-offset-4 hover:underline">
+            {showAll ? "Show fewer" : `Show all ${rows.length}${cancelled ? `, with ${cancelled} cancelled or never issued` : ""}`}
+          </button>
+        )}
       </div>
-      <ul className="mt-3 space-y-2.5">
-        {crew.map((raw) => {
-          const here = rows.filter((r) => r.contractor === raw);
-          const years = [...new Set(here.map((r) => r.year).filter(Boolean))].sort();
-          const rec = records[raw];
-          return (
-            <li key={raw}>
-              <button
-                type="button"
-                onClick={() => {
-                  track("house_crew_opened", { has_record: !!rec?.id });
-                  if (rec?.id) navigate(`/contractors/${rec.id}`);
-                  else onCheck(raw);
-                }}
-                className="group flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-3.5 text-left transition-smooth hover:border-foreground/30"
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-soft-foreground">
-                  <Users className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium">{tidyName(raw)}</span>
-                  <span className="block text-[12.5px] leading-snug text-muted-foreground">
-                    {here.length} permit{here.length === 1 ? "" : "s"} on this house{years.length ? ` (${years.join(", ")})` : ""}
-                    {rec?.permitCount ? ` · ${rec.permitCount} in San José` : ""}
-                    {rec?.lastPermit ? `, latest ${month(rec.lastPermit)}` : ""}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-smooth group-hover:translate-x-0.5" />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    </section>
   );
 }
 
 /** Everyone working in the ZIP, loaded when they ask: what they do and the streets they've worked on. */
-export function AreaDrilldown({ zip, street }: { zip: string; street: string | null }) {
-  const navigate = useNavigate();
+export function AreaDrilldown({ zip, street, onContractor }: { zip: string; street: string | null; onContractor: (name: string, id?: string) => void }) {
   const [asked, setAsked] = useState(false);
   const [all, setAll] = useState(false);
   const area = useAreaContractors(zip, asked);
-  const crews = all ? area.crews : area.crews.slice(0, 8);
+  // Whoever has worked on their own street comes first: the most relevant to them.
+  const ranked = [...area.crews].sort((a, b) => Number(onStreet(b, street)) - Number(onStreet(a, street)));
+  const crews = all ? ranked : ranked.slice(0, 8);
 
   return (
     <div className="border-t border-border p-5 md:p-7">
@@ -284,8 +341,9 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
           <ArrowRight className="h-4 w-4 shrink-0" />
         </button>
       ) : area.status === "loading" || area.status === "idle" ? (
-        <p className="mt-3 flex items-center gap-2 text-[14px] text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" /> Reading {zip}'s permits…
+        <p className="mt-3 flex items-start gap-2 text-[14px] text-muted-foreground">
+          <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-accent" />
+          <span>Reading every permit in {zip} from the city. The first look at a ZIP can take a couple of minutes; after that it's instant.</span>
         </p>
       ) : area.status === "failed" || !area.crews.length ? (
         <p className="mt-3 text-[14px] text-muted-foreground">We couldn't read {zip}'s permits just now. Try again in a minute.</p>
@@ -294,6 +352,11 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
           <p className="mt-2 text-[13.5px] text-muted-foreground">
             {area.crews.length} contractors across {area.permits} permits in {zip}, most active first.
           </p>
+          {area.status === "growing" && (
+            <p className="mt-1.5 flex items-center gap-2 text-[12.5px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" /> Reading the rest of {zip} from the city. This list fills in when it lands.
+            </p>
+          )}
           <ul className="mt-3 space-y-2">
             {crews.map((c) => {
               const mine = onStreet(c, street);
@@ -303,7 +366,7 @@ export function AreaDrilldown({ zip, street }: { zip: string; street: string | n
                     type="button"
                     onClick={() => {
                       track("house_area_crew_opened", { on_street: mine });
-                      navigate(`/contractors/${c.id}`);
+                      onContractor(c.name, c.id);
                     }}
                     className="group w-full rounded-2xl border border-border bg-background p-3.5 text-left transition-smooth hover:border-foreground/30"
                   >
