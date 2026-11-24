@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { houseReport, shareMessage, smsLink, tidyName, topKinds } from "./houseReport";
+import { houseReport, shareMessage, smsLink, streetLine, tidyName, topKinds } from "./houseReport";
 import { parcelIsFresh, riskIsFresh, type ParcelHistory, type ParcelPermit, type RiskSignal } from "./homeData";
 
 const now = new Date("2026-11-21T12:00:00Z");
@@ -199,7 +199,7 @@ describe("the street and the ground", () => {
     expect(r.street?.crew[0]).toMatchObject({ name: "Acme Roofing Inc", count: 2 });
     expect(r.street?.recent[0]).toMatchObject({ block: "2800 block", what: "Roof", when: "Aug 2026" });
     expect(r.vitals[2]).toMatchObject({ label: "On Lexford Ave", value: "4 permits on the street" });
-    expect(r.sub).toContain("Around you: 4 permits on Lexford Ave");
+    expect(r.sub).toContain("On Lexford Ave, neighbors have pulled 4 permits");
   });
 
   it("the project reader gets the crew already working on their street", () => {
@@ -220,7 +220,18 @@ describe("the street and the ground", () => {
 
 describe("topKinds", () => {
   it("names real kinds of work, never 'other work', and keeps acronyms", () => {
-    expect(topKinds([{ kind: "Other work", count: 9 }, { kind: "ADU or addition", count: 3 }, { kind: "Roof", count: 2 }])).toBe("ADU or addition and roof");
+    expect(topKinds([{ kind: "Other work", count: 9 }, { kind: "ADU or addition", count: 3 }, { kind: "Roof", count: 2 }])).toBe("ADUs and additions, then new roofs");
     expect(topKinds([{ kind: "Other work", count: 9 }])).toBeNull();
+  });
+});
+
+describe("streetLine", () => {
+  it("says it the way a neighbor would", () => {
+    expect(streetLine({ name: "Merrill Dr", total: 40, lastYear: 9, kinds: [{ kind: "ADU or addition", count: 12 }, { kind: "Roof", count: 8 }, { kind: "Other work", count: 20 }] })).toBe(
+      "On Merrill Dr, neighbors have pulled 40 permits (9 this past year), mostly for ADUs and additions, then new roofs.",
+    );
+  });
+  it("won't say mostly about a sliver", () => {
+    expect(streetLine({ name: "Merrill Dr", total: 40, lastYear: 0, kinds: [{ kind: "Roof", count: 3 }, { kind: "Other work", count: 37 }] })).toBe("On Merrill Dr, neighbors have pulled 40 permits.");
   });
 });
