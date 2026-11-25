@@ -94,7 +94,7 @@ describe("houseCard", () => {
   it("a quiet house shows its street, and the line under it says something new", () => {
     const c = card(signal(), parcel([], [sp({}), sp({ description: "PV solar" }), sp({ issued_date: "2024-01-01" })]));
     expect(c.house).toMatchObject({ value: "None open", detail: "Nothing unfinished", tone: "clear" });
-    expect(c.around).toEqual({ label: "Lexford Ave", value: "3 permits", detail: "Mostly roof" });
+    expect(c.around).toEqual({ label: "Lexford Ave", value: "3 permits", detail: "Mostly new roofs" });
     expect(c.highlight?.text).toBe("Acme Roofing Inc has 3 permits on Lexford Ave: the crew your neighbors hire.");
   });
 

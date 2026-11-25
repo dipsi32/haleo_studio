@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- the city portal's JSON is untyped; every field is read defensively with ?? fallbacks. */
 // city-record: a San José home's complete record, straight from the city's
 // own permit portal (permits.sanjoseca.gov, the public "SJPermits" search).
 //
@@ -77,8 +78,67 @@ const ABBR: [RegExp, string][] = [
   [/\bFAU\b/gi, "furnace"],
   [/\(E\)|\(N\)/g, ""],
 ];
+// Every word in a title must be one of these, or the title is dropped: an
+// unknown word may be a person's name ("MCPHEE SPA", "SMITH RESIDENCE REROOF").
+const VOCAB = new Set(
+  `remodel remodeling addition additions alteration alterations kitchen kitchens bath baths bathroom bathrooms master
+  roof reroof re-roof roofing solar ev charger chargers charging station service upgrade upgrades panel panels main sub meter
+  water heater heaters replacement replacements repipe duct ducts ductwork furnace furnaces hvac heat pump pumps a/c ac air
+  conditioner conditioning condenser window windows door doors demo demolition garage garages adu jadu pool pools spa spas
+  fence fences deck decks patio patios foundation seismic retrofit sewer lateral gas line lines appliance appliances fireplace
+  stair stairs porch skylight skylights siding stucco change changeout replace install installation installed new conversion
+  convert converted to and or of with for in on at the a an habitable space room rooms bedroom bedrooms interior exterior
+  structural story second first floor single family residence residential dwelling unit units sfd sfr detached attached
+  accessory battery batteries storage system systems kw electrical electric plumbing mechanical building permit repair repairs
+  dry rot termite wall walls bearing non load beam beams laundry shower showers tub tile cabinets counter counters ceiling attic
+  insulation drywall framing rebuild fire damage amp amps sq ft minor major partial full whole house home existing legalize
+  legalization as-built sunroom carport shed pergola trellis retaining cover covered awning balcony driveway landscape
+  irrigation tank tankless hot mini split mini-split relocate relocation move outlet outlets lighting light lights circuit
+  circuits car generator backup photovoltaic pv evcs wh rpip apl gas-r fau r/m wh-r tenant improvement ti only like kind
+  in-kind same remove removal add adding addl additional level upper lower front rear side yard back new-roof re-pipe
+  residence's bath/laundry plan plans revision revisions`.split(/\s+/),
+);
+const allKnown = (t: string) =>
+  t
+    .toLowerCase()
+    .replace(/[(),.;:&+]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((w) => VOCAB.has(w) || /^\d+(\.\d+)?(%|kw|a|amp|sf|sqft|st|nd|rd|th)?$/.test(w) || /^[-/]+$/.test(w));
+
+// What the job was, read from the city's description when the name doesn't say.
+const JOBS: [RegExp, string][] = [
+  [/seismic retrofit|brace (&|and) bolt/i, "Seismic retrofit"],
+  [/garage[^.]{0,40}(habitable|adu|living|office|bedroom)|convert[^.]{0,30}garage/i, "Garage conversion"],
+  [/\bj?adu\b|accessory dwelling/i, "ADU"],
+  [/\baddition\b|\bextend\b/i, "Addition"],
+  [/kitchen/i, "Kitchen remodel"],
+  [/\bbath/i, "Bathroom remodel"],
+  [/re-?roof/i, "New roof"],
+  [/solar|pv system|photovolt/i, "Solar"],
+  [/fire damage/i, "Fire damage repair"],
+  [/pool[^.]{0,20}demo|demo[^.]{0,20}pool/i, "Pool removal"],
+  [/\bpool\b/i, "Pool"],
+  [/\bspa\b|hot tub/i, "Spa"],
+  [/ev charg|\bevcs\b/i, "EV charger"],
+  [/panel upgrade|service upgrade|main panel|service change/i, "Electrical panel upgrade"],
+  [/water heater/i, "Water heater"],
+  [/furnace|hvac|heat pump|\ba\/c\b|air condition/i, "Heating and cooling"],
+  [/window/i, "Windows"],
+  [/repipe|re-pipe/i, "Repipe"],
+  [/sewer/i, "Sewer line"],
+  [/foundation/i, "Foundation work"],
+];
+const jobsIn = (s: string | null) => {
+  const found: string[] = [];
+  for (const [re, label] of JOBS) if (re.test(s ?? "") && !found.includes(label)) found.push(label);
+  // "Pool removal" already says pool; an addition that's a garage conversion is one job.
+  const clean = found.filter((l) => !(l === "Pool" && found.includes("Pool removal")) && !(l === "Addition" && found.includes("Garage conversion")));
+  return clean.length ? clean.slice(0, 2).join(" and ").replace(/ and (\w)/, (_m, c: string) => ` and ${c.toLowerCase()}`) : null;
+};
+
 const titleCase = (t: string) => t.toLowerCase().replace(/(^|[\s/(-])([a-z])/g, (_m, a, b) => a + b.toUpperCase()).replace(/\bEv\b/g, "EV");
-const describe = (name: string | null, work: string | null, type: string | null): string => {
+const describe = (name: string | null, work: string | null, type: string | null, scope: string | null = null): string => {
   let raw = String(name ?? "").trim();
   // Leading trade codes: "(ME)", "(BEPM 100%)", "(E100%)", "(P)".
   const codes = new Set<string>();
@@ -87,12 +147,25 @@ const describe = (name: string | null, work: string | null, type: string | null)
     return " ";
   }).replace(/\s+/g, " ").trim();
   const isAddress = /^\d+\s/.test(raw);
-  const looksLikeWork = WORK_WORDS.test(raw);
-  if (raw && !isAddress && looksLikeWork) {
-    let t = raw;
+  const tidy = (s: string) => {
+    let t = s;
     for (const [re, to] of ABBR) t = t.replace(re, to);
     t = t.replace(/\s*\/\s*/g, " and ").replace(/,\s*/g, ", ").replace(/\s+/g, " ").replace(/^[\s,/-]+|[\s,/-]+$/g, "");
-    if (t) return titleCase(t).slice(0, 80);
+    return t ? titleCase(t).slice(0, 80) : null;
+  };
+  // The permit's name, only when every word is about the work.
+  if (raw && !isAddress && WORK_WORDS.test(raw) && allKnown(raw)) {
+    const t = tidy(raw);
+    if (t) return t;
+  }
+  // Else what the city's description says the job was.
+  const job = jobsIn(scope);
+  if (job) return job;
+  // Else its first line, on the same every-word rule.
+  const first = String(scope ?? "").split(/[\n.;]/)[0].trim();
+  if (first && first.length <= 70 && !/^\d+\s/.test(first) && WORK_WORDS.test(first) && allKnown(first)) {
+    const t = tidy(first);
+    if (t) return t;
   }
   const trades = [...codes].map((c) => TRADES[c]);
   if (trades.length) return `${trades.join(", ").replace(/, ([^,]*)$/, " and $1")} work`;
@@ -101,15 +174,38 @@ const describe = (name: string | null, work: string | null, type: string | null)
 };
 
 const DIRECTIONS = new Set(["n", "s", "e", "w", "north", "south", "east", "west"]);
-const SUFFIXES = new Set(["ave", "av", "avenue", "st", "street", "dr", "drive", "rd", "road", "ln", "lane", "ct", "court", "way", "wy", "blvd", "bl", "pl", "place", "cir", "circle", "ter", "pkwy"]);
+// Street types, as people write them → the city's code. "1691 Merrill Dr" and
+// "1691 Merrill Loop" are different houses in the same ZIP.
+const TYPES: Record<string, string> = {
+  ave: "AV", av: "AV", avenue: "AV", st: "ST", street: "ST", dr: "DR", drive: "DR", rd: "RD", road: "RD",
+  ln: "LN", lane: "LN", ct: "CT", court: "CT", way: "WY", wy: "WY", blvd: "BL", bl: "BL", boulevard: "BL",
+  pl: "PL", place: "PL", cir: "CR", cr: "CR", circle: "CR", ter: "TR", tr: "TR", terrace: "TR",
+  pkwy: "PY", py: "PY", parkway: "PY", loop: "LP", lp: "LP", sq: "SQ", square: "SQ", hwy: "HY", expy: "EX",
+};
 
-/** "5343 Lenora Ave" → { num: "5343", street: "LENORA" } (the portal searches by the street's name alone). */
-const parseStreet = (s: string) => {
+/** "5343 Lenora Ave" → { num: "5343", street: "LENORA", type: "AV" } (the portal searches by the street's name alone). */
+export const parseStreet = (s: string) => {
   const m = s.trim().match(/^(\d+)[a-z]?\s+(.+)$/i);
   if (!m) return null;
   const words = m[2].toLowerCase().replace(/[.,#]/g, " ").split(/\s+/).filter(Boolean);
-  const core = words.filter((w, i) => !(i === 0 && DIRECTIONS.has(w)) && !(i === words.length - 1 && SUFFIXES.has(w)));
-  return core.length ? { num: m[1], street: core.join(" ").toUpperCase() } : null;
+  const last = words[words.length - 1];
+  const type = words.length > 1 ? TYPES[last] ?? null : null;
+  const core = words.filter((w, i) => !(i === 0 && DIRECTIONS.has(w) && words.length > 1) && !(i === words.length - 1 && type));
+  return core.length ? { num: m[1], street: core.join(" ").toUpperCase(), type } : null;
+};
+
+/** The property that is this address: same ZIP and, when they told us, the same street type. Never a near miss. */
+export const pickProperty = (props: any[], zip: string, type: string | null) => {
+  const inZip = props.filter((p) => !zip || String(p?.address?.zipcode ?? "").startsWith(zip));
+  const pool = inZip.length ? inZip : props.length === 1 ? props : [];
+  if (type) {
+    const typed = pool.find((p) => String(p?.address?.streetType ?? "").trim().toUpperCase() === type);
+    if (typed) return typed;
+    // A different street type is a different house: don't show its record.
+    if (pool.some((p) => String(p?.address?.streetType ?? "").trim())) return null;
+  }
+  // Two houses share this number and street name, and we don't know which: don't guess.
+  return pool.length === 1 ? pool[0] : null;
 };
 
 Deno.serve(async (req) => {
@@ -124,8 +220,7 @@ Deno.serve(async (req) => {
     // 1. The property.
     const found = await get(`/property/search?offset=0&limit=20&houseNumber=${encodeURIComponent(parsed.num)}&street=${encodeURIComponent(parsed.street)}`);
     const props: any[] = found?.data?.records ?? [];
-    const prop =
-      props.find((p) => !zip || String(p?.address?.zipcode ?? "").startsWith(zip)) ?? (props.length === 1 ? props[0] : null);
+    const prop = pickProperty(props, zip, parsed.type);
     if (!prop?.rsn) return json({ ok: true, found: false, property: null, permits: [] });
 
     // 2. Every permit on it, its documents, and the lot's facts, together.
@@ -180,7 +275,7 @@ Deno.serve(async (req) => {
           permit: number,
           rsn: String(f.rsn),
           // Plain words; never the applicant's or owner's name (see describe()).
-          what: describe(f.name ?? null, r.validWork?.description ?? null, r.validFolder?.description ?? null),
+          what: describe(f.name ?? null, r.validWork?.description ?? null, r.validFolder?.description ?? null, f.description ?? null),
           scope: String(f.description ?? "").trim() || null,
           type: r.validFolder?.description ?? null,
           work: r.validWork?.description ?? null,

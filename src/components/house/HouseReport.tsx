@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { copyText } from "@/lib/copyText";
-import { houseReport, shareMessage, tidyName, type Reader, type Source, type Tone, type Vital } from "@/lib/houseReport";
+import { houseReport, shareMessage, tidyName, type Reader, type Source, type Tone, type Vital, streetLine } from "@/lib/houseReport";
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import HouseCard from "@/components/house/HouseCard";
@@ -276,6 +276,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
                 </h3>
                 <span className="text-[11px] uppercase tracking-wide text-muted-foreground" title="Neighbors are shown by block, never by house number">By block</span>
               </div>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed text-foreground/80">{streetLine(r.street!)}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {r.street!.kinds.slice(0, 6).map((k) => (
                   <span key={k.kind} className="rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px]">
