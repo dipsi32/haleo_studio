@@ -11,6 +11,7 @@ import { ArrowRight, Check } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
 import HouseReport from "@/components/house/HouseReport";
+import type { JobStart } from "@/components/house/HouseDetails";
 import { useHomeData } from "@/lib/useHomeData";
 import type { Reader } from "@/lib/houseReport";
 import { shortlistUrl } from "@/lib/homeGateway";
@@ -63,11 +64,11 @@ export default function House() {
   };
 
   // Their address is already known: the brief starts with it filled in.
-  const planProject = () => {
+  const planProject = (job?: JobStart) => {
     if (!address) return;
     track("house_next", { to: "project" });
     startOwnSearch(undefined, address.zip);
-    saveIntakeStart({ address });
+    saveIntakeStart({ address, ...(job?.rooms ? { rooms: job.rooms, room: job.rooms[0] } : {}), ...(job?.goals ? { goals: job.goals } : {}) });
     navigate("/brief");
   };
 

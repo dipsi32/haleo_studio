@@ -16,6 +16,7 @@ import { onStreet } from "@/lib/areaContractors";
 import { useAreaContractors } from "@/lib/useAreaData";
 import { primaryDoc } from "@/lib/cityRecord";
 import { copyText } from "@/lib/copyText";
+import type { ProjectGoal, Room } from "@/lib/intake";
 import type { HouseJob } from "./ContractorJump";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -401,6 +402,47 @@ export function AreaDrilldown({ zip, street, onContractor }: { zip: string; stre
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** The jobs people come in with, as one-tap starts. Each opens the brief with the job already picked. */
+export type JobStart = { label: string; rooms?: Room[]; goals?: ProjectGoal[] };
+const JOB_STARTS: JobStart[] = [
+  { label: "Kitchen", rooms: ["kitchen"] },
+  { label: "Bathroom", rooms: ["bathroom"] },
+  { label: "ADU or addition", goals: ["adu-addition"] },
+  { label: "Garage conversion", goals: ["garage-conversion"] },
+  { label: "Roof", goals: ["roof"] },
+  { label: "Something else" },
+];
+
+/** "Have a job in mind?": from the contractors around them to the ones who've done their kind of job. */
+export function JobInMind({ zip, onJob }: { zip: string; onJob: (job: JobStart) => void }) {
+  return (
+    <div className="border-t border-border p-5 md:p-7">
+      <h3 className={sectionTitle}>
+        Have a job <span className="italic">in mind?</span>
+      </h3>
+      <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
+        Pick it and we'll show you who's done that kind of work near {zip}, from the city's records. Your address is already in.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {JOB_STARTS.map((j) => (
+          <button
+            key={j.label}
+            type="button"
+            onClick={() => {
+              track("house_job_started", { job: j.label });
+              onJob(j);
+            }}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-border bg-background px-4 text-[14px] transition-smooth hover:border-foreground/40"
+          >
+            {j.label}
+            {j.label === "Something else" && <ArrowRight className="h-3.5 w-3.5" />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
