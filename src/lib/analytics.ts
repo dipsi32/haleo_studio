@@ -151,6 +151,7 @@ export type AnalyticsEvent =
   | "house_crew_opened"
   | "house_area_opened"
   | "house_area_crew_opened"
+  | "house_job_started"
   | "house_shared"
   | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)

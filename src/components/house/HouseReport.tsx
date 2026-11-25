@@ -26,7 +26,7 @@ import { houseReport, shareMessage, tidyName, type Reader, type Source, type Ton
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import HouseCard from "@/components/house/HouseCard";
-import { AreaDrilldown, PermitList } from "@/components/house/HouseDetails";
+import { AreaDrilldown, JobInMind, PermitList, type JobStart } from "@/components/house/HouseDetails";
 import { useContractorJump } from "@/components/house/ContractorJump";
 import { streetOf } from "@/lib/areaContractors";
 import { CITY_PERMIT_ARCHIVE, HAZARD_MAPS, type RecordState } from "@/lib/homeRecord";
@@ -66,7 +66,7 @@ type Props = {
   data: HomeData;
   reader: Reader;
   onReader: (r: Reader) => void;
-  onProject: () => void;
+  onProject: (job?: JobStart) => void;
   onCheck: (name: string) => void;
   onAnother: () => void;
 };
@@ -320,6 +320,7 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
           )}
 
           <AreaDrilldown zip={zip} street={r.street?.name ?? streetOf(street)} onContractor={(name, id) => jump.open(name, id)} />
+          <JobInMind zip={zip} onJob={onProject} />
         </Drill>
 
         {/* 5. The loops: the next house, and the neighbor. */}
