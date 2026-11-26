@@ -70,3 +70,5 @@ Open the staging address. You should see the amber "Staging" ribbon. Many pages 
 ## When something fails
 
 Open the failing run in Actions; every step names what it needs. Send me the log and I'll fix it. The usual first-run suspects are a mistyped secret, a database password that doesn't match the one set at project creation, and a Google redirect address that doesn't match.
+
+If `supabase link` reports that the project is paused, an admin must restore it from the Supabase dashboard before rerunning **Bootstrap backend**. Free-plan projects can pause after a period of inactivity; this cannot be fixed by the workflow.
