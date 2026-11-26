@@ -8,7 +8,7 @@ Built with Claude Code. React 18, Vite, TypeScript, Tailwind and shadcn/ui on th
 
 ```
 npm ci
-cp .env.staging.example .env.local   # then fill in your own Supabase project
+# .env.local: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY from deploy/dev.env
 npm run dev
 npm test
 ```
@@ -17,8 +17,8 @@ npm test
 
 - `src/` the app. `src/lib/` holds the pure logic and its tests.
 - `supabase/migrations/` the database, in order. `supabase/functions/` the edge functions. `supabase/functions/_shared/ai.ts` talks to Claude.
-- `docs/` design notes, the hosting guide (`hosting-cloudflare.md`), staging (`staging-setup.md`) and the plan for the backend move (`leaving-lovable.md`).
+- `docs/` design notes, the hosting guide (`hosting-cloudflare.md`), the three environments (`environments.md`) and the plan for the backend move (`leaving-lovable.md`).
 
 ## Environments
 
-`main` publishes production and `staging` publishes staging, both to Cloudflare Pages through `.github/workflows/deploy.yml`. Each uses its own Supabase project.
+Three environments, each with its own Supabase project (`docs/environments.md`): merging to `main` publishes **dev** (dev.haleo.studio); Actions, **Promote** moves a build to **demo** (demo.haleo.studio) and then **production** (haleo.studio).

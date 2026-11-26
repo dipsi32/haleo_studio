@@ -4,20 +4,22 @@ import path from "path";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // https://vitejs.dev/config/
-// A staging build must never talk to the production backend.
-const PRODUCTION_PROJECT_REF = "nfjipxgmwdlxqzzvqmsl";
-const assertStagingIsNotProduction = (mode: string) => {
-  if (mode !== "staging") return;
-  const env = loadEnv(mode, process.cwd(), "VITE_");
+// Dev and demo builds must never talk to the production backend.
+// VITE_APP_ENV is set by the deploy pipeline (deploy/<env>.env, APP_ENV).
+const PRODUCTION_PROJECT_REF = "rpvetitrrdfycvoyxept";
+const assertNotProductionBackend = (mode: string) => {
+  const env = { ...loadEnv(mode, process.cwd(), "VITE_"), ...process.env };
+  const appEnv = env.VITE_APP_ENV ?? "";
+  if (!appEnv || appEnv === "production") return;
   const url = env.VITE_SUPABASE_URL ?? "";
-  if (!url) throw new Error("Staging build needs VITE_SUPABASE_URL (see .env.staging.example).");
+  if (!url) throw new Error(`A ${appEnv} build needs VITE_SUPABASE_URL (deploy/${appEnv}.env).`);
   if (url.includes(PRODUCTION_PROJECT_REF) || env.VITE_SUPABASE_PROJECT_ID === PRODUCTION_PROJECT_REF) {
-    throw new Error("Refusing a staging build that points at the production Supabase project.");
+    throw new Error(`Refusing a ${appEnv} build that points at the production Supabase project.`);
   }
 };
 
 export default defineConfig(({ mode }) => {
-  assertStagingIsNotProduction(mode);
+  assertNotProductionBackend(mode);
   return {
   server: {
     host: "::",

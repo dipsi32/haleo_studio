@@ -7,7 +7,11 @@ import posthog from "posthog-js";
 const POSTHOG_KEY = "phc_mWVyNiT4NULYmNdZUgsCntAk3HAjNnX8RT7wCRFJmmDj";
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
-const isDev = import.meta.env.DEV || import.meta.env.VITE_APP_ENV === "staging";
+// Which Haleo sent the event: production, demo (research sessions) or dev.
+// Dev never sends. Demo sends, tagged app_env=demo, so research sessions can be
+// filtered out of the numbers that count (filter app_env = production).
+const APP_ENV = (import.meta.env.VITE_APP_ENV as string | undefined) || "production";
+const isDev = import.meta.env.DEV || APP_ENV === "dev" || APP_ENV === "staging";
 
 let initialized = false;
 
@@ -29,6 +33,7 @@ export function initAnalytics() {
     capture_pageleave: true,
     autocapture: true,
     loaded: (ph) => {
+      ph.register({ app_env: APP_ENV });
       // No PII — PostHog generates an anonymous distinct_id automatically.
       if (import.meta.env.MODE === "preview") ph.opt_out_capturing();
     },

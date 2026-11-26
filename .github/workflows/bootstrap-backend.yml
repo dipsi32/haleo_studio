@@ -8,14 +8,26 @@
 # Setup and the list of secrets: docs/new-backend.md
 name: Bootstrap backend
 
+# Run by hand from the Actions tab, and by Deploy (dev) and Promote (demo,
+# production) so a backend always ships with the site that needs it.
 on:
   workflow_dispatch:
     inputs:
       environment:
         description: Which backend to set up
         type: choice
-        options: [staging, production]
-        default: staging
+        options: [dev, demo, production]
+        default: dev
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      ref:
+        description: Commit to deploy (defaults to the one that triggered the run)
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   group: bootstrap-${{ inputs.environment }}
@@ -30,7 +42,7 @@ jobs:
     env:
       TARGET: ${{ inputs.environment }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ inputs.environment == 'production' && secrets.PRODUCTION_DB_PASSWORD || secrets.STAGING_DB_PASSWORD }}
+      SUPABASE_DB_PASSWORD: ${{ inputs.environment == 'production' && secrets.PRODUCTION_DB_PASSWORD || inputs.environment == 'demo' && secrets.DEMO_DB_PASSWORD || secrets.DEV_DB_PASSWORD }}
       # Third-party keys shared by both backends. Any that are empty are skipped.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -47,12 +59,13 @@ jobs:
       GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Load settings
         run: |
+          [ -f "deploy/$TARGET.env" ] || { echo "::error::No deploy/$TARGET.env"; exit 1; }
           grep -E '^[A-Z_]+=' "deploy/$TARGET.env" >> "$GITHUB_ENV"
-          other=staging; [ "$TARGET" = "staging" ] && other=production
-          echo "OTHER_PROJECT_REF=$(grep -E '^PROJECT_REF=' "deploy/$other.env" | cut -d= -f2-)" >> "$GITHUB_ENV"
 
       - name: Check what we need
         run: |
@@ -61,9 +74,14 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::Missing $v for $TARGET. Secrets go in GitHub; the rest in deploy/$TARGET.env. See docs/new-backend.md."; missing=1; fi
           done
           [ "$missing" = 0 ] || exit 1
-          if [ -n "$OTHER_PROJECT_REF" ] && [ "$PROJECT_REF" = "$OTHER_PROJECT_REF" ]; then
-            echo "::error::Staging and production point at the same Supabase project. Refusing."; exit 1
-          fi
+          # Each environment has its own database. Never two on one project.
+          for f in deploy/*.env; do
+            [ "$f" = "deploy/$TARGET.env" ] && continue
+            other=$(grep -E '^PROJECT_REF=' "$f" | cut -d= -f2-)
+            if [ -n "$other" ] && [ "$other" = "$PROJECT_REF" ]; then
+              echo "::error::$TARGET and $(basename "$f" .env) point at the same Supabase project. Refusing."; exit 1
+            fi
+          done
           if [ -z "$ANTHROPIC_API_KEY" ]; then echo "::warning::ANTHROPIC_API_KEY is not set, so the AI features will not work yet."; fi
 
       # Pinned: "latest" became v3.0.0 on Nov 3, 2026, and v3 points
@@ -95,7 +113,7 @@ jobs:
           supabase secrets set --env-file /tmp/secrets.env --project-ref "$PROJECT_REF"
           rm -f /tmp/secrets.env
 
-      # Production skips the seed-test-* functions: they create test data and are public.
+      # Production and demo skip the seed-test-* functions: they create test data and are public.
       # One function failing (Supabase sometimes answers a deploy with a 500,
       # especially right after a paused project wakes up) must not stop the
       # rest, or sign-in settings and the smoke test. Retry once, keep going,
@@ -106,7 +124,7 @@ jobs:
           for dir in supabase/functions/*/; do
             fn=$(basename "$dir")
             [ "$fn" = "_shared" ] && continue
-            if [ "$TARGET" = "production" ] && [[ "$fn" == seed-test-* ]]; then echo "skipping $fn on production"; continue; fi
+            if [ "$TARGET" != "dev" ] && [[ "$fn" == seed-test-* ]]; then echo "skipping $fn on $TARGET"; continue; fi
             echo "deploying $fn"
             if ! supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --use-api; then
               echo "::warning::$fn failed to deploy, retrying in 15s"
@@ -130,15 +148,23 @@ jobs:
           # The main address, plus any others that still serve the site (www, the old pages.dev links).
           allow="$app,$app/**"
           for u in $(echo "${APP_ALSO_URLS:-}" | tr ',' ' '); do u="${u%/}"; allow="$allow,$u,$u/**"; done
+          [ -n "$RESEND_API_KEY" ] && echo "::add-mask::$RESEND_API_KEY"
+          # Sign-in emails go out through Resend when its key is set: Supabase's own
+          # mailer only sends a few an hour, which real users would hit.
+          from_addr=$(echo "${RESEND_FROM:-}" | sed -E 's/.*<([^>]+)>.*/\1/')
+          from_name=$(echo "${RESEND_FROM:-}" | sed -nE 's/^ *"?([^"<]+)"? *<.*/\1/p' | sed 's/ *$//')
           body=$(jq -n --arg site "$app" --arg allow "$allow" \
-            --arg gid "$GOOGLE_OAUTH_CLIENT_ID" --arg gsec "$GOOGLE_OAUTH_CLIENT_SECRET" '
+            --arg gid "$GOOGLE_OAUTH_CLIENT_ID" --arg gsec "$GOOGLE_OAUTH_CLIENT_SECRET" \
+            --arg rkey "$RESEND_API_KEY" --arg rfrom "$from_addr" --arg rname "${from_name:-Haleo}" '
             {site_url: $site, uri_allow_list: $allow, external_email_enabled: true, external_anonymous_users_enabled: true}
-            + (if $gid != "" and $gsec != "" then {external_google_enabled: true, external_google_client_id: $gid, external_google_secret: $gsec} else {} end)')
+            + (if $gid != "" and $gsec != "" then {external_google_enabled: true, external_google_client_id: $gid, external_google_secret: $gsec} else {} end)
+            + (if $rkey != "" and $rfrom != "" then {smtp_host: "smtp.resend.com", smtp_port: "465", smtp_user: "resend", smtp_pass: $rkey, smtp_admin_email: $rfrom, smtp_sender_name: $rname, rate_limit_email_sent: 60} else {} end)')
           echo "::add-mask::$GOOGLE_OAUTH_CLIENT_SECRET"
           code=$(curl -sS -o /tmp/auth.out -w '%{http_code}' -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" -d "$body")
           if [ "$code" -ge 300 ]; then echo "::error::Sign-in settings failed ($code)"; cat /tmp/auth.out; exit 1; fi
           if [ -z "$GOOGLE_OAUTH_CLIENT_ID" ]; then echo "::warning::Google sign-in not configured (GOOGLE_OAUTH_CLIENT_ID/SECRET missing). Email sign-in works."; fi
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$RESEND_FROM" ]; then echo "::warning::Sign-in emails use Supabase's built-in mailer (a few an hour). Set RESEND_API_KEY and the RESEND_FROM variable to send through Resend."; fi
 
       - uses: actions/setup-node@v4
         with:

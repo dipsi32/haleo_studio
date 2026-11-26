@@ -1,112 +1,87 @@
-# Builds and publishes the site to Cloudflare Pages.
-#   push to main    -> production
-#   push to staging -> staging (its own Supabase project and web address)
-# Until the Cloudflare secrets exist this only tests and builds, and says so.
-# Setup: docs/hosting-cloudflare.md
+# Dev (canary): every merge to main lands on dev.haleo.studio, with its backend
+# (migrations and functions) updated first when they changed. Every pull
+# request gets its own preview link on the dev backend (pr-<n>.haleo-dev.pages.dev).
+# Demo and production move only through Promote. See docs/environments.md.
 name: Deploy
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  plan:
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      IS_STAGING: ${{ github.ref_name == 'staging' }}
+    outputs:
+      ready: ${{ steps.plan.outputs.ready }}
+      backend: ${{ steps.plan.outputs.backend }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Load settings
+        with:
+          fetch-depth: 0
+      - id: plan
         run: |
-          file="deploy/production.env"; [ "$IS_STAGING" = "true" ] && file="deploy/staging.env"
-          grep -E '^[A-Z_]+=' "$file" >> "$GITHUB_ENV"
-
-      - name: Check settings
-        id: check
-        run: |
-          publish=false; build=true
-          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then publish=true; fi
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ] || [ -z "$PROJECT_REF" ]; then
-            build=false
-            if [ "$publish" = true ]; then
-              echo "::error::Missing Supabase settings. Fill in deploy/production.env (main) or deploy/staging.env (staging). See docs/new-backend.md."
-              exit 1
-            fi
-            echo "::notice::Hosting is not set up yet (deploy/*.env or the Cloudflare token is empty), so nothing was built. See docs/hosting-cloudflare.md."
-          elif [ "$publish" = false ]; then
-            echo "::notice::Cloudflare secrets not set yet, so this run tests and builds but does not publish."
+          ref=$(grep -E '^PROJECT_REF=' deploy/dev.env | cut -d= -f2-)
+          ready=false; [ -n "$ref" ] && ready=true
+          [ "$ready" = true ] || echo "::notice::Dev isn't set up yet (deploy/dev.env is empty), so nothing was published. Production is unaffected: it moves only through Promote. See docs/environments.md."
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          # The backend redeploys on merges that touch it, or when run by hand.
+          backend=false
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then backend=true
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            before="${{ github.event.before }}"
+            # First push, or history we can't compare: redeploy the backend to be safe.
+            if ! git cat-file -e "$before^{commit}" 2>/dev/null; then backend=true
+            elif git diff --name-only "$before" HEAD | grep -qE '^supabase/(migrations|functions)/|^supabase/config.toml'; then backend=true; fi
           fi
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
-          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
 
+  # A pull request that isn't ready to deploy still gets its tests and build checked.
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.app.json
+      - run: npm test
+      - run: npm run build
 
-      - if: steps.check.outputs.build == 'true'
-        run: npm ci
+  backend:
+    needs: plan
+    if: needs.plan.outputs.ready == 'true' && needs.plan.outputs.backend == 'true'
+    uses: ./.github/workflows/bootstrap-backend.yml
+    with:
+      environment: dev
+    secrets: inherit
 
-      - if: steps.check.outputs.build == 'true'
-        run: npm test
+  site:
+    needs: [plan, backend]
+    if: always() && needs.plan.outputs.ready == 'true' && github.event_name != 'pull_request' && (needs.backend.result == 'success' || needs.backend.result == 'skipped')
+    uses: ./.github/workflows/site.yml
+    with:
+      environment: dev
+    secrets: inherit
 
-      - name: Build
-        if: steps.check.outputs.build == 'true'
-        env:
-          VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_PROJECT_ID: ${{ env.PROJECT_REF }}
-          VITE_APP_ENV: ${{ env.IS_STAGING == 'true' && 'staging' || 'production' }}
-        run: |
-          if [ "$IS_STAGING" = "true" ]; then npm run build:staging; else npm run build; fi
-
-      - name: Publish to Cloudflare Pages
-        if: steps.check.outputs.publish == 'true'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ env.CF_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
-
-      # Production only: attach the custom domains (CUSTOM_DOMAINS in deploy/production.env)
-      # to the Pages project, and say whether each one is live. Never fails the deploy:
-      # a domain waiting on DNS is normal while it propagates. See docs/hosting-cloudflare.md.
-      - name: Custom domains
-        if: steps.check.outputs.publish == 'true' && env.IS_STAGING != 'true' && env.CUSTOM_DOMAINS != ''
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$CF_PAGES_PROJECT/domains"
-          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
-          have=$(curl -sS "${auth[@]}" "$api" | jq -r '.result[]?.name' 2>/dev/null || true)
-          for d in $(echo "$CUSTOM_DOMAINS" | tr ',' ' '); do
-            if ! echo "$have" | grep -qx "$d"; then
-              out=$(curl -sS -X POST "${auth[@]}" "$api" -d "$(jq -n --arg n "$d" '{name: $n}')")
-              if [ "$(echo "$out" | jq -r '.success')" != "true" ]; then
-                echo "::warning::Couldn't attach $d: $(echo "$out" | jq -c '.errors')"
-                echo "::warning::Add it by hand: Cloudflare, Workers & Pages, $CF_PAGES_PROJECT, Custom domains. If the error is about permissions, the API token needs Cloudflare Pages: Edit."
-                continue
-              fi
-              echo "Attached $d."
-            fi
-            status=$(curl -sS "${auth[@]}" "$api/$d" | jq -r '.result.status // "unknown"')
-            if [ "$status" = "active" ]; then echo "::notice::$d is live."
-            else echo "::warning::$d is $status. It goes live once its DNS points at Cloudflare (docs/hosting-cloudflare.md, Custom domain)."; fi
-          done
-
-      - uses: actions/upload-artifact@v4
-        if: steps.check.outputs.build == 'true'
-        with:
-          name: site-${{ github.ref_name }}
-          path: dist
-          retention-days: 7
+  # Previews only for branches in this repo (forks don't get the secrets).
+  preview:
+    needs: plan
+    if: needs.plan.outputs.ready == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/site.yml
+    with:
+      environment: dev
+      ref: ${{ github.event.pull_request.head.sha }}
+      branch: pr-${{ github.event.pull_request.number }}
+    secrets: inherit
