@@ -23,6 +23,6 @@ Haleo helps homeowners hire the right contractor and pay a fair price, and helps
 - React + Vite + TypeScript + shadcn/Tailwind. Supabase (Postgres with row-level security, auth, edge functions in `supabase/functions`). Hosting on Cloudflare Pages. AI is Claude, through `supabase/functions/_shared/ai.ts`.
 - Before pushing: `npx tsc --noEmit -p tsconfig.app.json`, `npx eslint <changed files>`, `npx vitest run`, `npm run build`. Building regenerates `supabase/functions/mcp/index.ts`, so revert it with `git checkout -- supabase/functions/mcp/index.ts`.
 - Pure logic goes in `src/lib/*.ts` with a `*.test.ts` next to it. Pages stay thin.
-- Merging to `main` publishes the site (Deploy workflow). New or changed edge functions and migrations only go live when **Actions → Bootstrap backend → production** runs.
+- Three environments (`docs/environments.md`). Merging to `main` publishes **dev** (dev.haleo.studio) and redeploys dev's backend when `supabase/` changed. **Actions → Promote → demo**, then **→ production**, moves a build forward with its backend (migrations, functions, sign-in settings) first. Production gets only the build already on demo.
 - No Lovable. This is a Claude Code project.
 - Docs for each feature live in `docs/` (for example `docs/shortlist.md`, `docs/contractor-visit-prep.md`, `docs/new-backend.md`).

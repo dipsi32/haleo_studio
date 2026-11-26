@@ -1,0 +1,104 @@
+# Moves a build forward: main -> demo -> production.
+#   demo:        the latest main (or a commit you name), backend first, then the site.
+#   production:  exactly the commit that's on demo now, backend first, then the site.
+# Tags env/demo and env/production record what's live where, so "what's on
+# production?" is always one click: the tag. Run from Actions, Promote.
+# See docs/environments.md.
+name: Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      to:
+        description: Promote to
+        type: choice
+        options: [demo, production]
+        default: demo
+      source:
+        description: "What to promote. Demo: main (or a commit below). Production: what's on demo; 'main' skips demo, for emergencies only."
+        type: choice
+        options: [default, main]
+        default: default
+      commit:
+        description: "Optional: an exact commit to promote to demo"
+        type: string
+        required: false
+        default: ""
+
+concurrency:
+  group: promote-${{ inputs.to }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    # If the "production" environment has required reviewers (repo Settings,
+    # Environments), a production promotion waits here for approval.
+    environment: ${{ inputs.to }}
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: pick
+        run: |
+          git fetch -q --tags --force origin
+          if [ "${{ inputs.to }}" = "demo" ]; then
+            sha="${{ inputs.commit }}"
+            [ -n "$sha" ] || sha=$(git rev-parse origin/main)
+          elif [ "${{ inputs.source }}" = "main" ]; then
+            sha=$(git rev-parse origin/main)
+            echo "::warning::Promoting main straight to production, skipping demo."
+          else
+            sha=$(git rev-parse -q --verify "refs/tags/env/demo^{commit}" || true)
+            [ -n "$sha" ] || { echo "::error::Nothing is on demo yet. Promote to demo first (or choose source 'main' to skip it)."; exit 1; }
+          fi
+          sha=$(git rev-parse "$sha^{commit}")
+          ref=$(grep -E '^PROJECT_REF=' "deploy/${{ inputs.to }}.env" | cut -d= -f2-)
+          [ -n "$ref" ] || { echo "::error::${{ inputs.to }} isn't set up yet: fill in deploy/${{ inputs.to }}.env (docs/environments.md)."; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Promoting to ${{ inputs.to }}"
+            echo "Commit \`$sha\`: $(git log -1 --format=%s "$sha")"
+            current=$(git rev-parse -q --verify "refs/tags/env/${{ inputs.to }}^{commit}" || true)
+            if [ -n "$current" ]; then
+              echo ""
+              echo "Changes since the last ${{ inputs.to }} release:"
+              git log --format='- %s' "$current..$sha" | head -40
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  backend:
+    needs: resolve
+    uses: ./.github/workflows/bootstrap-backend.yml
+    with:
+      environment: ${{ inputs.to }}
+      ref: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
+  site:
+    needs: [resolve, backend]
+    uses: ./.github/workflows/site.yml
+    with:
+      environment: ${{ inputs.to }}
+      ref: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
+  record:
+    needs: [resolve, site]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag what's live
+        run: |
+          git tag -f "env/${{ inputs.to }}" "${{ needs.resolve.outputs.sha }}"
+          git push -f origin "refs/tags/env/${{ inputs.to }}"
+          echo "env/${{ inputs.to }} now points at ${{ needs.resolve.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"

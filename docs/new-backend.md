@@ -1,5 +1,7 @@
 # A new backend from scratch
 
+> Environments are now dev, demo and production (`docs/environments.md`). Where this page says staging, read dev: `deploy/dev.env`, secret `DEV_DB_PASSWORD`, and no `staging` branch (merging to `main` deploys dev).
+
 No data from the old project. Everything is created new and wired up by pipelines you can re-run.
 
 What you do: make a few accounts and paste keys into GitHub. What the pipelines do: build the database, load the functions, set sign-in, deploy the site, and test it.

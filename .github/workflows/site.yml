@@ -1,0 +1,132 @@
+# Builds and publishes the site for one environment (dev, demo or production)
+# to its own Cloudflare Pages project. Called by Deploy and Promote; not run
+# by hand. Settings come from deploy/<environment>.env. See docs/environments.md.
+name: Site
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      ref:
+        description: Commit to build (defaults to the one that triggered the run)
+        type: string
+        required: false
+        default: ""
+      branch:
+        description: Pages branch. "main" is the environment itself; anything else is a preview (pr-12).
+        type: string
+        required: false
+        default: main
+    outputs:
+      url:
+        value: ${{ jobs.site.outputs.url }}
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.where.outputs.url }}
+    env:
+      TARGET: ${{ inputs.environment }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Load settings
+        run: grep -E '^[A-Z_]+=' "deploy/$TARGET.env" >> "$GITHUB_ENV"
+
+      - name: Check settings
+        id: check
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ] || [ -z "$PROJECT_REF" ]; then
+            echo "::error::$TARGET isn't set up yet: fill in deploy/$TARGET.env (docs/environments.md)."; exit 1
+          fi
+          publish=false
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then publish=true
+          else echo "::notice::Cloudflare secrets not set, so this run tests and builds but does not publish."; fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ env.PROJECT_REF }}
+          VITE_APP_ENV: ${{ env.APP_ENV }}
+        run: npm run build
+
+      # Dev, demo and every preview stay out of search engines, at the
+      # hosting layer too (the app also adds a noindex tag).
+      - name: Keep non-production out of search
+        if: env.APP_ENV != 'production' || inputs.branch != 'main'
+        run: |
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          printf '/*\n  X-Robots-Tag: noindex, nofollow\n' >> dist/_headers
+
+      # Each environment is its own Pages project (haleo, haleo-demo, haleo-dev),
+      # so a demo or dev deploy can never replace production. Made on first use.
+      - name: Pages project
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          if [ "$(curl -sS "${auth[@]}" "$api/$CF_PAGES_PROJECT" | jq -r '.success')" != "true" ]; then
+            out=$(curl -sS -X POST "${auth[@]}" "$api" -d "$(jq -n --arg n "$CF_PAGES_PROJECT" '{name: $n, production_branch: "main"}')")
+            [ "$(echo "$out" | jq -r '.success')" = "true" ] || { echo "::error::Couldn't create Pages project $CF_PAGES_PROJECT: $(echo "$out" | jq -c '.errors')"; exit 1; }
+            echo "Created Pages project $CF_PAGES_PROJECT."
+          fi
+
+      - name: Publish
+        id: publish
+        if: steps.check.outputs.publish == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.CF_PAGES_PROJECT }} --branch=${{ inputs.branch }} --commit-hash=${{ inputs.ref || github.sha }}
+
+      - name: Where it is
+        id: where
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          url="${{ steps.publish.outputs.deployment-url }}"
+          [ "${{ inputs.branch }}" = "main" ] && url="$APP_URL"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### $TARGET: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit \`${{ inputs.ref || github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # Attach this environment's domains (CUSTOM_DOMAINS) and say whether each
+      # is live. Never fails the deploy: a domain waiting on DNS is normal.
+      - name: Custom domains
+        if: steps.check.outputs.publish == 'true' && inputs.branch == 'main' && env.CUSTOM_DOMAINS != ''
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$CF_PAGES_PROJECT/domains"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          have=$(curl -sS "${auth[@]}" "$api" | jq -r '.result[]?.name' 2>/dev/null || true)
+          for d in $(echo "$CUSTOM_DOMAINS" | tr ',' ' '); do
+            if ! echo "$have" | grep -qx "$d"; then
+              out=$(curl -sS -X POST "${auth[@]}" "$api" -d "$(jq -n --arg n "$d" '{name: $n}')")
+              if [ "$(echo "$out" | jq -r '.success')" != "true" ]; then
+                echo "::warning::Couldn't attach $d: $(echo "$out" | jq -c '.errors'). Add it by hand: Cloudflare, Workers & Pages, $CF_PAGES_PROJECT, Custom domains."
+                continue
+              fi
+              echo "Attached $d."
+            fi
+            status=$(curl -sS "${auth[@]}" "$api/$d" | jq -r '.result.status // "unknown"')
+            if [ "$status" = "active" ]; then echo "::notice::$d is live."
+            else echo "::warning::$d is $status. It goes live once haleo.studio's DNS is on Cloudflare (docs/environments.md)."; fi
+          done
