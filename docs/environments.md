@@ -25,7 +25,7 @@ Why: dev is allowed to break. Demo is the release candidate. It's stable enough 
 ## Sign-in
 
 - **Production:** the site is open, and sign-in is asked for when it's worth it: saving a project, sending a request, the contractor side. Google is the first button; email is the backup. Nothing that homeowners or contractors share sits behind a wall: the house card, briefs and invite links all work without an account.
-- **Demo:** the same as production, against demo's own database.
+- **Demo:** email sign-in, against demo's own database. Google is production-only.
 - **Dev:** the whole site sits behind Cloudflare Access (Google), so only the team gets in. The app's own sign-in works inside it as usual.
 
 ## One-time setup
@@ -46,19 +46,18 @@ All three addresses live under haleo.studio, so this comes first. Follow "Custom
   - `SUPABASE_PUBLISHABLE_KEY`: Project Settings, API, anon key
 - Add the database passwords as GitHub secrets **`DEV_DB_PASSWORD`** and **`DEMO_DB_PASSWORD`**: repo Settings, Secrets and variables, Actions.
 
-### 3. Google sign-in
+### 3. Google sign-in (production only)
 
-Use one Google client for all three environments. In console.cloud.google.com:
+Google sign-in is switched on for **production only**; dev and demo sign in with email. Bootstrap applies the Google client only when it runs against production.
 
-1. **Google Auth Platform, Branding:** app name Haleo, support email, home page `https://haleo.studio`, privacy policy link, and authorized domain `haleo.studio`. Then **Audience: Publish app** (status "In production"). While it's "Testing", only listed test users can sign in. Haleo asks only for name and email, which doesn't need Google's verification review.
+In console.cloud.google.com:
+
+1. **Google Auth Platform, Branding:** app name Haleo, support email, home page `https://haleo.studio`, a privacy policy link, and authorized domain `haleo.studio`. Then **Audience: Publish app** (status "In production"). While it says "Testing", only listed test users can sign in. Haleo asks only for name and email, which doesn't need Google's verification review.
 2. **Clients, Create client, Web application, "Haleo".**
-   - Authorized JavaScript origins: `https://haleo.studio`, `https://demo.haleo.studio`, `https://dev.haleo.studio`
-   - Authorized redirect URIs, one per Supabase project:
-     - `https://rpvetitrrdfycvoyxept.supabase.co/auth/v1/callback`
-     - `https://<haleo-demo ref>.supabase.co/auth/v1/callback`
-     - `https://<haleo-dev ref>.supabase.co/auth/v1/callback`
+   - Authorized JavaScript origins: `https://haleo.studio`, `https://www.haleo.studio`, `https://haleo.pages.dev`
+   - Authorized redirect URI: `https://rpvetitrrdfycvoyxept.supabase.co/auth/v1/callback`
 3. Add the GitHub secrets **`GOOGLE_OAUTH_CLIENT_ID`** and **`GOOGLE_OAUTH_CLIENT_SECRET`**.
-4. Run Actions, **Bootstrap backend**, `production`. This turns Google on and sets the sign-in addresses. Promotions repeat it for demo, and dev's first deploy does it for dev.
+4. Run Actions, **Bootstrap backend**, `production` (or **Promote → production**). "Continue with Google" then appears on its own.
 
 ### 4. Sign-in emails through Resend
 

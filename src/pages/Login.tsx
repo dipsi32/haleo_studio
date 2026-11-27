@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuthProviders } from "@/lib/useAuthProviders";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ import ForgotPasswordCard from "@/components/auth/ForgotPasswordCard";
 
 const Login = () => {
   const { user, loading } = useAuth();
+  const providers = useAuthProviders();
   const { isContractor, account, loading: contractorLoading } = useContractorAccount();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -201,6 +203,9 @@ const Login = () => {
           />
         ) : (
         <div className="rounded-3xl border border-border bg-card p-6 shadow-soft md:p-8">
+          {/* Only when this backend has Google switched on (production); otherwise email alone. */}
+          {providers.google && (
+            <>
           <Button
             type="button"
             onClick={handleGoogle}
@@ -222,6 +227,9 @@ const Login = () => {
             or
             <span className="h-px flex-1 bg-border" />
           </div>
+
+            </>
+          )}
 
           <form onSubmit={handleEmail} className="space-y-3">
             {mode === "signup" && (

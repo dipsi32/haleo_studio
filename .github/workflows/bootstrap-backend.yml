@@ -55,8 +55,9 @@ jobs:
       VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       RESEND_FROM: ${{ vars.RESEND_FROM }}
-      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      # Google sign-in is for production only: dev and demo sign in with email.
+      GOOGLE_OAUTH_CLIENT_ID: ${{ inputs.environment == 'production' && secrets.GOOGLE_OAUTH_CLIENT_ID || '' }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ inputs.environment == 'production' && secrets.GOOGLE_OAUTH_CLIENT_SECRET || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -163,7 +164,8 @@ jobs:
           code=$(curl -sS -o /tmp/auth.out -w '%{http_code}' -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" -d "$body")
           if [ "$code" -ge 300 ]; then echo "::error::Sign-in settings failed ($code)"; cat /tmp/auth.out; exit 1; fi
-          if [ -z "$GOOGLE_OAUTH_CLIENT_ID" ]; then echo "::warning::Google sign-in not configured (GOOGLE_OAUTH_CLIENT_ID/SECRET missing). Email sign-in works."; fi
+          if [ "$TARGET" != "production" ]; then echo "::notice::Google sign-in is production-only; $TARGET signs in with email."
+          elif [ -z "$GOOGLE_OAUTH_CLIENT_ID" ]; then echo "::warning::Google sign-in not configured (GOOGLE_OAUTH_CLIENT_ID/SECRET missing). Email sign-in works."; fi
           if [ -z "$RESEND_API_KEY" ] || [ -z "$RESEND_FROM" ]; then echo "::warning::Sign-in emails use Supabase's built-in mailer (a few an hour). Set RESEND_API_KEY and the RESEND_FROM variable to send through Resend."; fi
 
       - uses: actions/setup-node@v4
