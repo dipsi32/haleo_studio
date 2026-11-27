@@ -23,3 +23,7 @@ export const houseUrl = (street: string, zip: string) =>
 /** What a neighbor gets when it's shared: the tool, never this person's address. */
 export const SHARE_TEXT =
   "I just looked up the permits on file for my house, including anything the city never signed off. Free, takes a minute:";
+
+/** The house's birth certificate: a printable, frameable history. */
+export const certificateUrl = (street: string, zip: string) =>
+  `/house/certificate?${new URLSearchParams({ street: street.trim(), zip: zip.trim() }).toString()}`;

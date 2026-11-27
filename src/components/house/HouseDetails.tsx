@@ -425,7 +425,7 @@ export function JobInMind({ zip, onJob }: { zip: string; onJob: (job: JobStart) 
         Have a job <span className="italic">in mind?</span>
       </h3>
       <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">
-        Pick it and we'll show you who's done that kind of work near {zip}, from the city's records. Your address is already in.
+        Pick it and we'll show you who's done that kind of work near {zip}, from the city's records. Your address is already in, and when you ask contractors, this house's history goes with it.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {JOB_STARTS.map((j) => (

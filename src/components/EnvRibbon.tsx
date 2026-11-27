@@ -30,7 +30,7 @@ export default function EnvRibbon() {
       role="status"
       title={r.text}
       aria-label={r.text}
-      className={`pointer-events-none fixed left-1/2 top-2 z-[100] -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] shadow-soft ${r.tone}`}
+      className={`pointer-events-none fixed left-1/2 top-2 z-[100] print:hidden -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] shadow-soft ${r.tone}`}
     >
       {r.tag}
     </div>

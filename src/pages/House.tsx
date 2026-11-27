@@ -34,6 +34,8 @@ export default function House() {
   const address = useMemo(() => (ready ? houseAddress(qStreet, qZip) : undefined), [ready, qStreet, qZip]);
   const home = useHomeData(address);
   const qFor = params.get("for");
+  // Arrived from someone's House Wrapped (/wrapped): the story plays once it's read.
+  const wrap = params.get("wrap") === "1";
   const [reader, setReaderState] = useState<Reader>(qFor === "project" || qFor === "deal" ? qFor : "owner");
   const streetRef = useRef<HTMLInputElement>(null);
   // With a result on screen, the lookup folds into one line so the answer leads.
@@ -57,10 +59,14 @@ export default function House() {
   const lookUp = () => {
     if (!looksLikeStreet(street)) return setNudge("Add the house number and street, like 1553 Ilikai Ave.");
     if (!/^\d{5}$/.test(zip.trim())) return setNudge("Add your 5-digit ZIP.");
-    if (!isSanJoseZip(zip)) return setNudge("For now we read San Jose's records only. Other cities are coming.");
+    // Outside San José: no dead end. They vote for their city, and we learn where to go next.
+    if (!isSanJoseZip(zip)) {
+      track("house_lookup", { zip: zip.trim(), outside: true });
+      return navigate(`/next?${new URLSearchParams({ zip: zip.trim(), from: "house" }).toString()}`);
+    }
     setNudge(null);
     setFormOpen(false);
-    navigate(`${houseUrl(street, zip)}&for=${reader}`);
+    navigate(`${houseUrl(street, zip)}&for=${reader}${wrap ? "&wrap=1" : ""}`);
   };
 
   // Their address is already known: the brief starts with it filled in.
@@ -112,12 +118,21 @@ export default function House() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{NAV.house.label} · Free</p>
           {!address && (
             <h1 className="mt-4 font-display text-[2.2rem] font-light leading-[1.06] tracking-tight md:text-[3.2rem]">
-              What's on file <span className="italic">for your house?</span>
+              {wrap ? (
+                <>
+                  Your house, <span className="italic">wrapped.</span>
+                </>
+              ) : (
+                <>
+                  What's on file <span className="italic">for your house?</span>
+                </>
+              )}
             </h1>
           )}
           <p className={`mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground ${address ? "hidden" : ""}`}>
-            The permits the city has on file for your home, who did the work, and whether the city signed it off. Unfinished
-            permits follow a house to the next job and to the sale. Better to know now.
+            {wrap
+              ? "Every permit the city has on file for your home, told as a story in 30 seconds: the big moments, the busiest decade, and what kind of house it is. Then share it."
+              : "The permits the city has on file for your home, who did the work, and whether the city signed it off. Unfinished permits follow a house to the next job and to the sale. Better to know now."}
           </p>
 
           <div className="mt-8 rounded-3xl border border-border bg-card p-4 shadow-soft md:p-5">
@@ -175,6 +190,7 @@ export default function House() {
               onProject={planProject}
               onCheck={checkContractor}
               onAnother={another}
+              autoWrap={wrap}
             />
           </div>
         )}

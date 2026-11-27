@@ -4,45 +4,15 @@
 // for your house?" with a link and a QR code to the free lookup.
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { toBlob } from "html-to-image";
 import { Check, ClipboardCopy, Download, Loader2, MessageCircle, Share2 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import type { HouseReport, Tone } from "@/lib/houseReport";
 import { cardFileName, cardLink, cardLinkLabel, houseCard } from "@/lib/houseCard";
 import { smsLink } from "@/lib/houseReport";
+import { elementImage, saveFile } from "./shareImage";
 
 const WIDTH = 360; // drawn at 360px, saved at 1080×1620 (2:3): a full phone screen, clean in Messages
 const RATIO = 1.5;
-
-// The card's fonts, inlined, so the saved image looks the same on every phone
-// (html-to-image can't read the Google Fonts stylesheet across origins).
-const FONT_CSS = "https://fonts.googleapis.com/css2?family=Outfit:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Figtree:wght@400;500;600&display=swap";
-let fontCache: Promise<string> | null = null;
-const toDataUrl = (blob: Blob) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
-const embeddedFonts = () =>
-  (fontCache ??= (async () => {
-    try {
-      let css = await (await fetch(FONT_CSS)).text();
-      // Latin only: the card is English, and it keeps the image fast.
-      css = css
-        .split("/*")
-        .filter((block) => !block.trim() || /^\s*latin \*\//.test(block))
-        .map((block, i) => (i === 0 ? block : `/*${block}`))
-        .join("");
-      const urls = [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map((m) => m[1]))];
-      const inlined = await Promise.all(urls.map(async (u) => [u, await toDataUrl(await (await fetch(u)).blob())] as const));
-      for (const [u, data] of inlined) css = css.split(u).join(data);
-      return css;
-    } catch {
-      return "";
-    }
-  })()); // drawn at 340px, saved at 1080px wide (4:5, right for Messages and Instagram)
 
 const TINT: Record<Tone | "unknown", { bg: string; dot: string; chip: string; mark: string }> = {
   clear: { bg: "linear-gradient(160deg,#eef4ee 0%,#fbfaf6 55%)", dot: "#5f8a6b", chip: "#e3eee5;#3f6b4c", mark: "✓" },
@@ -122,26 +92,10 @@ export default function HouseCard({ report, street, zip, message }: Props) {
     };
   }, [origin]);
 
-  const image = async (): Promise<File | null> => {
-    if (!cardRef.current) return null;
-    const fontEmbedCSS = await embeddedFonts();
-    const blob = await toBlob(cardRef.current, {
-      pixelRatio: 1080 / WIDTH,
-      cacheBust: true,
-      backgroundColor: "#fbfaf6",
-      ...(fontEmbedCSS ? { fontEmbedCSS } : { skipFonts: true }),
-    });
-    return blob ? new File([blob], cardFileName(card.place), { type: "image/png" }) : null;
-  };
+  const image = async (): Promise<File | null> =>
+    cardRef.current ? elementImage(cardRef.current, { name: cardFileName(card.place), width: 1080, drawnAt: WIDTH, background: "#fbfaf6" }) : null;
 
-  const save = (file: File) => {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-  };
+  const save = saveFile;
 
   const flash = (d: "shared" | "saved" | "copied") => {
     setDone(d);

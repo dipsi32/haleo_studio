@@ -18,6 +18,8 @@ import {
   MessageCircle,
   Search,
   Share2,
+  Sparkles,
+  ScrollText,
   Users,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
@@ -26,6 +28,8 @@ import { houseReport, shareMessage, tidyName, type Reader, type Source, type Ton
 import type { HomeData } from "@/lib/useHomeData";
 import { SHARE_TEXT } from "@/lib/houseLookup";
 import HouseCard from "@/components/house/HouseCard";
+import HouseWrapped from "@/components/house/HouseWrapped";
+import { certificateUrl } from "@/lib/houseLookup";
 import { AreaDrilldown, JobInMind, PermitList, type JobStart } from "@/components/house/HouseDetails";
 import { useContractorJump } from "@/components/house/ContractorJump";
 import { streetOf } from "@/lib/areaContractors";
@@ -69,6 +73,8 @@ type Props = {
   onProject: (job?: JobStart) => void;
   onCheck: (name: string) => void;
   onAnother: () => void;
+  /** Arrived from /wrapped: play the house's story as soon as it's read. */
+  autoWrap?: boolean;
 };
 
 /** While the lookups run: each source ticks off as it answers. */
@@ -154,8 +160,9 @@ function Drill({ title, sub, id, children }: { title: string; sub: string; id: s
   );
 }
 
-export default function HouseReport({ street, zip, data, reader, onReader, onProject, onCheck, onAnother }: Props) {
+export default function HouseReport({ street, zip, data, reader, onReader, onProject, onCheck, onAnother, autoWrap }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [wrapOpen, setWrapOpen] = useState(!!autoWrap);
   const [showAll, setShowAll] = useState(false);
   const r = useMemo(
     () => houseReport({ street, zip, signal: data.signal, parcel: data.parcel, inspections: data.inspections, reader }),
@@ -201,11 +208,48 @@ export default function HouseReport({ street, zip, data, reader, onReader, onPro
       {/* 1. The answer, on the card they'll share. Pinned while they read the rest. */}
       <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <HouseCard report={r} street={street} zip={zip} message={message} />
+        {/* The house's story, two ways: one to post, one to frame. */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setWrapOpen(true)}
+            className="group flex flex-col items-start gap-1 rounded-2xl border border-border bg-gradient-to-br from-[#f6b452]/25 via-card to-card p-3.5 text-left shadow-soft transition-smooth hover:-translate-y-0.5"
+          >
+            <Sparkles className="h-4 w-4 text-accent" />
+            <span className="text-[14px] font-medium leading-tight">Your house, wrapped</span>
+            <span className="text-[12px] leading-snug text-muted-foreground">Its story in 30 seconds, made to post</span>
+          </button>
+          <a
+            href={certificateUrl(street, zip)}
+            onClick={() => track("house_certificate_opened", { permits: r.rows.length })}
+            className="group flex flex-col items-start gap-1 rounded-2xl border border-border bg-card p-3.5 text-left shadow-soft transition-smooth hover:-translate-y-0.5"
+          >
+            <ScrollText className="h-4 w-4 text-accent" />
+            <span className="text-[14px] font-medium leading-tight">Birth certificate</span>
+            <span className="text-[12px] leading-snug text-muted-foreground">Its full history on one page, to print and frame</span>
+          </a>
+        </div>
       </aside>
+      <AnimatePresence>
+        {wrapOpen && (
+          <HouseWrapped
+            report={r}
+            street={street}
+            zip={zip}
+            onClose={() => setWrapOpen(false)}
+            onLooseEnds={() => {
+              setWrapOpen(false);
+              setTimeout(() => document.getElementById("permits")?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="min-w-0 space-y-5">
         {/* 2. The house's whole story: every permit, who did it, what to do, the city's documents. */}
+        <div id="permits" className="scroll-mt-24">
         <PermitList rows={r.rows} read={!!data.parcel?.lookup_succeeded} onContractor={(name, job) => jump.open(name, undefined, job)} />
+        </div>
 
         {/* 3. Drill-downs: the lot, then the neighborhood. */}
         <Drill title="Your lot and the ground" sub="Zoning, soil, groundwater, and the fire, flood and earthquake maps" id="lot">

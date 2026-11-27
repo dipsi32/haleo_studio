@@ -49,6 +49,8 @@ export type VisitPrep = {
   call: { level: CallLevel; title: string; why: string[] };
   surprises: Surprise[];
   home: PrepItem[];
+  /** The house's history from the city's own file, newest first, when the brief carried it. */
+  history: { year: number | null; what: string; status: string; done: boolean }[];
   work: PrepItem[];
   people: PrepItem[];
   confirm: string[];
@@ -145,6 +147,22 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
         weight: 6,
       });
     }
+    // The house's systems on record: what's behind the walls, before the first walkthrough.
+    const systems = parcel.systems ?? [];
+    if (systems.length) {
+      const lead = systems[0];
+      surprises.push({
+        text: `Systems on record: ${systems
+          .slice(0, 4)
+          .map((s) => `${s.system.toLowerCase()} ${s.year}${s.done ? "" : " (no final)"}`)
+          .join(", ")}.`,
+        source: "record",
+        note: "From the city's permit file. Work done without a permit won't be here, so confirm on site.",
+        tone: systems.some((s) => !s.done) ? "watch" : "info",
+        opener: `I saw the ${lead.system.toLowerCase()} was ${lead.done ? "permitted and signed off" : "permitted"} in ${lead.year}. Has anything changed with it since?`,
+        weight: 7,
+      });
+    }
     const conv = (parcel.permits ?? []).find((p) => looksLikeConversion(p.description) && !p.is_expired_without_final);
     if (conv) {
       const y = year(conv.issued_date);
@@ -215,6 +233,7 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
     home.push({
       text: `${parcel.permit_count} permit${parcel.permit_count === 1 ? "" : "s"} on file${oldest ? ` since ${oldest}` : ""}`,
       source: "record",
+      ...(parcel.permit_source === "city" ? { note: "The city's full file for this address. The whole history is below." } : {}),
     });
   } else if (parcel) {
     home.push({ text: "No permits on file for this address", source: "record", note: "Doesn't mean no work was done. Older work often predates the online records." });
@@ -291,7 +310,8 @@ export const computeVisitPrep = (snap: DealSnapshot, buyBox?: BuyBox | null): Vi
   if (!ctx.shopping) push("Are you talking with other contractors too?", "Helps you decide how quickly to move.");
   for (const u of read.unknowns) if (!asks.some((a) => a.question === u)) push(u, "Open in the homeowner's own brief.");
 
-  return { read, readiness, call: { level, title: CALL_TITLE[level], why }, surprises: topSurprises, home, work, people, confirm: confirm.slice(0, 6), asks: asks.slice(0, 5), noRecords };
+  const history = [...(parcel?.history ?? [])].reverse();
+  return { read, readiness, call: { level, title: CALL_TITLE[level], why }, surprises: topSurprises, home, history, work, people, confirm: confirm.slice(0, 6), asks: asks.slice(0, 5), noRecords };
 };
 
 // ───── A plain-text cheat sheet for the phone's notes app or a text to yourself ─────

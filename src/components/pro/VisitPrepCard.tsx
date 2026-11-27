@@ -3,7 +3,7 @@
 // knowing before you knock, then a cheat sheet. Every line says where it came
 // from. See src/lib/visitPrep.ts for the rules.
 import { useEffect, useMemo, useState } from "react";
-import { Check, ClipboardCopy, CircleHelp, Compass, Home, MessageCircle, Quote, Users, Wrench } from "lucide-react";
+import { Check, ClipboardCopy, CircleHelp, Compass, History, Home, MessageCircle, Quote, Users, Wrench } from "lucide-react";
 import { computeVisitPrep, prepToText, SOURCE_LABEL, type CallLevel, type PrepItem, type Source } from "@/lib/visitPrep";
 import type { BuyBox, DealSnapshot } from "@/lib/dealRead";
 import { track } from "@/lib/analytics";
@@ -145,6 +145,28 @@ export default function VisitPrepCard({ snapshot, buyBox, homeownerName, onAsk, 
           <ItemList items={prep.people} empty="They haven't shared more yet. Good questions below." />
         </div>
       </div>
+
+      {prep.history.length > 0 && (
+        <details className="group mt-4 rounded-xl border border-border bg-background p-3.5" open={prep.history.length <= 6}>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <History className="h-3 w-3" /> House history · {prep.history.length} permit{prep.history.length === 1 ? "" : "s"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">City of San José file</span>
+          </summary>
+          <ol className="mt-2.5 space-y-1.5">
+            {prep.history.map((h, i) => (
+              <li key={i} className="flex gap-3 text-sm">
+                <span className="w-10 shrink-0 tabular-nums text-muted-foreground">{h.year ?? "—"}</span>
+                <span className="min-w-0 text-foreground/85">
+                  {h.what}
+                  <span className={`ml-1.5 text-[12px] ${h.done ? "text-sage" : "text-amber-700"}`}>· {h.status}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
 
       {prep.confirm.length > 0 && (
         <div className="mt-5">

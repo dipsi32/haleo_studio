@@ -82,3 +82,36 @@ find their record (strict name match; never a near miss), then their profile:
 the answer in one line, the job they did on this house, license (state board,
 or "Not checked" with a way to check), sign-offs, where they've worked (streets
 only), what they do, their latest permits, and questions to ask, ready to copy.
+
+## Growth loops on the house record
+
+All built on one tested module, `src/lib/houseStory.ts`, which reads the same rows the house page shows.
+
+**House Wrapped** (`HouseWrapped.tsx`, link `/wrapped`). A tap-through story:
+- the year the house went on the city's books;
+- its permit count and busiest decade;
+- the big moments;
+- the street;
+- a persona (labelled "Our read");
+- any loose ends.
+
+It ends on a 9:16 card (1080×1920) that carries "What's your house's story?", `haleo.studio/wrapped` and a QR code. Honesty rules:
+- The city's file has no build year, so the card says "On the city's books since", never "Built in".
+- Only signed-off work is celebrated ("New roof in 2016"). If nothing was signed off, it says "Roof permit pulled in 2016".
+- Unfinished permits appear only on the loose-end slide, never on the shared card.
+- The house number is hidden on the card by default.
+
+**Birth certificate** (`/house/certificate?street&zip`, `HouseCertificate.tsx`). The whole history on one letter page, made to print or save as PDF. It has optional "Presented to / from / note" fields for realtors' closing gifts. The footer gives the read date, says this is a record of permits rather than an inspection, and links back with a QR code. Events: `house_certificate_opened`, `house_certificate_printed` (`has_from` = a realtor gift).
+
+**Which city next?** (`/next`, `CityNext.tsx`, `src/lib/cityNext.ts`). A ZIP outside San José on the house lookup lands here instead of a dead end; the state is prefilled from the ZIP. Votes go into `city_votes`:
+- anyone can insert;
+- only admins can read the rows, which hold emails;
+- the public sees counts only, through `city_vote_tally()`.
+
+After voting, people get a link that opens with their city filled in (`/next?city=…&state=…&ref=vote`). Events: `city_next_viewed`, `city_vote_cast`, `city_vote_shared`.
+
+**The brief carries the house.** When a homeowner sends a brief, `loadParcelFacts` reads the city's own file (`briefFromCity`) instead of the three open-data feeds. The contractor's visit prep then shows:
+- "Systems on record" (electrical panel 2015, roof 2016, flagged when there's no final), with an opener;
+- the whole house history, newest first.
+
+The send screen tells the homeowner the history goes with it.

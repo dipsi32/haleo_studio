@@ -14,7 +14,12 @@ export type ParcelPermitLite = {
   is_expired_without_final: boolean;
   /** Trades the city signed off on this permit ("Building", "Electrical"), when the inspection feed was read. */
   signoffs?: string[];
+  /** From the city's own file: when it was signed off. */
+  finaled?: string | null;
 };
+
+/** One line of the house's history, from the city's own file. */
+export type HistoryLine = { year: number | null; what: string; status: string; done: boolean };
 
 export type ParcelFacts = {
   apn?: string | null;
@@ -28,6 +33,12 @@ export type ParcelFacts = {
   oldest_permit_date?: string | null;
   /** Newest first, capped, so a snapshot stays small. */
   permits?: ParcelPermitLite[];
+  /** The house's whole history from the city's own file, oldest first (city-record). */
+  history?: HistoryLine[];
+  /** Each system's latest work on record: "Electrical panel, 2015, signed off". */
+  systems?: { system: string; year: number; done: boolean }[];
+  /** Where the permits came from: the city's own file, or the open-data feeds. */
+  permit_source?: "city" | "feeds";
 };
 
 // ───── What only the homeowner can say (all optional, all in their words) ─────

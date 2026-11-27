@@ -195,3 +195,33 @@ describe("the home's inspected work", () => {
     expect(prep.surprises.map((s) => s.text)).toContain("City signed off Building, Electrical on the 2021 kitchen remodel here.");
   });
 });
+
+describe("the house's history from the city's file", () => {
+  const withHistory: DealSnapshot = {
+    ...adu,
+    parcel: {
+      permit_count: 3,
+      permit_source: "city",
+      oldest_permit_date: "1960-07-27",
+      systems: [
+        { system: "Electrical panel", year: 2015, done: true },
+        { system: "Roof", year: 2016, done: false },
+      ],
+      history: [
+        { year: 1960, what: "Building Permit", status: "Signed off", done: true },
+        { year: 2015, what: "Service Change", status: "Signed off", done: true },
+        { year: 2016, what: "ReRoof", status: "Expired, no final", done: false },
+      ],
+    },
+  };
+
+  it("puts the systems on record in front of the contractor, with an opener", () => {
+    const s = computeVisitPrep(withHistory, null).surprises.find((x) => x.text.startsWith("Systems on record"));
+    expect(s?.text).toBe("Systems on record: electrical panel 2015, roof 2016 (no final).");
+    expect(s?.opener).toContain("electrical panel was permitted and signed off in 2015");
+  });
+
+  it("carries the whole history, newest first", () => {
+    expect(computeVisitPrep(withHistory, null).history.map((h) => h.year)).toEqual([2016, 2015, 1960]);
+  });
+});

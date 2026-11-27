@@ -54,6 +54,8 @@ import BrandTheme from "./components/BrandTheme.tsx";
 import DemoBanner from "./components/DemoBanner.tsx";
 import InviteSendRoute from "./components/auth/InviteSendRoute.tsx";
 import FrontDoor from "./pages/FrontDoor.tsx";
+import HouseCertificate from "./pages/HouseCertificate.tsx";
+import CityNext from "./pages/CityNext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +130,12 @@ const App = () => (
             <Route path="/shortlist" element={<Shortlist />} />
             {/* Free lookup: every permit on file for a San Jose home */}
             <Route path="/house" element={<House />} />
+            {/* House Wrapped's share link: the lookup, then the story plays */}
+            <Route path="/wrapped" element={<Navigate to="/house?wrap=1&ref=wrapped" replace />} />
+            {/* A house's birth certificate: printable, frameable */}
+            <Route path="/house/certificate" element={<HouseCertificate />} />
+            {/* Outside San José: vote for the next city */}
+            <Route path="/next" element={<CityNext />} />
             {/* The phone's share sheet lands here (public/manifest.webmanifest share_target) */}
             <Route path="/share" element={<ShareIn />} />
             <Route path="/brief" element={<Brief />} />

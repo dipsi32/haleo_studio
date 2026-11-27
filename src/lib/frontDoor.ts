@@ -23,6 +23,7 @@ export const RESERVED_HANDLES = new Set([
   "account", "admin", "adu", "audit", "brief", "c", "contractor", "contractors", "demo", "home-classic",
   "i", "login", "pro", "proposal", "reset-password", "roast", "share", "house", "shortlist", "waitlist",
   "about", "api", "app", "blog", "help", "privacy", "settings", "terms", "haleo", "www",
+  "wrapped", "next", "certificate", "cities",
 ]);
 
 export type HandleCheck = { ok: true; handle: string } | { ok: false; why: string };
