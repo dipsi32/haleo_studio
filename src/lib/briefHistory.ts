@@ -37,7 +37,9 @@ export const briefFromCity = (city: CityRecord | null | undefined, now = new Dat
     expired_without_final_count: expired,
     oldest_permit_date: dates[0] ?? null,
     permits,
-    history: certificateEntries(real).slice(-MAX_HISTORY),
+    history: certificateEntries(real)
+      .slice(-MAX_HISTORY)
+      .map(({ year, what, status, done }) => ({ year, what, status, done })),
     systems: systemsOnRecord(real.map(fromRow)),
     permit_source: "city",
   };
