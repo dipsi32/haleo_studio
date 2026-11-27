@@ -391,7 +391,10 @@ export default function PathDemo({ path, onPath, className }: { path: GatewayPat
   const [auto, setAuto] = useState<GatewayPath>("thread");
   const current = path ?? auto;
   const frames = FRAMES[current];
-  const [step, setStep] = useState(0);
+  const [rawStep, setStep] = useState(0);
+  // When the story switches (auto-play or a tap), the old step can be past the
+  // new story's end for one render. Never read past the end: that crashed the homepage.
+  const step = Math.min(rawStep, frames.length - 1);
   const [paused, setPaused] = useState(false);
   const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
