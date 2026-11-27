@@ -905,6 +905,12 @@ const Contractors = () => {
                   </div>
                 )}
 
+                {data.address?.street && !data.address.skipped && (
+                  <p className="mt-5 flex items-start gap-2 rounded-xl bg-secondary/60 p-3 text-[13px] leading-relaxed text-foreground/80">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                    <span>Your home's permit history from the city goes with it: what was done, when, and what was signed off. They arrive knowing the house.</span>
+                  </p>
+                )}
                 <div className="mt-6 flex justify-end gap-2">
                   <Button variant="ghost" onClick={closeOutreach} disabled={sending} className="rounded-full">Cancel</Button>
                   <Button onClick={sendBrief} disabled={sending} className="rounded-full">

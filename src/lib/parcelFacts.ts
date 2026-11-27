@@ -5,9 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Address } from "@/lib/intake";
 import { addressRiskKey } from "@/lib/addressRisk";
 import type { ParcelFacts, ParcelPermitLite } from "@/lib/prepTypes";
+import type { CityRecord } from "@/lib/cityRecord";
+import { briefFromCity } from "@/lib/briefHistory";
 
 const MAX_PERMITS = 8;
 const LOOKUP_TIMEOUT_MS = 6000;
+// The city's own portal takes a few seconds for a house with a long history.
+const CITY_TIMEOUT_MS = 9000;
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : null);
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -71,11 +75,34 @@ export async function loadParcelFacts(addr?: Address | null): Promise<ParcelFact
     }
   })();
 
-  await withTimeout(Promise.all([history, enrichment]), LOOKUP_TIMEOUT_MS);
+  // The city's own file: every permit, in plain words, with the house's systems
+  // ("Electrical panel, 2015, signed off"). Replaces the feeds' summary when it answers.
+  const cityFile = (async () => {
+    if (!addr.zip) return null;
+    try {
+      const res = await withTimeout(supabase.functions.invoke("city-record", { body: { street: addr.street, zip: addr.zip } }), CITY_TIMEOUT_MS);
+      const data = (res as { data?: { ok?: boolean } & CityRecord } | null)?.data;
+      return data?.ok ? briefFromCity({ found: !!data.found, property: data.property ?? null, permits: data.permits ?? [] }) : null;
+    } catch (e) {
+      console.warn("city record for snapshot failed", e);
+      return null;
+    }
+  })();
+
+  const [, fromCity] = await Promise.all([withTimeout(Promise.all([history, enrichment]), LOOKUP_TIMEOUT_MS), cityFile]);
+  if (fromCity) {
+    Object.assign(facts, {
+      ...fromCity,
+      apn: fromCity.apn ?? facts.apn,
+      zoning: fromCity.zoning ?? facts.zoning,
+    });
+  } else if (facts.permits?.length) {
+    facts.permit_source = "feeds";
+  }
 
   // The city's inspection sign-offs on the most recent permits, so the
   // contractor sees what was finished properly, not just what was pulled.
-  const nums = (facts.permits ?? []).map((p) => p.permit_number).filter((n): n is string => !!n).slice(0, 6);
+  const nums = facts.permit_source === "city" ? [] : (facts.permits ?? []).map((p) => p.permit_number).filter((n): n is string => !!n).slice(0, 6);
   if (nums.length) {
     try {
       const res = await withTimeout(supabase.functions.invoke("fetch-permit-inspections", { body: { permit_numbers: nums, limit: nums.length } }), LOOKUP_TIMEOUT_MS);

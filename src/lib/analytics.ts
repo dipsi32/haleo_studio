@@ -157,6 +157,18 @@ export type AnalyticsEvent =
   | "house_area_opened"
   | "house_area_crew_opened"
   | "house_job_started"
+  // House Wrapped: opened, watched to the card, shared or saved (every share carries /wrapped)
+  | "house_wrapped_opened"
+  | "house_wrapped_completed"
+  | "house_wrapped_shared"
+  | "house_wrapped_downloaded"
+  // The birth certificate: opened, then printed (has_from = a realtor's gift)
+  | "house_certificate_opened"
+  | "house_certificate_printed"
+  // Which city next: the demand map outside San José
+  | "city_next_viewed"
+  | "city_vote_cast"
+  | "city_vote_shared"
   | "house_shared"
   | "house_next"
   // Match page: asked contractors if they're interested (before or after the brief)
