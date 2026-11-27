@@ -5,17 +5,21 @@
 import { Component, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { track } from "@/lib/analytics";
+import { copyText } from "@/lib/copyText";
 
-type State = { error: Error | null };
+type State = { error: Error | null; where: string; copied: boolean };
 
 class Boundary extends Component<{ children: ReactNode; resetKey: string }, State> {
-  state: State = { error: null };
+  state: State = { error: null, where: "", copied: false };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
+    // The first component in the stack names the screen that broke, for the details below.
+    const where = (info.componentStack ?? "").trim().split("\n").slice(0, 3).map((l) => l.trim()).join(" < ");
+    this.setState({ where });
     track("app_crashed", {
       message: error.message.slice(0, 300),
       path: window.location.pathname,
@@ -26,7 +30,7 @@ class Boundary extends Component<{ children: ReactNode; resetKey: string }, Stat
   }
 
   componentDidUpdate(prev: { resetKey: string }) {
-    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null });
+    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null, where: "", copied: false });
   }
 
   render() {
@@ -54,6 +58,33 @@ class Boundary extends Component<{ children: ReactNode; resetKey: string }, Stat
               Go to the homepage
             </a>
           </div>
+          {/* What broke, in words someone can paste to us: the exact error, page and screen. */}
+          <details className="mx-auto mt-8 max-w-md text-left">
+            <summary className="cursor-pointer text-center text-[13px] text-muted-foreground underline-offset-4 hover:underline">Details for the Haleo team</summary>
+            <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-secondary p-3 text-[11.5px] leading-relaxed">{[
+      `Error: ${this.state.error.message}`,
+      `Page: ${window.location.pathname}${window.location.search}`,
+      `Where: ${this.state.where || "unknown"}`,
+      `When: ${new Date().toISOString()}`,
+      `Browser: ${navigator.userAgent}`,
+    ].join("\n")}</pre>
+            <button
+              type="button"
+              onClick={() => {
+                const text = [
+      `Error: ${this.state.error.message}`,
+      `Page: ${window.location.pathname}${window.location.search}`,
+      `Where: ${this.state.where || "unknown"}`,
+      `When: ${new Date().toISOString()}`,
+      `Browser: ${navigator.userAgent}`,
+    ].join("\n");
+                if (copyText(text)) this.setState({ copied: true });
+              }}
+              className="mt-2 w-full rounded-full border border-border py-2 text-[13px] font-medium hover:bg-secondary"
+            >
+              {this.state.copied ? "Copied" : "Copy details"}
+            </button>
+          </details>
         </div>
       </main>
     );
