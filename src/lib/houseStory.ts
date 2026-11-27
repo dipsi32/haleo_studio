@@ -157,7 +157,14 @@ export const storyLine = (place: string, s: HouseStory): string =>
     .filter(Boolean)
     .join(" ");
 
-export type CertificateEntry = { year: number | null; what: string; status: string; done: boolean };
+export type CertificateEntry = {
+  year: number | null;
+  what: string;
+  status: string;
+  done: boolean;
+  /** Its position in the rows it came from, so a tap can open that permit. */
+  row: number;
+};
 
 const STATUS: Record<string, string> = {
   finaled: "Signed off",
@@ -170,6 +177,7 @@ const STATUS: Record<string, string> = {
 /** Every permit that authorized work, oldest first: the house's life on one page. */
 export const certificateEntries = (rows: RecordRow[]): CertificateEntry[] =>
   rows
-    .filter((r) => r.state !== "cancelled")
-    .map((r) => ({ year: r.year, what: r.what, status: STATUS[r.state] ?? r.stateLabel, done: r.state === "finaled" }))
+    .map((r, row) => ({ r, row }))
+    .filter(({ r }) => r.state !== "cancelled")
+    .map(({ r, row }) => ({ year: r.year, what: r.what, status: STATUS[r.state] ?? r.stateLabel, done: r.state === "finaled", row }))
     .sort((a, b) => (a.year ?? 0) - (b.year ?? 0));

@@ -40,8 +40,10 @@ const Login = () => {
   // contractor's link (/i/:token/send), so it stays in their experience.
   const isInviteIntent = intent === "invite" || /^\/i\/[^/]+\/send$/.test(next);
   const inviteName = isInviteIntent ? getActiveInvite()?.contractorName ?? null : null;
+  // Unlocking a house's Birth Certificate from the lookup.
+  const isHouseIntent = /^\/house(\/|\?|$)/.test(next);
 
-  const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent || isInviteIntent ? "signup" : "signin");
+  const [mode, setMode] = useState<"signin" | "signup">(isMatchIntent || isInviteIntent || isHouseIntent || params.get("mode") === "signup" ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // Prefilled with what they told the contractor, so they don't type it twice.
@@ -154,6 +156,8 @@ const Login = () => {
               ? `Your brief is ready. Create an account to send it${inviteName ? ` to ${inviteName}` : ""}.`
               : isMatchIntent && mode === "signup"
                 ? "Your brief is ready. Where should we send your matches?"
+                : isHouseIntent
+                  ? "Unlock your house's Birth Certificate"
                 : mode === "signup"
                   ? "Create your account"
                   : "Welcome back"}
@@ -161,7 +165,9 @@ const Login = () => {
           <p className="max-w-sm text-sm text-muted-foreground">
             {isInviteIntent
               ? `An account keeps your brief for you and lets ${inviteName ?? "the contractor"} reply to you through Haleo. The brief goes to them and no one else.`
-              : isMatchIntent
+              : isHouseIntent
+                ? "Every chapter of its story, the city's own documents, and a certificate to print or frame. Free, and it takes a few seconds."
+                : isMatchIntent
                 ? "We'll show you the three contractors with permit history closest to your project — same city, same type of work. An account keeps your brief and lets us tell you when they reply."
                 : "Your brief, audit, and saved rooms live behind your account — so you can pick up where you left off."}
           </p>

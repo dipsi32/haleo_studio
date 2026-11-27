@@ -165,6 +165,12 @@ export type AnalyticsEvent =
   // The birth certificate: opened, then printed (has_from = a realtor's gift)
   | "house_certificate_opened"
   | "house_certificate_printed"
+  // The unlock: the blurred certificate, the sign-in it leads to, and what they open once in
+  | "house_gate_viewed"
+  | "house_gate_google"
+  | "house_gate_email"
+  | "house_unlocked"
+  | "house_sheet_opened"
   // Which city next: the demand map outside San José
   | "city_next_viewed"
   | "city_vote_cast"

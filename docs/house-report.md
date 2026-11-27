@@ -115,3 +115,21 @@ After voting, people get a link that opens with their city filled in (`/next?cit
 - the whole house history, newest first.
 
 The send screen tells the homeowner the history goes with it.
+
+## One experience: the free card, then the Birth Certificate
+
+The lookup result is now one experience (`HouseReport.tsx`).
+
+**Free, for everyone:** the house card. It shows the answer at a glance, the first permits, the zones and what to close out, and it can be shared, texted or saved.
+
+**Signed out:**
+- Below the card sits the house's **Birth Certificate** (`BirthCertificate.tsx`). Its header and headline numbers are readable; its story is blurred after two lines.
+- The unlock (`CertificateGate.tsx`) says what's waiting in this house's own numbers ("14 permits going back to 1960, 2 big moments and 3 loose ends") and lists the perks: the certificate to print, frame or give; every chapter with the city's documents; the 30-second story; the loose ends.
+- "Continue with Google" appears only when Google is switched on in the backend (`useAuthProviders`). Email sign-up is always there, and returns to the same house.
+
+**Signed in (not a guest session):**
+- The Birth Certificate leads the page. Every line is tappable.
+- A tap opens a sheet: a bottom sheet on phones, a side panel on computers (`DetailSheet.tsx`). Permits open on the one tapped. "Lot & ground" and "Around you" are chips under the certificate.
+- "Play its story" opens House Wrapped. "PDF" opens the printable page, which is also signed-in only.
+
+Events: `house_gate_viewed`, `house_gate_google`, `house_gate_email`, `house_unlocked` (counted once on return), `house_sheet_opened`.

@@ -82,9 +82,9 @@ describe("certificateEntries", () => {
     ({ what, year, state, stateLabel: state, permit: null, contractor: null, signoffs: [], contractors: [], docs: [], detail: {} }) as never;
   it("lists the work oldest first, in plain status words, without cancelled permits", () => {
     expect(certificateEntries([row("Solar", 2015, "finaled"), row("Building Permit", 1960, "finaled"), row("Kitchen", 2019, "cancelled"), row("ReRoof", 2016, "expired")])).toEqual([
-      { year: 1960, what: "Building Permit", status: "Signed off", done: true },
-      { year: 2015, what: "Solar", status: "Signed off", done: true },
-      { year: 2016, what: "ReRoof", status: "Expired, no final", done: false },
+      { year: 1960, what: "Building Permit", status: "Signed off", done: true, row: 1 },
+      { year: 2015, what: "Solar", status: "Signed off", done: true, row: 0 },
+      { year: 2016, what: "ReRoof", status: "Expired, no final", done: false, row: 3 },
     ]);
   });
 });

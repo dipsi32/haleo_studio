@@ -79,21 +79,29 @@ export function PermitList({
   rows,
   read,
   onContractor,
+  focus,
+  bare,
 }: {
   rows: RecordRow[];
   read: boolean;
   onContractor: (name: string, job?: HouseJob) => void;
+  /** Open this permit (its index in `rows`), e.g. tapped on the Birth Certificate. */
+  focus?: number | null;
+  /** Inside a sheet: no card frame or heading of its own. */
+  bare?: boolean;
 }) {
+  const real = rows.filter((r) => r.state !== "cancelled");
+  const cancelled = rows.length - real.length;
+  const focusRow = focus != null ? rows[focus] : undefined;
+  // A permit asked for that isn't in the first eight (or was cancelled): show them all.
+  const [showAll, setShowAll] = useState(() => !!focusRow && (focusRow.state === "cancelled" || real.indexOf(focusRow) >= 8));
+  const shown = showAll ? rows : real.slice(0, 8);
   const [open, setOpen] = useState<number | null>(() => {
-    // Open the one that needs action first, so the answer is already on screen.
-    const i = rows.findIndex((r) => r.state === "expired" || r.state === "open");
+    // The permit they tapped; otherwise the one that needs action, so the answer is already on screen.
+    const i = focusRow ? shown.indexOf(focusRow) : shown.findIndex((r) => r.state === "expired" || r.state === "open");
     return i >= 0 ? i : null;
   });
   const [copied, setCopied] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
-  const real = rows.filter((r) => r.state !== "cancelled");
-  const cancelled = rows.length - real.length;
-  const shown = showAll ? rows : real.slice(0, 8);
   const docs = rows.reduce((n, r) => n + r.docs.length, 0);
 
   const copy = (permit: string) => {
@@ -104,9 +112,9 @@ export function PermitList({
   };
 
   return (
-    <section className="rounded-3xl border border-border bg-card shadow-soft">
-      <div className="p-5 md:p-7">
-        <div className="flex items-baseline justify-between gap-3">
+    <section className={bare ? "" : "rounded-3xl border border-border bg-card shadow-soft"}>
+      <div className={bare ? "" : "p-5 md:p-7"}>
+        <div className={`flex items-baseline justify-between gap-3 ${bare ? "hidden" : ""}`}>
           <h3 className="font-display text-[22px] leading-tight">
             Every permit <span className="italic">on file</span>
           </h3>
